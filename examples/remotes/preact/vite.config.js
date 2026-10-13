@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
-import ilha from 'ilha/vite'
+import ilha from 'arquipelago/vite'
 
 export default defineConfig({
   base: './',

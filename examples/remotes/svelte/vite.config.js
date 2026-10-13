@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
-import ilha from 'ilha/vite'
+import ilha from 'arquipelago/vite'
 
 export default defineConfig({
   base: './',

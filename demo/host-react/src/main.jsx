@@ -1,7 +1,7 @@
 import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { configure } from 'ilha'
-import { Remote, useEventValue } from 'ilha/react'
+import { configure } from 'arquipelago'
+import { Remote, useEventValue } from 'arquipelago/react'
 
 // As URLs vêm de um JSON em runtime: trocar a versão de um remote não exige rebuild do host.
 configure({ remotes: '/remotes.json' })

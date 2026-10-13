@@ -1,5 +1,5 @@
 import { LitElement, html } from 'lit'
-import { elementRemote } from 'ilha/element'
+import { elementRemote } from 'arquipelago/element'
 
 class LitCartao extends LitElement {
   static properties = { mensagem: {}, cliques: { state: true } }

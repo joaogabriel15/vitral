@@ -8,7 +8,7 @@ import { h, render, type ComponentType, type VNode } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
 
-/** Transforma um componente Preact em um remote. O contexto chega na prop `ilha`. */
+/** Transforma um componente Preact em um remote. O contexto chega na prop `arquipelago`. */
 export function preactRemote<P extends Props>(Component: ComponentType<any>): RemoteModule<P> {
   return defineRemote<P>({
     mount(el, props, ctx) {

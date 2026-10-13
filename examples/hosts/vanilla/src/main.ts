@@ -1,6 +1,6 @@
 // Host sem framework: só o Web Component <ilha-remote>.
-import { configure, events } from 'ilha'
-import { defineIlhaElement } from 'ilha/element'
+import { configure, events } from 'arquipelago'
+import { defineIlhaElement } from 'arquipelago/element'
 
 const REMOTES = ['react', 'vue', 'svelte', 'solid', 'preact', 'angular', 'lit', 'vanilla']
 

@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks'
-import { preactRemote } from 'ilha/preact'
+import { preactRemote } from 'arquipelago/preact'
 
 function Cartao({ mensagem, ilha }) {
   const [cliques, setCliques] = useState(0)

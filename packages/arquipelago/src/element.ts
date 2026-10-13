@@ -3,7 +3,7 @@
  * HTML (JS/TS puro, Angular, Svelte, Solid, Lit, Astro, Qwik, jQuery, server
  * templates…).
  *
- *   import { defineIlhaElement } from 'ilha/element'
+ *   import { defineIlhaElement } from 'arquipelago/element'
  *   defineIlhaElement()
  *
  *   <ilha-remote name="carrinho" props='{"userId": 42}' isolate="shadow">

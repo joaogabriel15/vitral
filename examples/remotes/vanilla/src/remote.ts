@@ -1,5 +1,5 @@
 // Remote em TypeScript puro, sem framework: só implementar mount/update/unmount.
-import { defineRemote } from 'ilha'
+import { defineRemote } from 'arquipelago'
 
 interface Props extends Record<string, unknown> {
   mensagem?: string

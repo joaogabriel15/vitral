@@ -1,5 +1,5 @@
 import { Component, input, signal } from '@angular/core'
-import { angularRemote, injectIlha } from 'ilha/angular'
+import { angularRemote, injectIlha } from 'arquipelago/angular'
 
 @Component({
   selector: 'app-cartao',

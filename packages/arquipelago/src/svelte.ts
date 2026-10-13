@@ -9,7 +9,7 @@ import type { Component } from 'svelte'
 import { createClassComponent } from 'svelte/legacy'
 import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type SlotStatus } from './index'
 
-/** Transforma um componente Svelte em um remote. O contexto chega na prop `ilha`. */
+/** Transforma um componente Svelte em um remote. O contexto chega na prop `arquipelago`. */
 export function svelteRemote<P extends Props>(component: Component<any>): RemoteModule<P> {
   return defineRemote<P>({
     mount(el, props, ctx) {
