@@ -1,0 +1,9 @@
+{
+  "name": "remote-vanilla",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "vite build" },
+  "dependencies": { "ilha": "workspace:*" },
+  "devDependencies": { "vite": "^8.0.0", "typescript": "~5.9.0" }
+}

@@ -1,3 +1,6 @@
 packages:
   - packages/*
   - demo/*
+  - examples/remotes/*
+  - examples/hosts/*
+  - e2e

@@ -127,9 +127,12 @@ export const IlhaRemote = defineComponent({
       status.value = 'loading'
       try {
         const onError = (e: Error) => fail(e, my)
-        const h = await mountRemote(slot.value!, p.name, { ...p.props }, { isolate: p.isolate, onError })
+        const initial = p.props
+        const h = await mountRemote(slot.value!, p.name, { ...initial }, { isolate: p.isolate, onError })
         if (my !== token) return h.unmount()
         handle = h
+        // Props que mudaram enquanto o remote baixava.
+        if (p.props !== initial) h.update?.({ ...p.props })
         status.value = 'ready'
         emit('ready')
       } catch (e) {

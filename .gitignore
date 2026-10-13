@@ -1,3 +1,9 @@
 node_modules
 dist
 *.log
+.next
+.nuxt
+.output
+next-env.d.ts
+test-results
+playwright-report

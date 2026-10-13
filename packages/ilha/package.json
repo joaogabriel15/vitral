@@ -1,7 +1,7 @@
 {
   "name": "ilha",
   "version": "0.1.0",
-  "description": "Micro-frontends simples: um contrato mount/unmount, carregamento em runtime, React, Next, Vue e Nuxt.",
+  "description": "Micro-frontends simples para React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS/TS puro.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -13,6 +13,10 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
+    "./element": {
+      "types": "./dist/element.d.ts",
+      "import": "./dist/element.js"
+    },
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
@@ -21,9 +25,29 @@
       "types": "./dist/vue.d.ts",
       "import": "./dist/vue.js"
     },
+    "./svelte": {
+      "types": "./dist/svelte.d.ts",
+      "import": "./dist/svelte.js"
+    },
+    "./preact": {
+      "types": "./dist/preact.d.ts",
+      "import": "./dist/preact.js"
+    },
+    "./solid": {
+      "types": "./dist/solid.d.ts",
+      "import": "./dist/solid.js"
+    },
+    "./angular": {
+      "types": "./dist/angular.d.ts",
+      "import": "./dist/angular.js"
+    },
     "./vite": {
       "types": "./dist/vite.d.ts",
       "import": "./dist/vite.js"
+    },
+    "./testing": {
+      "types": "./dist/testing.d.ts",
+      "import": "./dist/testing.js"
     }
   },
   "scripts": {
@@ -31,8 +55,13 @@
     "test": "vitest run"
   },
   "peerDependencies": {
+    "@angular/core": ">=17",
+    "@angular/platform-browser": ">=17",
+    "preact": ">=10",
     "react": ">=18",
     "react-dom": ">=18",
+    "solid-js": ">=1.8",
+    "svelte": ">=5",
     "vite": ">=5",
     "vue": ">=3.3"
   },
@@ -46,16 +75,41 @@
     "vue": {
       "optional": true
     },
+    "svelte": {
+      "optional": true
+    },
+    "preact": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    },
+    "@angular/core": {
+      "optional": true
+    },
+    "@angular/platform-browser": {
+      "optional": true
+    },
     "vite": {
       "optional": true
     }
   },
   "devDependencies": {
+    "@angular/common": "^22.2.2",
+    "@angular/compiler": "^22.2.2",
+    "@angular/core": "^22.2.2",
+    "@angular/platform-browser": "^22.2.2",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@testing-library/dom": "^10.4.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "happy-dom": "^20.0.0",
+    "preact": "^10.29.8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "rxjs": "^7.8.2",
+    "solid-js": "^1.9.17",
+    "svelte": "^5.57.2",
     "tsup": "^8.5.0",
     "typescript": "~5.9.0",
     "vite": "^8.0.0",

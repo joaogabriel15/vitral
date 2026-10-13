@@ -1,0 +1,7 @@
+{
+  "name": "host-next",
+  "private": true,
+  "scripts": { "build": "next build", "start": "next start -p 4208" },
+  "dependencies": { "ilha": "workspace:*", "next": "^16.0.0", "react": "^19.0.0", "react-dom": "^19.0.0" },
+  "devDependencies": { "@types/react": "^19.0.0", "typescript": "~5.9.0" }
+}

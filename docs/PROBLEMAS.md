@@ -107,6 +107,18 @@ manutenção, com intenção de ser descontinuado, e o App Router não é suport
 **Na ilha.** `<Remote>` já é `'use client'`, renderiza o fallback no servidor e
 monta no cliente. Testado com `renderToString` (React) e SSR do Vue.
 
+### 12. Testes de integração lentos e frágeis
+
+**Na ilha.** `ilha/testing` tem `mockRemote()` e `failingRemote()` para testar
+o host sem subir remote nenhum, e `{ module: () => import(...) }` registra um
+remote local. O próprio repositório roda e2e de 9 hosts × 8 remotes.
+
+### 13. Suporte limitado a frameworks
+
+**Na ilha.** Adaptadores para React, Next, Vue, Nuxt, Angular, Svelte, Solid,
+Preact, Lit/Web Components e JS/TS puro, mais o `<ilha-remote>` que serve de
+host em qualquer lugar que renderize HTML.
+
 ## Ainda não resolvidos (próximos passos sugeridos)
 
 | Problema | Ideia |
@@ -114,9 +126,7 @@ monta no cliente. Testado com `renderToString` (React) e SSR do Vue.
 | Remote só funciona buildado em dev (limitação documentada do plugin de federation para Vite) | Modo dev: o plugin serve o `ilha.json` apontando para o servidor do Vite, com HMR. **Maior prioridade.** |
 | Tipos das props divergem entre deploys | Plugin gera `.d.ts` das props do remote e o host baixa esses tipos. |
 | Host com Tailwind v3 e remote em Shadow DOM com Tailwind v4 (`@property` com o mesmo nome) | Opção para renomear `--tw-*` do remote no build. |
-| Testes de integração lentos e frágeis | Helper `mockRemote()` para testar o host sem subir os remotes. |
 | `html.dark` no host não chega no remote com escopo | Repassar o tema por prop/evento, ou mapear `.dark` do `<html>`. |
-| Exemplos reais em Next e Nuxt | Adicionar à demo. |
 
 ## Fontes
 

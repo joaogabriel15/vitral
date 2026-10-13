@@ -1,0 +1,7 @@
+{
+  "name": "host-nuxt",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "nuxt build", "start": "PORT=4209 node .output/server/index.mjs" },
+  "dependencies": { "ilha": "workspace:*", "nuxt": "^4.0.0", "vue": "^3.5.0" }
+}
