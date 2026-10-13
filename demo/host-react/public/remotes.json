@@ -1,0 +1,5 @@
+{
+  "catalogo": "http://localhost:5002/ilha.json",
+  "carrinho": "http://localhost:5001/ilha.json",
+  "quebrado": "http://localhost:5001/nao-existe.js"
+}
