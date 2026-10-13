@@ -1,0 +1,11 @@
+{
+  "react": "http://localhost:4100/react/ilha.json",
+  "vue": "http://localhost:4100/vue/ilha.json",
+  "svelte": "http://localhost:4100/svelte/ilha.json",
+  "solid": "http://localhost:4100/solid/ilha.json",
+  "preact": "http://localhost:4100/preact/ilha.json",
+  "angular": "http://localhost:4100/angular/ilha.json",
+  "lit": "http://localhost:4100/lit/ilha.json",
+  "vanilla": "http://localhost:4100/vanilla/ilha.json",
+  "quebrado": "http://localhost:4100/nao-existe/ilha.json"
+}

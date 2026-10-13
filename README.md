@@ -1,8 +1,9 @@
 # ilha
 
 Micro-frontends sem burocracia. Um remote é só um módulo ES que sabe se montar
-num elemento. O host só precisa da URL. Funciona com React, Next, Vue e Nuxt, e
-um host React pode carregar um remote Vue (e vice-versa).
+num elemento. O host só precisa da URL. Qualquer host carrega remote de
+qualquer framework: um app Angular mostra um remote Svelte, um Next mostra um
+remote Vue, uma página em HTML puro mostra todos.
 
 ```
 host (qualquer framework)                 remote (qualquer framework)
@@ -27,33 +28,78 @@ host (qualquer framework)                 remote (qualquer framework)
 | Executar JS de outra origem sem garantia | Allowlist de origens + verificação de hash SRI antes de executar. |
 | Muitos conceitos (containers, exposes, lifecycles, root config) | Um contrato: `mount(el, props, ctx) → { update, unmount }`. |
 
+## Frameworks suportados
+
+| Framework | Remote (publicar) | Host (consumir) | Import |
+|---|---|---|---|
+| React 18/19 | `reactRemote(App)` | `<Remote>` | `ilha/react` |
+| Next.js (App e Pages Router) | igual ao React | `<Remote>` (já é `'use client'`, SSR seguro) | `ilha/react` |
+| Vue 3 | `vueRemote(App, { setup })` | `<IlhaRemote>` | `ilha/vue` |
+| Nuxt 3/4 | igual ao Vue | `<IlhaRemote>` (SSR seguro) | `ilha/vue` |
+| Angular 17+ (standalone, com ou sem zone.js) | `angularRemote(AppComponent, { providers })` | `<ilha-remote>` + `provideIlha()` | `ilha/angular` |
+| Svelte 5 / SvelteKit | `svelteRemote(App)` | `use:remote` ou `<ilha-remote>` | `ilha/svelte` |
+| Solid / SolidStart | `solidRemote(App)` | `<Remote>` | `ilha/solid` |
+| Preact | `preactRemote(App)` | `<Remote>` | `ilha/preact` |
+| Lit, Stencil, Web Components | `elementRemote('meu-widget')` | `<ilha-remote>` | `ilha/element` |
+| JS / TypeScript puro | `defineRemote({ mount })` | `<ilha-remote>` | `ilha`, `ilha/element` |
+| Qualquer outro (Astro, Qwik, jQuery, HTML do servidor…) | `defineRemote({ mount })` | `<ilha-remote>` | `ilha/element` |
+
+Todas as 72 combinações host × remote dos exemplos (9 hosts × 8 remotes) são
+testadas no navegador a cada execução do e2e.
+
 ## Uso
 
-### Publicar um remote (React)
+### Publicar um remote
 
 ```js
-// src/remote.jsx
-import { reactRemote } from 'ilha/react'
-import Carrinho from './Carrinho'
-export default reactRemote(Carrinho)
+// React                                  // Vue
+import { reactRemote } from 'ilha/react'  import { vueRemote } from 'ilha/vue'
+export default reactRemote(Carrinho)      export default vueRemote(Catalogo, { setup: (app) => app.use(pinia) })
 
-// vite.config.js
-import ilha from 'ilha/vite'
-export default { plugins: [react(), ilha({ entry: 'src/remote.jsx' })] }
+// Svelte (o contexto chega na prop `ilha`)
+import { svelteRemote } from 'ilha/svelte'
+export default svelteRemote(Cartao)
+
+// Solid / Preact (o contexto chega na prop `ilha`)
+export default solidRemote(Cartao)        export default preactRemote(Cartao)
+
+// Angular: props viram inputs; contexto com injectIlha()
+import { angularRemote } from 'ilha/angular'
+export default angularRemote(CartaoComponent, { providers: [provideHttpClient()] })
+
+// Lit / Web Component: props viram propriedades; contexto em `this.ilha`
+import { elementRemote } from 'ilha/element'
+export default elementRemote('lit-cartao', () => customElements.define('lit-cartao', LitCartao))
 ```
 
-### Publicar um remote (Vue)
+JS ou TypeScript puro, sem framework nenhum:
+
+```ts
+import { defineRemote } from 'ilha'
+
+export default defineRemote<{ mensagem?: string }>({
+  mount(el, props, ctx) {
+    el.innerHTML = `<p></p><button>ping</button>`
+    const p = el.querySelector('p')!
+    el.querySelector('button')!.onclick = () => ctx.events.emit('ping', 'vanilla')
+    const render = (props: { mensagem?: string }) => (p.textContent = props.mensagem ?? '')
+    render(props)
+    return { update: render, unmount: () => el.replaceChildren() }
+  },
+})
+```
+
+Build com o plugin (o mesmo para todos os frameworks):
 
 ```js
-// src/remote.js
-import { vueRemote } from 'ilha/vue'
-import Catalogo from './Catalogo.vue'
-export default vueRemote(Catalogo, { setup: (app) => app.use(pinia) })
+// vite.config.js
+import ilha from 'ilha/vite'
+export default { plugins: [react() /* ou vue(), svelte(), solid(), angular()… */, ilha({ entry: 'src/remote.jsx' })] }
 ```
 
 `vite build` gera `dist/remote-[hash].js`, `dist/remote-[hash].css` e
 `dist/ilha.json` (com o hash `sha384` do JS). Suba a pasta em qualquer CDN com
-CORS.
+CORS. Para Angular use `@analogjs/vite-plugin-angular` (compila em AOT).
 
 ### CSS e Tailwind
 
@@ -64,8 +110,8 @@ escanear os arquivos do remote. Com `isolate="shadow"`, as regras `@property`
 do Tailwind v4 sobem para o documento para que sombras, rings e gradientes
 funcionem. Veja [docs/PROBLEMAS.md](docs/PROBLEMAS.md).
 
-Sem Vite? Qualquer bundler serve: basta gerar um módulo ES cujo `default`
-tenha `mount(el, props, ctx)`.
+Sem Vite? Qualquer bundler serve (webpack, Rspack, esbuild, Rollup, Angular
+CLI): basta gerar um módulo ES cujo `default` tenha `mount(el, props, ctx)`.
 
 ### Consumir no host (React / Next)
 
@@ -111,6 +157,43 @@ import { IlhaRemote } from 'ilha/vue'
 No Nuxt, chame `configure()` num plugin `.client.ts`. O componente renderiza o
 fallback no SSR e monta o remote no cliente.
 
+### Consumir no host (JS/TS puro, Angular, Svelte, qualquer coisa)
+
+O Web Component `<ilha-remote>` funciona em qualquer lugar que renderize HTML:
+
+```html
+<script type="module">
+  import { configure } from 'ilha'
+  import { defineIlhaElement } from 'ilha/element'
+  configure({ remotes: '/remotes.json' })
+  defineIlhaElement()
+</script>
+
+<ilha-remote name="carrinho" props='{"userId": 42}' isolate="shadow">
+  <p slot="fallback">Carregando…</p>
+  <p slot="error">Indisponível</p>
+</ilha-remote>
+```
+
+`el.props = {...}` atualiza sem remontar, `el.retry()` remonta, e os eventos
+`ilha-ready` / `ilha-error` avisam o estado.
+
+**Angular:**
+
+```ts
+bootstrapApplication(App, { providers: [provideIlha({ remotes: '/remotes.json' })] })
+
+@Component({
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `<ilha-remote name="carrinho" [props]="{ userId: id() }" (ilha-error)="falhou()"></ilha-remote>`,
+})
+```
+
+**Svelte:** `<div use:remote={{ name: 'carrinho', props: { userId } }}></div>`
+(com `import { remote } from 'ilha/svelte'`).
+
+**Solid / Preact:** `<Remote name="carrinho" props={{ userId }} fallback={…} error={(e, retry) => …} />`.
+
 ### Comunicação
 
 ```js
@@ -131,9 +214,9 @@ Para navegar de dentro de um remote, use `navigate('/pedidos/42')` (ou
 ### Erros
 
 Todo erro é um `RemoteError` com `code` e o nome do remote. Falhas de
-download e erros de render dentro do remote (React ou Vue) aparecem no
-`error` do `<Remote>` / slot `#error` do `<IlhaRemote>`, com `retry` para
-remontar só aquele remote.
+download e erros de render dentro do remote (React, Vue) aparecem no `error`
+do componente de host (ou no slot `error` do `<ilha-remote>`), com `retry`
+para remontar só aquele remote.
 
 ### Configuração
 
@@ -147,7 +230,9 @@ configure({
 })
 ```
 
-Entradas podem ser objetos: `{ url, integrity, css, isolate }`. A `integrity`
+Entradas podem ser objetos: `{ url, integrity, css, isolate }`, ou
+`{ module: () => import('./carrinho') }` para um remote local (monorepo) sem
+rede. A `integrity`
 declarada pelo host vence a do manifesto (fixe o hash no host quando o remote
 for de terceiros).
 
@@ -177,23 +262,45 @@ ilha({ entry: 'src/remote.jsx', shared: ['react', 'react-dom', 'react-dom/client
 </script>
 ```
 
-## Demo
+## Testes
+
+```ts
+// Teste do host sem subir nenhum remote
+import { mockRemote, failingRemote } from 'ilha/testing'
+
+const carrinho = mockRemote('carrinho', (el, props) => (el.textContent = `itens: ${props.itens}`))
+// …renderize o host…
+expect(carrinho.lastProps).toEqual({ itens: 2 })
+failingRemote('recomendacoes') // para testar a tela de erro
+```
+
+No repositório:
 
 ```bash
 pnpm install
-pnpm demo
+pnpm test        # unitários (Vitest): núcleo + adaptador de cada framework
+pnpm test:e2e    # builda tudo e roda o Playwright: 9 hosts × 8 remotes + demo
+pnpm examples    # sobe os exemplos (hosts em :4201-:4207, remotes em :4100)
 ```
 
-- http://localhost:5173 host React carregando um catálogo **Vue** (em Shadow DOM)
-  e um carrinho **React**, mais um remote quebrado mostrando o tratamento de erro.
-- http://localhost:5174 host Vue carregando os mesmos dois remotes.
+O CI (`.github/workflows/ci.yml`) roda os dois.
 
-Clicar num produto do catálogo (Vue) adiciona ao carrinho (React) pelo
-barramento de eventos, e o contador do host atualiza.
+## Exemplos e demo
+
+- `examples/remotes/*`: o mesmo cartão em React, Vue, Svelte, Solid, Preact,
+  Angular, Lit e TypeScript puro.
+- `examples/hosts/*`: hosts em JS puro (:4201), React (:4202), Vue (:4203),
+  Svelte (:4204), Solid (:4205), Preact (:4206), Angular (:4207), Next (:4208,
+  `pnpm --dir examples/hosts/next start`) e Nuxt (:4209,
+  `pnpm --dir examples/hosts/nuxt start`), cada um carregando os 8 remotes.
+- `demo/`: catálogo Vue + carrinho React com Tailwind (`pnpm demo`, em
+  http://localhost:5173 e :5174).
 
 ## Estado
 
-Protótipo 0.1. Testado: carregamento via manifesto com SRI, Shadow DOM, props
-reativas, desmontar/remontar, StrictMode do React, erros de download e de
-render, Tailwind v4 com e sem Shadow DOM, escopo de CSS, SSR dos componentes de
-host (React e Vue). O que ainda falta está em [docs/PROBLEMAS.md](docs/PROBLEMAS.md#ainda-não-resolvidos-próximos-passos-sugeridos).
+Protótipo 0.1. Testado (32 testes unitários e 43 e2e): carregamento via
+manifesto com SRI, Shadow DOM, props reativas sem remontar, props que mudam
+durante o download, desmontar/remontar, StrictMode do React, erros de download
+e de render, eventos entre frameworks, Tailwind v4 com e sem Shadow DOM, escopo
+de CSS e SSR em Next e Nuxt. O que ainda falta está em
+[docs/PROBLEMAS.md](docs/PROBLEMAS.md#ainda-não-resolvidos-próximos-passos-sugeridos).

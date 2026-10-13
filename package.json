@@ -4,8 +4,10 @@
   "type": "module",
   "scripts": {
     "build": "pnpm -r --filter ./packages/** build",
-    "demo:build": "pnpm build && pnpm -r --filter ./demo/** build",
-    "demo": "pnpm demo:build && node demo/serve.mjs",
-    "test": "pnpm -r --filter ./packages/** test"
+    "build:all": "pnpm build && pnpm -r --filter './demo/**' --filter './examples/**' build",
+    "test": "pnpm -r --filter ./packages/** test",
+    "test:e2e": "pnpm build:all && pnpm --dir e2e test",
+    "demo": "pnpm build:all && node demo/serve.mjs",
+    "examples": "pnpm build:all && node examples/serve.mjs"
   }
 }

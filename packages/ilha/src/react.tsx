@@ -132,10 +132,13 @@ export function Remote<P extends Props = Props>({
       if (onErrorRef.current) onErrorRef.current(e)
       else console.error(e)
     }
-    mountRemote<P>(el, name, latestProps.current, { isolate, onError: fail }).then(
+    const initial = latestProps.current
+    mountRemote<P>(el, name, initial, { isolate, onError: fail }).then(
       (h) => {
         if (cancelled) return h.unmount()
         handle.current = h
+        // Props que mudaram enquanto o remote baixava.
+        if (latestProps.current !== initial) h.update?.(latestProps.current)
         setStatus('ready')
       },
       fail,
