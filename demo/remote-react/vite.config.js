@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import ilha from 'ilha/vite'
 
 export default defineConfig({
-  plugins: [react(), ilha({ entry: 'src/remote.jsx' })],
+  plugins: [react(), tailwindcss(), ilha({ entry: 'src/remote.jsx' })],
 })

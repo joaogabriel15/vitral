@@ -1,3 +1,4 @@
+@import "tailwindcss";
 .carrinho { border: 2px solid #61dafb; border-radius: 8px; padding: 12px 16px; font-family: system-ui; }
 .carrinho h2 { margin: 0 0 8px; font-size: 18px; }
 .carrinho ul { padding-left: 18px; }

@@ -5,7 +5,7 @@
  * Host:   <Remote name="carrinho" props={{ userId }} />
  * Remote: export default reactRemote(App)
  */
-import { createContext, useContext, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import { Component as ReactComponent, createContext, useContext, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   defineRemote,
@@ -25,15 +25,31 @@ import {
 
 const IlhaContext = createContext<RemoteContext | null>(null)
 
+/** Erro de render dentro do remote vai para o host em vez de derrubar a página. */
+class Boundary extends ReactComponent<{ ctx: RemoteContext; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false }
+  static getDerivedStateFromError() {
+    return { failed: true }
+  }
+  componentDidCatch(error: unknown) {
+    this.props.ctx.reportError(error)
+  }
+  render() {
+    return this.state.failed ? null : this.props.children
+  }
+}
+
 /** Transforma um componente React em um remote. */
 export function reactRemote<P extends Props>(Component: ComponentType<P>): RemoteModule<P> {
   return defineRemote<P>({
     mount(el, props, ctx) {
-      const root = createRoot(el)
+      const root = createRoot(el, { onUncaughtError: (e) => ctx.reportError(e) })
       const render = (p: P) =>
         root.render(
           <IlhaContext.Provider value={ctx}>
-            <Component {...p} />
+            <Boundary ctx={ctx}>
+              <Component {...p} />
+            </Boundary>
           </IlhaContext.Provider>,
         )
       render(props)
@@ -109,19 +125,20 @@ export function Remote<P extends Props = Props>({
     if (!el) return
     let cancelled = false
     setStatus('loading')
-    mountRemote<P>(el, name, latestProps.current, { isolate }).then(
+    const fail = (e: Error) => {
+      if (cancelled) return
+      setErr(e)
+      setStatus('error')
+      if (onErrorRef.current) onErrorRef.current(e)
+      else console.error(e)
+    }
+    mountRemote<P>(el, name, latestProps.current, { isolate, onError: fail }).then(
       (h) => {
         if (cancelled) return h.unmount()
         handle.current = h
         setStatus('ready')
       },
-      (e: Error) => {
-        if (cancelled) return
-        setErr(e)
-        setStatus('error')
-        if (onErrorRef.current) onErrorRef.current(e)
-        else console.error(e)
-      },
+      fail,
     )
     return () => {
       cancelled = true

@@ -6,5 +6,5 @@ export default defineConfig({
   dts: true,
   clean: true,
   target: 'es2020',
-  external: ['react', 'react-dom', 'react-dom/client', 'vue', 'vite', 'ilha'],
+  external: ['react', 'react-dom', 'react-dom/client', 'vue', 'vite', 'ilha', 'postcss'],
 })

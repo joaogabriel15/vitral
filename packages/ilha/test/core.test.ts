@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { __reset, configure, createEventBus, events, loadRemote, register, RemoteError } from '../src/index'
+import { __reset, configure, createEventBus, events, loadRemote, navigate, register, RemoteError } from '../src/index'
 
 afterEach(() => {
   __reset()
@@ -65,5 +65,16 @@ describe('carregamento', () => {
     expect((await fail(loadRemote('x'))).code).toBe('LOAD_FAILED')
     await fail(loadRemote('x'))
     expect(fetch).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('navegação', () => {
+  it('navigate atualiza a URL e avisa os roteadores via popstate', () => {
+    const seen: string[] = []
+    addEventListener('popstate', () => seen.push(location.pathname))
+    navigate('/pedidos/42')
+    expect(location.pathname).toBe('/pedidos/42')
+    expect(seen).toContain('/pedidos/42')
+    expect(events.last('ilha:navigate')).toBe('/pedidos/42')
   })
 })
