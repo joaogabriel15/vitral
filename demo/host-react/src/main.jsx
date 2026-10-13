@@ -6,6 +6,9 @@ import { Remote, useEventValue } from 'ilha/react'
 // As URLs vêm de um JSON em runtime: trocar a versão de um remote não exige rebuild do host.
 configure({ remotes: '/remotes.json' })
 
+// ?shadow=carrinho isola também o carrinho (Tailwind) em Shadow DOM.
+const isolarCarrinho = new URLSearchParams(location.search).get('shadow') === 'carrinho' ? 'shadow' : 'none'
+
 function App() {
   const total = useEventValue('carrinho:total') ?? 0
   const [moeda, setMoeda] = useState('BRL')
@@ -25,7 +28,8 @@ function App() {
       </header>
 
       <Remote name="catalogo" props={{ moeda }} isolate="shadow" fallback={<p>Carregando catálogo…</p>} />
-      {mostrarCarrinho && <Remote name="carrinho" props={{ titulo: 'Seu carrinho' }} fallback={<p>Carregando carrinho…</p>} />}
+      {mostrarCarrinho && <Remote name="carrinho" props={{ titulo: 'Seu carrinho' }} isolate={isolarCarrinho} fallback={<p>Carregando carrinho…</p>}
+        error={(err, retry) => <p id="erro-carrinho">O carrinho quebrou ({err.code}). <button onClick={retry}>Recarregar carrinho</button></p>} />}
       <Remote
         name="quebrado"
         error={(err, retry) => (

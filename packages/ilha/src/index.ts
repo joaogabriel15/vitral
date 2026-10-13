@@ -17,10 +17,17 @@ export interface RemoteContext {
   name: string
   /** URL base de onde o remote foi carregado (útil para assets). */
   baseUrl: string
-  /** Barramento de eventos compartilhado entre host e todos os remotes. */
+  /**
+   * Barramento de eventos compartilhado entre host e todos os remotes. As
+   * assinaturas feitas por aqui são canceladas sozinhas no unmount.
+   */
   events: EventBus
   /** Shadow root quando o host pediu isolamento, senão `null`. */
   shadowRoot: ShadowRoot | null
+  /** Avisa o host de um erro em tempo de execução (os adaptadores já chamam). */
+  reportError(error: unknown): void
+  /** Navega a página inteira (host e todos os roteadores) para `url`. */
+  navigate(url: string, options?: { replace?: boolean }): void
 }
 
 export interface MountedRemote<P extends Props = Props> {
@@ -69,6 +76,7 @@ export type RemoteErrorCode =
   | 'INVALID_MODULE'
   | 'LOAD_FAILED'
   | 'MOUNT_FAILED'
+  | 'RENDER_FAILED'
 
 export class RemoteError extends Error {
   constructor(
@@ -89,6 +97,8 @@ export interface RemoteManifest {
   entry: string
   css?: string[]
   integrity?: string
+  /** Escopo usado pelo plugin para prefixar o CSS (`[data-ilha-scope]`). */
+  scope?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -100,6 +110,7 @@ interface ResolvedEntry {
   css: string[]
   integrity?: string
   isolate?: Isolation
+  scope?: string
 }
 
 interface GlobalState {
@@ -135,7 +146,7 @@ export function configure(config: IlhaConfig): void {
   if (allowedOrigins) s.config.allowedOrigins = allowedOrigins
   if (typeof remotes === 'string') {
     const url = absolute(remotes)
-    s.remotesSource = fetchJson<Record<string, string | RemoteEntry>>(url, s.config.timeout, 'remotes').then((map) =>
+    s.remotesSource = fetchJson<Record<string, string | RemoteEntry>>(url, s.config.timeout, 'remotes', 'no-cache').then((map) =>
       registerAll(map, url),
     )
   } else if (remotes) {
@@ -199,7 +210,9 @@ async function resolveEntry(name: string, entry: RemoteEntry): Promise<ResolvedE
   if (!isManifest) {
     return { entry: entry.url, css: (entry.css ?? []).map((c) => absolute(c, entry.url)), integrity: entry.integrity, isolate: entry.isolate }
   }
-  const m = await fetchJson<RemoteManifest>(entry.url, state().config.timeout, name)
+  // O manifesto é o único arquivo sem hash no nome: sempre revalida, para
+  // nunca usar um deploy velho (o resto pode ter cache eterno).
+  const m = await fetchJson<RemoteManifest>(entry.url, state().config.timeout, name, 'no-cache')
   if (!m || typeof m.entry !== 'string') throw new RemoteError('INVALID_MODULE', name, `manifesto inválido em ${entry.url}`)
   const resolved = {
     entry: absolute(m.entry, entry.url),
@@ -207,6 +220,7 @@ async function resolveEntry(name: string, entry: RemoteEntry): Promise<ResolvedE
     // A integridade declarada pelo host vence a do manifesto.
     integrity: entry.integrity ?? m.integrity,
     isolate: entry.isolate,
+    scope: m.scope,
   }
   checkOrigin(name, resolved.entry)
   return resolved
@@ -243,6 +257,8 @@ async function importModule(name: string, r: ResolvedEntry): Promise<RemoteModul
 
 export interface MountOptions {
   isolate?: Isolation
+  /** Chamado quando o remote quebra depois de montado (erro de render, handler etc.). */
+  onError?: (error: RemoteError) => void
 }
 
 /**
@@ -263,6 +279,7 @@ export async function mountRemote<P extends Props = Props>(
   let shadowRoot: ShadowRoot | null = null
   const el = document.createElement('div')
   el.setAttribute('data-ilha-root', name)
+  if (resolved.scope) el.setAttribute('data-ilha-scope', resolved.scope)
   el.style.display = 'contents'
   if (isolate === 'shadow') {
     shadowRoot = target.shadowRoot ?? target.attachShadow({ mode: 'open' })
@@ -272,16 +289,24 @@ export async function mountRemote<P extends Props = Props>(
   }
   await injectCss(resolved.css, shadowRoot)
 
+  const scoped = scopedEvents()
   const ctx: RemoteContext = {
     name,
     baseUrl: new URL('.', resolved.entry).href,
-    events: state().events,
+    events: scoped.bus,
     shadowRoot,
+    reportError(e) {
+      const err = e instanceof RemoteError ? e : new RemoteError('RENDER_FAILED', name, String((e as Error)?.message ?? e), e)
+      if (options.onError) options.onError(err)
+      else console.error(err)
+    },
+    navigate,
   }
   let mounted: MountedRemote
   try {
     mounted = await mod.mount(el, props, ctx)
   } catch (e) {
+    scoped.dispose()
     el.remove()
     throw new RemoteError('MOUNT_FAILED', name, 'erro ao montar', e)
   }
@@ -296,6 +321,7 @@ export async function mountRemote<P extends Props = Props>(
       try {
         mounted.unmount()
       } finally {
+        scoped.dispose()
         el.remove()
       }
     },
@@ -303,8 +329,13 @@ export async function mountRemote<P extends Props = Props>(
 }
 
 const loadedCss = new WeakMap<Document | ShadowRoot, Map<string, Promise<void>>>()
+const cssText = new Map<string, Promise<CSSStyleSheet | null>>()
+const hoistedProps = new Set<string>()
 
 function injectCss(urls: string[], root: ShadowRoot | null): Promise<unknown> {
+  if (root && typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype) {
+    return injectShadowCss(urls, root)
+  }
   const owner = root ?? document
   let seen = loadedCss.get(owner)
   if (!seen) loadedCss.set(owner, (seen = new Map()))
@@ -327,6 +358,49 @@ function injectCss(urls: string[], root: ShadowRoot | null): Promise<unknown> {
       return p
     }),
   )
+}
+
+/**
+ * CSS dentro de Shadow DOM. `@property` (usado pelo Tailwind v4 em sombras,
+ * rings, gradientes, transforms…) é ignorado dentro de shadow roots, então
+ * essas regras sobem para o documento e o resto vira um stylesheet adotado.
+ */
+function injectShadowCss(urls: string[], root: ShadowRoot): Promise<unknown> {
+  return Promise.all(urls.map(loadSheet)).then((sheets) => {
+    const add = sheets.filter((s): s is CSSStyleSheet => !!s && !root.adoptedStyleSheets.includes(s))
+    root.adoptedStyleSheets = [...root.adoptedStyleSheets, ...add]
+  })
+}
+
+function loadSheet(href: string): Promise<CSSStyleSheet | null> {
+  let p = cssText.get(href)
+  if (!p) {
+    p = fetch(href, { credentials: 'omit' })
+      .then((r) => (r.ok ? r.text() : ''))
+      .then((text) => {
+        const props: string[] = []
+        const rest = text.replace(/@property\s+(--[\w-]+)\s*\{[^}]*\}/g, (rule, prop: string) => {
+          if (!hoistedProps.has(prop)) {
+            hoistedProps.add(prop)
+            props.push(rule)
+          }
+          return ''
+        })
+        if (props.length) {
+          const style = document.createElement('style')
+          style.setAttribute('data-ilha-properties', '')
+          style.textContent = props.join('\n')
+          document.head.appendChild(style)
+        }
+        const sheet = new CSSStyleSheet()
+        // URLs relativas (fontes, imagens) continuam apontando para o remote.
+        sheet.replaceSync(rest.replace(/url\(\s*(['"]?)(?![a-z]+:|\/|#)([^'")]+)\1\s*\)/gi, (_, q, u) => `url(${q}${new URL(u, href).href}${q})`))
+        return sheet
+      })
+      .catch(() => null)
+    cssText.set(href, p)
+  }
+  return p
 }
 
 // ---------------------------------------------------------------------------
@@ -384,6 +458,46 @@ export const events: EventBus = {
   last: (t) => state().events.last(t),
 }
 
+/** Visão do barramento que cancela todas as assinaturas de uma vez. */
+function scopedEvents(): { bus: EventBus; dispose(): void } {
+  const offs = new Set<() => void>()
+  return {
+    bus: {
+      emit: (t, p) => events.emit(t, p),
+      last: (t) => events.last(t),
+      on(t, h) {
+        const off = events.on(t, h)
+        const wrapped = () => (offs.delete(wrapped), off())
+        offs.add(wrapped)
+        return wrapped
+      },
+    },
+    dispose() {
+      for (const off of [...offs]) off()
+    },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Navegação
+// ---------------------------------------------------------------------------
+
+/**
+ * Navega mantendo todos os roteadores em sincronia (React Router, Vue Router,
+ * Next, Nuxt…): atualiza o histórico e dispara `popstate`, que todos escutam.
+ */
+export function navigate(url: string, options: { replace?: boolean } = {}): void {
+  const target = new URL(url, location.href)
+  if (target.origin !== location.origin) {
+    location.assign(target.href)
+    return
+  }
+  if (options.replace) history.replaceState(history.state, '', target.href)
+  else history.pushState(history.state, '', target.href)
+  dispatchEvent(new PopStateEvent('popstate', { state: history.state }))
+  events.emit('ilha:navigate', target.pathname + target.search + target.hash)
+}
+
 // ---------------------------------------------------------------------------
 // Utilidades
 // ---------------------------------------------------------------------------
@@ -429,11 +543,11 @@ function withTimeout<T>(ms: number, name: string, p: Promise<T>): Promise<T> {
   })
 }
 
-async function fetchText(url: string, timeout: number, name: string): Promise<string> {
+async function fetchText(url: string, timeout: number, name: string, cache?: RequestCache): Promise<string> {
   const ctrl = new AbortController()
   const t = setTimeout(() => ctrl.abort(), timeout)
   try {
-    const res = await fetch(url, { signal: ctrl.signal, credentials: 'omit' })
+    const res = await fetch(url, { signal: ctrl.signal, credentials: 'omit', cache })
     if (!res.ok) throw new RemoteError('LOAD_FAILED', name, `HTTP ${res.status} em ${url}`)
     return await res.text()
   } catch (e) {
@@ -445,8 +559,8 @@ async function fetchText(url: string, timeout: number, name: string): Promise<st
   }
 }
 
-async function fetchJson<T>(url: string, timeout: number, name: string): Promise<T> {
-  const text = await fetchText(url, timeout, name)
+async function fetchJson<T>(url: string, timeout: number, name: string, cache?: RequestCache): Promise<T> {
+  const text = await fetchText(url, timeout, name, cache)
   try {
     return JSON.parse(text) as T
   } catch (e) {

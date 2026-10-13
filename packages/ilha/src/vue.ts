@@ -50,6 +50,8 @@ export function vueRemote<P extends Props>(component: Component, options: VueRem
       const state = shallowReactive<Record<string, unknown>>({ ...props })
       const app = createApp({ render: () => h(component, state) })
       app.provide(IlhaKey, ctx)
+      // Erros do remote vão para o host em vez de sumirem no console.
+      app.config.errorHandler = (e) => ctx.reportError(e)
       options.setup?.(app, ctx)
       app.mount(el)
       return {
@@ -110,23 +112,28 @@ export const IlhaRemote = defineComponent({
     let handle: MountedRemote | null = null
     let token = 0
 
+    function fail(e: unknown, my: number) {
+      if (my !== token) return
+      error.value = e as Error
+      status.value = 'error'
+      emit('error', e)
+      if (!slots.error) console.error(e)
+    }
+
     async function mount() {
       const my = ++token
       handle?.unmount()
       handle = null
       status.value = 'loading'
       try {
-        const h = await mountRemote(slot.value!, p.name, { ...p.props }, { isolate: p.isolate })
+        const onError = (e: Error) => fail(e, my)
+        const h = await mountRemote(slot.value!, p.name, { ...p.props }, { isolate: p.isolate, onError })
         if (my !== token) return h.unmount()
         handle = h
         status.value = 'ready'
         emit('ready')
       } catch (e) {
-        if (my !== token) return
-        error.value = e as Error
-        status.value = 'error'
-        emit('error', e)
-        if (!slots.error) console.error(e)
+        fail(e, my)
       }
     }
 
