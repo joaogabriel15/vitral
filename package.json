@@ -1,5 +1,5 @@
 {
-  "name": "ilha-monorepo",
+  "name": "arquipelago-monorepo",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +8,21 @@
     "test": "pnpm -r --filter ./packages/** test",
     "test:e2e": "pnpm build:all && pnpm --dir e2e test",
     "demo": "pnpm build:all && node demo/serve.mjs",
-    "examples": "pnpm build:all && node examples/serve.mjs"
+    "examples": "pnpm build:all && node examples/serve.mjs",
+    "typecheck": "pnpm -r --filter ./packages/** typecheck",
+    "lint:pkg": "pnpm -r --filter ./packages/** lint:pkg",
+    "size": "pnpm -r --filter ./packages/** size",
+    "check": "pnpm build && pnpm typecheck && pnpm lint:pkg && pnpm size && pnpm test",
+    "changeset": "changeset",
+    "version-packages": "changeset version && pnpm install --lockfile-only",
+    "release": "pnpm build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.7.0",
+    "@changesets/cli": "^2.31.1"
+  },
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=20"
   }
 }

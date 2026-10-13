@@ -1,12 +1,44 @@
 {
-  "name": "ilha",
+  "name": "arquipelago",
   "version": "0.1.0",
-  "description": "Micro-frontends simples para React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS/TS puro.",
-  "type": "module",
+  "description": "Micro-frontends sem burocracia: um contrato mount/unmount, carregamento em runtime e adaptadores para React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS/TS puro.",
+  "keywords": [
+    "micro-frontend",
+    "microfrontends",
+    "module-federation",
+    "single-spa",
+    "react",
+    "nextjs",
+    "vue",
+    "nuxt",
+    "angular",
+    "svelte",
+    "solid",
+    "preact",
+    "lit",
+    "web-components",
+    "vite"
+  ],
+  "homepage": "https://github.com/joaogabriel15/arquipelago#readme",
+  "bugs": {
+    "url": "https://github.com/joaogabriel15/arquipelago/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joaogabriel15/arquipelago.git",
+    "directory": "packages/arquipelago"
+  },
   "license": "MIT",
+  "author": "João (https://github.com/joaogabriel15)",
+  "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -50,9 +82,21 @@
       "import": "./dist/testing.js"
     }
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint:pkg": "publint --strict && attw --pack --profile esm-only",
+    "size": "size-limit",
+    "prepack": "cp ../../README.md ../../LICENSE .",
+    "postpack": "rm -f README.md LICENSE"
+  },
+  "dependencies": {
+    "postcss": "^8.5.30"
   },
   "peerDependencies": {
     "@angular/core": ">=17",
@@ -99,15 +143,20 @@
     "@angular/compiler": "^22.2.2",
     "@angular/core": "^22.2.2",
     "@angular/platform-browser": "^22.2.2",
+    "@arethetypeswrong/cli": "^0.18.5",
+    "@size-limit/preset-small-lib": "^11.2.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@testing-library/dom": "^10.4.2",
+    "@types/node": "^22.20.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "happy-dom": "^20.0.0",
     "preact": "^10.29.8",
+    "publint": "^0.3.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "rxjs": "^7.8.2",
+    "size-limit": "^11.2.0",
     "solid-js": "^1.9.17",
     "svelte": "^5.57.2",
     "tsup": "^8.5.0",
@@ -116,7 +165,36 @@
     "vitest": "^4.0.0",
     "vue": "^3.5.0"
   },
-  "dependencies": {
-    "postcss": "^8.5.30"
-  }
+  "size-limit": [
+    {
+      "name": "núcleo",
+      "path": "dist/index.js",
+      "limit": "5 kB"
+    },
+    {
+      "name": "react",
+      "path": "dist/react.js",
+      "import": "{ Remote, reactRemote }",
+      "ignore": [
+        "react",
+        "react-dom"
+      ],
+      "limit": "6 kB"
+    },
+    {
+      "name": "vue",
+      "path": "dist/vue.js",
+      "import": "{ IlhaRemote, vueRemote }",
+      "ignore": [
+        "vue"
+      ],
+      "limit": "6 kB"
+    },
+    {
+      "name": "element",
+      "path": "dist/element.js",
+      "import": "{ defineIlhaElement }",
+      "limit": "6 kB"
+    }
+  ]
 }

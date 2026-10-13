@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { reactRemote, useIlha } from 'ilha/react'
+import { reactRemote, useIlha } from 'arquipelago/react'
 
 function Cartao({ mensagem }) {
   const ilha = useIlha()

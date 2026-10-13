@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
-import { configure } from 'ilha'
-import { Remote, useEventValue } from 'ilha/react'
+import { configure } from 'arquipelago'
+import { Remote, useEventValue } from 'arquipelago/react'
 
 const REMOTES = ['react', 'vue', 'svelte', 'solid', 'preact', 'angular', 'lit', 'vanilla']
 if (typeof window !== 'undefined') configure({ remotes: '/remotes.json' })

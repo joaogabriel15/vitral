@@ -1,7 +1,7 @@
 import { render } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
-import { configure, events } from 'ilha'
-import { Remote } from 'ilha/preact'
+import { configure, events } from 'arquipelago'
+import { Remote } from 'arquipelago/preact'
 
 const REMOTES = ['react', 'vue', 'svelte', 'solid', 'preact', 'angular', 'lit', 'vanilla']
 configure({ remotes: '/remotes.json' })

@@ -1,0 +1,30 @@
+name: Bug
+description: Algo não funciona como deveria
+labels: [bug]
+body:
+  - type: input
+    id: versao
+    attributes:
+      label: Versão do arquipelago
+    validations:
+      required: true
+  - type: input
+    id: frameworks
+    attributes:
+      label: Framework do host e do remote (com versões)
+      placeholder: host Next 16, remote Vue 3.5
+    validations:
+      required: true
+  - type: textarea
+    id: passos
+    attributes:
+      label: Como reproduzir
+      description: De preferência um repositório mínimo ou um trecho de código.
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que esperava e o que aconteceu
+    validations:
+      required: true

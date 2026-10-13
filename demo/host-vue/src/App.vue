@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { IlhaRemote, useEventValue } from 'ilha/vue'
+import { IlhaRemote, useEventValue } from 'arquipelago/vue'
 
 const total = useEventValue('carrinho:total')
 const titulo = ref('Carrinho do host Vue')

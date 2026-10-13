@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useEvent, useIlha } from 'ilha/react'
+import { useEvent, useIlha } from 'arquipelago/react'
 
 export default function Carrinho({ titulo = 'Carrinho' }) {
   const ilha = useIlha()

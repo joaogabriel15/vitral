@@ -1,6 +1,15 @@
-# ilha
+# arquipelago
 
-Micro-frontends sem burocracia. Um remote é só um módulo ES que sabe se montar
+[![CI](https://github.com/joaogabriel15/arquipelago/actions/workflows/ci.yml/badge.svg)](https://github.com/joaogabriel15/arquipelago/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/arquipelago)](https://www.npmjs.com/package/arquipelago)
+[![tamanho](https://img.shields.io/bundlejs/size/arquipelago)](https://bundlejs.com/?q=arquipelago)
+[![licença](https://img.shields.io/npm/l/arquipelago)](LICENSE)
+
+```bash
+npm install arquipelago
+```
+
+Micro-frontends sem burocracia: cada micro-frontend é uma ilha. Um remote é só um módulo ES que sabe se montar
 num elemento. O host só precisa da URL. Qualquer host carrega remote de
 qualquer framework: um app Angular mostra um remote Svelte, um Next mostra um
 remote Vue, uma página em HTML puro mostra todos.
@@ -17,7 +26,7 @@ host (qualquer framework)                 remote (qualquer framework)
 
 ## Por que é diferente
 
-| Dor comum (Module Federation, single-spa) | Como a ilha resolve |
+| Dor comum (Module Federation, single-spa) | Como o arquipelago resolve |
 |---|---|
 | Host e remote precisam de config de build combinada | Host não tem config de build nenhuma. Só `configure({ remotes })` em runtime. |
 | `shared` / singletons quebram com versões diferentes de React/Vue | Por padrão cada remote leva o próprio framework, isolado na sua própria root. Nenhum conflito de versão. Compartilhar é opcional (import map). |
@@ -32,17 +41,17 @@ host (qualquer framework)                 remote (qualquer framework)
 
 | Framework | Remote (publicar) | Host (consumir) | Import |
 |---|---|---|---|
-| React 18/19 | `reactRemote(App)` | `<Remote>` | `ilha/react` |
-| Next.js (App e Pages Router) | igual ao React | `<Remote>` (já é `'use client'`, SSR seguro) | `ilha/react` |
-| Vue 3 | `vueRemote(App, { setup })` | `<IlhaRemote>` | `ilha/vue` |
-| Nuxt 3/4 | igual ao Vue | `<IlhaRemote>` (SSR seguro) | `ilha/vue` |
-| Angular 17+ (standalone, com ou sem zone.js) | `angularRemote(AppComponent, { providers })` | `<ilha-remote>` + `provideIlha()` | `ilha/angular` |
-| Svelte 5 / SvelteKit | `svelteRemote(App)` | `use:remote` ou `<ilha-remote>` | `ilha/svelte` |
-| Solid / SolidStart | `solidRemote(App)` | `<Remote>` | `ilha/solid` |
-| Preact | `preactRemote(App)` | `<Remote>` | `ilha/preact` |
-| Lit, Stencil, Web Components | `elementRemote('meu-widget')` | `<ilha-remote>` | `ilha/element` |
-| JS / TypeScript puro | `defineRemote({ mount })` | `<ilha-remote>` | `ilha`, `ilha/element` |
-| Qualquer outro (Astro, Qwik, jQuery, HTML do servidor…) | `defineRemote({ mount })` | `<ilha-remote>` | `ilha/element` |
+| React 18/19 | `reactRemote(App)` | `<Remote>` | `arquipelago/react` |
+| Next.js (App e Pages Router) | igual ao React | `<Remote>` (já é `'use client'`, SSR seguro) | `arquipelago/react` |
+| Vue 3 | `vueRemote(App, { setup })` | `<IlhaRemote>` | `arquipelago/vue` |
+| Nuxt 3/4 | igual ao Vue | `<IlhaRemote>` (SSR seguro) | `arquipelago/vue` |
+| Angular 17+ (standalone, com ou sem zone.js) | `angularRemote(AppComponent, { providers })` | `<ilha-remote>` + `provideIlha()` | `arquipelago/angular` |
+| Svelte 5 / SvelteKit | `svelteRemote(App)` | `use:remote` ou `<ilha-remote>` | `arquipelago/svelte` |
+| Solid / SolidStart | `solidRemote(App)` | `<Remote>` | `arquipelago/solid` |
+| Preact | `preactRemote(App)` | `<Remote>` | `arquipelago/preact` |
+| Lit, Stencil, Web Components | `elementRemote('meu-widget')` | `<ilha-remote>` | `arquipelago/element` |
+| JS / TypeScript puro | `defineRemote({ mount })` | `<ilha-remote>` | `arquipelago`, `arquipelago/element` |
+| Qualquer outro (Astro, Qwik, jQuery, HTML do servidor…) | `defineRemote({ mount })` | `<ilha-remote>` | `arquipelago/element` |
 
 Todas as 72 combinações host × remote dos exemplos (9 hosts × 8 remotes) são
 testadas no navegador a cada execução do e2e.
@@ -53,29 +62,29 @@ testadas no navegador a cada execução do e2e.
 
 ```js
 // React                                  // Vue
-import { reactRemote } from 'ilha/react'  import { vueRemote } from 'ilha/vue'
+import { reactRemote } from 'arquipelago/react'  import { vueRemote } from 'arquipelago/vue'
 export default reactRemote(Carrinho)      export default vueRemote(Catalogo, { setup: (app) => app.use(pinia) })
 
-// Svelte (o contexto chega na prop `ilha`)
-import { svelteRemote } from 'ilha/svelte'
+// Svelte (o contexto chega na prop `arquipelago`)
+import { svelteRemote } from 'arquipelago/svelte'
 export default svelteRemote(Cartao)
 
-// Solid / Preact (o contexto chega na prop `ilha`)
+// Solid / Preact (o contexto chega na prop `arquipelago`)
 export default solidRemote(Cartao)        export default preactRemote(Cartao)
 
 // Angular: props viram inputs; contexto com injectIlha()
-import { angularRemote } from 'ilha/angular'
+import { angularRemote } from 'arquipelago/angular'
 export default angularRemote(CartaoComponent, { providers: [provideHttpClient()] })
 
 // Lit / Web Component: props viram propriedades; contexto em `this.ilha`
-import { elementRemote } from 'ilha/element'
+import { elementRemote } from 'arquipelago/element'
 export default elementRemote('lit-cartao', () => customElements.define('lit-cartao', LitCartao))
 ```
 
 JS ou TypeScript puro, sem framework nenhum:
 
 ```ts
-import { defineRemote } from 'ilha'
+import { defineRemote } from 'arquipelago'
 
 export default defineRemote<{ mensagem?: string }>({
   mount(el, props, ctx) {
@@ -93,7 +102,7 @@ Build com o plugin (o mesmo para todos os frameworks):
 
 ```js
 // vite.config.js
-import ilha from 'ilha/vite'
+import ilha from 'arquipelago/vite'
 export default { plugins: [react() /* ou vue(), svelte(), solid(), angular()… */, ilha({ entry: 'src/remote.jsx' })] }
 ```
 
@@ -116,8 +125,8 @@ CLI): basta gerar um módulo ES cujo `default` tenha `mount(el, props, ctx)`.
 ### Consumir no host (React / Next)
 
 ```jsx
-import { configure } from 'ilha'
-import { Remote, useEventValue } from 'ilha/react'
+import { configure } from 'arquipelago'
+import { Remote, useEventValue } from 'arquipelago/react'
 
 configure({ remotes: '/remotes.json' })            // ou um objeto { nome: url }
 
@@ -143,7 +152,7 @@ sem `dynamic(..., { ssr: false })`.
 
 ```vue
 <script setup>
-import { IlhaRemote } from 'ilha/vue'
+import { IlhaRemote } from 'arquipelago/vue'
 </script>
 
 <template>
@@ -163,8 +172,8 @@ O Web Component `<ilha-remote>` funciona em qualquer lugar que renderize HTML:
 
 ```html
 <script type="module">
-  import { configure } from 'ilha'
-  import { defineIlhaElement } from 'ilha/element'
+  import { configure } from 'arquipelago'
+  import { defineIlhaElement } from 'arquipelago/element'
   configure({ remotes: '/remotes.json' })
   defineIlhaElement()
 </script>
@@ -190,21 +199,21 @@ bootstrapApplication(App, { providers: [provideIlha({ remotes: '/remotes.json' }
 ```
 
 **Svelte:** `<div use:remote={{ name: 'carrinho', props: { userId } }}></div>`
-(com `import { remote } from 'ilha/svelte'`).
+(com `import { remote } from 'arquipelago/svelte'`).
 
 **Solid / Preact:** `<Remote name="carrinho" props={{ userId }} fallback={…} error={(e, retry) => …} />`.
 
 ### Comunicação
 
 ```js
-import { events } from 'ilha'
+import { events } from 'arquipelago'
 events.emit('carrinho:adicionar', produto)
 const off = events.on('carrinho:adicionar', (p) => …)
 events.last('usuario')          // último valor emitido
 ```
 
 Dentro de remotes: `useIlha()` (contexto), `useEvent(tipo, fn)` e
-`useEventValue(tipo)` existem em `ilha/react` e `ilha/vue`. O barramento é o
+`useEventValue(tipo)` existem em `arquipelago/react` e `arquipelago/vue`. O barramento é o
 mesmo para todos, mesmo que cada remote tenha sua cópia da lib, e o que o
 remote assina por `ctx.events` é cancelado sozinho no unmount.
 
@@ -266,7 +275,7 @@ ilha({ entry: 'src/remote.jsx', shared: ['react', 'react-dom', 'react-dom/client
 
 ```ts
 // Teste do host sem subir nenhum remote
-import { mockRemote, failingRemote } from 'ilha/testing'
+import { mockRemote, failingRemote } from 'arquipelago/testing'
 
 const carrinho = mockRemote('carrinho', (el, props) => (el.textContent = `itens: ${props.itens}`))
 // …renderize o host…
@@ -274,16 +283,18 @@ expect(carrinho.lastProps).toEqual({ itens: 2 })
 failingRemote('recomendacoes') // para testar a tela de erro
 ```
 
-No repositório:
+No repositório (veja [CONTRIBUTING.md](CONTRIBUTING.md)):
 
 ```bash
 pnpm install
-pnpm test        # unitários (Vitest): núcleo + adaptador de cada framework
+pnpm check       # build, tipos, publint/attw, tamanho e testes unitários
 pnpm test:e2e    # builda tudo e roda o Playwright: 9 hosts × 8 remotes + demo
 pnpm examples    # sobe os exemplos (hosts em :4201-:4207, remotes em :4100)
 ```
 
-O CI (`.github/workflows/ci.yml`) roda os dois.
+O CI roda tudo isso em Node 20, 22 e 24 a cada push e PR. Versões novas saem
+pelo Changesets: `pnpm changeset`, merge do PR "Versionar pacote" e o GitHub
+Actions publica no npm com proveniência.
 
 ## Exemplos e demo
 

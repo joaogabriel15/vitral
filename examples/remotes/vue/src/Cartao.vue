@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { useIlha } from 'ilha/vue'
+import { useIlha } from 'arquipelago/vue'
 
 defineProps({ mensagem: String })
 const ilha = useIlha()

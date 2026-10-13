@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IlhaRemote, useEventValue } from 'ilha/vue'
+import { IlhaRemote, useEventValue } from 'arquipelago/vue'
 
 const REMOTES = ['react', 'vue', 'svelte', 'solid', 'preact', 'angular', 'lit', 'vanilla']
 const mensagem = ref('olá')

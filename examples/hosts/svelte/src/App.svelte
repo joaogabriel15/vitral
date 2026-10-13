@@ -1,7 +1,7 @@
 <script>
   import { onDestroy } from 'svelte'
-  import { events } from 'ilha'
-  import { remote } from 'ilha/svelte'
+  import { events } from 'arquipelago'
+  import { remote } from 'arquipelago/svelte'
 
   const REMOTES = ['react', 'vue', 'svelte', 'solid', 'preact', 'angular', 'lit', 'vanilla']
   let mensagem = $state('olá')

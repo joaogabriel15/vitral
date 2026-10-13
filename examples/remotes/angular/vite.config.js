@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import angular from '@analogjs/vite-plugin-angular'
-import ilha from 'ilha/vite'
+import ilha from 'arquipelago/vite'
 
 export default defineConfig({
   base: './',

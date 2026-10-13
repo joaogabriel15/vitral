@@ -1,7 +1,7 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, signal } from '@angular/core'
 import { bootstrapApplication } from '@angular/platform-browser'
-import { events } from 'ilha'
-import { provideIlha } from 'ilha/angular'
+import { events } from 'arquipelago'
+import { provideIlha } from 'arquipelago/angular'
 
 @Component({
   selector: 'app-root',

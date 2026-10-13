@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js'
-import { solidRemote } from 'ilha/solid'
+import { solidRemote } from 'arquipelago/solid'
 
 function Cartao(props) {
   const [cliques, setCliques] = createSignal(0)

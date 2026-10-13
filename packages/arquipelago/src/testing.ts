@@ -1,7 +1,7 @@
 /**
  * Utilidades de teste: monte o host sem subir nenhum remote de verdade.
  *
- *   import { mockRemote } from 'ilha/testing'
+ *   import { mockRemote } from 'arquipelago/testing'
  *   const carrinho = mockRemote('carrinho', (el, props) => (el.textContent = `itens: ${props.itens}`))
  *   render(<App />)
  *   expect(carrinho.lastProps).toEqual({ itens: 2 })

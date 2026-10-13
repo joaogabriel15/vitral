@@ -9,7 +9,7 @@ import { createStore, reconcile } from 'solid-js/store'
 import { isServer, render } from 'solid-js/web'
 import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
 
-/** Transforma um componente Solid em um remote. O contexto chega na prop `ilha`. */
+/** Transforma um componente Solid em um remote. O contexto chega na prop `arquipelago`. */
 export function solidRemote<P extends Props>(Comp: Component<any>): RemoteModule<P> {
   return defineRemote<P>({
     mount(el, props, ctx) {
