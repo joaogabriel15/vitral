@@ -11,15 +11,16 @@ const adopts = () => typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CS
  * o texto já fica em cache para virar stylesheet; fora dele, um
  * `<link rel=preload>` deixa o `<link rel=stylesheet>` da montagem pronto.
  */
-export function prefetchCss(urls: string[], shadow: boolean): void {
+export function prefetchCss(urls: string[], shadow: boolean, sri: Record<string, string> = {}): void {
   for (const href of urls) {
-    if (shadow && adopts()) loadSheet(href)
-    else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, 'style')
+    if (shadow && adopts()) loadSheet(href, sri[href])
+    else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, { as: 'style', integrity: sri[href] ?? '' })
   }
 }
 
-export function injectCss(urls: string[], root: ShadowRoot | null): Promise<unknown> {
-  if (root && adopts()) return injectShadowCss(urls, root)
+/** Aplica o CSS. Com hash em `sri`, o navegador confere os bytes antes de aplicar. */
+export function injectCss(urls: string[], root: ShadowRoot | null, sri: Record<string, string> = {}): Promise<unknown> {
+  if (root && adopts()) return injectShadowCss(urls, root, sri)
   const owner = root ?? document
   let seen = loadedCss.get(owner)
   if (!seen) loadedCss.set(owner, (seen = new Map()))
@@ -30,7 +31,7 @@ export function injectCss(urls: string[], root: ShadowRoot | null): Promise<unkn
       if (!p) {
         p = new Promise<void>((resolve) => {
           // CSS quebrado não deve impedir o remote de aparecer.
-          const link = addLink('stylesheet', href, '', parent)
+          const link = addLink('stylesheet', href, { integrity: sri[href] ?? '' }, parent)
           link.onload = link.onerror = () => resolve()
         })
         seen!.set(href, p)
@@ -45,17 +46,18 @@ export function injectCss(urls: string[], root: ShadowRoot | null): Promise<unkn
  * rings, gradientes, transforms…) é ignorado dentro de shadow roots, então
  * essas regras sobem para o documento e o resto vira um stylesheet adotado.
  */
-function injectShadowCss(urls: string[], root: ShadowRoot): Promise<unknown> {
-  return Promise.all(urls.map(loadSheet)).then((sheets) => {
+function injectShadowCss(urls: string[], root: ShadowRoot, sri: Record<string, string>): Promise<unknown> {
+  return Promise.all(urls.map((href) => loadSheet(href, sri[href]))).then((sheets) => {
     const add = sheets.filter((s): s is CSSStyleSheet => !!s && !root.adoptedStyleSheets.includes(s))
     root.adoptedStyleSheets = [...root.adoptedStyleSheets, ...add]
   })
 }
 
-function loadSheet(href: string): Promise<CSSStyleSheet | null> {
+function loadSheet(href: string, integrity?: string): Promise<CSSStyleSheet | null> {
   let p = cssText.get(href)
   if (!p) {
-    p = fetch(href, { credentials: 'omit' })
+    // Com integrity, um CSS trocado faz o fetch falhar e não é aplicado.
+    p = fetch(href, { credentials: 'omit', integrity })
       .then((r) => (r.ok ? r.text() : ''))
       .then((text) => {
         const props: string[] = []

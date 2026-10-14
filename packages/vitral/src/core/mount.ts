@@ -42,7 +42,7 @@ export async function mountRemote<P extends Props = Props>(
   } else {
     target.appendChild(el)
   }
-  await injectCss(resolved.css, shadowRoot)
+  await injectCss(resolved.css, shadowRoot, resolved.sri)
 
   const scoped = scopedEvents()
   const ctx: RemoteContext = {

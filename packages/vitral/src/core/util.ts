@@ -31,20 +31,21 @@ export function withTimeout<T>(ms: number, name: string, p: Promise<T>): Promise
 }
 
 /** Baixa os bytes exatos do arquivo (base para conferir o SRI), corpo incluído no timeout. */
-export async function fetchBytes(url: string, timeout: number, name: string, cache?: RequestCache): Promise<ArrayBuffer> {
+export function fetchBytes(url: string, timeout: number, name: string, cache?: RequestCache): Promise<ArrayBuffer> {
   const ctrl = new AbortController()
-  const t = setTimeout(() => ctrl.abort(), timeout)
-  try {
-    const res = await fetch(url, { signal: ctrl.signal, credentials: 'omit', cache })
-    if (!res.ok) throw new RemoteError('LOAD_FAILED', name, `HTTP ${res.status} em ${url}`)
-    return await res.arrayBuffer()
-  } catch (e) {
-    if (e instanceof RemoteError) throw e
-    if (ctrl.signal.aborted) throw new RemoteError('TIMEOUT', name, `não respondeu em ${timeout}ms`)
-    throw new RemoteError('LOAD_FAILED', name, `falha ao baixar ${url}`, e)
-  } finally {
-    clearTimeout(t)
-  }
+  const got = fetch(url, { signal: ctrl.signal, credentials: 'omit', cache }).then(
+    (res) => {
+      if (!res.ok) throw new RemoteError('LOAD_FAILED', name, `HTTP ${res.status} em ${url}`)
+      return res.arrayBuffer()
+    },
+    (e) => {
+      throw new RemoteError('LOAD_FAILED', name, `falha ao baixar ${url}`, e)
+    },
+  )
+  return withTimeout(timeout, name, got).catch((e) => {
+    ctrl.abort()
+    throw e
+  })
 }
 
 export async function fetchJson<T>(url: string, timeout: number, name: string, cache?: RequestCache): Promise<T> {
@@ -57,12 +58,6 @@ export async function fetchJson<T>(url: string, timeout: number, name: string, c
 }
 
 /** Adiciona um `<link>` com CORS anônimo (o mesmo modo dos downloads da lib). */
-export function addLink(rel: string, href: string, as = '', parent: Node = document.head): HTMLLinkElement {
-  const link = document.createElement('link')
-  link.rel = rel
-  if (as) link.as = as
-  link.crossOrigin = 'anonymous'
-  link.href = href
-  parent.appendChild(link)
-  return link
+export function addLink(rel: string, href: string, props: Partial<HTMLLinkElement> = {}, parent: Node = document.head): HTMLLinkElement {
+  return parent.appendChild(Object.assign(document.createElement('link'), { rel, crossOrigin: 'anonymous', href }, props))
 }

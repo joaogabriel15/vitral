@@ -171,12 +171,23 @@
       "name": "host mínimo",
       "path": "dist/index.js",
       "import": "{ configure, createSlot }",
-      "limit": "4 kB"
+      "limit": "4 kB",
+      "ignore": [
+        "./sri-*"
+      ]
     },
     {
       "name": "núcleo",
       "path": "dist/index.js",
-      "limit": "5 kB"
+      "limit": "5 kB",
+      "ignore": [
+        "./sri-*"
+      ]
+    },
+    {
+      "name": "caminhos de SRI (carregado sob demanda)",
+      "path": "dist/sri-*.js",
+      "limit": "0.8 kB"
     },
     {
       "name": "react",
