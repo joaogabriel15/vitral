@@ -59,14 +59,14 @@ describe('entrada virtual', () => {
   })
 
   it('só responde pelo próprio id', () => {
-    expect(resolveExposesId('/proj/__vitral_entry__.js')).toBe('\0vitral-entry')
-    expect(resolveExposesId('C:\\proj\\__vitral_entry__.js')).toBe('\0vitral-entry')
+    expect(resolveExposesId('/proj/__vitral_exposes__.js')).toBe('\0vitral-exposes')
+    expect(resolveExposesId('C:\\proj\\__vitral_exposes__.js')).toBe('\0vitral-exposes')
     expect(resolveExposesId('/proj/src/main.js')).toBeNull()
     expect(loadExposes('/proj/src/main.js', '/proj', 'src/r.js', {})).toBeNull()
   })
 
   it('reexporta o remote e gera um import() por parte', () => {
-    const code = loadExposes('\0vitral-entry', '/proj', 'src/r.js', { Mini: 'src/m.js' })!
+    const code = loadExposes('\0vitral-exposes', '/proj', 'src/r.js', { Mini: 'src/m.js' })!
     expect(code).toContain('export { default } from "/proj/src/r.js"')
     expect(code).toContain('export * from "/proj/src/r.js"')
     expect(code).toContain('"./Mini": () => import("/proj/src/m.js")')
