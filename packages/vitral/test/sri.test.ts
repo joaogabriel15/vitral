@@ -63,7 +63,7 @@ describe('caminho 1: import map com integrity', () => {
     expect(await verified(build)).toBe(build.entry)
     const map = document.head.querySelector('script[type="importmap"]')!
     expect(JSON.parse(map.textContent!)).toEqual({ integrity: build.sri })
-    expect(fetch).toHaveBeenCalledWith(CDN + 'split/a.js')
+    expect(fetch).toHaveBeenCalledWith(CDN + 'split/a.js', { priority: 'auto' })
     // Nunca modulepreload neste caminho: o WebKit ignoraria o hash.
     expect(document.head.querySelector('link[rel="modulepreload"]')).toBeNull()
   })

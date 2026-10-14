@@ -6,17 +6,19 @@
  * Remote: export default reactRemote(App)
  */
 import { Component as ReactComponent, createContext, useContext, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 import { createRoot } from 'react-dom/client'
 import {
   defineRemote,
   events,
-  mountRemote,
   type EventBus,
   type Isolation,
-  type MountedRemote,
   type Props,
   type RemoteContext,
+  type RemoteError,
   type RemoteModule,
+  type RemoteSlot,
+  type SlotStatus,
 } from './index'
 
 // ---------------------------------------------------------------------------
@@ -93,6 +95,14 @@ export interface RemoteProps<P extends Props = Props> {
   error?: ReactNode | ((error: Error, retry: () => void) => ReactNode)
   onError?: (error: Error) => void
   className?: string
+  /** `'lazy'`: monta perto de aparecer na tela; `'idle'`: com o navegador ocioso. */
+  loading?: Loading
+  /** Baixa antes de montar: `'hover'`, `'visible'` ou `'idle'`. */
+  prefetch?: Prefetch
+  /** `'high'` para o remote que aparece logo ao abrir a página. */
+  priority?: RequestPriority
+  /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
+  keepAlive?: boolean | number
 }
 
 /**
@@ -107,64 +117,54 @@ export function Remote<P extends Props = Props>({
   error,
   onError,
   className,
+  loading,
+  prefetch,
+  priority,
+  keepAlive,
 }: RemoteProps<P>) {
-  const slot = useRef<HTMLDivElement>(null)
-  const handle = useRef<MountedRemote<P> | null>(null)
-  const latestProps = useRef<P>((props ?? {}) as P)
-  latestProps.current = (props ?? {}) as P
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
-  const [err, setErr] = useState<Error | null>(null)
-  const [attempt, setAttempt] = useState(0)
+  const target = useRef<HTMLDivElement>(null)
+  const slot = useRef<RemoteSlot<P> | null>(null)
+  const [state, setState] = useState<{ status: SlotStatus; error: RemoteError | null }>({ status: 'loading', error: null })
   const onErrorRef = useRef(onError)
   onErrorRef.current = onError
 
   useEffect(() => {
-    // O slot é recriado a cada nome/tentativa (veja a key abaixo), então
-    // shadow roots e DOM antigos nunca são reaproveitados.
-    const el = slot.current
-    if (!el) return
-    let cancelled = false
-    setStatus('loading')
-    const fail = (e: Error) => {
-      if (cancelled) return
-      setErr(e)
-      setStatus('error')
-      if (onErrorRef.current) onErrorRef.current(e)
-      else console.error(e)
-    }
-    const initial = latestProps.current
-    mountRemote<P>(el, name, initial, { isolate, onError: fail }).then(
-      (h) => {
-        if (cancelled) return h.unmount()
-        handle.current = h
-        // Props que mudaram enquanto o remote baixava.
-        if (latestProps.current !== initial) h.update?.(latestProps.current)
-        setStatus('ready')
+    const s = hostSlot<P>(target.current!, {
+      name,
+      props: (props ?? {}) as P,
+      isolate,
+      loading,
+      prefetch,
+      priority,
+      keepAlive,
+      onStatus(status, e) {
+        setState({ status, error: e })
+        if (e) {
+          if (onErrorRef.current) onErrorRef.current(e)
+          else console.error(e)
+        }
       },
-      fail,
-    )
+    })
+    slot.current = s
     return () => {
-      cancelled = true
-      const h = handle.current
-      handle.current = null
+      slot.current = null
       // Desmonta depois do commit atual para não desmontar uma root React
       // durante a renderização de outra.
-      if (h) queueMicrotask(() => h.unmount())
+      queueMicrotask(() => s.destroy())
     }
-  }, [name, isolate, attempt])
+  }, [])
+  useEffect(() => slot.current?.set({ name, isolate }), [name, isolate])
+  useEffect(() => slot.current?.update((props ?? {}) as P), [props])
 
-  useEffect(() => {
-    handle.current?.update?.(latestProps.current)
-  }, [props])
-
-  const retry = () => setAttempt((a) => a + 1)
+  const retry = () => slot.current?.retry()
+  const { status, error: err } = state
 
   return (
     <div className={className} data-vitral={name} data-vitral-status={status}>
       {status === 'loading' && fallback}
       {status === 'error' && err && (typeof error === 'function' ? error(err, retry) : (error ?? null))}
       {/* O React nunca coloca filhos neste div: ele pertence ao remote. */}
-      <div key={`${name}:${isolate}:${attempt}`} ref={slot} style={status === 'error' ? { display: 'none' } : undefined} />
+      <div ref={target} />
     </div>
   )
 }

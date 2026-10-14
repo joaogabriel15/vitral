@@ -31,9 +31,9 @@ export function withTimeout<T>(ms: number, name: string, p: Promise<T>): Promise
 }
 
 /** Baixa os bytes exatos do arquivo (base para conferir o SRI), corpo incluído no timeout. */
-export function fetchBytes(url: string, timeout: number, name: string, cache?: RequestCache): Promise<ArrayBuffer> {
+export function fetchBytes(url: string, timeout: number, name: string, init?: RequestInit): Promise<ArrayBuffer> {
   const ctrl = new AbortController()
-  const got = fetch(url, { signal: ctrl.signal, credentials: 'omit', cache }).then(
+  const got = fetch(url, { signal: ctrl.signal, credentials: 'omit', ...init }).then(
     (res) => {
       if (!res.ok) throw new RemoteError('LOAD_FAILED', name, `HTTP ${res.status} em ${url}`)
       return res.arrayBuffer()
@@ -48,8 +48,8 @@ export function fetchBytes(url: string, timeout: number, name: string, cache?: R
   })
 }
 
-export async function fetchJson<T>(url: string, timeout: number, name: string, cache?: RequestCache): Promise<T> {
-  const text = new TextDecoder().decode(await fetchBytes(url, timeout, name, cache))
+export async function fetchJson<T>(url: string, timeout: number, name: string, init?: RequestInit): Promise<T> {
+  const text = new TextDecoder().decode(await fetchBytes(url, timeout, name, init))
   try {
     return JSON.parse(text) as T
   } catch (e) {

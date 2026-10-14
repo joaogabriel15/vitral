@@ -23,6 +23,13 @@ export interface RemoteContext {
    * para detectar recursos; hosts antigos não mandam este campo.
    */
   protocol?: number
+  /**
+   * Com keep-alive: `fn` roda quando o remote volta para a página. Devolve a
+   * função que cancela. Hosts antigos não mandam este campo.
+   */
+  onActivate?(fn: () => void): () => void
+  /** Com keep-alive: `fn` roda quando o remote sai da página sem desmontar (pause timers e assinaturas). */
+  onDeactivate?(fn: () => void): () => void
 }
 
 export interface MountedRemote<P extends Props = Props> {
