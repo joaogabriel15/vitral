@@ -4,10 +4,11 @@
  * Remote: export default solidRemote(App)
  * Host:   <Remote name="carrinho" props={{ userId: id() }} />
  */
-import { createComponent, createEffect, createSignal, mergeProps, on, onCleanup, onMount, type Component, type JSX } from 'solid-js'
+import { createComponent, createEffect, createSignal, getOwner, mergeProps, on, onCleanup, onMount, type Accessor, type Component, type JSX } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
 import { isServer, render } from 'solid-js/web'
-import { createSlot, defineRemote, type CheckedProps, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
+import { createSlot, defineRemote, shared, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus, type CheckedProps } from './index'
+import { memoSelect, same } from './core/shared'
 
 /** Transforma um componente Solid em um remote. O contexto chega na prop `vitral`. */
 export function solidRemote<P extends Props>(Comp: Component<any>): RemoteModule<P> {
@@ -69,6 +70,24 @@ export function Remote<P extends Props = Props, N extends string = string>(p: Re
     () => (status() === 'error' && error() && p.error ? p.error(error()!, retry) : null),
     (host.appendChild(target), host),
   ] as unknown as JSX.Element
+}
+
+/**
+ * Accessor de uma chave compartilhada (`provide`/`shared`). Com seletor, só
+ * muda quando o resultado do seletor muda (`Object.is`). A assinatura acaba
+ * junto com o dono reativo (componente ou `createRoot`).
+ *
+ *   const nome = useShared('usuario', (u) => u?.nome)
+ */
+export function useShared<K extends keyof Shared, S = Shared[K] | undefined>(key: K, select?: (value: Shared[K] | undefined) => S): Accessor<S>
+export function useShared<T = unknown, S = T | undefined>(key: string, select?: (value: T | undefined) => S): Accessor<S>
+export function useShared(key: string, select: (value: unknown) => unknown = same): Accessor<unknown> {
+  const handle = shared(key)
+  const pick = memoSelect()
+  const [value, setValue] = createSignal(pick(handle.get(), select), { equals: Object.is })
+  const off = handle.subscribe((v) => setValue(() => pick(v, select)))
+  if (getOwner()) onCleanup(off)
+  return value
 }
 
 export type { RemoteContext }
