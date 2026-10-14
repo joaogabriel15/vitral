@@ -11,6 +11,10 @@
  *     <p slot="error">Indisponível</p>
  *   </vitral-remote>
  *
+ *   <vitral-remote src="https://cdn.exemplo.com/carrinho/vitral.json"></vitral-remote>
+ *
+ * Sem os slots, mostra um carregando acessível e um erro com "Tentar de novo".
+ *
  *   el.props = { userId: 43 }          // atualiza sem remontar
  *   el.addEventListener('vitral-error', (e) => e.detail.error)
  *   el.retry()
@@ -18,13 +22,14 @@
  * Também exporta `elementRemote()` para publicar um Web Component (Lit,
  * Stencil, vanilla) como remote.
  */
-import { createSlot, defineRemote, shared, type Isolation, type Props, type RemoteModule, type RemoteSlot, type Shared } from './index'
+import { createSlot, defineRemote, shared, type Isolation, type Props, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus } from './index'
 import { memoSelect, same } from './core/shared'
+import { registerSrc } from './core/registry'
 
 const Base: typeof HTMLElement = typeof HTMLElement === 'undefined' ? (class {} as typeof HTMLElement) : HTMLElement
 
 export class VitralRemoteElement extends Base {
-  static observedAttributes = ['name', 'props', 'isolate']
+  static observedAttributes = ['name', 'src', 'props', 'isolate']
   #slot: RemoteSlot | null = null
   #props: Props = {}
 
@@ -46,7 +51,7 @@ export class VitralRemoteElement extends Base {
 
   connectedCallback() {
     if (this.#slot) return
-    const name = this.getAttribute('name')
+    const name = this.#name()
     if (!name) return
     if (this.hasAttribute('props') && !Object.keys(this.#props).length) this.#props = parseProps(this.getAttribute('props'))
     this.#slot = createSlot(this, {
@@ -55,12 +60,56 @@ export class VitralRemoteElement extends Base {
       isolate: (this.getAttribute('isolate') as Isolation) || undefined,
       onStatus: (status, error) => {
         this.setAttribute('data-vitral-status', status)
-        for (const el of this.querySelectorAll<HTMLElement>(':scope > [slot="fallback"]')) el.hidden = status !== 'loading'
-        for (const el of this.querySelectorAll<HTMLElement>(':scope > [slot="error"]')) el.hidden = status !== 'error'
+        if (status === 'loading') this.setAttribute('aria-busy', 'true')
+        else this.removeAttribute('aria-busy')
+        const has = (slot: string) => {
+          const els = this.querySelectorAll<HTMLElement>(`:scope > [slot="${slot}"]`)
+          for (const el of els) el.hidden = status !== (slot === 'fallback' ? 'loading' : 'error')
+          return els.length > 0
+        }
+        // Numa microtask: o parser pode ainda não ter posto os slots próprios.
+        queueMicrotask(() => {
+          if (this.#slot?.status !== status) return
+          const custom = { loading: has('fallback'), error: has('error'), ready: true }
+          this.#showDefault(custom[status] ? null : status)
+        })
         if (status === 'ready') this.dispatchEvent(new CustomEvent('vitral-ready', { bubbles: true }))
         if (status === 'error') this.dispatchEvent(new CustomEvent('vitral-error', { bubbles: true, detail: { error } }))
       },
     })
+  }
+
+  /**
+   * Nome para montar. `src` em atributo é registrado sem entrar na allowlist:
+   * HTML injetado não pode liberar uma origem nova quando há `allowedOrigins`.
+   */
+  #name(): string | null {
+    const src = this.getAttribute('src')
+    const name = this.getAttribute('name')
+    return src ? registerSrc(src, name ?? undefined, false) : name
+  }
+
+  #default: HTMLElement | null = null
+
+  /** Carregando e erro padrão, só quando não há slot próprio. */
+  #showDefault(status: SlotStatus | null) {
+    this.#default?.remove()
+    this.#default = null
+    if (!status) return
+    const box = document.createElement('div')
+    box.setAttribute('data-vitral-default', status)
+    if (status === 'loading') {
+      box.setAttribute('role', 'status')
+      box.textContent = 'Carregando…'
+    } else {
+      box.setAttribute('role', 'alert')
+      const button = document.createElement('button')
+      button.type = 'button'
+      button.textContent = 'Tentar de novo'
+      button.onclick = () => this.retry()
+      box.append('Não foi possível carregar. ', button)
+    }
+    this.prepend((this.#default = box))
   }
 
   disconnectedCallback() {
@@ -69,6 +118,7 @@ export class VitralRemoteElement extends Base {
       if (!this.isConnected) {
         this.#slot?.destroy()
         this.#slot = null
+        this.#showDefault(null)
       }
     })
   }
@@ -76,7 +126,10 @@ export class VitralRemoteElement extends Base {
   attributeChangedCallback(attr: string, _old: string | null, value: string | null) {
     if (attr === 'props') return void (this.props = parseProps(value))
     if (!this.#slot) return void (this.isConnected && this.connectedCallback())
-    if (attr === 'name' && value) this.#slot.set({ name: value })
+    if (attr === 'name' || attr === 'src') {
+      const name = this.#name()
+      if (name) this.#slot.set({ name })
+    }
     if (attr === 'isolate') this.#slot.set({ isolate: (value as Isolation) || undefined })
   }
 }

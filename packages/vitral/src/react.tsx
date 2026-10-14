@@ -3,6 +3,7 @@
  * Adaptador React (funciona em Vite, CRA e Next.js App/Pages Router).
  *
  * Host:   <Remote name="carrinho" props={{ userId }} />
+ *         <Remote src="https://cdn.exemplo.com/carrinho/vitral.json" props={{ userId }} />
  * Remote: export default reactRemote(App)
  */
 import {
@@ -23,6 +24,8 @@ import {
   events,
   mountRemote,
   shared,
+  registerSrc,
+  type CheckedProps,
   type EventBus,
   type Isolation,
   type MountedRemote,
@@ -117,7 +120,10 @@ export { events, type EventBus }
 // ---------------------------------------------------------------------------
 
 export interface RemoteProps<P extends Props = Props> {
-  name: string
+  /** Nome registrado com `configure()`. Com `src`, o nome sob o qual a URL é registrada. */
+  name?: string
+  /** URL do `vitral.json`. Dispensa `configure()`. */
+  src?: string
   props?: P
   isolate?: Isolation
   /** Mostrado enquanto o remote baixa. */
@@ -130,17 +136,19 @@ export interface RemoteProps<P extends Props = Props> {
 
 /**
  * Renderiza um remote. No servidor (Next SSR) renderiza só o fallback; o
- * remote monta no cliente, então não há erro de hidratação.
+ * remote monta no cliente, então não há erro de hidratação. Com o nome em
+ * `Remotes` (`npx vitral types`), as props são checadas.
  */
-export function Remote<P extends Props = Props>({
+export function Remote<P extends Props = Props, N extends string = string>({
   name,
+  src,
   props,
   isolate,
   fallback = null,
   error,
   onError,
   className,
-}: RemoteProps<P>) {
+}: RemoteProps<P> & CheckedProps<N>) {
   const slot = useRef<HTMLDivElement>(null)
   const handle = useRef<MountedRemote<P> | null>(null)
   const latestProps = useRef<P>((props ?? {}) as P)
@@ -166,7 +174,9 @@ export function Remote<P extends Props = Props>({
       else console.error(e)
     }
     const initial = latestProps.current
-    mountRemote<P>(el, name, initial, { isolate, onError: fail }).then(
+    Promise.resolve()
+      .then(() => mountRemote<P>(el, src ? registerSrc(src, name) : (name ?? ''), initial, { isolate, onError: fail }))
+      .then(
       (h) => {
         if (cancelled) return h.unmount()
         handle.current = h
@@ -184,7 +194,7 @@ export function Remote<P extends Props = Props>({
       // durante a renderização de outra.
       if (h) queueMicrotask(() => h.unmount())
     }
-  }, [name, isolate, attempt])
+  }, [name, src, isolate, attempt])
 
   useEffect(() => {
     handle.current?.update?.(latestProps.current)
@@ -193,11 +203,11 @@ export function Remote<P extends Props = Props>({
   const retry = () => setAttempt((a) => a + 1)
 
   return (
-    <div className={className} data-vitral={name} data-vitral-status={status}>
+    <div className={className} data-vitral={name ?? src} data-vitral-status={status}>
       {status === 'loading' && fallback}
       {status === 'error' && err && (typeof error === 'function' ? error(err, retry) : (error ?? null))}
       {/* O React nunca coloca filhos neste div: ele pertence ao remote. */}
-      <div key={`${name}:${isolate}:${attempt}`} ref={slot} style={status === 'error' ? { display: 'none' } : undefined} />
+      <div key={`${name}:${src}:${isolate}:${attempt}`} ref={slot} style={status === 'error' ? { display: 'none' } : undefined} />
     </div>
   )
 }
