@@ -187,6 +187,17 @@ Para isolar por completo, use Shadow DOM:
 <Remote name="carrinho" isolate="shadow" />
 ```
 
+Com Shadow DOM, as regras `@property` e `@font-face` sobem para o documento, então sombras, rings, gradientes e fontes do Tailwind v4 funcionam.
+
+O remote também pode usar o tema do host:
+
+```js
+vitral({ theme: 'host' })                                  // var(--x) usa o valor do host, se existir
+configure({ styles: { inherit: ['/assets/base.css'] } })   // CSS base do host dentro do Shadow DOM
+```
+
+Tema com Tailwind v4, dark mode, CSS legado e Tailwind v3 no host: [docs/estilos.md](https://github.com/joaogabriel15/vitral/blob/main/docs/estilos.md).
+
 ## Configuração
 
 ```js
