@@ -2,6 +2,7 @@
  * Adaptador Vue 3 (funciona em Vite e Nuxt 3/4).
  *
  * Host:   <VitralRemote name="carrinho" :props="{ userId }" />
+ *         <VitralRemote src="https://cdn.exemplo.com/carrinho/vitral.json" />
  * Remote: export default vueRemote(App, { setup: (app) => app.use(pinia) })
  */
 import {
@@ -25,6 +26,7 @@ import {
   defineRemote,
   events,
   mountRemote,
+  registerSrc,
   type Isolation,
   type MountedRemote,
   type Props,
@@ -99,7 +101,10 @@ export { events }
 export const VitralRemote = defineComponent({
   name: 'VitralRemote',
   props: {
-    name: { type: String, required: true },
+    /** Nome registrado. Com `src`, o nome sob o qual a URL é registrada. */
+    name: { type: String, default: undefined },
+    /** URL do `vitral.json`. Dispensa `configure()`. */
+    src: { type: String, default: undefined },
     props: { type: Object as PropType<Props>, default: () => ({}) },
     isolate: { type: String as PropType<Isolation>, default: undefined },
   },
@@ -128,7 +133,8 @@ export const VitralRemote = defineComponent({
       try {
         const onError = (e: Error) => fail(e, my)
         const initial = p.props
-        const h = await mountRemote(slot.value!, p.name, { ...initial }, { isolate: p.isolate, onError })
+        const key = p.src ? registerSrc(p.src, p.name) : (p.name ?? '')
+        const h = await mountRemote(slot.value!, key, { ...initial }, { isolate: p.isolate, onError })
         if (my !== token) return h.unmount()
         handle = h
         // Props que mudaram enquanto o remote baixava.
@@ -141,7 +147,7 @@ export const VitralRemote = defineComponent({
     }
 
     onMounted(mount)
-    watch(() => [p.name, p.isolate, attempt.value], mount, { flush: 'post' })
+    watch(() => [p.name, p.src, p.isolate, attempt.value], mount, { flush: 'post' })
     watch(
       () => p.props,
       (next) => handle?.update?.({ ...next }),
@@ -156,12 +162,12 @@ export const VitralRemote = defineComponent({
     const retry = () => attempt.value++
 
     return () =>
-      h('div', { 'data-vitral': p.name, 'data-vitral-status': status.value }, [
+      h('div', { 'data-vitral': p.name ?? p.src, 'data-vitral-status': status.value }, [
         status.value === 'loading' ? slots.fallback?.() : null,
         status.value === 'error' ? slots.error?.({ error: error.value, retry }) : null,
         // O Vue nunca coloca filhos neste div: ele pertence ao remote.
         h('div', {
-          key: `${p.name}:${p.isolate}:${attempt.value}`,
+          key: `${p.name}:${p.src}:${p.isolate}:${attempt.value}`,
           ref: slot,
           style: status.value === 'error' ? 'display:none' : undefined,
         }),
