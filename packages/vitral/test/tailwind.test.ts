@@ -39,14 +39,33 @@ const S = '[data-vitral-scope="tw"]'
 let estatico: string
 let tema: string
 let referencia: string
+let plano: string
+let renomeado: string
 
 beforeAll(async () => {
-  ;[estatico, tema, referencia] = await Promise.all([
+  ;[estatico, tema, referencia, plano, renomeado] = await Promise.all([
     buildCss('src/estatico.js'),
     buildCss('src/estatico.js', { theme: 'host' }),
     buildCss('src/referencia.js'),
+    buildCss('src/estatico.js', { layers: 'flatten' }),
+    buildCss('src/estatico.js', { renameRegisteredProperties: true }),
   ])
 }, 60_000)
+
+// Regras na ordem do arquivo, com o @media/@supports em volta.
+const rules = (css: string) => {
+  const out: string[] = []
+  postcss.parse(css).walkRules((r) => {
+    const conds: string[] = []
+    for (let p = r.parent; p?.type === 'atrule'; p = p.parent) {
+      const at = p as postcss.AtRule
+      if (at.name !== 'layer') conds.push(at.params)
+    }
+    out.push(`${conds.join(' ')} ${r.selector} ${r.nodes.map(String).join(';')}`)
+  })
+  return out
+}
+const names = (css: string) => new Set(css.match(/(?<![\w-])--tw-[\w-]+/g))
 
 afterAll(() => dirs.forEach((d) => rmSync(d, { recursive: true, force: true })))
 
@@ -81,5 +100,35 @@ describe("theme: 'host' com o CSS do Tailwind v4", () => {
 
   it('dá o mesmo CSS que o theme(reference) do Tailwind', () => {
     expect(normalize(tema)).toBe(normalize(referencia))
+  })
+})
+
+describe("layers: 'flatten' com o CSS do Tailwind v4", () => {
+  it('não sobra nenhum @layer', () => {
+    expect(estatico).toContain('@layer utilities{')
+    expect(plano).not.toContain('@layer')
+  })
+
+  it('as regras ficam na mesma ordem da cascata (properties, theme, base, utilities, @property)', () => {
+    expect(rules(plano)).toEqual(rules(estatico))
+    expect(plano.indexOf('box-sizing:border-box')).toBeLessThan(plano.indexOf('.bg-marca'))
+    expect(plano.indexOf('.bg-marca')).toBeLessThan(plano.indexOf('@property'))
+  })
+})
+
+describe('renameRegisteredProperties com o CSS do Tailwind v4', () => {
+  it('cada --tw-* registrada ganha o escopo, no @property e nos usos', () => {
+    const registradas = [...estatico.matchAll(/@property (--tw-[\w-]+)/g)].map((m) => m[1])
+    expect(registradas).toContain('--tw-gradient-from')
+    const antes = names(estatico)
+    const depois = names(renomeado)
+    for (const n of registradas) {
+      expect(depois.has(n), n).toBe(false)
+      expect(depois.has(n.replace('--tw-', '--tw-tw-')), n).toBe(true)
+    }
+    // As não registradas (ex.: --tw-ease) ficam como estão.
+    for (const n of antes) if (!registradas.includes(n)) expect(depois.has(n), n).toBe(true)
+    expect(renomeado).toContain('@property --tw-tw-gradient-from{syntax:"<color>"')
+    expect(renomeado).toContain('--tw-tw-gradient-from,--tw-tw-gradient-via,--tw-tw-gradient-to')
   })
 })
