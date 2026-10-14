@@ -64,6 +64,15 @@ exports[`exports públicos > react 1`] = `
 ]
 `;
 
+exports[`exports públicos > routes 1`] = `
+[
+  "VitralOutletElement",
+  "defineVitralOutlet",
+  "matchRoute",
+  "routes",
+]
+`;
+
 exports[`exports públicos > solid 1`] = `
 [
   "Remote",
