@@ -27,6 +27,8 @@ export interface LoadedRemote {
   css: string[]
   isolate?: Isolation
   scope?: string
+  /** Hash SRI dos arquivos do remote (CSS incluído), por URL absoluta. */
+  sri?: Record<string, string>
 }
 
 export interface Protocol {

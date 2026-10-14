@@ -48,6 +48,12 @@ export interface RemoteEntry {
   css?: string[]
   /** Isolamento padrão para este remote. */
   isolate?: Isolation
+  /**
+   * O `vitral.json` já baixado (ex.: por `vitral registry`), para não buscá-lo
+   * na hora. Os caminhos dele são relativos a `url`, e os hashes ficam fixos
+   * no host.
+   */
+  manifest?: RemoteManifest
 }
 
 export type Isolation = 'shadow' | 'none'
@@ -78,6 +84,18 @@ export interface RemoteManifest {
   integrity?: string
   /** Escopo usado pelo plugin para prefixar o CSS (`[data-vitral-scope]`). */
   scope?: string
+  /**
+   * Hash SRI de cada arquivo publicado (CSS e JS do build dividido), pelo
+   * caminho relativo ao manifesto.
+   */
+  files?: Record<string, string>
+  /**
+   * Build dividido, para navegadores que conferem o hash de cada módulo:
+   * a entrada e os chunks que ela importa logo. `entry` e `integrity`
+   * continuam apontando para o arquivo único, usado por hosts antigos e
+   * quando o navegador não confere o hash por módulo.
+   */
+  split?: { entry: string; chunks?: string[] }
 }
 
 

@@ -248,7 +248,7 @@ configure({
 })
 ```
 
-Entradas podem ser objetos: `{ url, integrity, css, isolate }`, ou
+Entradas podem ser objetos: `{ url, integrity, css, isolate, manifest }`, ou
 `{ module: () => import('./carrinho') }` para um remote local (monorepo) sem
 rede. A `integrity`
 declarada pelo host vence a do manifesto (fixe o hash no host quando o remote
@@ -270,11 +270,33 @@ link.addEventListener('pointerenter', () => preload('checkout'), { once: true })
 
 - **Allowlist de origens**: nenhum código é importado de origem não permitida,
   nem mesmo se um manifesto apontar para fora.
-- **SRI**: quando há `integrity`, a lib baixa o JS, confere o hash sobre os
-  bytes e executa exatamente os bytes verificados (via `blob:`). Aceita o
-  formato SRI completo: `sha256`, `sha384` ou `sha512`, vários hashes
-  separados por espaço (vale o algoritmo mais forte). Com CSP, inclua `blob:`
-  em `script-src`.
+- **SRI**: quando há `integrity`, nada roda sem o hash conferir. A lib usa
+  o primeiro caminho que o navegador garante, testando o comportamento dele
+  (nunca o user agent):
+
+  | Caminho | Onde | Como |
+  | --- | --- | --- |
+  | 1. Import map com `integrity` | Chrome 133+, Safari 18.4+ | O navegador confere cada módulo e o JS roda da própria URL |
+  | 2. `<link rel="modulepreload" integrity>` | Firefox 115+, Chromium antes do 133 | Idem, com os chunks pré-carregados antes da entrada |
+  | 3. `blob:` | Os outros, e um remote que já falhou na página | A lib baixa, confere os bytes e executa exatamente eles |
+
+  Nos caminhos 1 e 2 o JS roda da URL publicada: cache de código entre
+  visitas, code splitting e source maps. Aceita o formato SRI completo:
+  `sha256`, `sha384` ou `sha512`, vários hashes separados por espaço (vale o
+  algoritmo mais forte). O CSS do manifesto também é conferido
+  (`<link integrity>` ou `fetch(url, { integrity })` no Shadow DOM): CSS
+  trocado não é aplicado.
+- **CSP**: o caminho 1 adiciona um `<script type="importmap">` inline; a lib
+  copia o `nonce` de um `<script nonce>` da página. Sem nonce, ou com a CSP
+  bloqueando o mapa, a lib detecta e passa para o 2, que testa o navegador com
+  dois módulos `data:`. Sem `data:` nem `blob:` em `script-src`, só os
+  navegadores do caminho 1 carregam remotes com `integrity`.
+- **CDN comprometido**: o hash só protege se vier de outro lugar. Fixe
+  `integrity` no host ou embuta o manifesto (`{ url, manifest }` em
+  `configure({ remotes })`). Para os chunks também ficarem protegidos, gere o
+  remote com `base` absoluto ou use o cabeçalho
+  `Integrity-Policy: blocked-destinations=(script)` no host: com `base`
+  relativo, um redirect da entrada mudaria o endereço dos chunks.
 - **Sem `eval`**, sem iframes, sem globais além de `Symbol.for('vitral')`: um
   objeto com o número do protocolo e métodos, compartilhado por todas as
   cópias da lib na página (host e remotes podem ter versões diferentes).
