@@ -18,7 +18,7 @@ import type { RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
 import { extractProps, typesFile } from './vite/types'
-import { devEntryCode, devManifest, loadPreamble, resolveDevId, scopeDevCss, serveDevManifest, VIRTUAL_DEV_ENTRY } from './vite/dev'
+import { devEntryCode, devManifest, devOptimizeDeps, loadPreamble, resolveDevId, scopeDevCss, serveDevManifest, VIRTUAL_DEV_ENTRY } from './vite/dev'
 
 export interface VitralViteOptions {
   /**
@@ -68,7 +68,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
   return {
     name: 'vitral',
-    config(user, { mode }) {
+    config(user, { mode, command }) {
       entry ??= findEntry(resolve(user.root ?? process.cwd()))
       if (!entry) throw new Error('[vitral] não achei a entrada do remote (src/remote.* ou src/App.*). Use vitral({ entry }).')
       // Vite 8+ (rolldown) usa codeSplitting; Vite 5-7 (rollup) usa inlineDynamicImports.
@@ -78,6 +78,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         // Código de biblioteca não tem process.env; React e Vue precisam disso.
         define: { 'process.env.NODE_ENV': JSON.stringify(mode === 'development' ? 'development' : 'production') },
         server: { cors: true },
+        ...(command === 'serve' && { optimizeDeps: devOptimizeDeps(user.plugins, entry, options.adapter) }),
         preview: { cors: true },
         build: {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.

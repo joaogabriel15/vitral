@@ -7,6 +7,7 @@
     "build:all": "pnpm build && pnpm -r --filter './demo/**' --filter './examples/**' build",
     "test": "pnpm -r --filter './packages/**' test",
     "test:e2e": "pnpm build:all && pnpm --dir e2e test",
+    "test:create": "pnpm build && pnpm --dir e2e exec playwright test -c create.config.ts",
     "demo": "pnpm build:all && node demo/serve.mjs",
     "examples": "pnpm build:all && node examples/serve.mjs",
     "typecheck": "pnpm -r --filter './packages/**' typecheck",
