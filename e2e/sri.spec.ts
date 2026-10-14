@@ -13,6 +13,7 @@ import { readFile } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { helper } from '../packages/vitral/src/vite/manifest'
 
 const dist = fileURLToPath(new URL('../packages/vitral/dist/', import.meta.url))
 const sha = (s: string) => 'sha384-' + createHash('sha384').update(s).digest('base64')
@@ -33,18 +34,28 @@ window.__slot = createSlot(document.getElementById('app'), {
 })
 `
 
-/** Arquivos do remote. `base` é a URL absoluta da pasta, usada no import do chunk. */
-function files(base: string) {
+/**
+ * Arquivos do remote. `base` é a URL absoluta da pasta, usada no import do
+ * chunk. Nos modos `lazy*`, a entrada dividida faz `import()` de `lazy.js`
+ * pelo helper que o plugin gera.
+ */
+function files(base: string, mode: Mode) {
   const good: Record<string, string> = {
     'remote.js': `(window.__ran ||= []).push('remote.js'); export default { mount(el) { el.textContent = 'ok arquivo único'; return { unmount() {} } } }`,
     'split/entry.js': `import { label } from '${base}split/chunk.js'; (window.__ran ||= []).push('entry.js'); export default { mount(el) { el.textContent = label; return { unmount() {} } } }`,
     'split/chunk.js': `(window.__ran ||= []).push('chunk.js'); export const label = 'ok dividido'`,
   }
+  if (mode.startsWith('lazy')) {
+    good['split/entry.js'] =
+      `import { label } from '${base}split/chunk.js'; (window.__ran ||= []).push('entry.js'); ` +
+      `export default { async mount(el) { const m = await __vitralImport('./lazy.js', ['./chunk.js']); el.textContent = label + ' ' + m.more; return { unmount() {} } } }\n${helper()}`
+    good['split/lazy.js'] = `import './chunk.js'; (window.__ran ||= []).push('lazy.js'); export const more = 'e lazy'`
+  }
   const bad = (f: string) => `window.__tampered = (window.__tampered || []).concat(${JSON.stringify(f)}); ` + good[f]
   return { good, bad }
 }
 
-type Mode = 'ok' | 'tamper' | 'wronghash' | 'flaky' | 'redirect'
+type Mode = 'ok' | 'tamper' | 'wronghash' | 'flaky' | 'redirect' | 'lazy' | 'lazybad'
 
 let server: Server
 let origin = ''
@@ -76,7 +87,7 @@ test.beforeAll(async () => {
     if (!m) return void res.writeHead(404).end()
     const [, area, mode, id, file] = m as unknown as [string, string, Mode, string, string]
     const base = `${origin}/r/${mode}/${id}/`
-    const { good, bad } = files(base)
+    const { good, bad } = files(base, mode)
     const headers = { 'content-type': 'text/javascript', 'access-control-allow-origin': '*', 'cache-control': 'no-store' }
     if (file === 'vitral.json') {
       const hash = (f: string) => (mode === 'wronghash' ? sha('outro conteúdo') : sha(good[f]))
@@ -84,7 +95,7 @@ test.beforeAll(async () => {
         name: 'r',
         entry: 'remote.js',
         integrity: hash('remote.js'),
-        files: { 'split/entry.js': hash('split/entry.js'), 'split/chunk.js': hash('split/chunk.js') },
+        files: Object.fromEntries(Object.keys(good).filter((f) => f.startsWith('split/')).map((f) => [f, hash(f)])),
         split: { entry: 'split/entry.js', chunks: ['split/chunk.js'] },
       }
       return void res.writeHead(200, { ...headers, 'content-type': 'application/json' }).end(JSON.stringify(manifest))
@@ -99,7 +110,7 @@ test.beforeAll(async () => {
     const n = (seen.get(url.pathname) ?? 0) + 1
     seen.set(url.pathname, n)
     // Adulterado: certo na primeira requisição, trocado em todas as outras.
-    const tampered = (mode === 'tamper' || mode === 'redirect') && n > 1
+    const tampered = ((mode === 'tamper' || mode === 'redirect') && n > 1) || (mode === 'lazybad' && file === 'split/lazy.js')
     res.writeHead(200, headers).end(tampered ? bad(file) : good[file])
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
@@ -188,6 +199,28 @@ for (const [label, csp] of Object.entries(CSPS) as [keyof typeof CSPS, string | 
       const s = await state(page)
       expect(s.text).toBe('ok arquivo único')
       expect(requests.slice(before).filter((p) => p.includes(`/${id}/split/`))).toEqual([])
+    })
+
+    test('import() do remote também roda conferido', async ({ page }, info) => {
+      await open(page, 'lazy', csp)
+      const s = await state(page)
+      const path = EXPECTED[info.project.name][label]
+      expect(pathOf(s)).toBe(path)
+      expect(s.status).toBe('ready')
+      if (path < 3) {
+        expect(s.text).toBe('ok dividido e lazy')
+        expect(s.ran).toEqual(['chunk.js', 'entry.js', 'lazy.js'])
+      } else {
+        expect(s.text).toBe('ok arquivo único')
+      }
+    })
+
+    test('import() de chunk adulterado não executa', async ({ page }, info) => {
+      await open(page, 'lazybad', csp)
+      const s = await state(page)
+      expect(s.tampered).toEqual([])
+      if (EXPECTED[info.project.name][label] < 3) expect(s.status).toBe('error')
+      else expect(s.text).toBe('ok arquivo único')
     })
 
     test('com base absoluto, redirecionar a entrada não executa chunk sem verificação', async ({ page }) => {

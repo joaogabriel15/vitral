@@ -14,6 +14,7 @@
  *    sempre. Vale para os outros navegadores e para quem já falhou.
  */
 import { verifyIntegrity } from './integrity'
+import type { Protocol } from './state'
 import { addLink, fetchBytes } from './util'
 
 export interface SplitBuild {
@@ -91,6 +92,10 @@ export async function verified(build: SplitBuild): Promise<string | undefined> {
     return entry
   }
   if (await (preloads ??= checkPreloads())) {
+    // Para os import() do remote (helper do plugin) conferirem também. O
+    // protocolo já existe aqui (o loader passou por ele).
+    const p = (globalThis as any)[Symbol.for('vitral')] as Protocol
+    p.sri = { ...p.sri, ...sri }
     await Promise.all([...chunks, entry].map((u) => preload(u, sri[u], priority)))
     return entry
   }

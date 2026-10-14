@@ -115,8 +115,22 @@ export default { plugins: [react() /* ou vue(), svelte(), solid(), angular()… 
 ```
 
 `vite build` gera `dist/remote-[hash].js`, `dist/remote-[hash].css` e
-`dist/vitral.json` (com o hash `sha384` do JS). Suba a pasta em qualquer CDN com
+`dist/vitral.json` (com o hash `sha384` de cada arquivo). Suba a pasta em qualquer CDN com
 CORS. Para Angular use `@analogjs/vite-plugin-angular` (compila em AOT).
+
+Se o remote tem `import()`, o plugin gera também o build dividido em
+`dist/split/`. O manifesto continua com `entry` e `integrity` apontando para o
+arquivo único, que hosts antigos usam; os campos novos `files` e `split` dizem
+onde está o build dividido e o hash de cada arquivo. Assim o navegador baixa
+só o que o remote usa ao abrir, e o resto chega no `import()`, conferido pelo
+mesmo hash.
+
+Cabeçalhos de cache no CDN:
+
+| Arquivo | `Cache-Control` |
+| --- | --- |
+| `vitral.json` | `no-cache` (com `ETag`): o host sempre vê o deploy novo |
+| O resto (nome com hash) | `public, max-age=31536000, immutable` |
 
 ### CSS e Tailwind
 
