@@ -21,6 +21,8 @@ npm install vitral
 - React, Vue, Angular, Svelte, Solid, Preact, Lit e JS puro na mesma página.
 - Cada remote tem o próprio CSS, os próprios erros e o próprio deploy.
 
+Documentação completa: **[joaogabriel15.github.io/vitral](https://joaogabriel15.github.io/vitral/)**
+
 ## Começo rápido
 
 **1. No remote**, exporte o componente:
@@ -183,25 +185,27 @@ configure({
 
 ## Erros
 
-Todo erro é um `RemoteError` com `code` e o nome do remote. Um remote que falha mostra o próprio erro e não derruba a página. `retry` monta só aquele remote de novo.
+Todo erro é um `RemoteError` com `code`, o nome do remote e `docs`, o link da página do código com causa e correção. Um remote que falha mostra o próprio erro e não derruba a página. `retry` monta só aquele remote de novo.
 
 | `code` | Quando |
 |---|---|
-| `NOT_REGISTERED` | Nome não registrado em `configure` |
-| `ORIGIN_BLOCKED` | URL fora de `allowedOrigins` |
-| `TIMEOUT` | Não respondeu dentro de `timeout` |
-| `INTEGRITY` | O hash do JS não confere |
-| `INVALID_MODULE` | O arquivo não exporta `mount()` |
-| `LOAD_FAILED` | Erro de rede ou HTTP |
-| `MOUNT_FAILED` | O remote lançou erro ao montar |
-| `RENDER_FAILED` | O remote quebrou depois de montado |
+| [`NOT_REGISTERED`](https://joaogabriel15.github.io/vitral/erros/NOT_REGISTERED) | Nome não registrado em `configure` |
+| [`ORIGIN_BLOCKED`](https://joaogabriel15.github.io/vitral/erros/ORIGIN_BLOCKED) | URL fora de `allowedOrigins` |
+| [`TIMEOUT`](https://joaogabriel15.github.io/vitral/erros/TIMEOUT) | Não respondeu dentro de `timeout` |
+| [`INTEGRITY`](https://joaogabriel15.github.io/vitral/erros/INTEGRITY) | O hash do JS não confere |
+| [`INVALID_MODULE`](https://joaogabriel15.github.io/vitral/erros/INVALID_MODULE) | O arquivo não exporta `mount()` |
+| [`LOAD_FAILED`](https://joaogabriel15.github.io/vitral/erros/LOAD_FAILED) | Erro de rede ou HTTP |
+| [`MOUNT_FAILED`](https://joaogabriel15.github.io/vitral/erros/MOUNT_FAILED) | O remote lançou erro ao montar |
+| [`RENDER_FAILED`](https://joaogabriel15.github.io/vitral/erros/RENDER_FAILED) | O remote quebrou depois de montado |
 
 ## Segurança
 
 - Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra.
-- Com `integrity`, confere o hash do JS antes de executar e executa exatamente os bytes conferidos. Com CSP, inclua `blob:` em `script-src`.
+- Com `integrity`, confere o hash sobre os bytes baixados e executa exatamente os bytes conferidos. Aceita `sha256`, `sha384` e `sha512`, e vários hashes (vale o mais forte). Com CSP, inclua `blob:` em `script-src`.
 - Sem `eval` e sem iframes.
 - Shadow DOM isola o CSS, não o JS. Para código de terceiros em que você não confia, use iframe.
+
+Detalhes em [Segurança](https://joaogabriel15.github.io/vitral/guia/seguranca).
 
 ## Testes do host
 
@@ -215,19 +219,24 @@ expect(carrinho.lastProps).toEqual({ itens: 2 })
 failingRemote('recomendacoes') // testa a tela de erro
 ```
 
-## Comparado com Module Federation e single-spa
+## Comparado com outras ferramentas
 
-| | Module Federation / single-spa | vitral |
-|---|---|---|
-| Build do host | Config combinada com cada remote | Nenhuma. Só `configure()` |
-| Versões de React/Vue | `shared` e singletons, conflitos de versão | Cada remote leva a sua. Compartilhar é opcional |
-| Remote fora do ar | Pode derrubar a página | Só aquele remote mostra erro |
-| CSS | Vaza entre apps | Escopo automático ou Shadow DOM |
-| Deploy novo | `ChunkLoadError` com cache velho | Arquivos com hash; só o `vitral.json` revalida |
-| Conceitos | Containers, exposes, lifecycles, root config | `mount(el, props, ctx)` → `{ update, unmount }` |
+<p><img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/tamanho-host.svg" width="680" alt="Código de host com brotli: vitral 3,4 kB, single-spa 5,8 kB, Module Federation 19,4 kB, wujie 23,6 kB, micro-app 28,9 kB, qiankun 37,9 kB, Garfish 40,0 kB (14/10/2026)"></p>
+
+| Afirmação | Prova |
+|---|---|
+| Código de host de 3,4 kB, o menor entre as 7 ferramentas medidas | [Medição de 14/10/2026](https://joaogabriel15.github.io/vitral/benchmarks#tamanho-do-codigo-de-host) com [`bench/tamanho.mjs`](https://github.com/joaogabriel15/vitral/blob/main/bench/tamanho.mjs) |
+| Nenhum plugin de build no host | `configure()` em runtime. O Module Federation configura `remotes` no [plugin de build](https://module-federation.io/integrations/build-tool/vite.html) (consultado em 14/10/2026) |
+| Confere o hash (SRI) e a origem antes de executar | Testes em [`core.test.ts`](https://github.com/joaogabriel15/vitral/blob/main/packages/vitral/test/core.test.ts) |
+| Tailwind v4 funciona dentro de Shadow DOM | e2e em [`demo.spec.ts`](https://github.com/joaogabriel15/vitral/blob/main/e2e/demo.spec.ts). No Tailwind, a issue [#15005](https://github.com/tailwindlabs/tailwindcss/issues/15005) estava aberta em 14/10/2026 |
+| Remote fora do ar não derruba a página | e2e nos 9 hosts em [`matriz.spec.ts`](https://github.com/joaogabriel15/vitral/blob/main/e2e/matriz.spec.ts). No Nx com Module Federation, um remote com falha derruba o host ([nx #10404](https://github.com/nrwl/nx/issues/10404)) |
+| Next.js com App Router | Host Next 16 no e2e. O plugin de Module Federation para Next não suporta App Router ([documentação](https://module-federation.io/integrations/framework/nextjs), 14/10/2026) |
+
+Tabela completa, com o que o vitral ainda não faz: [Comparação](https://joaogabriel15.github.io/vitral/comparacao) e [Quando não usar o vitral](https://joaogabriel15.github.io/vitral/quando-nao-usar). Vindo de outra ferramenta? Veja os guias de migração de [Module Federation](https://joaogabriel15.github.io/vitral/migracao/module-federation), [single-spa](https://joaogabriel15.github.io/vitral/migracao/single-spa) e [qiankun](https://joaogabriel15.github.io/vitral/migracao/qiankun).
 
 ## Links
 
+- [Documentação](https://joaogabriel15.github.io/vitral/): guia, receitas, referência da API e erros.
 - [Exemplos](https://github.com/joaogabriel15/vitral/tree/main/examples): o mesmo remote em 8 frameworks e 9 hosts.
 - [Problemas resolvidos](https://github.com/joaogabriel15/vitral/blob/main/docs/PROBLEMAS.md) e o que ainda falta.
 - [Como contribuir](https://github.com/joaogabriel15/vitral/blob/main/CONTRIBUTING.md)
