@@ -330,6 +330,9 @@ Actions publica no npm com proveniência.
   Svelte (:4204), Solid (:4205), Preact (:4206), Angular (:4207), Next (:4208,
   `pnpm --dir examples/hosts/next start`) e Nuxt (:4209,
   `pnpm --dir examples/hosts/nuxt start`), cada um carregando os 8 remotes.
+- `examples/hosts/formas` (:4210) com `examples/remotes/loja` e
+  `examples/remotes/intruso`: partes de um remote, `loadModule`, rotas, iframe
+  e atualização sem reload.
 - `demo/`: catálogo Vue + carrinho React com Tailwind (`pnpm demo`, em
   http://localhost:5173 e :5174).
 
