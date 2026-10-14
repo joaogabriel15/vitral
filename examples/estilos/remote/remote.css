@@ -1,0 +1,16 @@
+@import url("http://localhost:4312/externa.css");
+@import "tailwindcss" source(none);
+@source "./remote.js";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Cor da marca do build do remote: laranja. O host usa roxo. */
+@theme {
+  --color-marca: oklch(0.7 0.18 50);
+  --font-remota: "Remota", serif;
+  --font-externa: "Externa", serif;
+}
+
+@font-face {
+  font-family: "Remota";
+  src: url("../fontes/larga.ttf") format("truetype");
+}
