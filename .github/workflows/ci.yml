@@ -97,3 +97,38 @@ jobs:
             base.json
             head.json
           retention-days: 30
+
+  # Regressão visual: screenshots da demo (escopo e Shadow DOM, claro e escuro)
+  # do PR contra os da base, gerados na mesma máquina (e2e/visual). Um PR que
+  # muda o visual de propósito leva o rótulo "muda-visual".
+  visual:
+    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'muda-visual')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir e2e exec playwright install --with-deps chromium
+      - name: Build do PR
+        run: pnpm build && pnpm --filter './demo/**' build
+      - name: Build da base
+        run: |
+          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
+          git worktree add ../base ${{ github.event.pull_request.base.sha }}
+          cd ../base
+          pnpm install --frozen-lockfile
+          pnpm build && pnpm --filter './demo/**' build
+      - name: Screenshots da base
+        run: VISUAL_ROOT="$GITHUB_WORKSPACE/../base" pnpm --dir e2e exec playwright test -c visual --update-snapshots
+      - name: Compara o PR com a base
+        run: pnpm --dir e2e exec playwright test -c visual
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-diff
+          path: e2e/test-results
+          retention-days: 7
