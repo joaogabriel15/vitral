@@ -19,6 +19,13 @@ exports[`exports públicos > element 1`] = `
 ]
 `;
 
+exports[`exports públicos > iframe 1`] = `
+[
+  "FRAME_SCRIPT",
+  "enableIframe",
+]
+`;
+
 exports[`exports públicos > index 1`] = `
 [
   "RemoteError",
