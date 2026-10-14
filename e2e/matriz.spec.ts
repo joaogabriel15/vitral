@@ -73,7 +73,7 @@ test.describe('SSR', () => {
       expect(res.status()).toBe(200)
       const html = (await res.text()).replaceAll('<!-- -->', '')
       expect(html).toContain(`Host ${host}`)
-      expect(html).toContain('data-ilha="react"')
+      expect(html).toContain('data-vitral="react"')
       expect(html).toContain('carregando react')
     })
   }

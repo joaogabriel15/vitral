@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { IlhaRemote, useEventValue } from 'arquipelago/vue'
+import { VitralRemote, useEventValue } from 'vitral/vue'
 
 const total = useEventValue('carrinho:total')
 const titulo = ref('Carrinho do host Vue')
@@ -14,16 +14,16 @@ const titulo = ref('Carrinho do host Vue')
       <input id="titulo" v-model="titulo" />
     </header>
 
-    <IlhaRemote name="catalogo" isolate="shadow">
+    <VitralRemote name="catalogo" isolate="shadow">
       <template #fallback><p>Carregando catálogo…</p></template>
-    </IlhaRemote>
-    <IlhaRemote name="carrinho" :props="{ titulo }">
+    </VitralRemote>
+    <VitralRemote name="carrinho" :props="{ titulo }">
       <template #fallback><p>Carregando carrinho…</p></template>
-    </IlhaRemote>
-    <IlhaRemote name="quebrado">
+    </VitralRemote>
+    <VitralRemote name="quebrado">
       <template #error="{ error, retry }">
         <p id="erro" style="color: crimson">Remote indisponível ({{ error.code }}). <button @click="retry">Tentar de novo</button></p>
       </template>
-    </IlhaRemote>
+    </VitralRemote>
   </main>
 </template>

@@ -8,11 +8,11 @@ import { h, render, type ComponentType, type VNode } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
 
-/** Transforma um componente Preact em um remote. O contexto chega na prop `arquipelago`. */
+/** Transforma um componente Preact em um remote. O contexto chega na prop `vitral`. */
 export function preactRemote<P extends Props>(Component: ComponentType<any>): RemoteModule<P> {
   return defineRemote<P>({
     mount(el, props, ctx) {
-      const draw = (p: P) => render(h(Component, { ...p, ilha: ctx }), el)
+      const draw = (p: P) => render(h(Component, { ...p, vitral: ctx }), el)
       draw(props)
       return { update: draw, unmount: () => render(null, el) }
     },
@@ -41,7 +41,7 @@ export function Remote<P extends Props = Props>({ name, props, isolate, fallback
   useEffect(() => slot.current?.update((props ?? {}) as P), [props])
 
   const retry = () => slot.current?.retry()
-  return h('div', { 'data-ilha': name, 'data-ilha-status': state.status, class: rest.class }, [
+  return h('div', { 'data-vitral': name, 'data-vitral-status': state.status, class: rest.class }, [
     state.status === 'loading' ? fallback : null,
     state.status === 'error' && state.error ? (typeof error === 'function' ? error(state.error, retry) : error) : null,
     // O Preact nunca coloca filhos neste div: ele pertence ao remote.

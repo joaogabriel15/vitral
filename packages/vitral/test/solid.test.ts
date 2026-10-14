@@ -15,7 +15,7 @@ describe('Solid', () => {
     const Card = (props: any) => {
       renders++
       const p = document.createElement('p')
-      createEffect(() => (p.textContent = `${props.msg} (${props.ilha.name})`))
+      createEffect(() => (p.textContent = `${props.msg} (${props.vitral.name})`))
       return p
     }
     register('card', { module: solidRemote(Card) })

@@ -1,18 +1,18 @@
 /**
- * Host universal: `<ilha-remote>` funciona em qualquer lugar que renderize
+ * Host universal: `<vitral-remote>` funciona em qualquer lugar que renderize
  * HTML (JS/TS puro, Angular, Svelte, Solid, Lit, Astro, Qwik, jQuery, server
  * templates…).
  *
- *   import { defineIlhaElement } from 'arquipelago/element'
- *   defineIlhaElement()
+ *   import { defineVitralElement } from 'vitral/element'
+ *   defineVitralElement()
  *
- *   <ilha-remote name="carrinho" props='{"userId": 42}' isolate="shadow">
+ *   <vitral-remote name="carrinho" props='{"userId": 42}' isolate="shadow">
  *     <p slot="fallback">Carregando…</p>
  *     <p slot="error">Indisponível</p>
- *   </ilha-remote>
+ *   </vitral-remote>
  *
  *   el.props = { userId: 43 }          // atualiza sem remontar
- *   el.addEventListener('ilha-error', (e) => e.detail.error)
+ *   el.addEventListener('vitral-error', (e) => e.detail.error)
  *   el.retry()
  *
  * Também exporta `elementRemote()` para publicar um Web Component (Lit,
@@ -22,7 +22,7 @@ import { createSlot, defineRemote, type Isolation, type Props, type RemoteModule
 
 const Base: typeof HTMLElement = typeof HTMLElement === 'undefined' ? (class {} as typeof HTMLElement) : HTMLElement
 
-export class IlhaRemoteElement extends Base {
+export class VitralRemoteElement extends Base {
   static observedAttributes = ['name', 'props', 'isolate']
   #slot: RemoteSlot | null = null
   #props: Props = {}
@@ -53,11 +53,11 @@ export class IlhaRemoteElement extends Base {
       props: this.#props,
       isolate: (this.getAttribute('isolate') as Isolation) || undefined,
       onStatus: (status, error) => {
-        this.setAttribute('data-ilha-status', status)
+        this.setAttribute('data-vitral-status', status)
         for (const el of this.querySelectorAll<HTMLElement>(':scope > [slot="fallback"]')) el.hidden = status !== 'loading'
         for (const el of this.querySelectorAll<HTMLElement>(':scope > [slot="error"]')) el.hidden = status !== 'error'
-        if (status === 'ready') this.dispatchEvent(new CustomEvent('ilha-ready', { bubbles: true }))
-        if (status === 'error') this.dispatchEvent(new CustomEvent('ilha-error', { bubbles: true, detail: { error } }))
+        if (status === 'ready') this.dispatchEvent(new CustomEvent('vitral-ready', { bubbles: true }))
+        if (status === 'error') this.dispatchEvent(new CustomEvent('vitral-error', { bubbles: true, detail: { error } }))
       },
     })
   }
@@ -85,21 +85,21 @@ function parseProps(value: string | null): Props {
   try {
     return JSON.parse(value)
   } catch {
-    console.error('[ilha] atributo props não é JSON válido:', value)
+    console.error('[vitral] atributo props não é JSON válido:', value)
     return {}
   }
 }
 
-/** Registra `<ilha-remote>` (ou outro nome). Pode ser chamado mais de uma vez. */
-export function defineIlhaElement(tag = 'ilha-remote'): void {
+/** Registra `<vitral-remote>` (ou outro nome). Pode ser chamado mais de uma vez. */
+export function defineVitralElement(tag = 'vitral-remote'): void {
   if (typeof customElements !== 'undefined' && !customElements.get(tag)) {
-    customElements.define(tag, class extends IlhaRemoteElement {})
+    customElements.define(tag, class extends VitralRemoteElement {})
   }
 }
 
 /**
  * Publica um Web Component como remote. As props viram propriedades do
- * elemento; o contexto fica em `element.ilha`.
+ * elemento; o contexto fica em `element.vitral`.
  *
  *   export default elementRemote('meu-widget')
  */
@@ -108,7 +108,7 @@ export function elementRemote<P extends Props = Props>(tag: string, setup?: () =
     mount(el, props, ctx) {
       setup?.()
       const node = document.createElement(tag) as HTMLElement & Record<string, unknown>
-      node.ilha = ctx
+      node.vitral = ctx
       Object.assign(node, props)
       el.appendChild(node)
       return {
@@ -121,6 +121,6 @@ export function elementRemote<P extends Props = Props>(tag: string, setup?: () =
 
 declare global {
   interface HTMLElementTagNameMap {
-    'ilha-remote': IlhaRemoteElement
+    'vitral-remote': VitralRemoteElement
   }
 }

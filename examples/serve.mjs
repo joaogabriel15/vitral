@@ -29,7 +29,7 @@ function serve(port, resolveFile, spa) {
   }).listen(port, () => console.log(`http://localhost:${port}`))
 }
 
-// /react/ilha.json → remotes/react/dist/ilha.json
+// /react/vitral.json → remotes/react/dist/vitral.json
 serve(4100, (p) => {
   const [, fw, ...rest] = p.split('/')
   return join(here, 'remotes', fw ?? '', 'dist', ...rest)

@@ -3,7 +3,7 @@ import { act, createElement as h, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
 import { register } from '../src/index'
-import { reactRemote, Remote, useIlha } from '../src/react'
+import { reactRemote, Remote, useVitral } from '../src/react'
 import { failingRemote, mockRemote } from '../src/testing'
 import { cleanup, flush } from './helpers'
 
@@ -50,9 +50,9 @@ describe('React: host <Remote>', () => {
 describe('React: reactRemote', () => {
   it('renderiza o componente, atualiza props, dá acesso ao contexto e reporta erro de render', async () => {
     function Card({ msg, boom }: { msg: string; boom?: boolean }) {
-      const ilha = useIlha()
+      const vitral = useVitral()
       if (boom) throw new Error('boom')
-      return h('p', null, `${msg} (${ilha?.name})`)
+      return h('p', null, `${msg} (${vitral?.name})`)
     }
     register('card', { module: reactRemote(Card as any) })
     let set!: (p: any) => void

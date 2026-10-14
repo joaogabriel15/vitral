@@ -12,7 +12,7 @@ afterEach(cleanup)
 
 describe('Preact', () => {
   it('host <Remote> + preactRemote: monta, atualiza props sem remontar', async () => {
-    const Card = ({ msg, ilha }: any) => h('p', null, `${msg} (${ilha.name})`)
+    const Card = ({ msg, vitral }: any) => h('p', null, `${msg} (${vitral.name})`)
     register('card', { module: preactRemote(Card) })
     let set!: (v: string) => void
     function App() {

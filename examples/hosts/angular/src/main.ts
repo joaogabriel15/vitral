@@ -1,11 +1,11 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, signal } from '@angular/core'
 import { bootstrapApplication } from '@angular/platform-browser'
-import { events } from 'arquipelago'
-import { provideIlha } from 'arquipelago/angular'
+import { events } from 'vitral'
+import { provideVitral } from 'vitral/angular'
 
 @Component({
   selector: 'app-root',
-  // <ilha-remote> é um Web Component: o Angular só precisa deixar passar.
+  // <vitral-remote> é um Web Component: o Angular só precisa deixar passar.
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <h1>Host Angular</h1>
@@ -13,16 +13,16 @@ import { provideIlha } from 'arquipelago/angular'
     <p>Último ping: <span id="ultimo-ping">{{ ping() }}</span></p>
     @for (n of remotes; track n) {
       <section [attr.data-remote]="n">
-        <ilha-remote [attr.name]="n" [props]="{ mensagem: mensagem() }">
+        <vitral-remote [attr.name]="n" [props]="{ mensagem: mensagem() }">
           <p slot="fallback">carregando {{ n }}…</p>
-        </ilha-remote>
+        </vitral-remote>
       </section>
     }
     <section data-remote="quebrado">
       @if (erro()) {
         <p class="erro">indisponível <button (click)="quebrado.retry()">tentar de novo</button></p>
       }
-      <ilha-remote #quebrado name="quebrado" (ilha-error)="erro.set(true)"></ilha-remote>
+      <vitral-remote #quebrado name="quebrado" (vitral-error)="erro.set(true)"></vitral-remote>
     </section>
   `,
 })
@@ -36,4 +36,4 @@ class App {
   }
 }
 
-bootstrapApplication(App, { providers: [provideIlha({ remotes: '/remotes.json' })] })
+bootstrapApplication(App, { providers: [provideVitral({ remotes: '/remotes.json' })] })

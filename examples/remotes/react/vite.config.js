@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import ilha from 'arquipelago/vite'
+import vitral from 'vitral/vite'
 
 export default defineConfig({
   base: './',
-  plugins: [react(), ilha({ entry: 'src/remote.jsx', name: 'react' })],
+  plugins: [react(), vitral({ entry: 'src/remote.jsx', name: 'react' })],
 })

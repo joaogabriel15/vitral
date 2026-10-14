@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import ilha from 'arquipelago/vite'
+import vitral from 'vitral/vite'
 
 export default defineConfig({
-  plugins: [vue(), ilha({ entry: 'src/remote.js' })],
+  plugins: [vue(), vitral({ entry: 'src/remote.js' })],
 })

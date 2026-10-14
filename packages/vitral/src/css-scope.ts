@@ -1,7 +1,7 @@
 /**
  * Reescreve o CSS de um remote para valer só dentro dele.
  *
- * Todo seletor ganha o prefixo `[data-ilha-scope="nome"]`, e seletores
+ * Todo seletor ganha o prefixo `[data-vitral-scope="nome"]`, e seletores
  * globais (`:root`, `:host`, `html`, `body`) passam a apontar para o próprio
  * elemento raiz do remote. Assim o preflight e o tema do Tailwind (ou qualquer
  * reset global) do remote não mexem no host nem nos outros remotes.
@@ -23,7 +23,7 @@ export function scopeSelector(selector: string, scope: string): string {
 }
 
 export function scopeCss(css: string, scopeName: string): string {
-  const scope = `[data-ilha-scope="${scopeName}"]`
+  const scope = `[data-vitral-scope="${scopeName}"]`
   const root: Root = postcss.parse(css)
   root.walkRules((rule: Rule) => {
     // Dentro de @keyframes os "seletores" são 0%, from, to.

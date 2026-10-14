@@ -2,7 +2,7 @@
 import { createApp, defineComponent, h, nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import { register } from '../src/index'
-import { IlhaRemote, useIlha, vueRemote } from '../src/vue'
+import { VitralRemote, useVitral, vueRemote } from '../src/vue'
 import { failingRemote, mockRemote } from '../src/testing'
 import { cleanup, flush } from './helpers'
 
@@ -15,11 +15,11 @@ function mount(comp: any) {
   return { div, app }
 }
 
-describe('Vue: host <IlhaRemote>', () => {
+describe('Vue: host <VitralRemote>', () => {
   it('monta, mostra fallback e repassa props sem remontar', async () => {
     const m = mockRemote('a', (el, p) => (el.textContent = `n=${p.n}`))
     const n = ref(1)
-    const { div } = mount({ render: () => h(IlhaRemote, { name: 'a', props: { n: n.value } }, { fallback: () => 'carregando' }) })
+    const { div } = mount({ render: () => h(VitralRemote, { name: 'a', props: { n: n.value } }, { fallback: () => 'carregando' }) })
     expect(div.textContent).toBe('carregando')
     await flush()
     expect(div.textContent).toBe('n=1')
@@ -33,7 +33,7 @@ describe('Vue: host <IlhaRemote>', () => {
   it('slot de erro com retry', async () => {
     failingRemote('b')
     const { div } = mount({
-      render: () => h(IlhaRemote, { name: 'b' }, { error: ({ error, retry }: any) => h('button', { onClick: retry }, error.code) }),
+      render: () => h(VitralRemote, { name: 'b' }, { error: ({ error, retry }: any) => h('button', { onClick: retry }, error.code) }),
     })
     await flush()
     expect(div.textContent).toBe('MOUNT_FAILED')
@@ -50,16 +50,16 @@ describe('Vue: vueRemote', () => {
     const Card = defineComponent({
       props: { msg: String, boom: Boolean },
       setup(props) {
-        const ilha = useIlha()
+        const vitral = useVitral()
         return () => {
           if (props.boom) throw new Error('boom')
-          return h('p', `${props.msg} (${ilha?.name})`)
+          return h('p', `${props.msg} (${vitral?.name})`)
         }
       },
     })
     register('card', { module: vueRemote(Card) })
     const p = ref<any>({ msg: 'oi' })
-    const { div } = mount({ render: () => h(IlhaRemote, { name: 'card', props: p.value }, { error: ({ error }: any) => h('b', error.code) }) })
+    const { div } = mount({ render: () => h(VitralRemote, { name: 'card', props: p.value }, { error: ({ error }: any) => h('b', error.code) }) })
     await flush()
     expect(div.textContent).toBe('oi (card)')
     p.value = { msg: 'tchau' }

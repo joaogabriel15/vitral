@@ -1,9 +1,9 @@
 <script>
-  let { mensagem = '', ilha } = $props()
+  let { mensagem = '', vitral } = $props()
   let cliques = $state(0)
   function ping() {
     cliques++
-    ilha.events.emit('ping', 'Svelte')
+    vitral.events.emit('ping', 'Svelte')
   }
 </script>
 

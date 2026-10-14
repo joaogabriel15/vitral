@@ -2,10 +2,10 @@
  * Plugin Vite para quem publica um remote.
  *
  *   // vite.config.ts do remote
- *   plugins: [react(), ilha({ entry: 'src/remote.tsx' })]
+ *   plugins: [react(), vitral({ entry: 'src/remote.tsx' })]
  *
- * `vite build` gera `dist/remote.js`, o CSS e `dist/ilha.json` com o hash
- * SRI do JS. O host só precisa da URL do `ilha.json`.
+ * `vite build` gera `dist/remote.js`, o CSS e `dist/vitral.json` com o hash
+ * SRI do JS. O host só precisa da URL do `vitral.json`.
  */
 import { createHash } from 'node:crypto'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
@@ -14,7 +14,7 @@ import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
 
-export interface IlhaViteOptions {
+export interface VitralViteOptions {
   /** Arquivo que exporta o remote (default export de reactRemote/vueRemote/defineRemote). */
   entry: string
   /** Nome do remote no manifesto. Padrão: `name` do package.json. */
@@ -34,14 +34,14 @@ export interface IlhaViteOptions {
   scopeCss?: boolean
 }
 
-export default function ilha(options: IlhaViteOptions): Plugin {
+export default function vitral(options: VitralViteOptions): Plugin {
   let outDir = 'dist'
   let root = process.cwd()
   let pkg: { name?: string; version?: string } = {}
   const scopeName = () =>
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
   return {
-    name: 'ilha',
+    name: 'vitral',
     config(_, { mode }) {
       // Vite 8+ (rolldown) usa codeSplitting; Vite 5-7 (rollup) usa inlineDynamicImports.
       const rolldown = 'rolldownVersion' in (this as any).meta
@@ -52,7 +52,7 @@ export default function ilha(options: IlhaViteOptions): Plugin {
         server: { cors: true },
         preview: { cors: true },
         build: {
-          // Nomes com hash: cache eterno no CDN. Só o ilha.json muda a cada deploy.
+          // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
           lib: { entry: options.entry, formats: ['es'], fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
           // Um arquivo só: necessário para verificar o hash SRI no host.
           rollupOptions: { external: options.shared ?? [], output: output as any },
@@ -93,9 +93,9 @@ export default function ilha(options: IlhaViteOptions): Plugin {
         integrity: 'sha384-' + createHash('sha384').update(code).digest('base64'),
         ...(options.scopeCss === false ? {} : { scope: scopeName() }),
       }
-      writeFileSync(join(outDir, 'ilha.json'), JSON.stringify(manifest, null, 2) + '\n')
+      writeFileSync(join(outDir, 'vitral.json'), JSON.stringify(manifest, null, 2) + '\n')
     },
   }
 }
 
-export { ilha }
+export { vitral }

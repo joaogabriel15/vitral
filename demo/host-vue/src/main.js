@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import { configure } from 'arquipelago'
+import { configure } from 'vitral'
 import App from './App.vue'
 
 configure({ remotes: '/remotes.json' })

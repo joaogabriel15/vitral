@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
-import { useEvent, useIlha } from 'arquipelago/react'
+import { useEvent, useVitral } from 'vitral/react'
 
 export default function Carrinho({ titulo = 'Carrinho' }) {
-  const ilha = useIlha()
+  const vitral = useVitral()
   const [itens, setItens] = useState([])
   const [quebrado, setQuebrado] = useState(false)
   if (quebrado) throw new Error('bug de propósito no carrinho')
 
   useEvent('carrinho:adicionar', (produto) => setItens((xs) => [...xs, produto]))
-  useEffect(() => ilha?.events.emit('carrinho:total', itens.length), [itens])
+  useEffect(() => vitral?.events.emit('carrinho:total', itens.length), [itens])
 
   const total = itens.reduce((s, p) => s + p.preco, 0)
   return (

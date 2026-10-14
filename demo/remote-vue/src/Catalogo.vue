@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from 'vue'
-import { events } from 'arquipelago/vue'
+import { events } from 'vitral/vue'
 
 const props = defineProps({ moeda: { type: String, default: 'BRL' } })
 

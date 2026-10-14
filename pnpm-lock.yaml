@@ -17,15 +17,15 @@ importers:
 
   demo/host-react:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../packages/arquipelago
       react:
         specifier: ^19.0.0
         version: 19.3.0
       react-dom:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
+      vitral:
+        specifier: workspace:*
+        version: link:../../packages/vitral
     devDependencies:
       '@vitejs/plugin-react':
         specifier: ^6.0.0
@@ -36,9 +36,9 @@ importers:
 
   demo/host-vue:
     dependencies:
-      arquipelago:
+      vitral:
         specifier: workspace:*
-        version: link:../../packages/arquipelago
+        version: link:../../packages/vitral
       vue:
         specifier: ^3.5.0
         version: 3.5.44(typescript@6.0.3)
@@ -52,15 +52,15 @@ importers:
 
   demo/remote-react:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../packages/arquipelago
       react:
         specifier: ^19.0.0
         version: 19.3.0
       react-dom:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
+      vitral:
+        specifier: workspace:*
+        version: link:../../packages/vitral
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.3.3
@@ -77,9 +77,9 @@ importers:
 
   demo/remote-vue:
     dependencies:
-      arquipelago:
+      vitral:
         specifier: workspace:*
-        version: link:../../packages/arquipelago
+        version: link:../../packages/vitral
       vue:
         specifier: ^3.5.0
         version: 3.5.44(typescript@6.0.3)
@@ -111,15 +111,15 @@ importers:
       '@angular/platform-browser':
         specifier: ^22.0.0
         version: 22.2.2(@angular/common@22.2.2(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       rxjs:
         specifier: ^7.8.0
         version: 7.8.2
       tslib:
         specifier: ^2.8.0
         version: 2.8.1
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       '@analogjs/vite-plugin-angular':
         specifier: ^2.8.0
@@ -139,9 +139,6 @@ importers:
 
   examples/hosts/next:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       next:
         specifier: ^16.0.0
         version: 16.4.0(@playwright/test@1.56.1)(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(sass@1.104.1)
@@ -151,6 +148,9 @@ importers:
       react-dom:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       '@types/react':
         specifier: ^19.0.0
@@ -161,24 +161,24 @@ importers:
 
   examples/hosts/nuxt:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       nuxt:
         specifier: ^4.0.0
         version: 4.6.1(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7))(@oxc-project/types@0.153.0)(@parcel/watcher@2.6.0)(@types/node@26.6.5)(@vue/compiler-sfc@3.5.44)(acorn@8.19.0)(confbox@0.3.1)(db0@0.3.4)(dotenv@17.4.2)(esbuild@0.28.2)(giget@3.3.1)(ioredis@5.11.1)(lightningcss@1.33.0)(mlly@1.8.2)(oxc-parser@0.150.0)(rolldown@1.2.13)(rollup-plugin-visualizer@7.1.1(rolldown@1.2.13)(rollup@4.64.6))(rollup@4.64.6)(sass-embedded@1.104.1)(sass@1.104.1)(srvx@1.0.5)(terser@5.51.2)(typescript@6.0.3)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
       vue:
         specifier: ^3.5.0
         version: 3.5.44(typescript@6.0.3)
 
   examples/hosts/preact:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       preact:
         specifier: ^10.0.0
         version: 10.29.8
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       '@preact/preset-vite':
         specifier: ^2.10.0
@@ -189,15 +189,15 @@ importers:
 
   examples/hosts/react:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       react:
         specifier: ^19.0.0
         version: 19.3.0
       react-dom:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       '@vitejs/plugin-react':
         specifier: ^6.0.0
@@ -208,12 +208,12 @@ importers:
 
   examples/hosts/solid:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       solid-js:
         specifier: ^1.9.0
         version: 1.9.17
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       vite:
         specifier: ^8.0.0
@@ -224,12 +224,12 @@ importers:
 
   examples/hosts/svelte:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       svelte:
         specifier: ^5.0.0
         version: 5.57.2
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^7.0.0
@@ -240,9 +240,9 @@ importers:
 
   examples/hosts/vanilla:
     dependencies:
-      arquipelago:
+      vitral:
         specifier: workspace:*
-        version: link:../../../packages/arquipelago
+        version: link:../../../packages/vitral
     devDependencies:
       typescript:
         specifier: ~5.9.0
@@ -253,9 +253,9 @@ importers:
 
   examples/hosts/vue:
     dependencies:
-      arquipelago:
+      vitral:
         specifier: workspace:*
-        version: link:../../../packages/arquipelago
+        version: link:../../../packages/vitral
       vue:
         specifier: ^3.5.0
         version: 3.5.44(typescript@6.0.3)
@@ -281,15 +281,15 @@ importers:
       '@angular/platform-browser':
         specifier: ^22.0.0
         version: 22.2.2(@angular/common@22.2.2(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       rxjs:
         specifier: ^7.8.0
         version: 7.8.2
       tslib:
         specifier: ^2.8.0
         version: 2.8.1
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       '@analogjs/vite-plugin-angular':
         specifier: ^2.8.0
@@ -309,12 +309,12 @@ importers:
 
   examples/remotes/lit:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       lit:
         specifier: ^3.3.0
         version: 3.3.3
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       vite:
         specifier: ^8.0.0
@@ -322,12 +322,12 @@ importers:
 
   examples/remotes/preact:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       preact:
         specifier: ^10.0.0
         version: 10.29.8
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       '@preact/preset-vite':
         specifier: ^2.10.0
@@ -338,15 +338,15 @@ importers:
 
   examples/remotes/react:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       react:
         specifier: ^19.0.0
         version: 19.3.0
       react-dom:
         specifier: ^19.0.0
         version: 19.3.0(react@19.3.0)
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       '@vitejs/plugin-react':
         specifier: ^6.0.0
@@ -357,12 +357,12 @@ importers:
 
   examples/remotes/solid:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       solid-js:
         specifier: ^1.9.0
         version: 1.9.17
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       vite:
         specifier: ^8.0.0
@@ -373,12 +373,12 @@ importers:
 
   examples/remotes/svelte:
     dependencies:
-      arquipelago:
-        specifier: workspace:*
-        version: link:../../../packages/arquipelago
       svelte:
         specifier: ^5.0.0
         version: 5.57.2
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
     devDependencies:
       '@sveltejs/vite-plugin-svelte':
         specifier: ^7.0.0
@@ -389,9 +389,9 @@ importers:
 
   examples/remotes/vanilla:
     dependencies:
-      arquipelago:
+      vitral:
         specifier: workspace:*
-        version: link:../../../packages/arquipelago
+        version: link:../../../packages/vitral
     devDependencies:
       typescript:
         specifier: ~5.9.0
@@ -402,9 +402,9 @@ importers:
 
   examples/remotes/vue:
     dependencies:
-      arquipelago:
+      vitral:
         specifier: workspace:*
-        version: link:../../../packages/arquipelago
+        version: link:../../../packages/vitral
       vue:
         specifier: ^3.5.0
         version: 3.5.44(typescript@6.0.3)
@@ -416,7 +416,7 @@ importers:
         specifier: ^8.0.0
         version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)
 
-  packages/arquipelago:
+  packages/vitral:
     dependencies:
       postcss:
         specifier: ^8.5.30

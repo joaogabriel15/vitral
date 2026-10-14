@@ -1,5 +1,5 @@
 {
-  "name": "ilha-e2e",
+  "name": "vitral-e2e",
   "private": true,
   "type": "module",
   "scripts": { "test": "playwright test" },

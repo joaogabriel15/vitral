@@ -7,7 +7,7 @@
     "build": "vite build"
   },
   "dependencies": {
-    "arquipelago": "workspace:*",
+    "vitral": "workspace:*",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

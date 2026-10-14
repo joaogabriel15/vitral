@@ -1,4 +1,4 @@
-import { reactRemote } from 'arquipelago/react'
+import { reactRemote } from 'vitral/react'
 import Carrinho from './Carrinho.jsx'
 import './carrinho.css'
 

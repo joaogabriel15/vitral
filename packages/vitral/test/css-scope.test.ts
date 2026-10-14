@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { scopeCss } from '../src/css-scope'
 
-const S = '[data-ilha-scope="x"]'
+const S = '[data-vitral-scope="x"]'
 
 describe('scopeCss', () => {
   it('prefixa seletores e mapeia :root/:host/html/body para a raiz do remote', () => {

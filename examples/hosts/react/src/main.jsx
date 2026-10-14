@@ -1,7 +1,7 @@
 import { StrictMode, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { configure } from 'arquipelago'
-import { Remote, useEventValue } from 'arquipelago/react'
+import { configure } from 'vitral'
+import { Remote, useEventValue } from 'vitral/react'
 
 const REMOTES = ['react', 'vue', 'svelte', 'solid', 'preact', 'angular', 'lit', 'vanilla']
 configure({ remotes: '/remotes.json' })

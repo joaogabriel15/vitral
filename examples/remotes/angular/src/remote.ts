@@ -1,5 +1,5 @@
 import { Component, input, signal } from '@angular/core'
-import { angularRemote, injectIlha } from 'arquipelago/angular'
+import { angularRemote, injectVitral } from 'vitral/angular'
 
 @Component({
   selector: 'app-cartao',
@@ -14,11 +14,11 @@ import { angularRemote, injectIlha } from 'arquipelago/angular'
 class Cartao {
   mensagem = input('')
   cliques = signal(0)
-  ilha = injectIlha()
+  vitral = injectVitral()
 
   ping() {
     this.cliques.update((c) => c + 1)
-    this.ilha?.events.emit('ping', 'Angular')
+    this.vitral?.events.emit('ping', 'Angular')
   }
 }
 
