@@ -117,7 +117,8 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       } catch {}
     },
     async buildStart() {
-      if (dedupe) shared = await groups(options.dedupe!, root, entry!, (id, importer) => this.resolve(id, importer, { skipSelf: true }))
+      // Em dev cada pacote vem do próprio node_modules: o dedupe é só do build.
+      if (dedupe && !serve) shared = await groups(options.dedupe!, root, entry!, (id, importer) => this.resolve(id, importer, { skipSelf: true }))
     },
     // Modo dev: /vitral.json aponta para um módulo com o cliente HMR.
     configureServer(server) {
@@ -127,14 +128,14 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     resolveId: {
       order: 'pre',
       handler(id, importer) {
-        const own = dedupe ? hooks.resolveId.handler(id, importer) : null
+        const own = dedupe && !serve ? hooks.resolveId.handler(id, importer) : null
         if (own) return own
         if (id.endsWith(ENTRY_ID)) return VIRTUAL_ENTRY
         return resolveDevId(id)
       },
     },
     load(id) {
-      const own = dedupe ? hooks.load(id) : null
+      const own = dedupe && !serve ? hooks.load(id) : null
       if (own != null) return own
       if (id === VIRTUAL_ENTRY) return entryCode(resolve(root, entry!), adapter, scopeName())
       if (id === VIRTUAL_DEV_ENTRY) return devEntryCode(framework, options.adapter === false ? resolve(root, entry!) : undefined)
