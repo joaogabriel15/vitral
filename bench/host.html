@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>vitral bench</title></head>
+<body>
+<main id="app"></main>
+<script type="module">
+  import { configure, createSlot } from '/vitral/index.js'
+
+  const NAMES = ['react1', 'react2', 'react3', 'vue1']
+  configure({ remotes: Object.fromEntries(NAMES.map((n) => [n, `/r/${n}/vitral.json`])) })
+  const app = document.getElementById('app')
+
+  // Monta os 4 remotes e espera todos ficarem prontos.
+  function mountAll() {
+    return Promise.all(
+      NAMES.map((name) => {
+        const el = app.appendChild(document.createElement('section'))
+        return new Promise((resolve, reject) => {
+          const slot = createSlot(el, {
+            name,
+            props: { mensagem: 'olá' },
+            onStatus(status, error) {
+              if (status === 'ready') resolve({ slot, el })
+              if (status === 'error') reject(error)
+            },
+          })
+        })
+      }),
+    )
+  }
+
+  let mounted = await mountAll()
+  window.__ready = performance.now()
+
+  // Desmonta e monta de novo `n` vezes (vazamento de memória).
+  window.__cycle = async (n) => {
+    for (let i = 0; i < n; i++) {
+      for (const { slot, el } of mounted) {
+        slot.destroy()
+        el.remove()
+      }
+      mounted = await mountAll()
+    }
+    return app.querySelectorAll('[data-vitral-root]').length
+  }
+</script>
+</body>
+</html>

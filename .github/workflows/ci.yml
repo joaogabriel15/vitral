@@ -53,3 +53,40 @@ jobs:
           name: playwright-traces-${{ matrix.browser }}
           path: e2e/test-results
           retention-days: 7
+
+  # Benchmark: mede a main e o PR na mesma máquina e falha se o PR ficar
+  # mais de 10% pior em alguma métrica (bench/compare.mjs).
+  bench:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir bench exec playwright install --with-deps chromium
+      - name: Build do PR
+        run: pnpm build && pnpm --filter remote-react --filter remote-vue build
+      - name: Build da base
+        run: |
+          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
+          git worktree add ../base ${{ github.event.pull_request.base.sha }}
+          cd ../base
+          pnpm install --frozen-lockfile
+          pnpm build && pnpm --filter remote-react --filter remote-vue build
+      - run: node bench/run.mjs --root ../base --out base.json
+      - run: node bench/run.mjs --out head.json
+      - name: Compara
+        shell: bash
+        run: node bench/compare.mjs base.json head.json | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench
+          path: |
+            base.json
+            head.json
+          retention-days: 30

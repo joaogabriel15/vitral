@@ -15,6 +15,12 @@ importers:
         specifier: ^2.31.1
         version: 2.31.1(@types/node@26.6.5)
 
+  bench:
+    devDependencies:
+      playwright:
+        specifier: 1.56.1
+        version: 1.56.1
+
   demo/host-react:
     dependencies:
       react:
@@ -9133,7 +9139,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.3.0
       tinyrainbow: 3.2.0
-      vitest: 4.1.11(@types/node@22.20.5)(@vitest/coverage-v8@4.1.11)(happy-dom@20.14.6)(vite@8.3.4(@types/node@22.20.5)(esbuild@0.27.7)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
+      vitest: 4.1.11(@types/node@26.6.5)(@vitest/coverage-v8@4.1.11)(happy-dom@20.14.6)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))
 
   '@vitest/expect@4.1.11':
     dependencies:
@@ -9159,7 +9165,6 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)
-    optional: true
 
   '@vitest/pretty-format@4.1.11':
     dependencies:
@@ -12770,7 +12775,6 @@ snapshots:
       happy-dom: 20.14.6
     transitivePeerDependencies:
       - msw
-    optional: true
 
   vue-bundle-renderer@2.4.0:
     dependencies:
