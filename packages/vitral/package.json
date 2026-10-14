@@ -31,7 +31,12 @@
   "license": "MIT",
   "author": "João (https://github.com/joaogabriel15)",
   "type": "module",
-  "sideEffects": false,
+  "bin": {
+    "vitral": "./dist/cli.js"
+  },
+  "sideEffects": [
+    "./dist/auto.js"
+  ],
   "engines": {
     "node": ">=20.19"
   },
@@ -44,6 +49,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./auto": {
+      "types": "./dist/auto.d.ts",
+      "import": "./dist/auto.js"
+    },
+    "./devtools": {
+      "types": "./dist/devtools.d.ts",
+      "import": "./dist/devtools.js"
     },
     "./element": {
       "types": "./dist/element.d.ts",
@@ -89,7 +102,7 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest run --coverage",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p test/types",
     "lint:pkg": "publint --strict && attw --pack --profile esm-only",
     "size": "size-limit",
     "prepack": "cp ../../README.md ../../LICENSE .",
@@ -106,6 +119,7 @@
     "react-dom": ">=18",
     "solid-js": ">=1.8",
     "svelte": ">=5",
+    "typescript": ">=5",
     "vite": ">=5",
     "vue": ">=3.3"
   },
@@ -136,6 +150,9 @@
     },
     "vite": {
       "optional": true
+    },
+    "typescript": {
+      "optional": true
     }
   },
   "devDependencies": {
@@ -146,6 +163,7 @@
     "@arethetypeswrong/cli": "^0.18.5",
     "@size-limit/preset-small-lib": "^11.2.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.2",
     "@types/node": "^22.20.5",
     "@types/react": "^19.0.0",
@@ -160,6 +178,7 @@
     "size-limit": "^11.2.0",
     "solid-js": "^1.9.17",
     "svelte": "^5.57.2",
+    "tailwindcss": "^4.3.3",
     "tsup": "^8.5.0",
     "typescript": "~5.9.0",
     "vite": "^8.0.0",
@@ -171,12 +190,48 @@
       "name": "host mínimo",
       "path": "dist/index.js",
       "import": "{ configure, createSlot }",
+      "ignore": [
+        "./shadow-*",
+        "./overrides-*"
+      ],
       "limit": "4 kB"
     },
     {
       "name": "núcleo",
       "path": "dist/index.js",
+      "import": "{ RemoteError, __reset, component, configure, createEventBus, createSlot, defineRemote, events, html, loadRemote, mountRemote, navigate, preload, register, render, unsafeHTML }",
+      "ignore": [
+        "./shadow-*"
+      ],
       "limit": "5 kB"
+    },
+    {
+      "name": "host mínimo + store",
+      "path": "dist/index.js",
+      "import": "{ configure, createSlot, provide, shared, batch }",
+      "ignore": [
+        "./shadow-*",
+        "./overrides-*"
+      ],
+      "limit": "4.9 kB"
+    },
+    {
+      "name": "host mínimo + store + persist + syncTabs",
+      "path": "dist/index.js",
+      "import": "{ configure, createSlot, provide, shared, batch, persist, syncTabs }",
+      "ignore": [
+        "./shadow-*",
+        "./overrides-*"
+      ],
+      "limit": "5.2 kB"
+    },
+    {
+      "name": "estilos do Shadow DOM (além do núcleo)",
+      "path": "dist/shadow-*.js",
+      "ignore": [
+        "./chunk-*"
+      ],
+      "limit": "1 kB"
     },
     {
       "name": "react",
@@ -184,7 +239,8 @@
       "import": "{ Remote, reactRemote }",
       "ignore": [
         "react",
-        "react-dom"
+        "react-dom",
+        "./shadow-*"
       ],
       "limit": "6 kB"
     },
@@ -193,7 +249,8 @@
       "path": "dist/vue.js",
       "import": "{ VitralRemote, vueRemote }",
       "ignore": [
-        "vue"
+        "vue",
+        "./shadow-*"
       ],
       "limit": "6 kB"
     },
@@ -201,6 +258,20 @@
       "name": "element",
       "path": "dist/element.js",
       "import": "{ defineVitralElement }",
+      "ignore": [
+        "./shadow-*"
+      ],
+      "limit": "6 kB"
+    },
+    {
+      "name": "devtools",
+      "path": "dist/devtools.js",
+      "import": "{ devtools }",
+      "limit": "2 kB"
+    },
+    {
+      "name": "auto",
+      "path": "dist/auto.js",
       "limit": "6 kB"
     }
   ]

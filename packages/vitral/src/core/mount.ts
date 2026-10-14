@@ -1,10 +1,11 @@
-import { injectCss } from './css'
+import { injectStyles } from './css'
 import { RemoteError } from './errors'
 import { scopedEvents } from './events'
+import { ctxHooks } from './hooks'
 import { load } from './loader'
 import { navigate } from './navigate'
 import { protocol } from './state'
-import type { Isolation, MountedRemote, Props, RemoteContext } from './types'
+import type { Isolation, MountedRemote, Props, RemoteContext, StyleOptions } from './types'
 
 // ---------------------------------------------------------------------------
 // Montagem
@@ -12,6 +13,8 @@ import type { Isolation, MountedRemote, Props, RemoteContext } from './types'
 
 export interface MountOptions {
   isolate?: Isolation
+  /** Estilos do host no Shadow DOM (somados aos do `configure`). */
+  styles?: StyleOptions
   /** Chamado quando o remote quebra depois de montado (erro de render, handler etc.). */
   onError?: (error: RemoteError) => void
 }
@@ -28,12 +31,13 @@ export async function mountRemote<P extends Props = Props>(
 ): Promise<MountedRemote<P>> {
   const { module: mod, ...resolved } = await load(name, options.isolate)
   const isolate = options.isolate ?? resolved.isolate ?? protocol().settings().isolate
+  const label = resolved.name ?? name
 
   // Cada montagem ganha seu próprio elemento. Assim duas montagens no mesmo
   // alvo (ex.: StrictMode do React) nunca disputam o mesmo DOM.
   let shadowRoot: ShadowRoot | null = null
   const el = document.createElement('div')
-  el.setAttribute('data-vitral-root', name)
+  el.setAttribute('data-vitral-root', label)
   if (resolved.scope) el.setAttribute('data-vitral-scope', resolved.scope)
   el.style.display = 'contents'
   if (isolate === 'shadow') {
@@ -42,29 +46,31 @@ export async function mountRemote<P extends Props = Props>(
   } else {
     target.appendChild(el)
   }
-  await injectCss(resolved.css, shadowRoot)
+  const release = await injectStyles(resolved.css, shadowRoot, el, options.styles)
 
   const scoped = scopedEvents()
   const ctx: RemoteContext = {
-    name,
+    name: label,
     baseUrl: new URL('.', resolved.entry).href,
     events: scoped.bus,
     shadowRoot,
     reportError(e) {
-      const err = e instanceof RemoteError ? e : new RemoteError('RENDER_FAILED', name, String((e as Error)?.message ?? e), e)
+      const err = e instanceof RemoteError ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e)
       if (options.onError) options.onError(err)
       else console.error(err)
     },
     navigate,
     protocol: protocol().protocol,
   }
+  if (ctxHooks.shared) ctx.shared = ctxHooks.shared(name, scoped.track)
   let mounted: MountedRemote
   try {
     mounted = await mod.mount(el, props, ctx)
   } catch (e) {
     scoped.dispose()
+    release()
     el.remove()
-    throw new RemoteError('MOUNT_FAILED', name, 'erro ao montar', e)
+    throw new RemoteError('MOUNT_FAILED', label, 'erro ao montar', e)
   }
   let alive = true
   return {
@@ -78,6 +84,7 @@ export async function mountRemote<P extends Props = Props>(
         mounted.unmount()
       } finally {
         scoped.dispose()
+        release()
         el.remove()
       }
     },
