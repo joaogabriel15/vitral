@@ -1,0 +1,5 @@
+/* Faz o papel do Google Fonts: CSS de fontes em outra origem, com CORS. */
+@font-face {
+  font-family: "Externa";
+  src: url("/larga.ttf") format("truetype");
+}
