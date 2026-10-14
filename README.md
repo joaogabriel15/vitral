@@ -236,7 +236,12 @@ Todo erro é um `RemoteError` com `code`, o nome do remote e `docs`, o link da [
 | `MOUNT_FAILED` | O remote lançou erro ao montar |
 | `RENDER_FAILED` | O remote quebrou depois de montado |
 
-### Performance
+## Performance
+
+Remote com `import()` também gera `dist/split/`: o navegador baixa só o que o remote usa ao abrir, e o resto chega no `import()`, conferido pelo mesmo hash. Hosts antigos continuam usando o arquivo único.
+
+No CDN, sirva `vitral.json` com `Cache-Control: no-cache` e o resto (nome com hash) com `public, max-age=31536000, immutable`.
+
 
 Assim que o manifesto chega, o JS e o CSS do remote baixam juntos. A montagem
 espera os dois, para o remote não aparecer sem estilo. `configure()` abre a
@@ -279,7 +284,7 @@ mount(el, props, ctx) {
 }
 ```
 
-#### Métricas
+### Métricas
 
 Cada etapa do carregamento vira um `performance.measure` com o nome
 `vitral:<remote>:<etapa>`. As etapas são `manifest`, `js`, `css` e `mount`.
@@ -296,10 +301,22 @@ O evento `vitral-ready` (e o `ready` do componente Vue) traz os tempos em
 Um remote local (`module`) só mede `css` e `mount`. Erros dentro do
 `onMetric` são ignorados.
 
+## Dependências compartilhadas
+
+Para não baixar React ou Vue mais de uma vez, liste-os em `dedupe` no remote:
+
+```js
+vitral({ dedupe: ['react'] })
+```
+
+O remote usa a cópia que já está na página quando a versão serve (padrão: `^` da versão instalada no remote) e baixa a própria só quando não serve. Os componentes de host em React oferecem o React do host sem configuração.
+
 ## Segurança
 
 - Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra. O `src` de um componente de host entra na allowlist; o atributo `src` do `<vitral-remote>` não entra quando há `allowedOrigins`.
-- Com `integrity`, confere o hash do JS antes de executar e executa exatamente os bytes conferidos. Aceita `sha256`, `sha384` e `sha512`, e vários hashes separados por espaço (vale o mais forte). Com CSP, inclua `blob:` em `script-src`.
+- Com `integrity`, nada roda sem o hash conferir. A lib usa o primeiro caminho que o navegador garante: import map com `integrity` (Chrome 133+, Safari 18.4+), `<link rel="modulepreload" integrity>` (Firefox 115+) ou, nos outros, baixa, confere e executa exatamente os bytes conferidos via `blob:`. Aceita `sha256`, `sha384` e `sha512`, e vários hashes separados por espaço (vale o mais forte). O CSS do manifesto também é conferido.
+- Com CSP, a lib copia o `nonce` de um `<script nonce>` da página para o import map. Sem nonce, cai para o `modulepreload`.
+- O hash só protege contra CDN comprometido se vier de outro lugar: fixe `integrity` no host ou embuta o manifesto (`{ url, manifest }`).
 - Sem `eval` e sem iframes.
 - Shadow DOM isola o CSS, não o JS. Para código de terceiros em que você não confia, use iframe.
 
