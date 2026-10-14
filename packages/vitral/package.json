@@ -173,12 +173,26 @@
       "name": "host mínimo",
       "path": "dist/index.js",
       "import": "{ configure, createSlot }",
+      "ignore": [
+        "./shadow-*"
+      ],
       "limit": "4 kB"
     },
     {
       "name": "núcleo",
       "path": "dist/index.js",
+      "ignore": [
+        "./shadow-*"
+      ],
       "limit": "5 kB"
+    },
+    {
+      "name": "estilos do Shadow DOM (além do núcleo)",
+      "path": "dist/shadow-*.js",
+      "ignore": [
+        "./chunk-*"
+      ],
+      "limit": "1 kB"
     },
     {
       "name": "react",
@@ -186,7 +200,8 @@
       "import": "{ Remote, reactRemote }",
       "ignore": [
         "react",
-        "react-dom"
+        "react-dom",
+        "./shadow-*"
       ],
       "limit": "6 kB"
     },
@@ -195,7 +210,8 @@
       "path": "dist/vue.js",
       "import": "{ VitralRemote, vueRemote }",
       "ignore": [
-        "vue"
+        "vue",
+        "./shadow-*"
       ],
       "limit": "6 kB"
     },
@@ -203,6 +219,9 @@
       "name": "element",
       "path": "dist/element.js",
       "import": "{ defineVitralElement }",
+      "ignore": [
+        "./shadow-*"
+      ],
       "limit": "6 kB"
     }
   ]

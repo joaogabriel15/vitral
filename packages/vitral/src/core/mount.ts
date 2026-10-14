@@ -1,10 +1,10 @@
-import { injectCss } from './css'
+import { injectStyles } from './css'
 import { RemoteError } from './errors'
 import { scopedEvents } from './events'
 import { load } from './loader'
 import { navigate } from './navigate'
 import { protocol } from './state'
-import type { Isolation, MountedRemote, Props, RemoteContext } from './types'
+import type { Isolation, MountedRemote, Props, RemoteContext, StyleOptions } from './types'
 
 // ---------------------------------------------------------------------------
 // Montagem
@@ -12,6 +12,8 @@ import type { Isolation, MountedRemote, Props, RemoteContext } from './types'
 
 export interface MountOptions {
   isolate?: Isolation
+  /** Estilos do host no Shadow DOM (somados aos do `configure`). */
+  styles?: StyleOptions
   /** Chamado quando o remote quebra depois de montado (erro de render, handler etc.). */
   onError?: (error: RemoteError) => void
 }
@@ -42,7 +44,7 @@ export async function mountRemote<P extends Props = Props>(
   } else {
     target.appendChild(el)
   }
-  await injectCss(resolved.css, shadowRoot)
+  const release = await injectStyles(resolved.css, shadowRoot, el, options.styles)
 
   const scoped = scopedEvents()
   const ctx: RemoteContext = {
@@ -63,6 +65,7 @@ export async function mountRemote<P extends Props = Props>(
     mounted = await mod.mount(el, props, ctx)
   } catch (e) {
     scoped.dispose()
+    release()
     el.remove()
     throw new RemoteError('MOUNT_FAILED', name, 'erro ao montar', e)
   }
@@ -78,6 +81,7 @@ export async function mountRemote<P extends Props = Props>(
         mounted.unmount()
       } finally {
         scoped.dispose()
+        release()
         el.remove()
       }
     },

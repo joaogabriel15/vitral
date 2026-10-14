@@ -17,6 +17,7 @@ export type {
   RemoteEntry,
   RemoteManifest,
   RemoteModule,
+  StyleOptions,
   VitralConfig,
 } from './core/types'
 export { RemoteError, type RemoteErrorCode } from './core/errors'
