@@ -19,6 +19,8 @@ export interface Settings {
   allowedOrigins: string[] | null
   /** Origens de URLs escritas no código do host (`src`). Valem mesmo com `allowedOrigins`. */
   trusted?: string[]
+  /** Liga os overrides de desenvolvimento fora de localhost. */
+  devOverrides?: boolean
 }
 
 /** Remote baixado e pronto para montar. Faz parte do protocolo v1. */

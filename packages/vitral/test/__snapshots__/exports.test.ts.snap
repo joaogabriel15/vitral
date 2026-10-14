@@ -13,6 +13,14 @@ exports[`exports públicos > angular 1`] = `
 
 exports[`exports públicos > auto 1`] = `[]`;
 
+exports[`exports públicos > devtools 1`] = `
+[
+  "devtools",
+  "getOverrides",
+  "setOverride",
+]
+`;
+
 exports[`exports públicos > element 1`] = `
 [
   "VitralRemoteElement",
