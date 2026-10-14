@@ -80,6 +80,9 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         server: { cors: true },
         ...(command === 'serve' && { optimizeDeps: devOptimizeDeps(user.plugins, entry, options.adapter) }),
         preview: { cors: true },
+        // O remote não tem index.html: sem isso o Vite só descobre as
+        // dependências no primeiro request e recarrega a página do host.
+        optimizeDeps: user.optimizeDeps?.entries ? undefined : { entries: [entry] },
         build: {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
           lib: { entry: options.adapter === false ? entry : ENTRY_ID, formats: ['es'], fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
