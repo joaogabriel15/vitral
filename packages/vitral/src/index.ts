@@ -693,3 +693,10 @@ async function verifyIntegrity(name: string, code: string, integrity: string) {
 export function __reset(): void {
   delete g[KEY]
 }
+
+// ---------------------------------------------------------------------------
+// Remote em JS/TS puro com template HTML
+// ---------------------------------------------------------------------------
+
+export { component, html, render, unsafeHTML } from './component'
+export type { ComponentOptions, RenderFn, Template, View } from './component'
