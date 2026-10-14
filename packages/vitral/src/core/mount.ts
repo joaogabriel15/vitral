@@ -1,9 +1,10 @@
 import { injectCss } from './css'
-import { RemoteError } from './errors'
+import { isRemoteError, RemoteError } from './errors'
 import { scopedEvents } from './events'
 import { load } from './loader'
 import { navigate } from './navigate'
 import { protocol } from './state'
+import { metric } from './util'
 import type { Isolation, MountedRemote, Props, RemoteContext } from './types'
 
 // ---------------------------------------------------------------------------
@@ -44,7 +45,10 @@ export async function mountRemote<P extends Props = Props>(
   } else {
     target.appendChild(el)
   }
+  let t = performance.now()
   await injectCss(resolved.css, shadowRoot, resolved.sri)
+  metric(name, 'css', t)
+  t = performance.now()
 
   const scoped = scopedEvents()
   // Keep-alive avisa o remote com eventos no elemento raiz, que somem com ele.
@@ -55,7 +59,7 @@ export async function mountRemote<P extends Props = Props>(
     events: scoped.bus,
     shadowRoot,
     reportError(e) {
-      const err = e instanceof RemoteError ? e : new RemoteError('RENDER_FAILED', name, String((e as Error)?.message ?? e), e)
+      const err = isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', name, String((e as Error)?.message ?? e), e)
       if (options.onError) options.onError(err)
       else console.error(err)
     },
@@ -67,6 +71,7 @@ export async function mountRemote<P extends Props = Props>(
   let mounted: MountedRemote
   try {
     mounted = await mod.mount(el, props, ctx)
+    metric(name, 'mount', t)
   } catch (e) {
     scoped.dispose()
     el.remove()

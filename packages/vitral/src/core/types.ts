@@ -79,6 +79,21 @@ export interface VitralConfig {
   retries?: number
   /** Isolamento padrão para todos os remotes. Padrão `'none'`. */
   isolate?: Isolation
+  /** Recebe o tempo de cada etapa do carregamento (para RUM). */
+  onMetric?: (metric: RemoteMetric) => void
+}
+
+/**
+ * Tempo de uma etapa do carregamento de um remote. Cada etapa também vira
+ * `performance.measure('vitral:<nome>:<etapa>')`, visível no painel
+ * Performance do DevTools.
+ */
+export interface RemoteMetric {
+  name: string
+  stage: 'manifest' | 'js' | 'css' | 'mount'
+  /** Início, em ms desde `performance.timeOrigin`. */
+  start: number
+  duration: number
 }
 
 

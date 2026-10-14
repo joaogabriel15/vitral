@@ -1,11 +1,10 @@
 import { prefetchCss } from './css'
-import { RemoteError } from './errors'
-import { verifyIntegrity } from './integrity'
+import { isRemoteError, RemoteError } from './errors'
 import { checkOrigin } from './registry'
-import type { SplitBuild } from './sri'
+import type { SplitBuild, Verifiable } from './sri'
 import { protocol, type LoadedRemote } from './state'
 import type { Isolation, Props, RemoteEntry, RemoteManifest, RemoteModule } from './types'
-import { absolute, fetchBytes, fetchJson, withRetry, withTimeout } from './util'
+import { absolute, fetchJson, metric, withRetry, withTimeout } from './util'
 
 /** Baixa (uma vez só) e devolve o módulo de um remote. */
 export function loadRemote<P extends Props = Props>(name: string): Promise<RemoteModule<P>> {
@@ -35,13 +34,17 @@ export function load(name: string, isolate?: Isolation, priority?: RequestPriori
       const entry = p.entry(name)
       if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
       if (entry.module) return await loadLocal(name, entry)
+      let t = performance.now()
       const resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority)
+      metric(name, 'manifest', t)
       // O CSS baixa junto com o JS; a montagem espera os dois.
       prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', resolved.sri, priority)
+      t = performance.now()
       const module = await withRetry(p.settings().retries, () => importModule(name, resolved))
+      metric(name, 'js', t)
       return { ...resolved, module }
     } catch (e: any) {
-      throw e instanceof RemoteError ? e : new RemoteError('LOAD_FAILED', name, String(e?.message ?? e), e)
+      throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, String(e?.message ?? e), e)
     }
   })
 }
@@ -53,9 +56,6 @@ async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote
 }
 
 type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild; priority?: RequestPriority }
-
-/** Arquivos únicos que já falharam: o mapa de módulos pode guardar o erro, então só `blob:`. */
-const failed = new Set<string>()
 
 async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, priority?: RequestPriority): Promise<Resolved> {
   checkOrigin(name, entry.url)
@@ -90,37 +90,15 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, 
 
 async function importModule(name: string, r: Resolved): Promise<RemoteModule> {
   const { timeout } = protocol().settings()
-  const { entry, integrity, priority } = r
-  const run = (url: string) => withTimeout(timeout, name, import(/* @vite-ignore */ /* webpackIgnore: true */ url))
-  let ns: any
-  if (integrity && !failed.has(entry)) {
-    try {
-      // Caminhos 1 e 2: o navegador confere o hash e o JS roda da própria URL.
-      const url = await (await paths)?.verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity }, priority })
-      if (url) ns = await run(url)
-    } catch {
-      failed.add(entry)
-    }
-  }
-  if (!ns) {
-    let url = entry
-    let revoke: string | null = null
-    if (integrity) {
-      const bytes = await fetchBytes(url, timeout, name, { priority })
-      await verifyIntegrity(name, bytes, integrity)
-      // Caminho 3: executa exatamente os bytes verificados.
-      url = revoke = URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }))
-    }
-    try {
-      ns = await run(url)
-    } catch (e) {
-      if (e instanceof RemoteError) throw e
-      throw new RemoteError('LOAD_FAILED', name, `falha ao importar ${entry}`, e)
-    } finally {
-      if (revoke) URL.revokeObjectURL(revoke)
-    }
-  }
-  return toModule(name, ns)
+  const run = (url: string) =>
+    withTimeout(timeout, name, import(/* @vite-ignore */ /* webpackIgnore: true */ url)).catch((e) => {
+      throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, `falha ao importar ${r.entry}`, e)
+    })
+  if (!r.integrity) return toModule(name, await run(r.entry))
+  // Com integrity, a conferência mora no módulo de SRI. Sem ele, nada roda.
+  const sri = await paths
+  if (!sri) throw new RemoteError('LOAD_FAILED', name, 'não foi possível carregar o verificador de integrity')
+  return toModule(name, await sri.importVerified(name, r as Verifiable, run, timeout))
 }
 
 function toModule(name: string, ns: any): RemoteModule {

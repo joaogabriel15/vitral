@@ -15,8 +15,7 @@ export function scopedEvents(): { bus: EventBus; dispose(): void } {
   const offs = new Set<() => void>()
   return {
     bus: {
-      emit: (t, p) => events.emit(t, p),
-      last: (t) => events.last(t),
+      ...events,
       on(t, h) {
         const off = events.on(t, h)
         const wrapped = () => (offs.delete(wrapped), off())
