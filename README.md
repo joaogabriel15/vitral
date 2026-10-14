@@ -230,10 +230,11 @@ Para navegar de dentro de um remote, use `navigate('/pedidos/42')` (ou
 
 ### Erros
 
-Todo erro é um `RemoteError` com `code` e o nome do remote. Falhas de
-download e erros de render dentro do remote (React, Vue) aparecem no `error`
-do componente de host (ou no slot `error` do `<vitral-remote>`), com `retry`
-para remontar só aquele remote.
+Todo erro é um `RemoteError` com `code`, o nome do remote e `docs`, o link da
+página do código com causas e correção ([docs/erros](docs/erros/README.md)).
+Falhas de download e erros de render dentro do remote (React, Vue) aparecem no
+`error` do componente de host (ou no slot `error` do `<vitral-remote>`), com
+`retry` para remontar só aquele remote.
 
 ### Configuração
 
@@ -257,10 +258,14 @@ for de terceiros).
 
 - **Allowlist de origens**: nenhum código é importado de origem não permitida,
   nem mesmo se um manifesto apontar para fora.
-- **SRI**: quando há `integrity`, a lib baixa o JS, confere o hash e executa
-  exatamente os bytes verificados (via `blob:`). Com CSP, inclua `blob:` em
-  `script-src`.
-- **Sem `eval`**, sem iframes, sem globais além de um `Symbol.for('vitral.state.v1')`.
+- **SRI**: quando há `integrity`, a lib baixa o JS, confere o hash sobre os
+  bytes e executa exatamente os bytes verificados (via `blob:`). Aceita o
+  formato SRI completo: `sha256`, `sha384` ou `sha512`, vários hashes
+  separados por espaço (vale o algoritmo mais forte). Com CSP, inclua `blob:`
+  em `script-src`.
+- **Sem `eval`**, sem iframes, sem globais além de `Symbol.for('vitral')`: um
+  objeto com o número do protocolo e métodos, compartilhado por todas as
+  cópias da lib na página (host e remotes podem ter versões diferentes).
 - Shadow DOM isola CSS, não JS: um remote ainda roda com os privilégios da
   página. Para código não confiável de verdade, use iframe.
 
@@ -298,9 +303,12 @@ pnpm install
 pnpm check       # build, tipos, publint/attw, tamanho e testes unitários
 pnpm test:e2e    # builda tudo e roda o Playwright: 9 hosts × 8 remotes + demo
 pnpm examples    # sobe os exemplos (hosts em :4201-:4207, remotes em :4100)
+node bench/run.mjs  # benchmark: 3 remotes React + 1 Vue em 4G lento (bench/)
 ```
 
-O CI roda tudo isso em Node 20, 22 e 24 a cada push e PR. Versões novas saem
+O CI roda `pnpm check` em Node 22 e 24, o e2e em Chromium, Firefox e WebKit e,
+em cada PR, o benchmark contra a main: o PR falha se alguma métrica ficar mais
+de 10% pior. A lib pede Node 20.19 ou mais novo para build e SSR. Versões novas saem
 pelo Changesets: `pnpm changeset`, merge do PR "Versionar pacote" e o GitHub
 Actions publica no npm com proveniência.
 
@@ -317,7 +325,8 @@ Actions publica no npm com proveniência.
 
 ## Estado
 
-Protótipo 0.1. Testado (32 testes unitários e 43 e2e): carregamento via
+Protótipo 0.1. Testado (86 testes unitários, mais de 90% de cobertura no
+núcleo, e 43 e2e em Chromium, Firefox e WebKit): carregamento via
 manifesto com SRI, Shadow DOM, props reativas sem remontar, props que mudam
 durante o download, desmontar/remontar, StrictMode do React, erros de download
 e de render, eventos entre frameworks, Tailwind v4 com e sem Shadow DOM, escopo

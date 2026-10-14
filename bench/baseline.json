@@ -1,0 +1,8 @@
+{
+  "scenario": "3 React + 1 Vue, Slow 4G, Chromium",
+  "runs": 5,
+  "coldReadyMs": 1935.1,
+  "warmReadyMs": 615,
+  "jsKB": 218.9,
+  "heapGrowthKB": 231.6
+}

@@ -12,7 +12,8 @@
  * Valores interpolados são escapados (sem XSS). Mudar `state` ou receber
  * props novas renderiza de novo. Funções em `on<evento>=${fn}` viram listeners.
  */
-import { defineRemote, type Props, type RemoteContext, type RemoteModule } from './index'
+import { defineRemote } from './core/remote'
+import type { Props, RemoteContext, RemoteModule } from './core/types'
 
 const TEMPLATE = Symbol('vitral.html')
 
