@@ -93,6 +93,9 @@ function deployFiles(id) {
 // Respostas
 // ---------------------------------------------------------------------------
 
+/** JS adulterado: o original mais uma linha que deixa rastro. */
+const tamper = (js) => Buffer.concat([js, Buffer.from('\nwindow.__adulterado = true\n')])
+
 const counts = new Map()
 /** Quantas vezes `key` já foi pedido (contando esta). */
 const nth = (key) => {
@@ -172,12 +175,14 @@ async function cdn(req, res) {
   if (kind === 'manifesto') {
     const manifest = { ...remote.manifest }
     if (opts.semIntegrity) delete manifest.integrity
+    // Ataque no CDN: o manifesto traz o hash do JS adulterado.
+    if (opts.adulterado === 'com-manifesto') manifest.integrity = `sha384-${sha('sha384', tamper(remote.files[manifest.entry]))}`
     if (opts.manifesto) Object.assign(manifest, opts.manifesto)
     return send(req, res, { body: JSON.stringify(manifest), type: TYPES['.json'], cors, banda: opts.banda })
   }
   let body = remote.files[file]
   if (!body) return send(req, res, { status: 404, body: 'not found', cors })
-  if (kind === 'js' && opts.adulterado) body = Buffer.concat([body, Buffer.from('\nwindow.__adulterado = true\n')])
+  if (kind === 'js' && opts.adulterado) body = tamper(body)
   return send(req, res, { body, type: TYPES[extname(file)], cache: IMMUTABLE, cors, banda: opts.banda })
 }
 

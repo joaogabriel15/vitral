@@ -18,8 +18,11 @@ export interface Cenario {
   latencia?: number
   /** Banda em bytes por segundo. */
   banda?: number
-  /** Entrega um JS diferente do que o hash do manifesto descreve. */
-  adulterado?: boolean
+  /**
+   * Entrega um JS diferente do original. `'com-manifesto'`: o manifesto também
+   * é trocado e traz o hash do JS adulterado.
+   */
+  adulterado?: boolean | 'com-manifesto'
   /** Manifesto sem `integrity`: o JS entra por `import()` direto. */
   semIntegrity?: boolean
   /** Responde sem `Access-Control-Allow-Origin`. */
