@@ -2,7 +2,10 @@
  * Plugin Vite para quem publica um remote.
  *
  *   // vite.config.ts do remote
- *   plugins: [react(), vitral({ entry: 'src/remote.tsx' })]
+ *   plugins: [react(), vitral()]
+ *
+ *   // src/App.tsx: o plugin embrulha com o adaptador do framework
+ *   export default App
  *
  * `vite build` gera `dist/remote.js`, o CSS e `dist/vitral.json` com o hash
  * SRI do JS. O host só precisa da URL do `vitral.json`.
@@ -13,10 +16,20 @@ import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
+import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
 
 export interface VitralViteOptions {
-  /** Arquivo que exporta o remote (default export de reactRemote/vueRemote/defineRemote). */
-  entry: string
+  /**
+   * Arquivo cujo `export default` é o remote: um componente do framework ou
+   * um objeto com `mount`. Padrão: `src/remote.*` ou `src/App.*`.
+   */
+  entry?: string
+  /**
+   * Adaptador que embrulha o `export default`. Padrão: descoberto pelos
+   * plugins do Vite (React, Vue, Svelte, Solid, Preact, Angular; sem nenhum,
+   * Web Component ou função). `false` usa o export como está.
+   */
+  adapter?: AdapterName | false
   /** Nome do remote no manifesto. Padrão: `name` do package.json. */
   name?: string
   /** Versão no manifesto. Padrão: `version` do package.json. */
@@ -34,15 +47,19 @@ export interface VitralViteOptions {
   scopeCss?: boolean
 }
 
-export default function vitral(options: VitralViteOptions): Plugin {
+export default function vitral(options: VitralViteOptions = {}): Plugin {
   let outDir = 'dist'
   let root = process.cwd()
   let pkg: { name?: string; version?: string } = {}
+  let entry = options.entry
+  let adapter: AdapterName = 'element'
   const scopeName = () =>
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
   return {
     name: 'vitral',
-    config(_, { mode }) {
+    config(user, { mode }) {
+      entry ??= findEntry(resolve(user.root ?? process.cwd()))
+      if (!entry) throw new Error('[vitral] não achei a entrada do remote (src/remote.* ou src/App.*). Use vitral({ entry }).')
       // Vite 8+ (rolldown) usa codeSplitting; Vite 5-7 (rollup) usa inlineDynamicImports.
       const rolldown = 'rolldownVersion' in (this as any).meta
       const output = rolldown ? { codeSplitting: false } : { inlineDynamicImports: true }
@@ -53,7 +70,7 @@ export default function vitral(options: VitralViteOptions): Plugin {
         preview: { cors: true },
         build: {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
-          lib: { entry: options.entry, formats: ['es'], fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
+          lib: { entry: options.adapter === false ? entry : ENTRY_ID, formats: ['es'], fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
           // Um arquivo só: necessário para verificar o hash SRI no host.
           rollupOptions: { external: options.shared ?? [], output: output as any },
           cssCodeSplit: false,
@@ -62,10 +79,17 @@ export default function vitral(options: VitralViteOptions): Plugin {
     },
     configResolved(c) {
       root = c.root
+      adapter = options.adapter || detectAdapter(c.plugins)
       outDir = resolve(c.root, c.build.outDir)
       try {
         pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
       } catch {}
+    },
+    resolveId(id) {
+      if (id.endsWith(ENTRY_ID)) return VIRTUAL_ENTRY
+    },
+    load(id) {
+      if (id === VIRTUAL_ENTRY) return entryCode(resolve(root, entry!), adapter, scopeName())
     },
     writeBundle(_, bundle) {
       const files = Object.values(bundle)
