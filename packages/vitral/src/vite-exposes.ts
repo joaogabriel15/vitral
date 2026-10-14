@@ -10,8 +10,8 @@
 import { resolve } from 'node:path'
 
 /** Nome do arquivo virtual usado como `build.lib.entry`. */
-export const EXPOSES_ENTRY = '__vitral_entry__.js'
-const ID = '\0vitral-entry'
+export const EXPOSES_ENTRY = '__vitral_exposes__.js'
+const ID = '\0vitral-exposes'
 
 /** `MiniCarrinho` e `./MiniCarrinho` viram `./MiniCarrinho`. */
 export function exposeKeys(exposes: Record<string, string>): Record<string, string> {
@@ -29,9 +29,10 @@ export function resolveExposesId(id: string): string | null {
 }
 
 /** Código da entrada virtual, ou `null` se `id` não é ela. */
-export function loadExposes(id: string, root: string, entry: string, exposes: Record<string, string>): string | null {
+export function loadExposes(id: string, root: string, entry: string, exposes: Record<string, string>, main?: string): string | null {
   if (id !== ID) return null
   const file = (f: string) => JSON.stringify(resolve(root, f).replace(/\\/g, '/'))
   const parts = Object.entries(exposeKeys(exposes)).map(([key, f]) => `  ${JSON.stringify(key)}: () => import(${file(f)}),`)
-  return [`export * from ${file(entry)}`, `export { default } from ${file(entry)}`, `export const exposes = {`, ...parts, `}`, ''].join('\n')
+  // `main`: a entrada embrulhada pelo adaptador, quando há uma.
+  return [`export * from ${file(entry)}`, `export { default } from ${main ? JSON.stringify(main) : file(entry)}`, `export const exposes = {`, ...parts, `}`, ''].join('\n')
 }

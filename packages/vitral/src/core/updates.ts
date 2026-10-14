@@ -8,16 +8,15 @@
  * com as props atuais. Se a versão nova falhar, a antiga continua na tela.
  */
 import { events } from './events'
-import { splitName } from './expose'
 import { loadFile, resolveEntry } from './loader'
 import { protocol } from './state'
 import type { MountedRemote, Props, RemoteEntry } from './types'
 
-/** URL do JS montado (ou já anunciado) de cada remote. */
+/** URL do JS montado (ou já anunciado), por nome montado (`carrinho` ou `carrinho/Mini`). */
 const versions = new Map<string, string>()
 
 export function track(name: string, entry: string): void {
-  versions.set(splitName(name)[0], entry)
+  versions.set(name, entry)
 }
 
 /**
@@ -76,8 +75,14 @@ const noop = () => {}
 export async function checkUpdates(): Promise<string[]> {
   const p = protocol()
   const found: string[] = []
+  // Partes do mesmo remote (`carrinho/Mini`) contam como o remote.
+  const { splitName } = await import('./expose')
+  const remotes = new Map<string, string>()
+  for (const [name, entry] of versions) remotes.set(splitName(name)[0], entry)
+  versions.clear()
+  for (const [name, entry] of remotes) versions.set(name, entry)
   await Promise.all(
-    [...versions].map(([name, current]) =>
+    [...remotes].map(([name, current]) =>
       resolveEntry(name, p.entry(name) as RemoteEntry & { url: string }).then(({ entry }) => {
         if (entry !== current) {
           versions.set(name, entry)

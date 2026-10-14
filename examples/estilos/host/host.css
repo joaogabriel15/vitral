@@ -1,0 +1,15 @@
+@import "tailwindcss" source(none);
+@source "./index.html";
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens do host, emitidos mesmo sem uso (theme(static) da receita). */
+@theme static {
+  --color-marca: oklch(0.55 0.2 290);
+}
+
+/* No escuro o host troca a marca; o remote acompanha pela variável. */
+@layer theme {
+  .dark {
+    --color-marca: oklch(0.45 0.25 330);
+  }
+}
