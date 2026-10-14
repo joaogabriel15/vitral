@@ -19,6 +19,7 @@ export type {
   RemoteEntry,
   RemoteManifest,
   RemoteModule,
+  StyleOptions,
   Remotes,
   VitralConfig,
 } from './core/types'
