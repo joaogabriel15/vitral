@@ -183,7 +183,7 @@ configure({
 
 ## Erros
 
-Todo erro é um `RemoteError` com `code` e o nome do remote. Um remote que falha mostra o próprio erro e não derruba a página. `retry` monta só aquele remote de novo.
+Todo erro é um `RemoteError` com `code`, o nome do remote e `docs`, o link da [página do erro](https://github.com/joaogabriel15/vitral/tree/main/docs/erros) com causas e correção. Um remote que falha mostra o próprio erro e não derruba a página. `retry` monta só aquele remote de novo.
 
 | `code` | Quando |
 |---|---|
@@ -199,7 +199,7 @@ Todo erro é um `RemoteError` com `code` e o nome do remote. Um remote que falha
 ## Segurança
 
 - Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra.
-- Com `integrity`, confere o hash do JS antes de executar e executa exatamente os bytes conferidos. Com CSP, inclua `blob:` em `script-src`.
+- Com `integrity`, confere o hash do JS antes de executar e executa exatamente os bytes conferidos. Aceita `sha256`, `sha384` e `sha512`, e vários hashes separados por espaço (vale o mais forte). Com CSP, inclua `blob:` em `script-src`.
 - Sem `eval` e sem iframes.
 - Shadow DOM isola o CSS, não o JS. Para código de terceiros em que você não confia, use iframe.
 
@@ -231,4 +231,5 @@ failingRemote('recomendacoes') // testa a tela de erro
 - [Exemplos](https://github.com/joaogabriel15/vitral/tree/main/examples): o mesmo remote em 8 frameworks e 9 hosts.
 - [Problemas resolvidos](https://github.com/joaogabriel15/vitral/blob/main/docs/PROBLEMAS.md) e o que ainda falta.
 - [Como contribuir](https://github.com/joaogabriel15/vitral/blob/main/CONTRIBUTING.md)
+- [Benchmark](https://github.com/joaogabriel15/vitral/tree/main/bench)
 - Licença [MIT](https://github.com/joaogabriel15/vitral/blob/main/LICENSE)
