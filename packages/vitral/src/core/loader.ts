@@ -1,4 +1,5 @@
 import { RemoteError } from './errors'
+import { resolveModule, resolveTarget } from './expose'
 import { verifyIntegrity } from './integrity'
 import { checkOrigin } from './registry'
 import { protocol, type LoadedRemote } from './state'
@@ -10,12 +11,30 @@ export function loadRemote<P extends Props = Props>(name: string): Promise<Remot
   return load(name).then((r) => r.module as unknown as RemoteModule<P>)
 }
 
+/**
+ * Carrega um módulo sem UI que um remote expõe (funções, stores, constantes),
+ * com a mesma verificação de SRI e de origem dos componentes.
+ *
+ *   const api = await loadModule<typeof import('./tipos/carrinho-api')>('carrinho/api')
+ *
+ * Sem `/`, devolve os exports do arquivo principal do remote.
+ */
+export function loadModule<T = Record<string, unknown>>(name: string): Promise<T> {
+  return resolveModule<T>(name, loadFile)
+}
+
 /** Começa a baixar um remote sem montar (ex.: no hover de um link). */
 export function preload(name: string): void {
   load(name).catch(() => {})
 }
 
+/** Baixa um remote ou um dos componentes que ele expõe (`carrinho/MiniCarrinho`). */
 export function load(name: string): Promise<LoadedRemote> {
+  return resolveTarget(name, loadFile)
+}
+
+/** Baixa o arquivo de um remote registrado, sem conferir o formato. */
+export function loadFile(name: string): Promise<LoadedRemote> {
   const p = protocol()
   return p.load(name, async () => {
     try {
@@ -24,8 +43,8 @@ export function load(name: string): Promise<LoadedRemote> {
       if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
       if (entry.module) return await loadLocal(name, entry)
       const { integrity, ...resolved } = await resolveEntry(name, entry as RemoteEntry & { url: string })
-      const module = await withRetry(p.settings().retries, () => importModule(name, resolved.entry, integrity))
-      return { ...resolved, module }
+      const loaded = await withRetry(p.settings().retries, () => importModule(name, resolved.entry, integrity))
+      return { ...resolved, ...loaded }
     } catch (e: any) {
       throw e instanceof RemoteError ? e : new RemoteError('LOAD_FAILED', name, String(e?.message ?? e), e)
     }
@@ -33,11 +52,9 @@ export function load(name: string): Promise<LoadedRemote> {
 }
 
 async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote> {
-  let mod: any = entry.module
-  if (typeof mod === 'function') mod = await mod()
-  mod = mod?.default ?? mod
-  if (typeof mod?.mount !== 'function') throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount()')
-  return { module: mod, entry: typeof location !== 'undefined' ? location.href : 'http://localhost/', css: entry.css ?? [], isolate: entry.isolate }
+  let ns: any = entry.module
+  if (typeof ns === 'function') ns = await ns()
+  return { module: ns?.default ?? ns, exports: ns, entry: typeof location !== 'undefined' ? location.href : 'http://localhost/', css: entry.css ?? [], isolate: entry.isolate }
 }
 
 type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string }
@@ -64,7 +81,7 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }):
   return resolved
 }
 
-async function importModule(name: string, entry: string, integrity?: string): Promise<RemoteModule> {
+async function importModule(name: string, entry: string, integrity?: string): Promise<Pick<LoadedRemote, 'module' | 'exports'>> {
   const { timeout } = protocol().settings()
   let url = entry
   let revoke: string | null = null
@@ -76,11 +93,7 @@ async function importModule(name: string, entry: string, integrity?: string): Pr
   }
   try {
     const ns = await withTimeout(timeout, name, import(/* @vite-ignore */ /* webpackIgnore: true */ url))
-    const mod = (ns.default ?? ns) as RemoteModule
-    if (typeof mod?.mount !== 'function') {
-      throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount(). Use defineRemote() no remote.')
-    }
-    return mod
+    return { module: ns.default ?? ns, exports: ns }
   } catch (e) {
     if (e instanceof RemoteError) throw e
     throw new RemoteError('LOAD_FAILED', name, `falha ao importar ${entry}`, e)

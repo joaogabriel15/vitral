@@ -13,6 +13,7 @@ import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
+import { EXPOSES_ENTRY, exposeKeys, loadExposes, resolveExposesId } from './vite-exposes'
 
 export interface VitralViteOptions {
   /** Arquivo que exporta o remote (default export de reactRemote/vueRemote/defineRemote). */
@@ -32,6 +33,15 @@ export interface VitralViteOptions {
    * preflight/tema do Tailwind). Padrão: true.
    */
   scopeCss?: boolean
+  /**
+   * Outros componentes e módulos do remote, por nome. O host usa
+   * `carrinho/MiniCarrinho` ou `loadModule('carrinho/api')`.
+   *
+   *   exposes: { './MiniCarrinho': 'src/MiniCarrinho.tsx', './api': 'src/api.ts' }
+   *
+   * Um componente exporta `default` com `mount` (`reactRemote(Mini)` etc.).
+   */
+  exposes?: Record<string, string>
 }
 
 export default function vitral(options: VitralViteOptions): Plugin {
@@ -53,7 +63,7 @@ export default function vitral(options: VitralViteOptions): Plugin {
         preview: { cors: true },
         build: {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
-          lib: { entry: options.entry, formats: ['es'], fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
+          lib: { entry: options.exposes ? EXPOSES_ENTRY : options.entry, formats: ['es'], fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
           // Um arquivo só: necessário para verificar o hash SRI no host.
           rollupOptions: { external: options.shared ?? [], output: output as any },
           cssCodeSplit: false,
@@ -66,6 +76,12 @@ export default function vitral(options: VitralViteOptions): Plugin {
       try {
         pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
       } catch {}
+    },
+    resolveId(id) {
+      return options.exposes ? resolveExposesId(id) : null
+    },
+    load(id) {
+      return options.exposes ? loadExposes(id, root, options.entry, options.exposes) : null
     },
     writeBundle(_, bundle) {
       const files = Object.values(bundle)
@@ -92,6 +108,7 @@ export default function vitral(options: VitralViteOptions): Plugin {
         css,
         integrity: 'sha384-' + createHash('sha384').update(code).digest('base64'),
         ...(options.scopeCss === false ? {} : { scope: scopeName() }),
+        ...(options.exposes ? { exposes: Object.keys(exposeKeys(options.exposes)) } : {}),
       }
       writeFileSync(join(outDir, 'vitral.json'), JSON.stringify(manifest, null, 2) + '\n')
     },
