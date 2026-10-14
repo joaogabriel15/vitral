@@ -7,6 +7,7 @@ const entries = {
   index: () => import('../src/index'),
   element: () => import('../src/element'),
   routes: () => import('../src/routes'),
+  iframe: () => import('../src/iframe'),
   react: () => import('../src/react'),
   vue: () => import('../src/vue'),
   svelte: () => import('../src/svelte'),

@@ -259,7 +259,8 @@ for de terceiros).
 Vários componentes por remote (`<Remote name="carrinho/MiniCarrinho" />`),
 módulos sem UI (`loadModule('carrinho/api')`), deploy novo sem recarregar a
 página (`watchUpdates()` e `refresh('carrinho')`) e app shell por rota
-(`routes()` e `<vitral-outlet>`, em `vitral/routes`). Veja
+(`routes()` e `<vitral-outlet>`, em `vitral/routes`) e código de terceiros
+isolado num iframe com `sandbox` (`isolate="iframe"`, em `vitral/iframe`). Veja
 [docs/formas-de-usar.md](docs/formas-de-usar.md).
 
 ## Segurança
@@ -271,11 +272,12 @@ página (`watchUpdates()` e `refresh('carrinho')`) e app shell por rota
   formato SRI completo: `sha256`, `sha384` ou `sha512`, vários hashes
   separados por espaço (vale o algoritmo mais forte). Com CSP, inclua `blob:`
   em `script-src`.
-- **Sem `eval`**, sem iframes, sem globais além de `Symbol.for('vitral')`: um
+- **Sem `eval`**, sem iframes (fora do `isolate="iframe"`), sem globais além de `Symbol.for('vitral')`: um
   objeto com o número do protocolo e métodos, compartilhado por todas as
   cópias da lib na página (host e remotes podem ter versões diferentes).
 - Shadow DOM isola CSS, não JS: um remote ainda roda com os privilégios da
-  página. Para código não confiável de verdade, use iframe.
+  página. Para código não confiável de verdade, use `isolate="iframe"` (veja
+  [docs/formas-de-usar.md](docs/formas-de-usar.md#isolamento-por-iframe)).
 
 ## Dependências compartilhadas (opcional)
 

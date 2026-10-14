@@ -50,7 +50,11 @@ export interface RemoteEntry {
   isolate?: Isolation
 }
 
-export type Isolation = 'shadow' | 'none'
+/**
+ * `none`: CSS com escopo. `shadow`: Shadow DOM. `iframe`: iframe com
+ * `sandbox`, para código de terceiros (precisa de `enableIframe()`).
+ */
+export type Isolation = 'shadow' | 'none' | 'iframe'
 
 export interface VitralConfig {
   /** Mapa nome → URL (ou entrada completa), ou a URL de um JSON com esse mapa. */

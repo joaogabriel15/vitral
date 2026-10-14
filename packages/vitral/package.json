@@ -53,6 +53,10 @@
       "types": "./dist/routes.d.ts",
       "import": "./dist/routes.js"
     },
+    "./iframe": {
+      "types": "./dist/iframe.d.ts",
+      "import": "./dist/iframe.js"
+    },
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
@@ -212,6 +216,12 @@
       "path": "dist/routes.js",
       "import": "{ routes }",
       "limit": "5 kB"
+    },
+    {
+      "name": "iframe",
+      "path": "dist/iframe.js",
+      "import": "{ enableIframe }",
+      "limit": "6 kB"
     }
   ]
 }
