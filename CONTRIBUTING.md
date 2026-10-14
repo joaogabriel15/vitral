@@ -17,7 +17,7 @@ Na primeira vez, instale o navegador do Playwright:
 
 | Pasta | O que tem |
 |---|---|
-| `packages/arquipelago` | O pacote publicado no npm (núcleo, adaptadores, plugin Vite, testes unitários) |
+| `packages/vitral` | O pacote publicado no npm (núcleo, adaptadores, plugin Vite, testes unitários) |
 | `examples/remotes` | O mesmo remote em 8 frameworks |
 | `examples/hosts` | 9 hosts (JS puro, React, Vue, Svelte, Solid, Preact, Angular, Next, Nuxt) |
 | `e2e` | Testes Playwright que cruzam todos os hosts e remotes |
@@ -26,7 +26,7 @@ Na primeira vez, instale o navegador do Playwright:
 
 ## Adicionando um framework
 
-1. Crie `packages/arquipelago/src/<framework>.ts` com `<framework>Remote()` e,
+1. Crie `packages/vitral/src/<framework>.ts` com `<framework>Remote()` e,
    se fizer sentido, um componente de host baseado em `createSlot()`.
 2. Adicione a entrada em `tsup.config.ts` e em `exports` no `package.json`.
 3. Escreva `test/<framework>.test.ts`.

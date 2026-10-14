@@ -1,7 +1,7 @@
 /**
  * Adaptador Vue 3 (funciona em Vite e Nuxt 3/4).
  *
- * Host:   <IlhaRemote name="carrinho" :props="{ userId }" />
+ * Host:   <VitralRemote name="carrinho" :props="{ userId }" />
  * Remote: export default vueRemote(App, { setup: (app) => app.use(pinia) })
  */
 import {
@@ -36,7 +36,7 @@ import {
 // Lado do remote
 // ---------------------------------------------------------------------------
 
-const IlhaKey: InjectionKey<RemoteContext> = Symbol('ilha')
+const VitralKey: InjectionKey<RemoteContext> = Symbol('vitral')
 
 export interface VueRemoteOptions {
   /** Instale plugins (router, pinia, i18n…) no app do remote. */
@@ -49,7 +49,7 @@ export function vueRemote<P extends Props>(component: Component, options: VueRem
     mount(el, props, ctx) {
       const state = shallowReactive<Record<string, unknown>>({ ...props })
       const app = createApp({ render: () => h(component, state) })
-      app.provide(IlhaKey, ctx)
+      app.provide(VitralKey, ctx)
       // Erros do remote vão para o host em vez de sumirem no console.
       app.config.errorHandler = (e) => ctx.reportError(e)
       options.setup?.(app, ctx)
@@ -66,8 +66,8 @@ export function vueRemote<P extends Props>(component: Component, options: VueRem
 }
 
 /** Dentro de um remote: dá acesso ao contexto (nome, eventos, baseUrl). */
-export function useIlha(): RemoteContext | null {
-  return inject(IlhaKey, null)
+export function useVitral(): RemoteContext | null {
+  return inject(VitralKey, null)
 }
 
 /** Assina um evento do barramento global enquanto o componente existir. */
@@ -96,8 +96,8 @@ export { events }
  *
  * Slots: `fallback` (carregando) e `error` ({ error, retry }).
  */
-export const IlhaRemote = defineComponent({
-  name: 'IlhaRemote',
+export const VitralRemote = defineComponent({
+  name: 'VitralRemote',
   props: {
     name: { type: String, required: true },
     props: { type: Object as PropType<Props>, default: () => ({}) },
@@ -156,7 +156,7 @@ export const IlhaRemote = defineComponent({
     const retry = () => attempt.value++
 
     return () =>
-      h('div', { 'data-ilha': p.name, 'data-ilha-status': status.value }, [
+      h('div', { 'data-vitral': p.name, 'data-vitral-status': status.value }, [
         status.value === 'loading' ? slots.fallback?.() : null,
         status.value === 'error' ? slots.error?.({ error: error.value, retry }) : null,
         // O Vue nunca coloca filhos neste div: ele pertence ao remote.

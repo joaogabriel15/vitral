@@ -1,5 +1,5 @@
 {
-  "name": "arquipelago-monorepo",
+  "name": "vitral-monorepo",
   "private": true,
   "type": "module",
   "scripts": {

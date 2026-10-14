@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IlhaRemote, useEventValue } from 'arquipelago/vue'
+import { VitralRemote, useEventValue } from 'vitral/vue'
 
 const REMOTES = ['react', 'vue', 'svelte', 'solid', 'preact', 'angular', 'lit', 'vanilla']
 const mensagem = ref('olá')
@@ -13,14 +13,14 @@ const ping = useEventValue<string>('ping')
     <input id="mensagem" v-model="mensagem" />
     <p>Último ping: <span id="ultimo-ping">{{ ping ?? '-' }}</span></p>
     <section v-for="n in REMOTES" :key="n" :data-remote="n">
-      <IlhaRemote :name="n" :props="{ mensagem }">
+      <VitralRemote :name="n" :props="{ mensagem }">
         <template #fallback><p>carregando {{ n }}…</p></template>
-      </IlhaRemote>
+      </VitralRemote>
     </section>
     <section data-remote="quebrado">
-      <IlhaRemote name="quebrado">
+      <VitralRemote name="quebrado">
         <template #error="{ retry }"><p class="erro">indisponível <button @click="retry">tentar de novo</button></p></template>
-      </IlhaRemote>
+      </VitralRemote>
     </section>
   </main>
 </template>

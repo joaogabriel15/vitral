@@ -23,7 +23,7 @@ import {
 // Lado do remote
 // ---------------------------------------------------------------------------
 
-const IlhaContext = createContext<RemoteContext | null>(null)
+const VitralContext = createContext<RemoteContext | null>(null)
 
 /** Erro de render dentro do remote vai para o host em vez de derrubar a página. */
 class Boundary extends ReactComponent<{ ctx: RemoteContext; children: ReactNode }, { failed: boolean }> {
@@ -46,11 +46,11 @@ export function reactRemote<P extends Props>(Component: ComponentType<P>): Remot
       const root = createRoot(el, { onUncaughtError: (e) => ctx.reportError(e) })
       const render = (p: P) =>
         root.render(
-          <IlhaContext.Provider value={ctx}>
+          <VitralContext.Provider value={ctx}>
             <Boundary ctx={ctx}>
               <Component {...p} />
             </Boundary>
-          </IlhaContext.Provider>,
+          </VitralContext.Provider>,
         )
       render(props)
       return { update: render, unmount: () => root.unmount() }
@@ -59,8 +59,8 @@ export function reactRemote<P extends Props>(Component: ComponentType<P>): Remot
 }
 
 /** Dentro de um remote: dá acesso ao contexto (nome, eventos, baseUrl). */
-export function useIlha(): RemoteContext | null {
-  return useContext(IlhaContext)
+export function useVitral(): RemoteContext | null {
+  return useContext(VitralContext)
 }
 
 /** Assina um evento do barramento global enquanto o componente estiver montado. */
@@ -160,7 +160,7 @@ export function Remote<P extends Props = Props>({
   const retry = () => setAttempt((a) => a + 1)
 
   return (
-    <div className={className} data-ilha={name} data-ilha-status={status}>
+    <div className={className} data-vitral={name} data-vitral-status={status}>
       {status === 'loading' && fallback}
       {status === 'error' && err && (typeof error === 'function' ? error(err, retry) : (error ?? null))}
       {/* O React nunca coloca filhos neste div: ele pertence ao remote. */}

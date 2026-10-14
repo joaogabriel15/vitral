@@ -1,7 +1,7 @@
 /**
  * Utilidades de teste: monte o host sem subir nenhum remote de verdade.
  *
- *   import { mockRemote } from 'arquipelago/testing'
+ *   import { mockRemote } from 'vitral/testing'
  *   const carrinho = mockRemote('carrinho', (el, props) => (el.textContent = `itens: ${props.itens}`))
  *   render(<App />)
  *   expect(carrinho.lastProps).toEqual({ itens: 2 })
@@ -62,4 +62,4 @@ export function failingRemote(name: string, message = 'falha simulada'): void {
   })
 }
 
-export { __reset as resetIlha } from './index'
+export { __reset as resetVitral } from './index'

@@ -1,7 +1,7 @@
 <script>
   import { onDestroy } from 'svelte'
-  import { events } from 'arquipelago'
-  import { remote } from 'arquipelago/svelte'
+  import { events } from 'vitral'
+  import { remote } from 'vitral/svelte'
 
   const REMOTES = ['react', 'vue', 'svelte', 'solid', 'preact', 'angular', 'lit', 'vanilla']
   let mensagem = $state('olá')
@@ -21,5 +21,5 @@
 {/each}
 <section data-remote="quebrado">
   {#if erro}<p class="erro">indisponível <button onclick={() => quebrado.retry()}>tentar de novo</button></p>{/if}
-  <ilha-remote name="quebrado" bind:this={quebrado} onilha-error={() => (erro = true)}></ilha-remote>
+  <vitral-remote name="quebrado" bind:this={quebrado} onvitral-error={() => (erro = true)}></vitral-remote>
 </section>

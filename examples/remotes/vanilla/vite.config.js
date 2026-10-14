@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite'
 
-import ilha from 'arquipelago/vite'
+import vitral from 'vitral/vite'
 
 export default defineConfig({
   base: './',
-  plugins: [ilha({ entry: 'src/remote.ts', name: 'vanilla' })],
+  plugins: [vitral({ entry: 'src/remote.ts', name: 'vanilla' })],
 })

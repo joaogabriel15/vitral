@@ -2,7 +2,7 @@
 import { expect, test } from '@playwright/test'
 
 const find = (sel: string) =>
-  `document.querySelector('${sel}') || [...document.querySelectorAll('[data-ilha] > div')].map((d) => d.shadowRoot && d.shadowRoot.querySelector('${sel}')).find(Boolean)`
+  `document.querySelector('${sel}') || [...document.querySelectorAll('[data-vitral] > div')].map((d) => d.shadowRoot && d.shadowRoot.querySelector('${sel}')).find(Boolean)`
 
 for (const url of ['http://localhost:5173', 'http://localhost:5173/?shadow=carrinho']) {
   test.describe(url.includes('shadow') ? 'Tailwind em Shadow DOM' : 'Tailwind sem Shadow DOM', () => {

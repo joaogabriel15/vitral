@@ -1,15 +1,19 @@
-# arquipelago
+<p align="center"><img src="docs/logo.svg" width="96" alt="vitral"></p>
 
-[![CI](https://github.com/joaogabriel15/arquipelago/actions/workflows/ci.yml/badge.svg)](https://github.com/joaogabriel15/arquipelago/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/arquipelago)](https://www.npmjs.com/package/arquipelago)
-[![tamanho](https://img.shields.io/bundlejs/size/arquipelago)](https://bundlejs.com/?q=arquipelago)
-[![licença](https://img.shields.io/npm/l/arquipelago)](LICENSE)
+<h1 align="center">vitral</h1>
+
+<p align="center"><strong>Feito de partes. Visto como um todo.</strong></p>
+
+[![CI](https://github.com/joaogabriel15/vitral/actions/workflows/ci.yml/badge.svg)](https://github.com/joaogabriel15/vitral/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/vitral)](https://www.npmjs.com/package/vitral)
+[![tamanho](https://img.shields.io/bundlejs/size/vitral)](https://bundlejs.com/?q=vitral)
+[![licença](https://img.shields.io/npm/l/vitral)](LICENSE)
 
 ```bash
-npm install arquipelago
+npm install vitral
 ```
 
-Micro-frontends sem burocracia: cada micro-frontend é uma ilha. Um remote é só um módulo ES que sabe se montar
+Micro-frontends sem burocracia: cada micro-frontend é um vidro do vitral, com a própria cor e isolado pelo chumbo. Um remote é só um módulo ES que sabe se montar
 num elemento. O host só precisa da URL. Qualquer host carrega remote de
 qualquer framework: um app Angular mostra um remote Svelte, um Next mostra um
 remote Vue, uma página em HTML puro mostra todos.
@@ -17,7 +21,7 @@ remote Vue, uma página em HTML puro mostra todos.
 ```
 host (qualquer framework)                 remote (qualquer framework)
 ┌────────────────────────────┐   URL      ┌──────────────────────────────┐
-│ configure({ remotes })     │ ─────────▶ │ ilha.json  { entry, css,     │
+│ configure({ remotes })     │ ─────────▶ │ vitral.json  { entry, css,   │
 │ <Remote name="carrinho" /> │            │              integrity }     │
 │                            │ ◀───────── │ remote.js  mount/update/     │
 │ events (barramento global) │  import()  │            unmount           │
@@ -26,13 +30,13 @@ host (qualquer framework)                 remote (qualquer framework)
 
 ## Por que é diferente
 
-| Dor comum (Module Federation, single-spa) | Como o arquipelago resolve |
+| Dor comum (Module Federation, single-spa) | Como o vitral resolve |
 |---|---|
 | Host e remote precisam de config de build combinada | Host não tem config de build nenhuma. Só `configure({ remotes })` em runtime. |
 | `shared` / singletons quebram com versões diferentes de React/Vue | Por padrão cada remote leva o próprio framework, isolado na sua própria root. Nenhum conflito de versão. Compartilhar é opcional (import map). |
 | Erro de um remote derruba a página | Cada remote tem estado de loading, erro e "tentar de novo" próprios. |
 | CSS de um vaza no outro; Tailwind do remote sem classes ou quebrando o host | O remote leva o próprio CSS, já com escopo automático. `isolate="shadow"` isola de vez, e o `@property` do Tailwind v4 continua funcionando. |
-| Cache velho depois do deploy (`ChunkLoadError`) | Arquivos com hash; só o `ilha.json` é revalidado. |
+| Cache velho depois do deploy (`ChunkLoadError`) | Arquivos com hash; só o `vitral.json` é revalidado. |
 | Roteadores brigando | `navigate(url)` mantém host e remotes na mesma URL. |
 | Executar JS de outra origem sem garantia | Allowlist de origens + verificação de hash SRI antes de executar. |
 | Muitos conceitos (containers, exposes, lifecycles, root config) | Um contrato: `mount(el, props, ctx) → { update, unmount }`. |
@@ -41,17 +45,17 @@ host (qualquer framework)                 remote (qualquer framework)
 
 | Framework | Remote (publicar) | Host (consumir) | Import |
 |---|---|---|---|
-| React 18/19 | `reactRemote(App)` | `<Remote>` | `arquipelago/react` |
-| Next.js (App e Pages Router) | igual ao React | `<Remote>` (já é `'use client'`, SSR seguro) | `arquipelago/react` |
-| Vue 3 | `vueRemote(App, { setup })` | `<IlhaRemote>` | `arquipelago/vue` |
-| Nuxt 3/4 | igual ao Vue | `<IlhaRemote>` (SSR seguro) | `arquipelago/vue` |
-| Angular 17+ (standalone, com ou sem zone.js) | `angularRemote(AppComponent, { providers })` | `<ilha-remote>` + `provideIlha()` | `arquipelago/angular` |
-| Svelte 5 / SvelteKit | `svelteRemote(App)` | `use:remote` ou `<ilha-remote>` | `arquipelago/svelte` |
-| Solid / SolidStart | `solidRemote(App)` | `<Remote>` | `arquipelago/solid` |
-| Preact | `preactRemote(App)` | `<Remote>` | `arquipelago/preact` |
-| Lit, Stencil, Web Components | `elementRemote('meu-widget')` | `<ilha-remote>` | `arquipelago/element` |
-| JS / TypeScript puro | `defineRemote({ mount })` | `<ilha-remote>` | `arquipelago`, `arquipelago/element` |
-| Qualquer outro (Astro, Qwik, jQuery, HTML do servidor…) | `defineRemote({ mount })` | `<ilha-remote>` | `arquipelago/element` |
+| React 18/19 | `reactRemote(App)` | `<Remote>` | `vitral/react` |
+| Next.js (App e Pages Router) | igual ao React | `<Remote>` (já é `'use client'`, SSR seguro) | `vitral/react` |
+| Vue 3 | `vueRemote(App, { setup })` | `<VitralRemote>` | `vitral/vue` |
+| Nuxt 3/4 | igual ao Vue | `<VitralRemote>` (SSR seguro) | `vitral/vue` |
+| Angular 17+ (standalone, com ou sem zone.js) | `angularRemote(AppComponent, { providers })` | `<vitral-remote>` + `provideVitral()` | `vitral/angular` |
+| Svelte 5 / SvelteKit | `svelteRemote(App)` | `use:remote` ou `<vitral-remote>` | `vitral/svelte` |
+| Solid / SolidStart | `solidRemote(App)` | `<Remote>` | `vitral/solid` |
+| Preact | `preactRemote(App)` | `<Remote>` | `vitral/preact` |
+| Lit, Stencil, Web Components | `elementRemote('meu-widget')` | `<vitral-remote>` | `vitral/element` |
+| JS / TypeScript puro | `defineRemote({ mount })` | `<vitral-remote>` | `vitral`, `vitral/element` |
+| Qualquer outro (Astro, Qwik, jQuery, HTML do servidor…) | `defineRemote({ mount })` | `<vitral-remote>` | `vitral/element` |
 
 Todas as 72 combinações host × remote dos exemplos (9 hosts × 8 remotes) são
 testadas no navegador a cada execução do e2e.
@@ -62,29 +66,29 @@ testadas no navegador a cada execução do e2e.
 
 ```js
 // React                                  // Vue
-import { reactRemote } from 'arquipelago/react'  import { vueRemote } from 'arquipelago/vue'
+import { reactRemote } from 'vitral/react'  import { vueRemote } from 'vitral/vue'
 export default reactRemote(Carrinho)      export default vueRemote(Catalogo, { setup: (app) => app.use(pinia) })
 
-// Svelte (o contexto chega na prop `arquipelago`)
-import { svelteRemote } from 'arquipelago/svelte'
+// Svelte (o contexto chega na prop `vitral`)
+import { svelteRemote } from 'vitral/svelte'
 export default svelteRemote(Cartao)
 
-// Solid / Preact (o contexto chega na prop `arquipelago`)
+// Solid / Preact (o contexto chega na prop `vitral`)
 export default solidRemote(Cartao)        export default preactRemote(Cartao)
 
-// Angular: props viram inputs; contexto com injectIlha()
-import { angularRemote } from 'arquipelago/angular'
+// Angular: props viram inputs; contexto com injectVitral()
+import { angularRemote } from 'vitral/angular'
 export default angularRemote(CartaoComponent, { providers: [provideHttpClient()] })
 
-// Lit / Web Component: props viram propriedades; contexto em `this.ilha`
-import { elementRemote } from 'arquipelago/element'
+// Lit / Web Component: props viram propriedades; contexto em `this.vitral`
+import { elementRemote } from 'vitral/element'
 export default elementRemote('lit-cartao', () => customElements.define('lit-cartao', LitCartao))
 ```
 
 JS ou TypeScript puro, sem framework nenhum:
 
 ```ts
-import { defineRemote } from 'arquipelago'
+import { defineRemote } from 'vitral'
 
 export default defineRemote<{ mensagem?: string }>({
   mount(el, props, ctx) {
@@ -102,18 +106,18 @@ Build com o plugin (o mesmo para todos os frameworks):
 
 ```js
 // vite.config.js
-import ilha from 'arquipelago/vite'
-export default { plugins: [react() /* ou vue(), svelte(), solid(), angular()… */, ilha({ entry: 'src/remote.jsx' })] }
+import vitral from 'vitral/vite'
+export default { plugins: [react() /* ou vue(), svelte(), solid(), angular()… */, vitral({ entry: 'src/remote.jsx' })] }
 ```
 
 `vite build` gera `dist/remote-[hash].js`, `dist/remote-[hash].css` e
-`dist/ilha.json` (com o hash `sha384` do JS). Suba a pasta em qualquer CDN com
+`dist/vitral.json` (com o hash `sha384` do JS). Suba a pasta em qualquer CDN com
 CORS. Para Angular use `@analogjs/vite-plugin-angular` (compila em AOT).
 
 ### CSS e Tailwind
 
 Use Tailwind (ou qualquer CSS) no remote normalmente. O plugin prefixa o CSS
-com `[data-ilha-scope="nome"]` e transforma `:root`/`html`/`body` na raiz do
+com `[data-vitral-scope="nome"]` e transforma `:root`/`html`/`body` na raiz do
 remote, então o preflight e o tema não vazam para o host, e o host não precisa
 escanear os arquivos do remote. Com `isolate="shadow"`, as regras `@property`
 do Tailwind v4 sobem para o documento para que sombras, rings e gradientes
@@ -125,8 +129,8 @@ CLI): basta gerar um módulo ES cujo `default` tenha `mount(el, props, ctx)`.
 ### Consumir no host (React / Next)
 
 ```jsx
-import { configure } from 'arquipelago'
-import { Remote, useEventValue } from 'arquipelago/react'
+import { configure } from 'vitral'
+import { Remote, useEventValue } from 'vitral/react'
 
 configure({ remotes: '/remotes.json' })            // ou um objeto { nome: url }
 
@@ -152,14 +156,14 @@ sem `dynamic(..., { ssr: false })`.
 
 ```vue
 <script setup>
-import { IlhaRemote } from 'arquipelago/vue'
+import { VitralRemote } from 'vitral/vue'
 </script>
 
 <template>
-  <IlhaRemote name="carrinho" :props="{ userId: 42 }" isolate="shadow">
+  <VitralRemote name="carrinho" :props="{ userId: 42 }" isolate="shadow">
     <template #fallback>Carregando…</template>
     <template #error="{ error, retry }"><button @click="retry">Tentar de novo</button></template>
-  </IlhaRemote>
+  </VitralRemote>
 </template>
 ```
 
@@ -168,52 +172,52 @@ fallback no SSR e monta o remote no cliente.
 
 ### Consumir no host (JS/TS puro, Angular, Svelte, qualquer coisa)
 
-O Web Component `<ilha-remote>` funciona em qualquer lugar que renderize HTML:
+O Web Component `<vitral-remote>` funciona em qualquer lugar que renderize HTML:
 
 ```html
 <script type="module">
-  import { configure } from 'arquipelago'
-  import { defineIlhaElement } from 'arquipelago/element'
+  import { configure } from 'vitral'
+  import { defineVitralElement } from 'vitral/element'
   configure({ remotes: '/remotes.json' })
-  defineIlhaElement()
+  defineVitralElement()
 </script>
 
-<ilha-remote name="carrinho" props='{"userId": 42}' isolate="shadow">
+<vitral-remote name="carrinho" props='{"userId": 42}' isolate="shadow">
   <p slot="fallback">Carregando…</p>
   <p slot="error">Indisponível</p>
-</ilha-remote>
+</vitral-remote>
 ```
 
 `el.props = {...}` atualiza sem remontar, `el.retry()` remonta, e os eventos
-`ilha-ready` / `ilha-error` avisam o estado.
+`vitral-ready` / `vitral-error` avisam o estado.
 
 **Angular:**
 
 ```ts
-bootstrapApplication(App, { providers: [provideIlha({ remotes: '/remotes.json' })] })
+bootstrapApplication(App, { providers: [provideVitral({ remotes: '/remotes.json' })] })
 
 @Component({
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  template: `<ilha-remote name="carrinho" [props]="{ userId: id() }" (ilha-error)="falhou()"></ilha-remote>`,
+  template: `<vitral-remote name="carrinho" [props]="{ userId: id() }" (vitral-error)="falhou()"></vitral-remote>`,
 })
 ```
 
 **Svelte:** `<div use:remote={{ name: 'carrinho', props: { userId } }}></div>`
-(com `import { remote } from 'arquipelago/svelte'`).
+(com `import { remote } from 'vitral/svelte'`).
 
 **Solid / Preact:** `<Remote name="carrinho" props={{ userId }} fallback={…} error={(e, retry) => …} />`.
 
 ### Comunicação
 
 ```js
-import { events } from 'arquipelago'
+import { events } from 'vitral'
 events.emit('carrinho:adicionar', produto)
 const off = events.on('carrinho:adicionar', (p) => …)
 events.last('usuario')          // último valor emitido
 ```
 
-Dentro de remotes: `useIlha()` (contexto), `useEvent(tipo, fn)` e
-`useEventValue(tipo)` existem em `arquipelago/react` e `arquipelago/vue`. O barramento é o
+Dentro de remotes: `useVitral()` (contexto), `useEvent(tipo, fn)` e
+`useEventValue(tipo)` existem em `vitral/react` e `vitral/vue`. O barramento é o
 mesmo para todos, mesmo que cada remote tenha sua cópia da lib, e o que o
 remote assina por `ctx.events` é cancelado sozinho no unmount.
 
@@ -224,14 +228,14 @@ Para navegar de dentro de um remote, use `navigate('/pedidos/42')` (ou
 
 Todo erro é um `RemoteError` com `code` e o nome do remote. Falhas de
 download e erros de render dentro do remote (React, Vue) aparecem no `error`
-do componente de host (ou no slot `error` do `<ilha-remote>`), com `retry`
+do componente de host (ou no slot `error` do `<vitral-remote>`), com `retry`
 para remontar só aquele remote.
 
 ### Configuração
 
 ```js
 configure({
-  remotes: { carrinho: 'https://cdn.empresa.com/carrinho/ilha.json' }, // ou URL de um JSON
+  remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' }, // ou URL de um JSON
   allowedOrigins: ['https://cdn.empresa.com'], // padrão: página + origens registradas
   timeout: 15000,
   retries: 1,
@@ -252,7 +256,7 @@ for de terceiros).
 - **SRI**: quando há `integrity`, a lib baixa o JS, confere o hash e executa
   exatamente os bytes verificados (via `blob:`). Com CSP, inclua `blob:` em
   `script-src`.
-- **Sem `eval`**, sem iframes, sem globais além de um `Symbol.for('ilha.state.v1')`.
+- **Sem `eval`**, sem iframes, sem globais além de um `Symbol.for('vitral.state.v1')`.
 - Shadow DOM isola CSS, não JS: um remote ainda roda com os privilégios da
   página. Para código não confiável de verdade, use iframe.
 
@@ -262,7 +266,7 @@ Para não baixar React/Vue duas vezes, marque-os como `shared` no remote e
 declare um import map no host:
 
 ```js
-ilha({ entry: 'src/remote.jsx', shared: ['react', 'react-dom', 'react-dom/client'] })
+vitral({ entry: 'src/remote.jsx', shared: ['react', 'react-dom', 'react-dom/client'] })
 ```
 
 ```html
@@ -275,7 +279,7 @@ ilha({ entry: 'src/remote.jsx', shared: ['react', 'react-dom', 'react-dom/client
 
 ```ts
 // Teste do host sem subir nenhum remote
-import { mockRemote, failingRemote } from 'arquipelago/testing'
+import { mockRemote, failingRemote } from 'vitral/testing'
 
 const carrinho = mockRemote('carrinho', (el, props) => (el.textContent = `itens: ${props.itens}`))
 // …renderize o host…

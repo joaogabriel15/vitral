@@ -1,5 +1,5 @@
 import { LitElement, html } from 'lit'
-import { elementRemote } from 'arquipelago/element'
+import { elementRemote } from 'vitral/element'
 
 class LitCartao extends LitElement {
   static properties = { mensagem: {}, cliques: { state: true } }
@@ -14,7 +14,7 @@ class LitCartao extends LitElement {
   }
   ping() {
     this.cliques++
-    this.ilha.events.emit('ping', 'Lit')
+    this.vitral.events.emit('ping', 'Lit')
   }
   render() {
     return html`<div class="cartao">

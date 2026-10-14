@@ -1,5 +1,5 @@
 {
-  "name": "arquipelago",
+  "name": "vitral",
   "version": "0.1.0",
   "description": "Micro-frontends sem burocracia: um contrato mount/unmount, carregamento em runtime e adaptadores para React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS/TS puro.",
   "keywords": [
@@ -19,14 +19,14 @@
     "web-components",
     "vite"
   ],
-  "homepage": "https://github.com/joaogabriel15/arquipelago#readme",
+  "homepage": "https://github.com/joaogabriel15/vitral#readme",
   "bugs": {
-    "url": "https://github.com/joaogabriel15/arquipelago/issues"
+    "url": "https://github.com/joaogabriel15/vitral/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/joaogabriel15/arquipelago.git",
-    "directory": "packages/arquipelago"
+    "url": "git+https://github.com/joaogabriel15/vitral.git",
+    "directory": "packages/vitral"
   },
   "license": "MIT",
   "author": "João (https://github.com/joaogabriel15)",
@@ -184,7 +184,7 @@
     {
       "name": "vue",
       "path": "dist/vue.js",
-      "import": "{ IlhaRemote, vueRemote }",
+      "import": "{ VitralRemote, vueRemote }",
       "ignore": [
         "vue"
       ],
@@ -193,7 +193,7 @@
     {
       "name": "element",
       "path": "dist/element.js",
-      "import": "{ defineIlhaElement }",
+      "import": "{ defineVitralElement }",
       "limit": "6 kB"
     }
   ]

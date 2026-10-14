@@ -1,5 +1,5 @@
 /**
- * ilha: micro-frontends com um único contrato.
+ * vitral: micro-frontends com um único contrato.
  *
  * Um remote é um módulo ES que exporta `mount(el, props, ctx)` e devolve
  * `{ update?, unmount }`. O host só precisa saber a URL. Nada de config
@@ -40,7 +40,7 @@ export interface RemoteModule<P extends Props = Props> {
 }
 
 export interface RemoteEntry {
-  /** URL do módulo JS do remote, ou do `ilha.json` gerado pelo plugin. */
+  /** URL do módulo JS do remote, ou do `vitral.json` gerado pelo plugin. */
   url?: string
   /**
    * Remote local, sem rede: o próprio módulo ou uma função que o importa
@@ -57,7 +57,7 @@ export interface RemoteEntry {
 
 export type Isolation = 'shadow' | 'none'
 
-export interface IlhaConfig {
+export interface VitralConfig {
   /** Mapa nome → URL (ou entrada completa), ou a URL de um JSON com esse mapa. */
   remotes?: Record<string, string | RemoteEntry> | string
   /**
@@ -90,19 +90,19 @@ export class RemoteError extends Error {
     message: string,
     public cause?: unknown,
   ) {
-    super(`[ilha] ${remote}: ${message}`)
+    super(`[vitral] ${remote}: ${message}`)
     this.name = 'RemoteError'
   }
 }
 
-/** Formato do `ilha.json` emitido pelo plugin de build. */
+/** Formato do `vitral.json` emitido pelo plugin de build. */
 export interface RemoteManifest {
   name: string
   version?: string
   entry: string
   css?: string[]
   integrity?: string
-  /** Escopo usado pelo plugin para prefixar o CSS (`[data-ilha-scope]`). */
+  /** Escopo usado pelo plugin para prefixar o CSS (`[data-vitral-scope]`). */
   scope?: string
 }
 
@@ -119,14 +119,14 @@ interface ResolvedEntry {
 }
 
 interface GlobalState {
-  config: Required<Omit<IlhaConfig, 'remotes' | 'allowedOrigins'>> & { allowedOrigins: string[] | null }
+  config: Required<Omit<VitralConfig, 'remotes' | 'allowedOrigins'>> & { allowedOrigins: string[] | null }
   entries: Map<string, RemoteEntry>
   remotesSource: Promise<void> | null
   modules: Map<string, Promise<{ mod: RemoteModule; resolved: ResolvedEntry }>>
   events: EventBus
 }
 
-const KEY = Symbol.for('ilha.state.v1')
+const KEY = Symbol.for('vitral.state.v1')
 const g = globalThis as unknown as Record<symbol, GlobalState>
 
 function state(): GlobalState {
@@ -144,7 +144,7 @@ function state(): GlobalState {
 // ---------------------------------------------------------------------------
 
 /** Configura a lib. Pode ser chamada mais de uma vez; as opções são mescladas. */
-export function configure(config: IlhaConfig): void {
+export function configure(config: VitralConfig): void {
   const s = state()
   const { remotes, allowedOrigins, ...rest } = config
   Object.assign(s.config, rest)
@@ -294,8 +294,8 @@ export async function mountRemote<P extends Props = Props>(
   // alvo (ex.: StrictMode do React) nunca disputam o mesmo DOM.
   let shadowRoot: ShadowRoot | null = null
   const el = document.createElement('div')
-  el.setAttribute('data-ilha-root', name)
-  if (resolved.scope) el.setAttribute('data-ilha-scope', resolved.scope)
+  el.setAttribute('data-vitral-root', name)
+  if (resolved.scope) el.setAttribute('data-vitral-scope', resolved.scope)
   el.style.display = 'contents'
   if (isolate === 'shadow') {
     shadowRoot = target.shadowRoot ?? target.attachShadow({ mode: 'open' })
@@ -404,7 +404,7 @@ function loadSheet(href: string): Promise<CSSStyleSheet | null> {
         })
         if (props.length) {
           const style = document.createElement('style')
-          style.setAttribute('data-ilha-properties', '')
+          style.setAttribute('data-vitral-properties', '')
           style.textContent = props.join('\n')
           document.head.appendChild(style)
         }
@@ -475,7 +475,7 @@ export function createSlot<P extends Props = Props>(target: HTMLElement, options
     teardown()
     // Um elemento novo por montagem: shadow roots e DOM antigos nunca são reusados.
     holder = document.createElement('div')
-    holder.setAttribute('data-ilha-slot', name)
+    holder.setAttribute('data-vitral-slot', name)
     target.appendChild(holder)
     setStatus('loading')
     const fail = (e: unknown) => {
@@ -547,7 +547,7 @@ export function createEventBus(): EventBus {
         try {
           h(payload)
         } catch (e) {
-          console.error(`[ilha] handler de "${type}" falhou`, e)
+          console.error(`[vitral] handler de "${type}" falhou`, e)
         }
       }
     },
@@ -607,7 +607,7 @@ export function navigate(url: string, options: { replace?: boolean } = {}): void
   if (options.replace) history.replaceState(history.state, '', target.href)
   else history.pushState(history.state, '', target.href)
   dispatchEvent(new PopStateEvent('popstate', { state: history.state }))
-  events.emit('ilha:navigate', target.pathname + target.search + target.hash)
+  events.emit('vitral:navigate', target.pathname + target.search + target.hash)
 }
 
 // ---------------------------------------------------------------------------

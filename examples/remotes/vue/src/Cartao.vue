@@ -1,13 +1,13 @@
 <script setup>
 import { ref } from 'vue'
-import { useIlha } from 'arquipelago/vue'
+import { useVitral } from 'vitral/vue'
 
 defineProps({ mensagem: String })
-const ilha = useIlha()
+const vitral = useVitral()
 const cliques = ref(0)
 function ping() {
   cliques.value++
-  ilha.events.emit('ping', 'Vue')
+  vitral.events.emit('ping', 'Vue')
 }
 </script>
 

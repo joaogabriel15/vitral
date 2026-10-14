@@ -3,20 +3,20 @@
  *
  * Remote: export default svelteRemote(App)
  * Host:   <div use:remote={{ name: 'carrinho', props: { userId } }}></div>
- *         ou o Web Component <ilha-remote> de 'ilha/element'.
+ *         ou o Web Component <vitral-remote> de 'vitral/element'.
  */
 import type { Component } from 'svelte'
 import { createClassComponent } from 'svelte/legacy'
 import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type SlotStatus } from './index'
 
-/** Transforma um componente Svelte em um remote. O contexto chega na prop `arquipelago`. */
+/** Transforma um componente Svelte em um remote. O contexto chega na prop `vitral`. */
 export function svelteRemote<P extends Props>(component: Component<any>): RemoteModule<P> {
   return defineRemote<P>({
     mount(el, props, ctx) {
       // A API de classe mantém o estado interno ao atualizar props.
-      const instance = createClassComponent({ component, target: el, props: { ...props, ilha: ctx } })
+      const instance = createClassComponent({ component, target: el, props: { ...props, vitral: ctx } })
       return {
-        update: (next) => instance.$set({ ...next, ilha: ctx }),
+        update: (next) => instance.$set({ ...next, vitral: ctx }),
         unmount: () => instance.$destroy(),
       }
     },

@@ -1,5 +1,5 @@
 {
-  "catalogo": "http://localhost:5002/ilha.json",
-  "carrinho": "http://localhost:5001/ilha.json",
+  "catalogo": "http://localhost:5002/vitral.json",
+  "carrinho": "http://localhost:5001/vitral.json",
   "quebrado": "http://localhost:5001/nao-existe.js"
 }

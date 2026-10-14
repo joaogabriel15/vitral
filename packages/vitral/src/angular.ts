@@ -2,11 +2,11 @@
  * Adaptador Angular (standalone, zoneless ou com zone.js).
  *
  * Remote: export default angularRemote(AppComponent, { providers: [provideHttpClient()] })
- *         Props viram inputs (`input()` ou `@Input()`); o contexto vem de `inject(ILHA_CONTEXT)`.
+ *         Props viram inputs (`input()` ou `@Input()`); o contexto vem de `inject(VITRAL_CONTEXT)`.
  *
- * Host:   providers: [provideIlha({ remotes: '/remotes.json' })]
+ * Host:   providers: [provideVitral({ remotes: '/remotes.json' })]
  *         schemas: [CUSTOM_ELEMENTS_SCHEMA]
- *         <ilha-remote name="carrinho" [props]="{ userId }" isolate="shadow"></ilha-remote>
+ *         <vitral-remote name="carrinho" [props]="{ userId }" isolate="shadow"></vitral-remote>
  */
 import {
   InjectionToken,
@@ -21,10 +21,10 @@ import {
   type Type,
 } from '@angular/core'
 import { createApplication } from '@angular/platform-browser'
-import { configure, defineRemote, type IlhaConfig, type Props, type RemoteContext, type RemoteModule } from './index'
-import { defineIlhaElement } from './element'
+import { configure, defineRemote, type VitralConfig, type Props, type RemoteContext, type RemoteModule } from './index'
+import { defineVitralElement } from './element'
 
-export const ILHA_CONTEXT = new InjectionToken<RemoteContext>('ilha.context')
+export const VITRAL_CONTEXT = new InjectionToken<RemoteContext>('vitral.context')
 
 /** Transforma um componente standalone em um remote. */
 export function angularRemote<P extends Props>(component: Type<unknown>, config: Partial<ApplicationConfig> = {}): RemoteModule<P> {
@@ -32,7 +32,7 @@ export function angularRemote<P extends Props>(component: Type<unknown>, config:
   return defineRemote<P>({
     async mount(el, props, ctx) {
       const app = await createApplication({
-        providers: [provideZonelessChangeDetection(), { provide: ILHA_CONTEXT, useValue: ctx }, ...(config.providers ?? [])],
+        providers: [provideZonelessChangeDetection(), { provide: VITRAL_CONTEXT, useValue: ctx }, ...(config.providers ?? [])],
       })
       const hostElement = document.createElement('div')
       el.appendChild(hostElement)
@@ -57,22 +57,22 @@ export function angularRemote<P extends Props>(component: Type<unknown>, config:
   })
 }
 
-/** Dentro de um remote Angular: `const ilha = injectIlha()`. */
-export function injectIlha(): RemoteContext | null {
-  return inject(ILHA_CONTEXT, { optional: true })
+/** Dentro de um remote Angular: `const vitral = injectVitral()`. */
+export function injectVitral(): RemoteContext | null {
+  return inject(VITRAL_CONTEXT, { optional: true })
 }
 
 /**
- * Host Angular: configura a ilha e registra `<ilha-remote>`. Use junto com
+ * Host Angular: configura o vitral e registra `<vitral-remote>`. Use junto com
  * `CUSTOM_ELEMENTS_SCHEMA` no componente que renderiza o remote.
  */
-export function provideIlha(config: IlhaConfig = {}): (Provider | EnvironmentProviders)[] {
+export function provideVitral(config: VitralConfig = {}): (Provider | EnvironmentProviders)[] {
   return [
     provideAppInitializer(() => {
       // No SSR do Angular não existe customElements; o remote monta no cliente.
       if (typeof window === 'undefined') return
       configure(config)
-      defineIlhaElement()
+      defineVitralElement()
     }),
   ]
 }

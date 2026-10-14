@@ -1,7 +1,7 @@
 import { createSignal, For, onCleanup } from 'solid-js'
 import { render } from 'solid-js/web'
-import { configure, events } from 'arquipelago'
-import { Remote } from 'arquipelago/solid'
+import { configure, events } from 'vitral'
+import { Remote } from 'vitral/solid'
 
 const REMOTES = ['react', 'vue', 'svelte', 'solid', 'preact', 'angular', 'lit', 'vanilla']
 configure({ remotes: '/remotes.json' })

@@ -46,7 +46,7 @@ describe('carregamento', () => {
 
   it('bloqueia manifesto que aponta o JS para outra origem', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ name: 'x', entry: 'https://outro.com/r.js' }))))
-    register('x', 'https://cdn.empresa.com/x/ilha.json')
+    register('x', 'https://cdn.empresa.com/x/vitral.json')
     expect((await fail(loadRemote('x'))).code).toBe('ORIGIN_BLOCKED')
   })
 
@@ -61,7 +61,7 @@ describe('carregamento', () => {
     const fetch = vi.fn(async () => new Response('', { status: 404 }))
     vi.stubGlobal('fetch', fetch)
     configure({ retries: 0 })
-    register('x', 'https://cdn.empresa.com/x/ilha.json')
+    register('x', 'https://cdn.empresa.com/x/vitral.json')
     expect((await fail(loadRemote('x'))).code).toBe('LOAD_FAILED')
     await fail(loadRemote('x'))
     expect(fetch).toHaveBeenCalledTimes(2)
@@ -75,6 +75,6 @@ describe('navegação', () => {
     navigate('/pedidos/42')
     expect(location.pathname).toBe('/pedidos/42')
     expect(seen).toContain('/pedidos/42')
-    expect(events.last('ilha:navigate')).toBe('/pedidos/42')
+    expect(events.last('vitral:navigate')).toBe('/pedidos/42')
   })
 })
