@@ -28,6 +28,21 @@ jobs:
       # build, typecheck, publint + attw, size-limit e testes de unidade
       - run: pnpm run check
 
+  # Site: o build falha com link quebrado, e check-erros.mjs confere que
+  # cada código de erro tem a página para onde RemoteError.docs aponta.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir docs build
+      - run: pnpm --dir docs check
+
   e2e:
     name: e2e (${{ matrix.browser }})
     runs-on: ubuntu-latest

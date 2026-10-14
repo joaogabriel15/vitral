@@ -231,7 +231,7 @@ Para navegar de dentro de um remote, use `navigate('/pedidos/42')` (ou
 ### Erros
 
 Todo erro é um `RemoteError` com `code`, o nome do remote e `docs`, o link da
-página do código com causas e correção ([docs/erros](docs/erros/README.md)).
+página do código com causas e correção ([erros](https://joaogabriel15.github.io/vitral/erros/)).
 Falhas de download e erros de render dentro do remote (React, Vue) aparecem no
 `error` do componente de host (ou no slot `error` do `<vitral-remote>`), com
 `retry` para remontar só aquele remote.

@@ -8,8 +8,8 @@ export type RemoteErrorCode =
   | 'MOUNT_FAILED'
   | 'RENDER_FAILED'
 
-/** Página de cada código de erro, com causa e correção. */
-export const ERROR_DOCS = 'https://github.com/joaogabriel15/vitral/blob/main/docs/erros/'
+/** Endereço das páginas de erro no site. A página de cada código é `ERROR_DOCS + code`. */
+export const ERROR_DOCS = 'https://joaogabriel15.github.io/vitral/erros/'
 
 export class RemoteError extends Error {
   /** Link da página deste erro na documentação. */
@@ -21,8 +21,8 @@ export class RemoteError extends Error {
     message: string,
     public cause?: unknown,
   ) {
-    super(`[vitral] ${remote}: ${message} (${ERROR_DOCS}${code}.md)`)
+    super(`[vitral] ${remote}: ${message} (${ERROR_DOCS}${code})`)
     this.name = 'RemoteError'
-    this.docs = `${ERROR_DOCS}${code}.md`
+    this.docs = `${ERROR_DOCS}${code}`
   }
 }
