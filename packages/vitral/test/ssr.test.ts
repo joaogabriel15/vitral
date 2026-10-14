@@ -4,7 +4,7 @@ import { createElement } from 'react'
 import { renderToString as reactToString } from 'react-dom/server'
 import { createSSRApp, h } from 'vue'
 import { renderToString as vueToString } from 'vue/server-renderer'
-import { Remote } from '../src/react'
+import { Remote, useShared } from '../src/react'
 import { VitralRemote } from '../src/vue'
 import { provide, shared } from '../src/index'
 
@@ -31,5 +31,11 @@ describe('shared no servidor', () => {
     expect(usuario.get()).toEqual({ id: 7 })
     expect(shared('usuario').get()).toBeUndefined()
     expect((globalThis as any)[Symbol.for('vitral')]?.shared).toBeUndefined()
+  })
+
+  it('useShared do React renderiza com undefined no servidor', () => {
+    provide('usuario', { nome: 'Ana' })
+    const Nome = () => createElement('p', null, useShared<{ nome: string }, string>('usuario', (u) => u?.nome ?? 'anônimo'))
+    expect(reactToString(createElement(Nome))).toContain('anônimo')
   })
 })

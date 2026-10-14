@@ -22,7 +22,8 @@
  * Também exporta `elementRemote()` para publicar um Web Component (Lit,
  * Stencil, vanilla) como remote.
  */
-import { createSlot, defineRemote, type Isolation, type Props, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
+import { createSlot, defineRemote, shared, type Isolation, type Props, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus } from './index'
+import { memoSelect, same } from './core/shared'
 import { registerSrc } from './core/registry'
 
 const Base: typeof HTMLElement = typeof HTMLElement === 'undefined' ? (class {} as typeof HTMLElement) : HTMLElement
@@ -170,6 +171,51 @@ export function elementRemote<P extends Props = Props>(tag: string, setup?: () =
       }
     },
   })
+}
+
+/** O que o `SharedController` precisa do elemento (o `ReactiveControllerHost` do Lit). */
+export interface SharedControllerHost {
+  addController(controller: { hostConnected?(): void; hostDisconnected?(): void }): void
+  requestUpdate(): void
+}
+
+/**
+ * Controller do Lit para uma chave compartilhada (`provide`/`shared`). Assina
+ * enquanto o elemento está conectado e pede um novo render quando o valor
+ * (ou o resultado do seletor) muda.
+ *
+ *   usuario = new SharedController(this, 'usuario')
+ *   render() { return html`${this.usuario.value?.nome}` }
+ */
+export class SharedController<T = unknown, S = T | undefined> {
+  /** Valor atual (ou o resultado do seletor). */
+  value: S
+  #host: SharedControllerHost
+  #handle
+  #select: (value: T | undefined) => S
+  #pick = memoSelect()
+  #off?: () => void
+
+  constructor(host: SharedControllerHost, key: keyof Shared | (string & {}), select?: (value: T | undefined) => S) {
+    this.#host = host
+    this.#handle = shared<T>(key)
+    this.#select = select ?? (same as (value: T | undefined) => S)
+    this.value = this.#pick(this.#handle.get(), this.#select)
+    host.addController(this)
+  }
+
+  hostConnected(): void {
+    this.#off = this.#handle.subscribe((v) => {
+      const next = this.#pick(v, this.#select)
+      if (Object.is(next, this.value)) return
+      this.value = next
+      this.#host.requestUpdate()
+    })
+  }
+
+  hostDisconnected(): void {
+    this.#off?.()
+  }
 }
 
 declare global {

@@ -6,33 +6,41 @@
  * Remote: export default vueRemote(App, { setup: (app) => app.use(pinia) })
  */
 import {
+  computed,
   createApp,
   defineComponent,
+  getCurrentScope,
   h,
   inject,
   onBeforeUnmount,
   onMounted,
+  onScopeDispose,
   ref,
   shallowReactive,
   shallowRef,
   watch,
   type App,
   type Component,
+  type ComputedRef,
   type InjectionKey,
   type PropType,
   type ShallowRef,
+  type WritableComputedRef,
 } from 'vue'
 import {
   defineRemote,
   events,
   mountRemote,
+  shared,
   registerSrc,
   type Isolation,
   type MountedRemote,
   type Props,
   type RemoteContext,
   type RemoteModule,
+  type Shared,
 } from './index'
+import { memoSelect, same } from './core/shared'
 
 // ---------------------------------------------------------------------------
 // Lado do remote
@@ -84,6 +92,28 @@ export function useEventValue<T = unknown>(type: string): ShallowRef<T | undefin
   const value = shallowRef<T | undefined>(events.last<T>(type))
   useEvent<T>(type, (v) => (value.value = v))
   return value
+}
+
+/**
+ * Ref de uma chave compartilhada (`provide`/`shared`). Sem seletor, a ref
+ * também escreve (`usuario.value = …` chama `set`, e `v-model` funciona). Com
+ * seletor, é só leitura e só muda quando o resultado muda (`Object.is`). A
+ * assinatura acaba junto com o componente (ou o `effectScope`).
+ *
+ *   const usuario = useShared('usuario')
+ *   const nome = useShared('usuario', (u) => u?.nome)
+ */
+export function useShared<K extends keyof Shared>(key: K): WritableComputedRef<Shared[K] | undefined>
+export function useShared<K extends keyof Shared, S>(key: K, select: (value: Shared[K] | undefined) => S): ComputedRef<S>
+export function useShared<T = unknown>(key: string): WritableComputedRef<T | undefined>
+export function useShared<T, S>(key: string, select: (value: T | undefined) => S): ComputedRef<S>
+export function useShared(key: string, select?: (value: unknown) => unknown): ComputedRef<unknown> {
+  const handle = shared(key)
+  const pick = memoSelect()
+  const state = shallowRef()
+  const off = handle.subscribe((v) => (state.value = pick(v, select ?? same)))
+  if (getCurrentScope()) onScopeDispose(off)
+  return select ? computed(() => state.value) : computed({ get: () => state.value, set: handle.set })
 }
 
 export { events }
