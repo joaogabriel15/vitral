@@ -39,7 +39,8 @@ describe('downloads em paralelo', () => {
     configure({ retries: 0 })
     register('carrinho', `${CDN}/vitral.json`)
     const mounting = mountRemote(document.body.appendChild(document.createElement('div')), 'carrinho', {}).catch((e) => e)
-    await flush()
+    // O JS começa depois do manifesto e do chunk de SRI; espera o fetch dele.
+    await vi.waitFor(() => expect(net.calls).toContain(`${CDN}/remote-1.js`))
     const link = document.head.querySelector<HTMLLinkElement>(`link[rel="preload"][href="${CDN}/remote-1.css"]`)
     expect(link?.as).toBe('style')
     expect(link?.crossOrigin).toBe('anonymous')
@@ -53,7 +54,8 @@ describe('downloads em paralelo', () => {
     configure({ retries: 0 })
     register('carrinho', `${CDN}/vitral.json`)
     const mounting = mountRemote(document.body.appendChild(document.createElement('div')), 'carrinho', {}, { isolate: 'shadow' }).catch((e) => e)
-    await flush()
+    // O JS começa depois do manifesto e do chunk de SRI; espera o fetch dele.
+    await vi.waitFor(() => expect(net.calls).toContain(`${CDN}/remote-1.js`))
     expect(net.calls).toEqual([`${CDN}/vitral.json`, `${CDN}/shadow.css`, `${CDN}/remote-1.js`])
     expect(document.head.querySelector('link[rel="preload"]')).toBeNull()
     net.releaseJs()
