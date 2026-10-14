@@ -30,6 +30,8 @@ export type SharedType<K extends string> = K extends keyof Shared ? Shared[K] : 
  * O valor é tratado como imutável: para mudar, passe um valor novo.
  */
 export interface SharedValue<T> {
+  /** A chave. */
+  readonly key: string
   /** Valor atual, ou `undefined` se ninguém deu valor ainda. */
   get(): T | undefined
   /** Troca o valor. Numa chave com `writable: false`, só o dono pode. */
@@ -94,6 +96,7 @@ function handle(store: SharedStore, key: string, by?: string, track: Track = (of
     console.warn(e.message)
   }
   return {
+    key,
     get,
     set,
     update: (fn) => set(fn(get())),

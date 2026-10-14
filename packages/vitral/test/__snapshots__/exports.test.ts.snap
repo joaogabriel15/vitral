@@ -36,11 +36,14 @@ exports[`exports públicos > index 1`] = `
   "loadRemote",
   "mountRemote",
   "navigate",
+  "persist",
   "preload",
   "provide",
   "register",
   "render",
+  "serializeShared",
   "shared",
+  "syncTabs",
   "unsafeHTML",
 ]
 `;
