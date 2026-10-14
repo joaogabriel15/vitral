@@ -3,5 +3,6 @@ packages:
   - demo/*
   - examples/remotes/*
   - examples/hosts/*
+  - examples/estilos
   - e2e
   - bench

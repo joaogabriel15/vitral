@@ -1,0 +1,4 @@
+@import "tailwindcss" source(none);
+@source "./app.js";
+@custom-variant dark (&:where(.dark, .dark *));
+@theme { --color-marca: oklch(0.6 0.15 145); }
