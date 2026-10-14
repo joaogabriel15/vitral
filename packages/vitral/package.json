@@ -179,6 +179,12 @@
       "limit": "5 kB"
     },
     {
+      "name": "host mínimo + store",
+      "path": "dist/index.js",
+      "import": "{ configure, createSlot, provide, shared, batch }",
+      "limit": "4.6 kB"
+    },
+    {
       "name": "react",
       "path": "dist/react.js",
       "import": "{ Remote, reactRemote }",

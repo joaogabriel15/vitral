@@ -1,3 +1,5 @@
+import type { SharedApi } from './shared'
+
 // Tipos públicos do contrato entre host e remote.
 
 export type Props = Record<string, unknown>
@@ -23,6 +25,13 @@ export interface RemoteContext {
    * para detectar recursos; hosts antigos não mandam este campo.
    */
   protocol?: number
+  /**
+   * O mesmo `shared` de `import { shared } from 'vitral'`, mas as assinaturas
+   * feitas por aqui são canceladas no unmount, e as chaves criadas com
+   * `ctx.shared.provide` perdem o dono. Vem quando o host usa o store
+   * (`provide`, `shared` ou um hook); senão, importe `shared` de 'vitral'.
+   */
+  shared?: SharedApi
 }
 
 export interface MountedRemote<P extends Props = Props> {
