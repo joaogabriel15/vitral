@@ -25,6 +25,8 @@ export interface SplitBuild {
   /** Hash SRI de cada arquivo, por URL absoluta. */
   sri: Record<string, string>
   priority?: RequestPriority
+  /** Cópias próprias das dependências de `dedupe`, com URLs absolutas. */
+  dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
 }
 
 /** O que o loader sabe de um remote com integrity. */
@@ -45,7 +47,7 @@ export async function importVerified(name: string, r: Verifiable, run: (url: str
   if (!failed.has(entry)) {
     try {
       // Caminhos 1 e 2: o navegador confere o hash e o JS roda da própria URL.
-      const url = await verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity }, priority })
+      const url = await verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity }, priority }, run)
       if (url) return await run(url)
     } catch {
       failed.add(entry)
@@ -84,18 +86,36 @@ const tick = () => new Promise<void>((resolve) => {
  * Prepara o build para `import()` com o hash conferido pelo navegador e
  * devolve a URL a importar, ou `undefined` para usar o caminho 3.
  */
-export async function verified(build: SplitBuild): Promise<string | undefined> {
-  const { entry, chunks, sri, priority = 'auto' } = build
-  if (![entry, ...chunks].every((u) => STRICT.test(sri[u] ?? ''))) return
+export async function verified(build: SplitBuild, run?: (url: string) => Promise<any>): Promise<string | undefined> {
+  const { entry, chunks, sri, priority = 'auto', dedupe = [] } = build
+  const own = dedupe.flatMap((d) => [...(d.chunks ?? []), d.file])
+  if (![entry, ...chunks, ...own].every((u) => STRICT.test(sri[u] ?? ''))) return
+  // O protocolo já existe aqui (o loader passou por ele).
+  const p = (globalThis as any)[Symbol.for('vitral')] as Protocol
+  // Cópia própria de cada dependência de dedupe: só baixa se ninguém na
+  // página oferece uma versão na faixa, e já fica oferecida aos próximos
+  // remotes, junto com a entrada. O código do dedupe só vem se houver.
+  const share = async (pre?: boolean) => {
+    if (!run || !dedupe.length) return
+    const { shared } = await import('./shared')
+    for (const d of dedupe)
+      shared(p)(d.name, d.range, {
+        version: d.version,
+        load: async () => {
+          if (pre) await Promise.all([...(d.chunks ?? []), d.file].map((u) => preload(u, sri[u], priority)))
+          return (await run!(d.file)).default
+        },
+      })
+  }
   if (maps !== false && (maps = await addMap(sri))) {
+    await share()
     for (const u of chunks) fetch(u, { priority }).catch(() => {})
     return entry
   }
   if (await (preloads ??= checkPreloads())) {
-    // Para os import() do remote (helper do plugin) conferirem também. O
-    // protocolo já existe aqui (o loader passou por ele).
-    const p = (globalThis as any)[Symbol.for('vitral')] as Protocol
+    // Para os import() do remote (helper do plugin) conferirem também.
     p.sri = { ...p.sri, ...sri }
+    await share(true)
     await Promise.all([...chunks, entry].map((u) => preload(u, sri[u], priority)))
     return entry
   }
