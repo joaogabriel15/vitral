@@ -5,19 +5,33 @@
  * Host:   <Remote name="carrinho" props={{ userId }} />
  * Remote: export default reactRemote(App)
  */
-import { Component as ReactComponent, createContext, useContext, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import {
+  Component as ReactComponent,
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ComponentType,
+  type ReactNode,
+} from 'react'
 import { createRoot } from 'react-dom/client'
 import {
   defineRemote,
   events,
   mountRemote,
+  shared,
   type EventBus,
   type Isolation,
   type MountedRemote,
   type Props,
   type RemoteContext,
   type RemoteModule,
+  type Shared,
 } from './index'
+import { memoSelect, same } from './core/shared'
 
 // ---------------------------------------------------------------------------
 // Lado do remote
@@ -75,6 +89,25 @@ export function useEventValue<T = unknown>(type: string): T | undefined {
   const [value, setValue] = useState<T | undefined>(() => events.last<T>(type))
   useEvent<T>(type, setValue)
   return value
+}
+
+/**
+ * Lê uma chave compartilhada (`provide`/`shared`) e re-renderiza só quando
+ * ela muda. Com seletor, só quando o resultado do seletor muda (`Object.is`).
+ * No servidor e na hidratação o valor é `undefined`.
+ *
+ *   const nome = useShared('usuario', (u) => u?.nome)
+ */
+export function useShared<K extends keyof Shared, S = Shared[K] | undefined>(key: K, select?: (value: Shared[K] | undefined) => S): S
+export function useShared<T = unknown, S = T | undefined>(key: string, select?: (value: T | undefined) => S): S
+export function useShared(key: string, select: (value: unknown) => unknown = same): unknown {
+  const handle = useMemo(() => shared(key), [key])
+  const [pick] = useState(memoSelect)
+  return useSyncExternalStore(
+    handle.subscribe,
+    () => pick(handle.get(), select),
+    () => pick(undefined, select),
+  )
 }
 
 export { events, type EventBus }
