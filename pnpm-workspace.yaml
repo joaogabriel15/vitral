@@ -4,3 +4,4 @@ packages:
   - examples/remotes/*
   - examples/hosts/*
   - e2e
+  - bench
