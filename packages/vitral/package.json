@@ -206,6 +206,12 @@
       "limit": "4.9 kB"
     },
     {
+      "name": "host mínimo + store + persist + syncTabs",
+      "path": "dist/index.js",
+      "import": "{ configure, createSlot, provide, shared, batch, persist, syncTabs }",
+      "limit": "5.2 kB"
+    },
+    {
       "name": "react",
       "path": "dist/react.js",
       "import": "{ Remote, reactRemote }",
