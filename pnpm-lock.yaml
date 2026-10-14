@@ -444,6 +444,8 @@ importers:
         specifier: ^8.0.0
         version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)
 
+  packages/create-vitral: {}
+
   packages/vitral:
     dependencies:
       postcss:
