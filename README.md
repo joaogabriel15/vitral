@@ -254,6 +254,18 @@ rede. A `integrity`
 declarada pelo host vence a do manifesto (fixe o hash no host quando o remote
 for de terceiros).
 
+### Performance
+
+Assim que o manifesto chega, o JS e o CSS do remote baixam juntos. A montagem
+espera os dois, para o remote não aparecer sem estilo. `configure()` abre a
+conexão com a origem de cada remote (`<link rel="preconnect">`).
+
+```js
+import { preload } from 'vitral'
+// Baixa JS e CSS sem montar, por exemplo no hover de um link
+link.addEventListener('pointerenter', () => preload('checkout'), { once: true })
+```
+
 ## Segurança
 
 - **Allowlist de origens**: nenhum código é importado de origem não permitida,
