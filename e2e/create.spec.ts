@@ -6,7 +6,7 @@ import { mkdtempSync, readdirSync, readFileSync, renameSync, statSync, writeFile
 import { createServer } from 'node:net'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const cli = join(root, 'packages/create-vitral/index.js')
@@ -87,6 +87,21 @@ function pointHost(dir: string, from: string, to: string) {
   }
 }
 
+/**
+ * Abre a página. Na primeira visita o Vite pode terminar de otimizar as
+ * dependências e recarregar no meio do carregamento; aí abre de novo.
+ */
+async function open(page: Page, url: string) {
+  for (let i = 0; ; i++) {
+    try {
+      return await page.goto(url)
+    } catch (e) {
+      if (i === 2 || !/ERR_ABORTED|interrupted by another navigation/.test(String(e))) throw e
+      await page.waitForTimeout(1000)
+    }
+  }
+}
+
 const stop = (p?: ChildProcess) => {
   try {
     if (p?.pid) process.kill(-p.pid, 'SIGTERM')
@@ -120,10 +135,10 @@ for (const [host, remote] of PARES) {
       const erros: string[] = []
       page.on('pageerror', (e) => erros.push(e.message))
       // Página de desenvolvimento do próprio remote.
-      await page.goto(`http://localhost:${rPort}/`)
+      await open(page, `http://localhost:${rPort}/`)
       await expect(page.getByRole('heading', { name: 'Olá, dev' })).toBeVisible({ timeout: 60_000 })
 
-      await page.goto(`http://localhost:${hPort}/`)
+      await open(page, `http://localhost:${hPort}/`)
       const titulo = page.getByRole('heading', { level: 2 })
       await expect(titulo).toHaveText('Olá, host', { timeout: 60_000 })
       await page.getByRole('button', { name: /Cliques/ }).click()
