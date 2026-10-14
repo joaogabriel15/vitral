@@ -13,10 +13,11 @@
 npm install vitral
 ```
 
-Micro-frontends sem burocracia: cada micro-frontend é um vidro do vitral, com a própria cor e isolado pelo chumbo. Um remote é só um módulo ES que sabe se montar
-num elemento. O host só precisa da URL. Qualquer host carrega remote de
-qualquer framework: um app Angular mostra um remote Svelte, um Next mostra um
-remote Vue, uma página em HTML puro mostra todos.
+Junte micro-frontends de qualquer framework numa página só, sem configuração de build no host.
+
+- Cada app publica um módulo e o host só precisa da URL dele.
+- React, Vue, Angular, Svelte e os outros convivem na mesma tela.
+- CSS, erros e deploys ficam isolados por app.
 
 ```
 host (qualquer framework)                 remote (qualquer framework)
