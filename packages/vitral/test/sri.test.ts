@@ -232,6 +232,37 @@ describe('loader com os três caminhos', () => {
     expect(fetch.mock.calls.map((c) => c[0])).toEqual([CDN + 'remote.js'])
   })
 
+  it('dedupe no manifesto: a cópia própria baixa junto e fica oferecida', async () => {
+    browser({ map: 'ok' })
+    const entry = data(code)
+    const own = data('export default { react: "próprio" }')
+    fetchManifest({
+      entry: 'remote.js',
+      integrity: sha(code),
+      files: { [entry]: sha(code), [own]: sha('own') },
+      split: { entry },
+      dedupe: [{ name: 'react', range: '^19.0.0', version: '19.3.0', file: own }],
+    })
+    const { register, loadRemote } = await lib()
+    register('x', CDN + 'vitral.json')
+    await loadRemote('x')
+    const { protocol } = await import('../src/core/state')
+    expect(await protocol().dedupe!('react', '^19.2.0')).toEqual({ react: 'próprio' })
+  })
+
+  it('cópia própria em outra origem é bloqueada pela allowlist', async () => {
+    fetchManifest({
+      entry: 'remote.js',
+      integrity: sha(code),
+      split: { entry: 'split/remote.js' },
+      dedupe: [{ name: 'react', range: '^19.0.0', version: '19.3.0', file: 'https://outro.com/react.js' }],
+    })
+    const { register, loadRemote, configure } = await lib()
+    configure({ allowedOrigins: [new URL(CDN).origin] })
+    register('x', CDN + 'vitral.json')
+    await expect(loadRemote('x')).rejects.toMatchObject({ code: 'ORIGIN_BLOCKED' })
+  })
+
   it('manifesto sem entry é INVALID_MODULE', async () => {
     fetchManifest({ name: 'x' })
     const { register, loadRemote } = await lib()
@@ -259,5 +290,56 @@ describe('CSS com SRI', () => {
     expect(link.integrity).toBe(sha('css'))
     link.dispatchEvent(new Event('load'))
     await done
+  })
+})
+
+describe('dedupe: cópia própria do remote', () => {
+  const own = CDN + 'split/own-react.js'
+  const withOwn: SplitBuild = {
+    ...build,
+    sri: { ...build.sri, [own]: sha('react') },
+    dedupe: [{ name: 'react', range: '^19.0.0', version: '19.3.0', file: own }],
+  }
+  const start = async () => {
+    const state = await import('../src/core/state')
+    state.resetProtocol()
+    const verified = await load()
+    const { shared } = await import('../src/core/shared')
+    return { p: { dedupe: shared(state.protocol()) }, verified }
+  }
+
+  it('caminho 1: sem oferta na página, baixa junto com a entrada e fica oferecida aos próximos', async () => {
+    browser({ map: 'ok' })
+    const { p, verified } = await start()
+    const run = vi.fn(async () => ({ default: { react: 'próprio' } }))
+    expect(await verified(withOwn, run)).toBe(build.entry)
+    expect(run).toHaveBeenCalledWith(own)
+    // O mapa já tem o hash da cópia própria antes do import().
+    expect(JSON.parse(document.head.querySelector('script[type="importmap"]')!.textContent!).integrity[own]).toBe(sha('react'))
+    expect(await p.dedupe('react', '^19.1.0')).toEqual({ react: 'próprio' })
+  })
+
+  it('com uma versão na faixa já oferecida, não baixa a própria', async () => {
+    browser({ map: 'ok' })
+    const { p, verified } = await start()
+    p.dedupe('react', '19.2.0', { version: '19.2.0', load: async () => ({ react: 'host' }) })
+    const run = vi.fn(async () => ({}))
+    await verified(withOwn, run)
+    expect(run).not.toHaveBeenCalled()
+  })
+
+  it('caminho 2: a cópia própria passa pelo modulepreload com o hash', async () => {
+    browser({ map: 'error', preload: checks })
+    const { verified } = await start()
+    const run = vi.fn(async () => ({ default: {} }))
+    await verified(withOwn, run)
+    await vi.waitFor(() => expect(run).toHaveBeenCalledWith(own))
+    expect(document.head.querySelector<HTMLLinkElement>(`link[rel="modulepreload"][href="${own}"]`)!.integrity).toBe(sha('react'))
+  })
+
+  it('hash da cópia própria fora do formato: vai para o caminho 3', async () => {
+    browser({ map: 'ok' })
+    const { verified } = await start()
+    expect(await verified({ ...withOwn, sri: { ...withOwn.sri, [own]: 'md5-x' } }, vi.fn())).toBeUndefined()
   })
 })

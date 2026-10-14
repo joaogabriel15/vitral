@@ -173,7 +173,8 @@
       "import": "{ configure, createSlot }",
       "limit": "4 kB",
       "ignore": [
-        "./sri-*"
+        "./sri-*",
+        "./shared-*"
       ]
     },
     {
@@ -181,13 +182,19 @@
       "path": "dist/index.js",
       "limit": "5 kB",
       "ignore": [
-        "./sri-*"
+        "./sri-*",
+        "./shared-*"
       ]
     },
     {
-      "name": "SRI (sob demanda, com as dependências)",
+      "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "1.6 kB"
+      "limit": "2.1 kB"
+    },
+    {
+      "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
+      "path": "dist/shared-*.js",
+      "limit": "0.5 kB"
     },
     {
       "name": "react",
@@ -195,16 +202,18 @@
       "import": "{ Remote, reactRemote }",
       "ignore": [
         "react",
-        "react-dom"
+        "react-dom",
+        "./shared-*"
       ],
-      "limit": "6 kB"
+      "limit": "6.2 kB"
     },
     {
       "name": "vue",
       "path": "dist/vue.js",
       "import": "{ VitralRemote, vueRemote }",
       "ignore": [
-        "vue"
+        "vue",
+        "./shared-*"
       ],
       "limit": "6 kB"
     },
@@ -212,7 +221,10 @@
       "name": "element",
       "path": "dist/element.js",
       "import": "{ defineVitralElement }",
-      "limit": "6 kB"
+      "limit": "6 kB",
+      "ignore": [
+        "./shared-*"
+      ]
     }
   ]
 }

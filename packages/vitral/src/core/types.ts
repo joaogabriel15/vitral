@@ -81,7 +81,16 @@ export interface VitralConfig {
   isolate?: Isolation
   /** Recebe o tempo de cada etapa do carregamento (para RUM). */
   onMetric?: (metric: RemoteMetric) => void
+  /**
+   * Dependências que o host oferece aos remotes com `dedupe`, por grupo:
+   * `{ vue: { version: Vue.version, modules: { vue: Vue } } }`. O remote usa
+   * a do host se a versão estiver na faixa dele; senão, a própria cópia.
+   */
+  dedupe?: Record<string, { version: string; modules: SharedModules }>
 }
+
+/** Módulos de um grupo de `dedupe`, por especificador (`'react-dom/client'`). */
+export type SharedModules = Record<string, unknown>
 
 /**
  * Tempo de uma etapa do carregamento de um remote. Cada etapa também vira
@@ -118,6 +127,11 @@ export interface RemoteManifest {
    * quando o navegador não confere o hash por módulo.
    */
   split?: { entry: string; chunks?: string[] }
+  /**
+   * Dependências de `dedupe` do build dividido: faixa aceita, versão da
+   * cópia própria e o arquivo dela, para o loader baixar junto com a entrada.
+   */
+  dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
 }
 
 

@@ -367,18 +367,37 @@ Um remote local (`module`) só mede `css` e `mount`. Erros dentro do
 
 ## Dependências compartilhadas (opcional)
 
-Para não baixar React/Vue duas vezes, marque-os como `shared` no remote e
-declare um import map no host:
+Para não baixar React ou Vue mais de uma vez, liste-os em `dedupe` no remote:
 
 ```js
-vitral({ entry: 'src/remote.jsx', shared: ['react', 'react-dom', 'react-dom/client'] })
+vitral({ entry: 'src/remote.jsx', dedupe: ['react'] })
 ```
 
-```html
-<script type="importmap">
-{ "imports": { "react": "https://esm.sh/react@19.2.0", "react-dom/client": "https://esm.sh/react-dom@19.2.0/client" } }
-</script>
-```
+O remote usa a versão que já está na página, se ela estiver na faixa dele;
+senão, usa a própria cópia. A faixa padrão é `^` da versão instalada no
+build (React 19.3 aceita 19.3 em diante, nunca 19.0, que não tem as APIs
+novas). Svelte e Angular usam a versão exata.
+
+- `['react']` traz o grupo inteiro: `react`, `react-dom`, `react-dom/client`,
+  `react/jsx-runtime`, `react/jsx-dev-runtime` e `react/compiler-runtime`.
+  Ele vem todo do mesmo lugar, porque o React DOM exige a mesma versão do React.
+- O `<Remote>` de `vitral/react` oferece o React do host sem configuração.
+  Para outros casos, use `configure({ dedupe })`:
+
+  ```js
+  import * as Vue from 'vue'
+  configure({ dedupe: { vue: { version: Vue.version, modules: { vue: Vue } } } })
+  ```
+
+- Sem nada na página, o primeiro remote baixa a própria cópia e ela fica
+  disponível para os outros desde o início do download: três remotes React
+  numa página sem React baixam o React uma vez, mesmo carregando juntos.
+- Pacotes CommonJS que fazem `require('react')` continuam funcionando.
+- Só o build dividido compartilha. O arquivo único (hosts antigos e
+  navegadores do caminho `blob:`) usa sempre a própria cópia.
+
+`shared` (import map no host) continua funcionando, mas está obsoleto: o host
+precisa manter o import map e não há cópia própria se a versão não servir.
 
 ## Testes
 
