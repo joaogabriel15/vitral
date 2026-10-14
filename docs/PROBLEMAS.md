@@ -145,6 +145,17 @@ prop errada. Entradas `.vue` e `.svelte` ainda não geram tipos.
 com o plugin configurado, exemplo, `dev` e e2e. O host não precisa de
 `configure()`: `<vitral-remote src="…/vitral.json">` ou `<Remote src>` bastam.
 
+### 17. Estado compartilhado sem dono nem tipo
+
+**O problema.** Sem um store comum, cada time cria o próprio (ou usa
+`window`), sem tipos, sem dono e com listeners que sobram.
+
+**No vitral.** `provide` e `shared` usam um store único na página, mesmo com
+cópias diferentes da lib, com tipos por chave, dono (`writable: false`) e hooks
+para cada framework que só re-renderizam quando o valor muda. O que o remote
+assina por `ctx.shared` é cancelado no unmount. Testado em unidade, com duas
+cópias da lib e com os hooks de cada framework. Veja [contexto.md](contexto.md).
+
 ## Ainda não resolvidos (próximos passos sugeridos)
 
 | Problema | Ideia |
