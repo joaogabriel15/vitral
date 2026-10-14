@@ -47,6 +47,14 @@ for (const fw of HOSTS) {
   })
 }
 
+test('host vanilla e lit pré-otimizam vitral/auto e vitral/element', () => {
+  for (const framework of ['vanilla', 'lit']) {
+    const dir = join(tmp, `host-deps-${framework}`)
+    create({ dir, kind: 'host', framework })
+    assert.match(read(dir, 'vite.config.js'), /include: \['vitral\/auto', 'vitral\/element'\]/)
+  }
+})
+
 test('next, nuxt e sveltekit como remote viram react, vue e svelte', () => {
   const dir = join(tmp, 'remote-next')
   create({ dir, kind: 'remote', framework: 'next' })
