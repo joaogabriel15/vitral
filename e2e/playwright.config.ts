@@ -8,6 +8,8 @@ const DEVICES = { chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit
 // Rode antes: pnpm build:all (na raiz). Os servidores abaixo só servem o que já foi buildado.
 export default defineConfig({
   testDir: '.',
+  // A CLI tem e2e próprio, com rede: pnpm test:create.
+  testIgnore: 'create.spec.ts',
   timeout: 30_000,
   fullyParallel: true,
   reporter: [['list']],
@@ -18,5 +20,6 @@ export default defineConfig({
     { command: 'pnpm --dir ../examples/hosts/next start', url: 'http://localhost:4208', reuseExistingServer: true, env: { NEXT_TELEMETRY_DISABLED: '1' } },
     { command: 'pnpm --dir ../examples/hosts/nuxt start', url: 'http://localhost:4209', reuseExistingServer: true },
     { command: 'node ../demo/serve.mjs', url: 'http://localhost:5173', reuseExistingServer: true },
+    { command: 'node ../examples/estilos/serve.mjs', url: 'http://localhost:4311/index.html', reuseExistingServer: true },
   ],
 })

@@ -215,7 +215,8 @@ describe('keep-alive', () => {
     ;(Element.prototype as any).moveBefore = moveBefore
     try {
       const s = hostSlot(box(), { name: 'sombra', props: { n: 1 }, isolate: 'shadow', keepAlive: true })
-      await flush()
+      // Com Shadow DOM a montagem baixa o módulo de estilos antes: mais que um flush.
+      await vi.waitFor(() => expect(s.status).toBe('ready'))
       s.destroy()
       expect(log).toEqual(['pausado'])
       expect(moveBefore).toHaveBeenCalled()
