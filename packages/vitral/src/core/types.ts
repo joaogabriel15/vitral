@@ -52,6 +52,20 @@ export interface RemoteEntry {
 
 export type Isolation = 'shadow' | 'none'
 
+/** Estilos do host dentro do Shadow DOM. Sem efeito no modo escopo. */
+export interface StyleOptions {
+  /**
+   * CSS do host adotado em cada shadow root antes do CSS do remote (ex.:
+   * `['/assets/base.css']`). Um `CSSStyleSheet` por arquivo, o mesmo em todos.
+   */
+  inherit?: string[]
+  /**
+   * Copia `class` e `data-theme` do `<html>` para a raiz do remote, para
+   * `dark:` e `[data-theme]` funcionarem no Shadow DOM. Padrão `true`.
+   */
+  mirrorTheme?: boolean
+}
+
 export interface VitralConfig {
   /** Mapa nome → URL (ou entrada completa), ou a URL de um JSON com esse mapa. */
   remotes?: Record<string, string | RemoteEntry> | string
@@ -66,6 +80,8 @@ export interface VitralConfig {
   retries?: number
   /** Isolamento padrão para todos os remotes. Padrão `'none'`. */
   isolate?: Isolation
+  /** Estilos do host no Shadow DOM: `{ inherit: ['/assets/base.css'] }`. */
+  styles?: StyleOptions
 }
 
 

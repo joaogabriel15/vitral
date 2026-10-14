@@ -8,7 +8,7 @@
  * que conhecem. Mudanças futuras só acrescentam métodos e sobem `protocol`.
  */
 import { createEventBus } from './bus'
-import type { EventBus, Isolation, RemoteEntry, RemoteModule } from './types'
+import type { EventBus, Isolation, RemoteEntry, RemoteModule, StyleOptions } from './types'
 
 export const PROTOCOL = 1
 
@@ -17,6 +17,7 @@ export interface Settings {
   retries: number
   isolate: Isolation
   allowedOrigins: string[] | null
+  styles?: StyleOptions
 }
 
 /** Remote baixado e pronto para montar. Faz parte do protocolo v1. */

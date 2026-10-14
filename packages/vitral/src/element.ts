@@ -6,7 +6,8 @@
  *   import { defineVitralElement } from 'vitral/element'
  *   defineVitralElement()
  *
- *   <vitral-remote name="carrinho" props='{"userId": 42}' isolate="shadow">
+ *   <vitral-remote name="carrinho" props='{"userId": 42}' isolate="shadow"
+ *     inherit-styles="/assets/base.css">
  *     <p slot="fallback">Carregando…</p>
  *     <p slot="error">Indisponível</p>
  *   </vitral-remote>
@@ -52,6 +53,7 @@ export class VitralRemoteElement extends Base {
       name,
       props: this.#props,
       isolate: (this.getAttribute('isolate') as Isolation) || undefined,
+      styles: { inherit: this.getAttribute('inherit-styles')?.split(/\s+/).filter(Boolean) },
       onStatus: (status, error) => {
         this.setAttribute('data-vitral-status', status)
         for (const el of this.querySelectorAll<HTMLElement>(':scope > [slot="fallback"]')) el.hidden = status !== 'loading'
