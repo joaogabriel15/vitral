@@ -225,6 +225,21 @@ Dentro de remotes: `useVitral()` (contexto), `useEvent(tipo, fn)` e
 mesmo para todos, mesmo que cada remote tenha sua cópia da lib, e o que o
 remote assina por `ctx.events` é cancelado sozinho no unmount.
 
+Para estado comum (usuário, tema, carrinho), use o contexto compartilhado:
+
+```js
+import { provide, shared } from 'vitral'
+const usuario = provide('usuario', { id: 42 })     // host: cria e é o dono
+provide('tema', 'claro', { writable: false })      // só o dono altera
+shared('tema').subscribe((t) => …)                 // qualquer remote
+const nome = useShared('usuario', (u) => u?.nome)  // React, Preact, Vue, Solid
+```
+
+Angular tem `injectShared`, Svelte usa `$tema` direto e Lit tem
+`SharedController`. Props servem para dados de uma instância, `shared` para
+estado comum e `events` para avisos pontuais. Detalhes em
+[docs/contexto.md](docs/contexto.md).
+
 Para navegar de dentro de um remote, use `navigate('/pedidos/42')` (ou
 `ctx.navigate`). Ele atualiza o histórico e avisa todos os roteadores.
 

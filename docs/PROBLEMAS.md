@@ -121,6 +121,17 @@ remote local. O próprio repositório roda e2e de 9 hosts × 8 remotes.
 Preact, Lit/Web Components e JS/TS puro, mais o `<vitral-remote>` que serve de
 host em qualquer lugar que renderize HTML.
 
+### 14. Estado compartilhado sem dono nem tipo
+
+**O problema.** Sem um store comum, cada time cria o próprio (ou usa
+`window`), sem tipos, sem dono e com listeners que sobram.
+
+**No vitral.** `provide` e `shared` usam um store único na página, mesmo com
+cópias diferentes da lib, com tipos por chave, dono (`writable: false`) e hooks
+para cada framework que só re-renderizam quando o valor muda. O que o remote
+assina por `ctx.shared` é cancelado no unmount. Testado em unidade, com duas
+cópias da lib e com os hooks de cada framework. Veja [contexto.md](contexto.md).
+
 ## Ainda não resolvidos (próximos passos sugeridos)
 
 | Problema | Ideia |

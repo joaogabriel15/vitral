@@ -176,6 +176,7 @@
     {
       "name": "núcleo",
       "path": "dist/index.js",
+      "import": "{ RemoteError, __reset, component, configure, createEventBus, createSlot, defineRemote, events, html, loadRemote, mountRemote, navigate, preload, register, render, unsafeHTML }",
       "limit": "5 kB"
     },
     {
@@ -183,6 +184,12 @@
       "path": "dist/index.js",
       "import": "{ configure, createSlot, provide, shared, batch }",
       "limit": "4.6 kB"
+    },
+    {
+      "name": "host mínimo + store + persist + syncTabs",
+      "path": "dist/index.js",
+      "import": "{ configure, createSlot, provide, shared, batch, persist, syncTabs }",
+      "limit": "4.9 kB"
     },
     {
       "name": "react",
