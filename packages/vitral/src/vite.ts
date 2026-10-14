@@ -13,6 +13,7 @@ import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
+import { collect, isSplit, outputs, withSplit, type Split } from './vite/manifest'
 
 export interface VitralViteOptions {
   /** Arquivo que exporta o remote (default export de reactRemote/vueRemote/defineRemote). */
@@ -38,6 +39,8 @@ export default function vitral(options: VitralViteOptions): Plugin {
   let outDir = 'dist'
   let root = process.cwd()
   let pkg: { name?: string; version?: string } = {}
+  let manifest: RemoteManifest | undefined
+  let split: Split | undefined
   const scopeName = () =>
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
   return {
@@ -45,7 +48,6 @@ export default function vitral(options: VitralViteOptions): Plugin {
     config(_, { mode }) {
       // Vite 8+ (rolldown) usa codeSplitting; Vite 5-7 (rollup) usa inlineDynamicImports.
       const rolldown = 'rolldownVersion' in (this as any).meta
-      const output = rolldown ? { codeSplitting: false } : { inlineDynamicImports: true }
       return {
         // Código de biblioteca não tem process.env; React e Vue precisam disso.
         define: { 'process.env.NODE_ENV': JSON.stringify(mode === 'development' ? 'development' : 'production') },
@@ -53,9 +55,9 @@ export default function vitral(options: VitralViteOptions): Plugin {
         preview: { cors: true },
         build: {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
-          lib: { entry: options.entry, formats: ['es'], fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
-          // Um arquivo só: necessário para verificar o hash SRI no host.
-          rollupOptions: { external: options.shared ?? [], output: output as any },
+          lib: { entry: options.entry, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
+          // Arquivo único (hosts antigos e caminho com blob:) e build dividido (manifesto v2).
+          rollupOptions: { external: options.shared ?? [], output: outputs(rolldown) as any },
           cssCodeSplit: false,
         },
       }
@@ -68,6 +70,7 @@ export default function vitral(options: VitralViteOptions): Plugin {
       } catch {}
     },
     writeBundle(_, bundle) {
+      if (isSplit(bundle)) return void (split = collect(outDir, bundle))
       const files = Object.values(bundle)
       const entry = files.find((f) => f.type === 'chunk' && f.isEntry)
       if (!entry) return
@@ -85,7 +88,7 @@ export default function vitral(options: VitralViteOptions): Plugin {
           return name
         })
       const code = readFileSync(join(outDir, entry.fileName))
-      const manifest: RemoteManifest = {
+      manifest = {
         name: options.name ?? pkg.name ?? 'remote',
         version: options.version ?? pkg.version,
         entry: entry.fileName,
@@ -93,7 +96,11 @@ export default function vitral(options: VitralViteOptions): Plugin {
         integrity: 'sha384-' + createHash('sha384').update(code).digest('base64'),
         ...(options.scopeCss === false ? {} : { scope: scopeName() }),
       }
-      writeFileSync(join(outDir, 'vitral.json'), JSON.stringify(manifest, null, 2) + '\n')
+    },
+    closeBundle() {
+      if (!manifest) return
+      writeFileSync(join(outDir, 'vitral.json'), JSON.stringify(withSplit(manifest, outDir, split), null, 2) + '\n')
+      manifest = split = undefined
     },
   }
 }

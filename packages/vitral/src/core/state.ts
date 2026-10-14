@@ -46,6 +46,11 @@ export interface Protocol {
    * existem. Uma carga que falhou continua falhando: o host precisa corrigir a URL.
    */
   pending(work?: Promise<unknown>): Promise<void>
+  /**
+   * Hashes por URL, presentes só quando a lib usa `modulepreload` com
+   * `integrity` (caminho 2 do SRI). O helper de `import()` do plugin lê daqui.
+   */
+  sri?: Record<string, string>
   /** Baixa um remote uma vez só; falhas não ficam em cache. */
   load(name: string, fetcher: () => Promise<LoadedRemote>): Promise<LoadedRemote>
 }
