@@ -15,12 +15,12 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
-import { scopeCss } from './css-scope'
+import { type CssBuildOptions, transformCss } from './css-build'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
 import { extractProps, typesFile } from './vite/types'
 import { devEntryCode, devManifest, devOptimizeDeps, loadPreamble, resolveDevId, scopeDevCss, serveDevManifest, VIRTUAL_DEV_ENTRY } from './vite/dev'
 
-export interface VitralViteOptions {
+export interface VitralViteOptions extends CssBuildOptions {
   /**
    * Arquivo cujo `export default` é o remote: um componente do framework ou
    * um objeto com `mount`. Padrão: `src/remote.*` ou `src/App.*`.
@@ -129,7 +129,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         .map((f) => {
           const from = join(outDir, f.fileName)
           let text = readFileSync(from, 'utf8')
-          if (options.scopeCss !== false) text = scopeCss(text, scopeName())
+          text = transformCss(text, options, scopeName())
           const hash = createHash('sha256').update(text).digest('base64url').slice(0, 8)
           const name = f.fileName.replace(/\.css$/, `-${hash}.css`)
           writeFileSync(join(outDir, name), text)
