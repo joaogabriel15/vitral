@@ -16,7 +16,9 @@ import type { StyleOptions } from './types'
 
 const sheets = new Map<string, Promise<CSSStyleSheet[]>>()
 const hoisted = new Set<string>()
-const RELATIVE_URL = /url\(\s*(['"]?)(?![a-z]+:|\/|#)([^'")]+)\1\s*\)/gi
+// Relativa ou só com o caminho (`/x.woff2`): numa folha construída ou num
+// <style> do documento, valeria a partir da página, não do CSS do remote.
+const RELATIVE_URL = /url\(\s*(['"]?)(?![a-z]+:|\/\/|#)([^'")]+)\1\s*\)/gi
 // 1: nome do @property; 3 ou 4: URL do @import.
 const GLOBAL_RULES = /@property\s+(--[\w-]+)\s*\{[^}]*\}|@font-face\s*\{[^}]*\}|@import\s+(?:url\(\s*)?(?:(['"])(.*?)\2|([^'"\s);]+))\s*\)?[^;]*;/gi
 

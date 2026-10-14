@@ -124,8 +124,18 @@ Use Tailwind (ou qualquer CSS) no remote normalmente. O plugin prefixa o CSS
 com `[data-vitral-scope="nome"]` e transforma `:root`/`html`/`body` na raiz do
 remote, então o preflight e o tema não vazam para o host, e o host não precisa
 escanear os arquivos do remote. Com `isolate="shadow"`, as regras `@property`
-do Tailwind v4 sobem para o documento para que sombras, rings e gradientes
-funcionem. Veja [docs/PROBLEMAS.md](docs/PROBLEMAS.md).
+e `@font-face` sobem para o documento para que sombras, rings, gradientes e
+fontes funcionem. Veja [docs/PROBLEMAS.md](docs/PROBLEMAS.md).
+
+O remote pode usar o tema do host (opcional):
+
+```js
+vitral({ entry: 'src/remote.jsx', theme: 'host' })   // var(--x) usa o valor do host, se existir
+configure({ styles: { inherit: ['/assets/base.css'] } }) // CSS base do host no Shadow DOM
+```
+
+Receita do tema compartilhado com Tailwind v4, dark mode, CSS legado e Tailwind
+v3 no host: [docs/estilos.md](docs/estilos.md).
 
 Sem Vite? Qualquer bundler serve (webpack, Rspack, esbuild, Rollup, Angular
 CLI): basta gerar um módulo ES cujo `default` tenha `mount(el, props, ctx)`.
@@ -245,6 +255,7 @@ configure({
   timeout: 15000,
   retries: 1,
   isolate: 'none',                              // ou 'shadow' para todos
+  styles: { inherit: ['/assets/base.css'] },    // CSS do host no Shadow DOM
 })
 ```
 
