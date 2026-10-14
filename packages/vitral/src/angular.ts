@@ -9,19 +9,23 @@
  *         <vitral-remote name="carrinho" [props]="{ userId }" isolate="shadow"></vitral-remote>
  */
 import {
+  DestroyRef,
   InjectionToken,
   createComponent,
   inject,
   provideAppInitializer,
   provideZonelessChangeDetection,
   reflectComponentType,
+  signal,
   type ApplicationConfig,
   type EnvironmentProviders,
   type Provider,
+  type Signal,
   type Type,
 } from '@angular/core'
 import { createApplication } from '@angular/platform-browser'
-import { configure, defineRemote, type VitralConfig, type Props, type RemoteContext, type RemoteModule } from './index'
+import { configure, defineRemote, shared, type VitralConfig, type Props, type RemoteContext, type RemoteModule, type Shared } from './index'
+import { memoSelect, same } from './core/shared'
 import { defineVitralElement } from './element'
 
 export const VITRAL_CONTEXT = new InjectionToken<RemoteContext>('vitral.context')
@@ -60,6 +64,25 @@ export function angularRemote<P extends Props>(component: Type<unknown>, config:
 /** Dentro de um remote Angular: `const vitral = injectVitral()`. */
 export function injectVitral(): RemoteContext | null {
   return inject(VITRAL_CONTEXT, { optional: true })
+}
+
+/**
+ * Signal de uma chave compartilhada (`provide`/`shared`). Com seletor, só
+ * muda quando o resultado do seletor muda (`Object.is`). Chame num contexto de
+ * injeção (construtor, inicializador de campo); a assinatura acaba no destroy.
+ *
+ *   usuario = injectShared('usuario')
+ *   nome = injectShared('usuario', (u) => u?.nome)
+ */
+export function injectShared<K extends keyof Shared, S = Shared[K] | undefined>(key: K, select?: (value: Shared[K] | undefined) => S): Signal<S>
+export function injectShared<T = unknown, S = T | undefined>(key: string, select?: (value: T | undefined) => S): Signal<S>
+export function injectShared(key: string, select: (value: unknown) => unknown = same): Signal<unknown> {
+  const destroy = inject(DestroyRef)
+  const handle = shared(key)
+  const pick = memoSelect()
+  const value = signal(pick(handle.get(), select), { equal: Object.is })
+  destroy.onDestroy(handle.subscribe((v) => value.set(pick(v, select))))
+  return value.asReadonly()
 }
 
 /**
