@@ -8,6 +8,7 @@
  * que conhecem. Mudanças futuras só acrescentam métodos e sobem `protocol`.
  */
 import { createEventBus } from './bus'
+import type { SharedStore } from './store'
 import type { EventBus, Isolation, RemoteEntry, RemoteModule } from './types'
 
 export const PROTOCOL = 1
@@ -45,6 +46,12 @@ export interface Protocol {
   pending(work?: Promise<unknown>): Promise<void>
   /** Baixa um remote uma vez só; falhas não ficam em cache. */
   load(name: string, fetcher: () => Promise<LoadedRemote>): Promise<LoadedRemote>
+  /**
+   * Store do contexto compartilhado (`provide`/`shared`). Não vem no objeto
+   * criado aqui: a primeira cópia da lib que usa o store instala este método,
+   * para o host mínimo não pagar por ele.
+   */
+  shared?(): SharedStore
 }
 
 const KEY = Symbol.for('vitral')
