@@ -12,9 +12,9 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
-import { scopeCss } from './css-scope'
+import { type CssBuildOptions, transformCss } from './css-build'
 
-export interface VitralViteOptions {
+export interface VitralViteOptions extends CssBuildOptions {
   /** Arquivo que exporta o remote (default export de reactRemote/vueRemote/defineRemote). */
   entry: string
   /** Nome do remote no manifesto. Padrão: `name` do package.json. */
@@ -77,7 +77,7 @@ export default function vitral(options: VitralViteOptions): Plugin {
         .map((f) => {
           const from = join(outDir, f.fileName)
           let text = readFileSync(from, 'utf8')
-          if (options.scopeCss !== false) text = scopeCss(text, scopeName())
+          text = transformCss(text, options, scopeName())
           const hash = createHash('sha256').update(text).digest('base64url').slice(0, 8)
           const name = f.fileName.replace(/\.css$/, `-${hash}.css`)
           writeFileSync(join(outDir, name), text)
