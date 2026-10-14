@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { createServer, type ViteDevServer } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import vitral from '../src/vite'
-import { devEntryCode, scopeDevCss } from '../src/vite/dev'
+import { devEntryCode, devOptimizeDeps, scopeDevCss } from '../src/vite/dev'
 
 const root = resolve(__dirname, 'fixtures/vite-remote')
 let server: ViteDevServer
@@ -57,5 +57,13 @@ describe('modo dev', () => {
     expect(scopeDevCss('a{}', '/a.css?raw', 'x')).toBeUndefined()
     expect(scopeDevCss('a{}', '/a.js', 'x')).toBeUndefined()
     expect(scopeDevCss('a{}', '/App.vue?vue&type=style&index=0&lang.css', 'x')).toBe('[data-vitral-scope="x"] a{}')
+  })
+
+  it('a entrada e o adaptador entram na otimização inicial de dependências', () => {
+    const react = [[{ name: 'vite:react-babel' }, { name: 'vite:react-refresh' }], null]
+    expect(devOptimizeDeps(react, 'src/App.jsx')).toEqual({ entries: ['src/App.jsx', '**/*.html'], include: ['vitral/react'] })
+    expect(devOptimizeDeps([], 'src/App.js').include).toEqual(['vitral', 'vitral/element'])
+    expect(devOptimizeDeps(react, 'src/App.jsx', 'vue').include).toEqual(['vitral/vue'])
+    expect(devOptimizeDeps(react, 'src/App.jsx', false).include).toEqual([])
   })
 })

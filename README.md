@@ -23,14 +23,13 @@ npm install vitral
 
 ## Começo rápido
 
-**1. No remote**, exporte o componente:
+Para gerar host e remote prontos: `npm create vitral@latest`.
+
+**1. No remote**, exporte o componente e use o plugin:
 
 ```jsx
-// src/remote.jsx
-import { reactRemote } from 'vitral/react'
-import Carrinho from './Carrinho'
-
-export default reactRemote(Carrinho)
+// src/App.jsx (ou .vue, .svelte, .tsx…)
+export default function Carrinho({ userId }) { … }
 ```
 
 ```js
@@ -38,8 +37,10 @@ export default reactRemote(Carrinho)
 import react from '@vitejs/plugin-react'
 import vitral from 'vitral/vite'
 
-export default { plugins: [react(), vitral({ entry: 'src/remote.jsx' })] }
+export default { plugins: [react(), vitral()] }
 ```
+
+O plugin descobre o framework e embrulha o `export default` com o adaptador certo. A entrada padrão é `src/remote.*` ou `src/App.*`.
 
 `vite build` gera o JS, o CSS e um `vitral.json`. Publique a pasta `dist` em qualquer CDN com CORS.
 
@@ -66,6 +67,15 @@ export function App() {
 ```
 
 Pronto. Mudar `props` atualiza o remote sem remontar.
+
+Sem build no host, numa página HTML qualquer:
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json"></vitral-remote>
+```
+
+Todos os componentes de host aceitam `src` no lugar de `name`.
 
 ## Frameworks
 
@@ -134,6 +144,12 @@ export default component<{ nome: string }>({
 
 O que entra em `${}` é escapado. Mudar `state` ou as props atualiza a tela.
 
+## Desenvolvimento
+
+- **HMR:** com o remote em `vite dev`, aponte o host para `http://localhost:5174/vitral.json`. Editar o remote atualiza o host sem recarregar a página.
+- **Overrides:** `http://localhost:3000/?vitral=carrinho@http://localhost:5174` troca a URL de um remote sem mexer no host. Só vale em `localhost` ou com `configure({ devOverrides: true })`. Para guardar no navegador, use `devtools()` de `vitral/devtools`.
+- **Tipos das props:** o build publica `vitral.d.ts`. No host, `npx vitral types` gera `vitral-env.d.ts`, e uma prop errada passa a não compilar.
+
 ## Comunicação entre remotes
 
 ```js
@@ -198,7 +214,7 @@ Todo erro é um `RemoteError` com `code`, o nome do remote e `docs`, o link da [
 
 ## Segurança
 
-- Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra.
+- Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra. O `src` de um componente de host entra na allowlist; o atributo `src` do `<vitral-remote>` não entra quando há `allowedOrigins`.
 - Com `integrity`, confere o hash do JS antes de executar e executa exatamente os bytes conferidos. Aceita `sha256`, `sha384` e `sha512`, e vários hashes separados por espaço (vale o mais forte). Com CSP, inclua `blob:` em `script-src`.
 - Sem `eval` e sem iframes.
 - Shadow DOM isola o CSS, não o JS. Para código de terceiros em que você não confia, use iframe.

@@ -8,7 +8,7 @@ import type { ServerResponse } from 'node:http'
 import type { ViteDevServer } from 'vite'
 import type { RemoteManifest } from '../index'
 import { scopeCss } from '../css-scope'
-import { ENTRY_ID, type AdapterName } from './adapter'
+import { detectAdapter, ENTRY_ID, type AdapterName } from './adapter'
 
 /** Caminho do módulo de desenvolvimento, relativo ao `vitral.json`. */
 export const DEV_ENTRY = '@vitral/entry.js'
@@ -113,4 +113,16 @@ export function serveDevManifest(server: ViteDevServer, manifest: () => RemoteMa
     })
     res.end(JSON.stringify(manifest(), null, 2))
   })
+}
+
+/**
+ * O host só chega à entrada do remote em runtime, então o Vite acharia as
+ * dependências dela tarde, otimizaria de novo e recarregaria a página do host.
+ * Aqui elas entram na varredura inicial: a entrada e o adaptador do vitral.
+ */
+export function devOptimizeDeps(plugins: unknown, entry: string, adapter?: AdapterName | false) {
+  const named = [plugins].flat(Infinity).filter((p): p is { name: string } => typeof (p as { name?: unknown })?.name === 'string')
+  const fw = adapter === false ? null : adapter || detectAdapter(named)
+  const include = fw === null ? [] : fw === 'element' ? ['vitral', 'vitral/element'] : [`vitral/${fw}`]
+  return { entries: [entry, '**/*.html'], include }
 }
