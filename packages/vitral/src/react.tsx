@@ -3,14 +3,28 @@
  * Adaptador React (funciona em Vite, CRA e Next.js App/Pages Router).
  *
  * Host:   <Remote name="carrinho" props={{ userId }} />
+ *         <Remote src="https://cdn.exemplo.com/carrinho/vitral.json" props={{ userId }} />
  * Remote: export default reactRemote(App)
  */
-import { Component as ReactComponent, createContext, useContext, useEffect, useRef, useState, type ComponentType, type ReactNode } from 'react'
+import {
+  Component as ReactComponent,
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ComponentType,
+  type ReactNode,
+} from 'react'
 import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 import { createRoot } from 'react-dom/client'
 import {
   defineRemote,
   events,
+  shared,
+  type CheckedProps,
   type EventBus,
   type Isolation,
   type Props,
@@ -18,8 +32,10 @@ import {
   type RemoteError,
   type RemoteModule,
   type RemoteSlot,
+  type Shared,
   type SlotStatus,
 } from './index'
+import { memoSelect, same } from './core/shared'
 
 // ---------------------------------------------------------------------------
 // Lado do remote
@@ -79,6 +95,25 @@ export function useEventValue<T = unknown>(type: string): T | undefined {
   return value
 }
 
+/**
+ * Lê uma chave compartilhada (`provide`/`shared`) e re-renderiza só quando
+ * ela muda. Com seletor, só quando o resultado do seletor muda (`Object.is`).
+ * No servidor e na hidratação o valor é `undefined`.
+ *
+ *   const nome = useShared('usuario', (u) => u?.nome)
+ */
+export function useShared<K extends keyof Shared, S = Shared[K] | undefined>(key: K, select?: (value: Shared[K] | undefined) => S): S
+export function useShared<T = unknown, S = T | undefined>(key: string, select?: (value: T | undefined) => S): S
+export function useShared(key: string, select: (value: unknown) => unknown = same): unknown {
+  const handle = useMemo(() => shared(key), [key])
+  const [pick] = useState(memoSelect)
+  return useSyncExternalStore(
+    handle.subscribe,
+    () => pick(handle.get(), select),
+    () => pick(undefined, select),
+  )
+}
+
 export { events, type EventBus }
 
 // ---------------------------------------------------------------------------
@@ -86,7 +121,10 @@ export { events, type EventBus }
 // ---------------------------------------------------------------------------
 
 export interface RemoteProps<P extends Props = Props> {
-  name: string
+  /** Nome registrado com `configure()`. Com `src`, o nome sob o qual a URL é registrada. */
+  name?: string
+  /** URL do `vitral.json`. Dispensa `configure()`. */
+  src?: string
   props?: P
   isolate?: Isolation
   /** Mostrado enquanto o remote baixa. */
@@ -107,10 +145,12 @@ export interface RemoteProps<P extends Props = Props> {
 
 /**
  * Renderiza um remote. No servidor (Next SSR) renderiza só o fallback; o
- * remote monta no cliente, então não há erro de hidratação.
+ * remote monta no cliente, então não há erro de hidratação. Com o nome em
+ * `Remotes` (`npx vitral types`), as props são checadas.
  */
-export function Remote<P extends Props = Props>({
+export function Remote<P extends Props = Props, N extends string = string>({
   name,
+  src,
   props,
   isolate,
   fallback = null,
@@ -121,7 +161,7 @@ export function Remote<P extends Props = Props>({
   prefetch,
   priority,
   keepAlive,
-}: RemoteProps<P>) {
+}: RemoteProps<P> & CheckedProps<N>) {
   const target = useRef<HTMLDivElement>(null)
   const slot = useRef<RemoteSlot<P> | null>(null)
   const [state, setState] = useState<{ status: SlotStatus; error: RemoteError | null }>({ status: 'loading', error: null })
@@ -131,6 +171,7 @@ export function Remote<P extends Props = Props>({
   useEffect(() => {
     const s = hostSlot<P>(target.current!, {
       name,
+      src,
       props: (props ?? {}) as P,
       isolate,
       loading,
@@ -153,14 +194,14 @@ export function Remote<P extends Props = Props>({
       queueMicrotask(() => s.destroy())
     }
   }, [])
-  useEffect(() => slot.current?.set({ name, isolate }), [name, isolate])
+  useEffect(() => slot.current?.set({ name, src, isolate }), [name, src, isolate])
   useEffect(() => slot.current?.update((props ?? {}) as P), [props])
 
   const retry = () => slot.current?.retry()
   const { status, error: err } = state
 
   return (
-    <div className={className} data-vitral={name} data-vitral-status={status}>
+    <div className={className} data-vitral={name ?? src} data-vitral-status={status}>
       {status === 'loading' && fallback}
       {status === 'error' && err && (typeof error === 'function' ? error(err, retry) : (error ?? null))}
       {/* O React nunca coloca filhos neste div: ele pertence ao remote. */}
