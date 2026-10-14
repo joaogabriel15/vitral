@@ -254,6 +254,12 @@ rede. A `integrity`
 declarada pelo host vence a do manifesto (fixe o hash no host quando o remote
 for de terceiros).
 
+### Mais formas de usar
+
+Vários componentes por remote (`<Remote name="carrinho/MiniCarrinho" />`) e
+módulos sem UI (`loadModule('carrinho/api')`). Veja
+[docs/formas-de-usar.md](docs/formas-de-usar.md).
+
 ## Segurança
 
 - **Allowlist de origens**: nenhum código é importado de origem não permitida,

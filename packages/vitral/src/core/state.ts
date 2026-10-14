@@ -27,6 +27,8 @@ export interface LoadedRemote {
   css: string[]
   isolate?: Isolation
   scope?: string
+  /** Namespace ES do arquivo (inclui `exposes`). Cópias antigas não mandam. */
+  exports?: Record<string, unknown>
 }
 
 export interface Protocol {

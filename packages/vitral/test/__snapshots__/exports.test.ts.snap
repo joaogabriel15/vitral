@@ -30,6 +30,7 @@ exports[`exports públicos > index 1`] = `
   "defineRemote",
   "events",
   "html",
+  "loadModule",
   "loadRemote",
   "mountRemote",
   "navigate",
