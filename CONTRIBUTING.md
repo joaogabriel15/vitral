@@ -22,7 +22,7 @@ Na primeira vez, instale o navegador do Playwright:
 | `examples/hosts` | 9 hosts (JS puro, React, Vue, Svelte, Solid, Preact, Angular, Next, Nuxt) |
 | `e2e` | Testes Playwright que cruzam todos os hosts e remotes |
 | `demo` | Demo com Tailwind (catálogo Vue + carrinho React) |
-| `docs` | Pesquisa de problemas das outras soluções |
+| `docs` | Site da documentação (VitePress). `pnpm --dir docs dev` abre em localhost |
 
 ## Adicionando um framework
 
@@ -32,6 +32,11 @@ Na primeira vez, instale o navegador do Playwright:
 3. Escreva `test/<framework>.test.ts`.
 4. Crie `examples/remotes/<framework>` e, se houver host, `examples/hosts/<framework>`,
    e inclua o nome nas listas de `e2e/matriz.spec.ts`.
+
+## Código de erro novo
+
+Todo código em `RemoteErrorCode` precisa de uma página em `docs/erros/<CÓDIGO>.md`
+e de uma linha na tabela de `docs/erros/README.md`. O CI confere.
 
 ## Publicação
 

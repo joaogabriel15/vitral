@@ -72,8 +72,8 @@ describe('protocolo global', () => {
 describe('erros', () => {
   it('todo RemoteError aponta para a página do código', () => {
     const e = new RemoteError('TIMEOUT', 'x', 'demorou')
-    expect(e.docs).toBe(`${ERROR_DOCS}TIMEOUT.md`)
-    expect(e.message).toBe(`[vitral] x: demorou (${ERROR_DOCS}TIMEOUT.md)`)
+    expect(e.docs).toBe('https://joaogabriel15.github.io/vitral/erros/TIMEOUT')
+    expect(e.message).toBe(`[vitral] x: demorou (${ERROR_DOCS}TIMEOUT)`)
   })
 
   it('todo código tem página em docs/erros', () => {
