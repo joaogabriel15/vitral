@@ -14,6 +14,7 @@
  * allowlist, e as partes dividem as mesmas instâncias de módulo.
  */
 import { RemoteError } from './errors'
+import { mountable } from './loader'
 import { protocol, type LoadedRemote } from './state'
 
 type LoadFile = (name: string) => Promise<LoadedRemote>
@@ -31,12 +32,7 @@ export function splitName(name: string): [remote: string, key: string | null] {
 
 /** Carrega um nome qualquer e devolve o que dá para montar (com `mount`). */
 export function resolveTarget(name: string, loadFile: LoadFile): Promise<LoadedRemote> {
-  return resolveAny(name, loadFile).then((r) => {
-    if (typeof r.module?.mount != 'function') {
-      throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount(). Use defineRemote(), ou loadModule() para módulo sem UI.')
-    }
-    return r
-  })
+  return resolveAny(name, loadFile).then((r) => mountable(name, r))
 }
 
 function resolveAny(name: string, loadFile: LoadFile): Promise<LoadedRemote> {
