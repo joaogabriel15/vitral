@@ -1,6 +1,6 @@
 // Modo dev: o remote roda em `vite dev`, o host carrega o `vitral.json` de dev
 // e uma edição no remote aparece no host sem recarregar a página.
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer as createHttp, type Server } from 'node:http'
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
@@ -67,7 +67,9 @@ for (const [fw, [file, title, port, keepsState]] of Object.entries(REMOTES)) {
       await page.evaluate(() => ((window as any).__semReload = true))
 
       const path = join(dir, file)
-      writeFileSync(path, readFileSync(path, 'utf8').replace(`>${title}<`, `>${title} editado<`))
+      // Grava e renomeia: com writeFileSync o Vite às vezes lê o arquivo vazio.
+      writeFileSync(`${path}.tmp`, readFileSync(path, 'utf8').replace(`>${title}<`, `>${title} editado<`))
+      renameSync(`${path}.tmp`, path)
       await expect(fwText).toHaveText(`${title} editado`, { timeout: 20_000 })
 
       expect(await page.evaluate(() => (window as any).__semReload)).toBe(true)
