@@ -8,15 +8,18 @@
  * Cada parte mora em `src/core/`; este arquivo só reexporta a API pública.
  */
 export type {
+  CheckedProps,
   EventBus,
   Handler,
   Isolation,
   MountedRemote,
   Props,
+  PropsOf,
   RemoteContext,
   RemoteEntry,
   RemoteManifest,
   RemoteModule,
+  Remotes,
   VitralConfig,
 } from './core/types'
 export { RemoteError, type RemoteErrorCode } from './core/errors'

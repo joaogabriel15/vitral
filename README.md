@@ -289,6 +289,29 @@ bootstrapApplication(App, { providers: [provideVitral({ remotes: '/remotes.json'
 
 **Solid / Preact:** `<Remote name="carrinho" props={{ userId }} fallback={…} error={(e, retry) => …} />`.
 
+### Tipos das props entre deploys
+
+O build do remote publica `vitral.d.ts` ao lado do `vitral.json`, com o tipo
+das props lido do `export default` (componente, `mount` ou classe com `props`).
+No host:
+
+```sh
+npx vitral types                       # lê public/remotes.json ou remotes.json
+npx vitral types carrinho=https://cdn.exemplo.com/carrinho/vitral.json
+npx vitral types --base https://cdn.exemplo.com --out src/vitral-env.d.ts
+```
+
+O comando gera `vitral-env.d.ts`. Com ele no projeto, prop errada não compila:
+
+```tsx
+<Remote name="carrinho" props={{ userId: '42' }} />   // erro: userId é number
+const props: PropsOf<'carrinho'> = { userId: 42 }       // import type { PropsOf } from 'vitral'
+```
+
+Vale para React, Preact e Solid. Tipos de pacotes viram `unknown`. Entradas
+`.vue` e `.svelte` não geram tipos. Desligue com `vitral({ types: false })`.
+O plugin usa o `typescript` do projeto.
+
 ### Comunicação
 
 ```js
