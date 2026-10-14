@@ -1,30 +1,15 @@
-// Remote em TypeScript puro, sem framework: só implementar mount/update/unmount.
-import { defineRemote } from 'vitral'
+// Remote em TypeScript puro, sem framework.
+import { component, html } from 'vitral'
 
-interface Props extends Record<string, unknown> {
-  mensagem?: string
-}
-
-export default defineRemote<Props>({
-  mount(el, props, ctx) {
-    let cliques = 0
-    el.innerHTML = `<div class="cartao">
+export default component<{ mensagem?: string }>({
+  state: { cliques: 0 },
+  render: ({ mensagem }, state, ctx) => html`
+    <div class="cartao">
       <h3 class="fw">Vanilla TS</h3>
-      <p class="msg"></p>
-      <button class="ping">ping <span class="cliques">0</span></button>
-    </div>`
-    const msg = el.querySelector<HTMLParagraphElement>('.msg')!
-    const contador = el.querySelector<HTMLSpanElement>('.cliques')!
-    const onClick = () => {
-      contador.textContent = String(++cliques)
-      ctx.events.emit('ping', 'Vanilla TS')
-    }
-    el.querySelector('button')!.addEventListener('click', onClick)
-    const render = (p: Props) => (msg.textContent = p.mensagem ?? '')
-    render(props)
-    return {
-      update: render,
-      unmount: () => el.replaceChildren(),
-    }
-  },
+      <p class="msg">${mensagem}</p>
+      <button class="ping" onclick=${() => { state.cliques++; ctx.events.emit('ping', 'Vanilla TS') }}>
+        ping <span class="cliques">${state.cliques}</span>
+      </button>
+    </div>
+  `,
 })

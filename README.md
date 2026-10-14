@@ -55,7 +55,7 @@ host (qualquer framework)                 remote (qualquer framework)
 | Solid / SolidStart | `solidRemote(App)` | `<Remote>` | `vitral/solid` |
 | Preact | `preactRemote(App)` | `<Remote>` | `vitral/preact` |
 | Lit, Stencil, Web Components | `elementRemote('meu-widget')` | `<vitral-remote>` | `vitral/element` |
-| JS / TypeScript puro | `defineRemote({ mount })` | `<vitral-remote>` | `vitral`, `vitral/element` |
+| JS / TypeScript puro | `component(render)` | `<vitral-remote>` | `vitral`, `vitral/element` |
 | Qualquer outro (Astro, Qwik, jQuery, HTML do servidor…) | `defineRemote({ mount })` | `<vitral-remote>` | `vitral/element` |
 
 Todas as 72 combinações host × remote dos exemplos (9 hosts × 8 remotes) são
@@ -89,19 +89,22 @@ export default elementRemote('lit-cartao', () => customElements.define('lit-cart
 JS ou TypeScript puro, sem framework nenhum:
 
 ```ts
-import { defineRemote } from 'vitral'
+import { component, html } from 'vitral'
 
-export default defineRemote<{ mensagem?: string }>({
-  mount(el, props, ctx) {
-    el.innerHTML = `<p></p><button>ping</button>`
-    const p = el.querySelector('p')!
-    el.querySelector('button')!.onclick = () => ctx.events.emit('ping', 'vanilla')
-    const render = (props: { mensagem?: string }) => (p.textContent = props.mensagem ?? '')
-    render(props)
-    return { update: render, unmount: () => el.replaceChildren() }
-  },
+export default component<{ mensagem?: string }>({
+  state: { cliques: 0 },
+  render: ({ mensagem }, state, ctx) => html`
+    <p>${mensagem}</p>
+    <button onclick=${() => state.cliques++}>cliques: ${state.cliques}</button>
+  `,
 })
 ```
+
+Sem estado, basta a função: ``component(({ nome }) => html`<p>Olá, ${nome}</p>`)``.
+Tudo que entra no `${}` é escapado, então dá para colocar dado do usuário sem
+risco de XSS. Mudar o `state` ou receber props novas atualiza a tela sozinho.
+Se precisar de controle total, `defineRemote({ mount(el, props, ctx) { ... } })`
+continua disponível.
 
 Build com o plugin (o mesmo para todos os frameworks):
 
