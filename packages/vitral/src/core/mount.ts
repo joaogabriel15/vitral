@@ -4,6 +4,7 @@ import { scopedEvents } from './events'
 import { load } from './loader'
 import { navigate } from './navigate'
 import { protocol } from './state'
+import { refreshable, track } from './updates'
 import type { Isolation, MountedRemote, Props, RemoteContext } from './types'
 
 // ---------------------------------------------------------------------------
@@ -18,7 +19,8 @@ export interface MountOptions {
 
 /**
  * Monta um remote dentro de `target`. Devolve um handle com `update` e
- * `unmount` que funciona igual para qualquer framework.
+ * `unmount` que funciona igual para qualquer framework. Com `refresh(nome)`,
+ * o mesmo handle passa a apontar para a versão nova.
  */
 export async function mountRemote<P extends Props = Props>(
   target: HTMLElement,
@@ -26,7 +28,12 @@ export async function mountRemote<P extends Props = Props>(
   props: P,
   options: MountOptions = {},
 ): Promise<MountedRemote<P>> {
+  return refreshable(await mountOnce(target, name, props, options), name, props, (latest) => mountOnce(target, name, latest, options))
+}
+
+async function mountOnce<P extends Props>(target: HTMLElement, name: string, props: P, options: MountOptions): Promise<MountedRemote<P>> {
   const { module: mod, ...resolved } = await load(name)
+  track(name, resolved.entry)
   const isolate = options.isolate ?? resolved.isolate ?? protocol().settings().isolate
 
   // Cada montagem ganha seu próprio elemento. Assim duas montagens no mesmo

@@ -59,7 +59,7 @@ async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote
 
 type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string }
 
-async function resolveEntry(name: string, entry: RemoteEntry & { url: string }): Promise<Resolved> {
+export async function resolveEntry(name: string, entry: RemoteEntry & { url: string }): Promise<Resolved> {
   checkOrigin(name, entry.url)
   const isManifest = new URL(entry.url).pathname.endsWith('.json')
   if (!isManifest) {
