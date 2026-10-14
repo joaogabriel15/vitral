@@ -1,0 +1,2 @@
+:root { --cor: red }
+.cartao { color: var(--cor) }
