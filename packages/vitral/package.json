@@ -203,7 +203,7 @@
       "name": "host mínimo + store",
       "path": "dist/index.js",
       "import": "{ configure, createSlot, provide, shared, batch }",
-      "limit": "4.6 kB"
+      "limit": "4.9 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
