@@ -1,4 +1,4 @@
-import { RemoteError } from './errors'
+import { isRemoteError, RemoteError } from './errors'
 import { mountRemote } from './mount'
 import type { Isolation, MountedRemote, Props } from './types'
 
@@ -63,7 +63,7 @@ export function createSlot<P extends Props = Props>(target: HTMLElement, options
     setStatus('loading')
     const fail = (e: unknown) => {
       if (my !== token) return
-      setStatus('error', e instanceof RemoteError ? e : new RemoteError('MOUNT_FAILED', name, String(e), e))
+      setStatus('error', isRemoteError(e) ? e : new RemoteError('MOUNT_FAILED', name, String(e), e))
     }
     const initial = props
     mountRemote<P>(holder, name, props, { isolate, priority: options.priority, onError: fail }).then((h) => {

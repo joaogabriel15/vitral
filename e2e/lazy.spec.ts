@@ -104,3 +104,19 @@ test('keep-alive: tirar e pôr de volta não remonta e mantém o estado', async 
   expect(await page.evaluate(() => (window as any).__log)).toEqual(['pausado', 'ativo'])
   await expect(page.locator('#aba2')).toHaveAttribute('data-vitral-status', 'ready')
 })
+
+test('vitral-ready traz os tempos de cada etapa e o measure aparece no navegador', async ({ page }) => {
+  await page.goto(origin)
+  const detail = await page.evaluate(
+    () =>
+      new Promise<any>((resolve) => {
+        const el = document.createElement('vitral-remote')
+        el.setAttribute('name', 'longe')
+        el.addEventListener('vitral-ready', (e) => resolve((e as CustomEvent).detail))
+        document.body.prepend(el)
+      }),
+  )
+  expect(Object.keys(detail.timings)).toEqual(['manifest', 'js', 'css', 'mount'])
+  const names = await page.evaluate(() => performance.getEntriesByType('measure').map((m) => m.name))
+  expect(names).toContain('vitral:aba:js')
+})

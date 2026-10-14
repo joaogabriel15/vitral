@@ -31,7 +31,7 @@ import {
   type RemoteContext,
   type RemoteModule,
 } from './index'
-import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
+import { hostSlot, timings, type Loading, type Prefetch } from './core/host-slot'
 
 // ---------------------------------------------------------------------------
 // Lado do remote
@@ -131,7 +131,7 @@ export const VitralRemote = defineComponent({
         onStatus(s, e) {
           status.value = s
           error.value = e
-          if (s === 'ready') emit('ready')
+          if (s === 'ready') emit('ready', timings(p.name))
           if (e) {
             emit('error', e)
             if (!slots.error) console.error(e)

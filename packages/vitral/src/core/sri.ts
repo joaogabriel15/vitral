@@ -13,7 +13,8 @@
  * 3. Bytes conferidos e executados via `blob:` (`loader.ts`), o caminho de
  *    sempre. Vale para os outros navegadores e para quem já falhou.
  */
-import { addLink } from './util'
+import { verifyIntegrity } from './integrity'
+import { addLink, fetchBytes } from './util'
 
 export interface SplitBuild {
   /** Entrada do build dividido. */
@@ -23,6 +24,41 @@ export interface SplitBuild {
   /** Hash SRI de cada arquivo, por URL absoluta. */
   sri: Record<string, string>
   priority?: RequestPriority
+}
+
+/** O que o loader sabe de um remote com integrity. */
+export interface Verifiable {
+  /** Arquivo único. */
+  entry: string
+  integrity: string
+  split?: SplitBuild
+  priority?: RequestPriority
+}
+
+/** Arquivos únicos que já falharam: o mapa de módulos pode guardar o erro, então só `blob:`. */
+const failed = new Set<string>()
+
+/** Importa o remote pelo melhor caminho que confere o hash. */
+export async function importVerified(name: string, r: Verifiable, run: (url: string) => Promise<any>, timeout: number): Promise<any> {
+  const { entry, integrity, priority } = r
+  if (!failed.has(entry)) {
+    try {
+      // Caminhos 1 e 2: o navegador confere o hash e o JS roda da própria URL.
+      const url = await verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity }, priority })
+      if (url) return await run(url)
+    } catch {
+      failed.add(entry)
+    }
+  }
+  // Caminho 3: executa exatamente os bytes verificados.
+  const bytes = await fetchBytes(entry, timeout, name, { priority })
+  await verifyIntegrity(name, bytes, integrity)
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }))
+  try {
+    return await run(url)
+  } finally {
+    URL.revokeObjectURL(url)
+  }
 }
 
 // Só hashes no formato que todo navegador entende. Um token que o navegador
