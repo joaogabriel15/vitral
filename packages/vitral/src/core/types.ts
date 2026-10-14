@@ -1,6 +1,22 @@
+import type { SharedApi } from './shared'
+
 // Tipos públicos do contrato entre host e remote.
 
 export type Props = Record<string, unknown>
+
+/**
+ * Props de cada remote, por nome. `npx vitral types` gera um
+ * `vitral-env.d.ts` que preenche esta interface:
+ *
+ *   declare module 'vitral' { interface Remotes { carrinho: { userId: number } } }
+ */
+export interface Remotes {}
+
+/** Props do remote `N`: as declaradas em `Remotes`, ou qualquer objeto. */
+export type PropsOf<N extends string> = N extends keyof Remotes ? Remotes[N] : Props
+
+/** Restrição extra nas props de um componente de host quando o nome está em `Remotes`. */
+export type CheckedProps<N extends string> = N extends keyof Remotes ? { name?: N; props?: Remotes[N] } : { name?: N }
 
 export interface RemoteContext {
   /** Nome com que o host registrou este remote. */
@@ -23,6 +39,20 @@ export interface RemoteContext {
    * para detectar recursos; hosts antigos não mandam este campo.
    */
   protocol?: number
+  /**
+   * Com keep-alive: `fn` roda quando o remote volta para a página. Devolve a
+   * função que cancela. Hosts antigos não mandam este campo.
+   */
+  onActivate?(fn: () => void): () => void
+  /** Com keep-alive: `fn` roda quando o remote sai da página sem desmontar (pause timers e assinaturas). */
+  onDeactivate?(fn: () => void): () => void
+  /**
+   * O mesmo `shared` de `import { shared } from 'vitral'`, mas as assinaturas
+   * feitas por aqui são canceladas no unmount, e as chaves criadas com
+   * `ctx.shared.provide` perdem o dono. Vem quando o host usa o store
+   * (`provide`, `shared` ou um hook); senão, importe `shared` de 'vitral'.
+   */
+  shared?: SharedApi
 }
 
 export interface MountedRemote<P extends Props = Props> {
@@ -48,9 +78,29 @@ export interface RemoteEntry {
   css?: string[]
   /** Isolamento padrão para este remote. */
   isolate?: Isolation
+  /**
+   * O `vitral.json` já baixado (ex.: por `vitral registry`), para não buscá-lo
+   * na hora. Os caminhos dele são relativos a `url`, e os hashes ficam fixos
+   * no host.
+   */
+  manifest?: RemoteManifest
 }
 
 export type Isolation = 'shadow' | 'none'
+
+/** Estilos do host dentro do Shadow DOM. Sem efeito no modo escopo. */
+export interface StyleOptions {
+  /**
+   * CSS do host adotado em cada shadow root antes do CSS do remote (ex.:
+   * `['/assets/base.css']`). Um `CSSStyleSheet` por arquivo, o mesmo em todos.
+   */
+  inherit?: string[]
+  /**
+   * Copia `class` e `data-theme` do `<html>` para a raiz do remote, para
+   * `dark:` e `[data-theme]` funcionarem no Shadow DOM. Padrão `true`.
+   */
+  mirrorTheme?: boolean
+}
 
 export interface VitralConfig {
   /** Mapa nome → URL (ou entrada completa), ou a URL de um JSON com esse mapa. */
@@ -66,8 +116,40 @@ export interface VitralConfig {
   retries?: number
   /** Isolamento padrão para todos os remotes. Padrão `'none'`. */
   isolate?: Isolation
+  /**
+   * Liga os overrides de desenvolvimento (`?vitral=nome@url` e
+   * `localStorage['vitral:overrides']`) fora de localhost. Em localhost já
+   * valem. Nunca ligue em produção: um link com `?vitral=` executaria código
+   * de qualquer origem.
+   */
+  devOverrides?: boolean
+  /** Estilos do host no Shadow DOM: `{ inherit: ['/assets/base.css'] }`. */
+  styles?: StyleOptions
+  /** Recebe o tempo de cada etapa do carregamento (para RUM). */
+  onMetric?: (metric: RemoteMetric) => void
+  /**
+   * Dependências que o host oferece aos remotes com `dedupe`, por grupo:
+   * `{ vue: { version: Vue.version, modules: { vue: Vue } } }`. O remote usa
+   * a do host se a versão estiver na faixa dele; senão, a própria cópia.
+   */
+  dedupe?: Record<string, { version: string; modules: SharedModules }>
 }
 
+/** Módulos de um grupo de `dedupe`, por especificador (`'react-dom/client'`). */
+export type SharedModules = Record<string, unknown>
+
+/**
+ * Tempo de uma etapa do carregamento de um remote. Cada etapa também vira
+ * `performance.measure('vitral:<nome>:<etapa>')`, visível no painel
+ * Performance do DevTools.
+ */
+export interface RemoteMetric {
+  name: string
+  stage: 'manifest' | 'js' | 'css' | 'mount'
+  /** Início, em ms desde `performance.timeOrigin`. */
+  start: number
+  duration: number
+}
 
 /** Formato do `vitral.json` emitido pelo plugin de build. */
 export interface RemoteManifest {
@@ -83,8 +165,24 @@ export interface RemoteManifest {
    * do mesmo `entry`, no export `exposes`. O host usa `carrinho/MiniCarrinho`.
    */
   exposes?: string[]
+  /**
+   * Hash SRI de cada arquivo publicado (CSS e JS do build dividido), pelo
+   * caminho relativo ao manifesto.
+   */
+  files?: Record<string, string>
+  /**
+   * Build dividido, para navegadores que conferem o hash de cada módulo:
+   * a entrada e os chunks que ela importa logo. `entry` e `integrity`
+   * continuam apontando para o arquivo único, usado por hosts antigos e
+   * quando o navegador não confere o hash por módulo.
+   */
+  split?: { entry: string; chunks?: string[] }
+  /**
+   * Dependências de `dedupe` do build dividido: faixa aceita, versão da
+   * cópia própria e o arquivo dela, para o loader baixar junto com a entrada.
+   */
+  dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
 }
-
 
 export type Handler<T = unknown> = (payload: T) => void
 

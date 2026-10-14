@@ -22,3 +22,4 @@ createSlot(el, {
 | [LOAD_FAILED](LOAD_FAILED.md) | Erro de rede, HTTP ou erro ao executar o JS |
 | [MOUNT_FAILED](MOUNT_FAILED.md) | `mount()` do remote lançou erro |
 | [RENDER_FAILED](RENDER_FAILED.md) | O remote quebrou depois de montado |
+| [SHARED_READONLY](SHARED_READONLY.md) | `set` numa chave com `writable: false` sem ser o dono |
