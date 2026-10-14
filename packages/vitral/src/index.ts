@@ -35,3 +35,8 @@ export { resetProtocol as __reset } from './core/state'
 // Remote em JS/TS puro com template HTML
 export { component, html, render, unsafeHTML } from './component'
 export type { ComponentOptions, RenderFn, Template, View } from './component'
+
+// Contexto compartilhado (fica fora do host mínimo: só entra no bundle de quem usa)
+export { batch, provide, shared } from './core/shared'
+export type { ProvideOptions, ProvidedValue, Shared, SharedApi, SharedType, SharedValue } from './core/shared'
+export type { SharedEntry, SharedStore } from './core/store'

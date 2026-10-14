@@ -6,6 +6,7 @@ import { createSSRApp, h } from 'vue'
 import { renderToString as vueToString } from 'vue/server-renderer'
 import { Remote } from '../src/react'
 import { VitralRemote } from '../src/vue'
+import { provide, shared } from '../src/index'
 
 describe('SSR', () => {
   it('React <Remote> renderiza o fallback no servidor', () => {
@@ -19,5 +20,16 @@ describe('SSR', () => {
     const html = await vueToString(app)
     expect(html).toContain('carregando')
     expect(html).toContain('data-vitral="carrinho"')
+  })
+})
+
+describe('shared no servidor', () => {
+  it('não guarda nada em variável global, para não vazar entre requisições', () => {
+    const usuario = provide('usuario', { id: 42 })
+    expect(usuario.get()).toEqual({ id: 42 })
+    usuario.set({ id: 7 })
+    expect(usuario.get()).toEqual({ id: 7 })
+    expect(shared('usuario').get()).toBeUndefined()
+    expect((globalThis as any)[Symbol.for('vitral')]?.shared).toBeUndefined()
   })
 })
