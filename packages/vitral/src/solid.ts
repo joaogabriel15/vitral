@@ -7,7 +7,7 @@
 import { createComponent, createEffect, createSignal, mergeProps, on, onCleanup, onMount, type Component, type JSX } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
 import { isServer, render } from 'solid-js/web'
-import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
+import { createSlot, defineRemote, type CheckedProps, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
 
 /** Transforma um componente Solid em um remote. O contexto chega na prop `vitral`. */
 export function solidRemote<P extends Props>(Comp: Component<any>): RemoteModule<P> {
@@ -35,7 +35,7 @@ export interface RemoteProps<P extends Props = Props> {
   class?: string
 }
 
-export function Remote<P extends Props = Props>(p: RemoteProps<P>): JSX.Element {
+export function Remote<P extends Props = Props, N extends string = string>(p: RemoteProps<P> & CheckedProps<N>): JSX.Element {
   // No servidor (SolidStart) só o fallback; o remote monta no cliente.
   if (isServer) return p.fallback ?? null
   const [status, setStatus] = createSignal<SlotStatus>('loading')

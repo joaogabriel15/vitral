@@ -31,6 +31,9 @@
   "license": "MIT",
   "author": "João (https://github.com/joaogabriel15)",
   "type": "module",
+  "bin": {
+    "vitral": "./dist/cli.js"
+  },
   "sideEffects": [
     "./dist/auto.js"
   ],
@@ -99,7 +102,7 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest run --coverage",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p test/types",
     "lint:pkg": "publint --strict && attw --pack --profile esm-only",
     "size": "size-limit",
     "prepack": "cp ../../README.md ../../LICENSE .",
@@ -116,6 +119,7 @@
     "react-dom": ">=18",
     "solid-js": ">=1.8",
     "svelte": ">=5",
+    "typescript": ">=5",
     "vite": ">=5",
     "vue": ">=3.3"
   },
@@ -145,6 +149,9 @@
       "optional": true
     },
     "vite": {
+      "optional": true
+    },
+    "typescript": {
       "optional": true
     }
   },

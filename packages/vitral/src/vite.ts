@@ -17,6 +17,7 @@ import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
+import { extractProps, typesFile } from './vite/types'
 import { devEntryCode, devManifest, loadPreamble, resolveDevId, scopeDevCss, serveDevManifest, VIRTUAL_DEV_ENTRY } from './vite/dev'
 
 export interface VitralViteOptions {
@@ -46,6 +47,12 @@ export interface VitralViteOptions {
    * preflight/tema do Tailwind). Padrão: true.
    */
   scopeCss?: boolean
+  /**
+   * Publica `vitral.d.ts` com o tipo das props do `export default`, para o
+   * host checar as props (`npx vitral types`). Precisa de TypeScript no
+   * projeto e de entrada .ts/.tsx/.js/.jsx. Padrão: true.
+   */
+  types?: boolean
 }
 
 export default function vitral(options: VitralViteOptions = {}): Plugin {
@@ -55,6 +62,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   let entry = options.entry
   let adapter: AdapterName = 'element'
   let framework: AdapterName = 'element'
+  const entryFile = () => resolve(root, entry!)
   let serve = false
   const scopeName = () =>
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
@@ -110,7 +118,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     transform(code, id) {
       if (serve && options.scopeCss !== false) return scopeDevCss(code, id, scopeName())
     },
-    writeBundle(_, bundle) {
+    async writeBundle(_, bundle) {
       const files = Object.values(bundle)
       const entry = files.find((f) => f.type === 'chunk' && f.isEntry)
       if (!entry) return
@@ -137,6 +145,8 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         ...(options.scopeCss === false ? {} : { scope: scopeName() }),
       }
       writeFileSync(join(outDir, 'vitral.json'), JSON.stringify(manifest, null, 2) + '\n')
+      const props = options.types === false ? null : await extractProps(root, entryFile())
+      if (props) writeFileSync(join(outDir, 'vitral.d.ts'), typesFile(manifest.name, props))
     },
   }
 }
