@@ -53,7 +53,10 @@ export function entryCode(file: string, adapter: AdapterName, scope: string): st
 import { component } from 'vitral'
 function wrap(c) {
   if (typeof c === 'function' && typeof HTMLElement !== 'undefined' && c.prototype instanceof HTMLElement) {
-    const tag = customElements.getName?.(c) || ${JSON.stringify(`${scope}-remote`.toLowerCase().replace(/^[^a-z]+/, 'x-'))}
+    const base = ${JSON.stringify(`${scope}-remote`.toLowerCase().replace(/^[^a-z]+/, 'x-'))}
+    let tag = customElements.getName?.(c) || base
+    // Uma tag não aceita outra classe: no HMR, a classe nova ganha tag nova.
+    for (let n = 2; customElements.get(tag) && customElements.get(tag) !== c; n++) tag = base + '-' + n
     return elementRemote(tag, () => customElements.get(tag) || customElements.define(tag, c))
   }
   if (typeof c === 'function') return component(c)

@@ -137,6 +137,25 @@ export default { plugins: [react() /* ou vue(), svelte(), solid(), angular()… 
 `dist/vitral.json` (com o hash `sha384` do JS). Suba a pasta em qualquer CDN com
 CORS. Para Angular use `@analogjs/vite-plugin-angular` (compila em AOT).
 
+### Desenvolvimento com HMR
+
+```bash
+vite dev --port 5174   # no remote
+```
+
+```html
+<vitral-remote src="http://localhost:5174/vitral.json"></vitral-remote>
+```
+
+Em `vite dev`, o plugin serve `/vitral.json` apontando para o módulo de
+desenvolvimento, com CORS e sem SRI. O cliente HMR do Vite e o preâmbulo do
+React Fast Refresh vêm da origem do remote, então editar o remote atualiza o
+host sem recarregar a página. React e Vue mantêm o estado dos componentes.
+Onde o framework não tem HMR (Lit, JS puro, Angular), só aquele remote é
+remontado, com as props atuais. O CSS sai com o mesmo escopo do build. Com
+`isolate="shadow"`, o CSS de dev ainda vai para o `<head>` e não entra no
+shadow root; teste o modo Shadow DOM com `vite build`.
+
 ### CSS e Tailwind
 
 Use Tailwind (ou qualquer CSS) no remote normalmente. O plugin prefixa o CSS

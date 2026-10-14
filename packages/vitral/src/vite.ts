@@ -17,6 +17,7 @@ import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
+import { devEntryCode, devManifest, loadPreamble, resolveDevId, scopeDevCss, serveDevManifest, VIRTUAL_DEV_ENTRY } from './vite/dev'
 
 export interface VitralViteOptions {
   /**
@@ -53,6 +54,8 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   let pkg: { name?: string; version?: string } = {}
   let entry = options.entry
   let adapter: AdapterName = 'element'
+  let framework: AdapterName = 'element'
+  let serve = false
   const scopeName = () =>
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
   return {
@@ -79,17 +82,30 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     },
     configResolved(c) {
       root = c.root
-      adapter = options.adapter || detectAdapter(c.plugins)
+      framework = detectAdapter(c.plugins)
+      adapter = options.adapter || framework
+      serve = c.command === 'serve'
       outDir = resolve(c.root, c.build.outDir)
       try {
         pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
       } catch {}
     },
+    // Modo dev: /vitral.json aponta para um módulo com o cliente HMR.
+    configureServer(server) {
+      const scope = options.scopeCss === false ? undefined : scopeName()
+      serveDevManifest(server, () => devManifest(options.name ?? pkg.name ?? 'remote', scope))
+    },
     resolveId(id) {
       if (id.endsWith(ENTRY_ID)) return VIRTUAL_ENTRY
+      return resolveDevId(id)
     },
     load(id) {
       if (id === VIRTUAL_ENTRY) return entryCode(resolve(root, entry!), adapter, scopeName())
+      if (id === VIRTUAL_DEV_ENTRY) return devEntryCode(framework, options.adapter === false ? resolve(root, entry!) : undefined)
+      return loadPreamble(id)
+    },
+    transform(code, id) {
+      if (serve && options.scopeCss !== false) return scopeDevCss(code, id, scopeName())
     },
     writeBundle(_, bundle) {
       const files = Object.values(bundle)
