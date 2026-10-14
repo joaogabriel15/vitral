@@ -18,7 +18,9 @@ async function buildRemote(fixture: string, out: string): Promise<RemoteManifest
     root: resolve(__dirname, 'fixtures', fixture),
     configFile: false,
     logLevel: 'silent',
-    plugins: [vitral({ entry: 'src/remote.js' })],
+    // Sem adaptador: o embrulho traria o código da própria lib (que tem
+    // import()) e o teste do build dividido deixaria de medir o remote.
+    plugins: [vitral({ entry: 'src/remote.js', adapter: false })],
     build: { outDir: out, emptyOutDir: true, assetsInlineLimit: 0 },
   })
   return JSON.parse(readFileSync(join(out, 'vitral.json'), 'utf8'))

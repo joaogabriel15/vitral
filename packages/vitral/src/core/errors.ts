@@ -7,6 +7,7 @@ export type RemoteErrorCode =
   | 'LOAD_FAILED'
   | 'MOUNT_FAILED'
   | 'RENDER_FAILED'
+  | 'SHARED_READONLY'
 
 /** Página de cada código de erro, com causa e correção. */
 export const ERROR_DOCS = 'https://github.com/joaogabriel15/vitral/blob/main/docs/erros/'

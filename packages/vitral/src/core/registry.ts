@@ -10,7 +10,7 @@ export function configure(config: VitralConfig): void {
   const { remotes, dedupe, ...rest } = config
   p.configure(rest)
   // Os downloads esperam as ofertas (pending), então ficam prontas antes.
-  if (dedupe) p.pending(import('./shared').then((m) => m.offer(p, dedupe)).catch(() => {}))
+  if (dedupe) p.pending(import('./dedupe').then((m) => m.offer(p, dedupe)).catch(() => {}))
   if (typeof remotes === 'string') {
     const url = absolute(remotes)
     p.pending(
@@ -35,6 +35,23 @@ export function register(name: string, entry: string | RemoteEntry): void {
   }
 }
 
+/**
+ * Registra a URL de um `src` e devolve o nome para montar. Sem `name`, o nome
+ * é a própria URL (e o nome do manifesto vira um apelido). Com `trusted`, a
+ * origem entra na allowlist mesmo com `allowedOrigins`: vale para URL escrita
+ * no código do host, nunca para URL vinda de dados.
+ */
+export function registerSrc(src: string, name?: string, trusted = true): string {
+  const p = protocol()
+  const url = absolute(src)
+  const key = name || url
+  if (p.entry(key)?.url !== url) p.register(key, { url })
+  const origin = new URL(url).origin
+  const list = p.settings().trusted ?? []
+  if (trusted && !list.includes(origin)) p.configure({ trusted: [...list, origin] })
+  return key
+}
+
 function registerAll(map: Record<string, string | RemoteEntry>, base?: string) {
   for (const [name, entry] of Object.entries(map)) {
     const e: RemoteEntry = typeof entry === 'string' ? { url: entry } : entry
@@ -45,7 +62,8 @@ function registerAll(map: Record<string, string | RemoteEntry>, base?: string) {
 export function checkOrigin(name: string, url: string): void {
   const p = protocol()
   const origin = new URL(url).origin
-  const allowed = p.settings().allowedOrigins ?? ([pageOrigin(), ...p.origins()].filter(Boolean) as string[])
+  const { allowedOrigins, trusted = [] } = p.settings()
+  const allowed = [...(allowedOrigins ?? ([pageOrigin(), ...p.origins()].filter(Boolean) as string[])), ...trusted]
   if (allowed.includes('*') || allowed.includes(origin) || url.startsWith('blob:')) return
   throw new RemoteError('ORIGIN_BLOCKED', name, `origem ${origin} não está em allowedOrigins`)
 }

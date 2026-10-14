@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { satisfies } from '../src/core/semver'
 import { protocol } from '../src/core/state'
-import { shared } from '../src/core/shared'
+import { shared } from '../src/core/dedupe'
 import { configure } from '../src/index'
 import { cleanup } from './helpers'
 

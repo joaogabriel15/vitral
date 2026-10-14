@@ -54,6 +54,27 @@ jobs:
           path: e2e/test-results
           retention-days: 7
 
+  # create-vitral: gera cada template, sobe host e remote em dev e edita o
+  # remote (instala do npm, por isso fica fora do e2e principal).
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir e2e exec playwright install --with-deps chromium
+      - run: pnpm test:create
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces-create
+          path: e2e/test-results
+          retention-days: 7
+
   # Benchmark: mede a main e o PR na mesma máquina e falha se o PR ficar
   # mais de 10% pior em alguma métrica (bench/compare.mjs).
   bench:

@@ -4,5 +4,5 @@ import vitral from 'vitral/vite'
 
 export default defineConfig({
   base: './',
-  plugins: [react(), vitral({ entry: 'src/remote.jsx', name: 'react', dedupe: ['react'] })],
+  plugins: [react(), vitral({ name: 'react', dedupe: ['react'] })],
 })
