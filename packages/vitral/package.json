@@ -31,7 +31,9 @@
   "license": "MIT",
   "author": "João (https://github.com/joaogabriel15)",
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/auto.js"
+  ],
   "engines": {
     "node": ">=20.19"
   },
@@ -44,6 +46,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./auto": {
+      "types": "./dist/auto.d.ts",
+      "import": "./dist/auto.js"
     },
     "./element": {
       "types": "./dist/element.d.ts",
@@ -201,6 +207,11 @@
       "name": "element",
       "path": "dist/element.js",
       "import": "{ defineVitralElement }",
+      "limit": "6 kB"
+    },
+    {
+      "name": "auto",
+      "path": "dist/auto.js",
       "limit": "6 kB"
     }
   ]

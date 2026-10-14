@@ -61,6 +61,11 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }):
     scope: m.scope,
   }
   checkOrigin(name, resolved.entry)
+  // Remote vindo de `src` (nome = URL): o nome do manifesto vira apelido.
+  if (name === entry.url && m.name) {
+    resolved.name = m.name
+    if (!protocol().entry(m.name)) protocol().register(m.name, entry)
+  }
   return resolved
 }
 
