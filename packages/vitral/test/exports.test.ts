@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 // aparece aqui e precisa de atualização consciente do snapshot.
 const entries = {
   index: () => import('../src/index'),
+  auto: () => import('../src/auto'),
   element: () => import('../src/element'),
   react: () => import('../src/react'),
   vue: () => import('../src/vue'),

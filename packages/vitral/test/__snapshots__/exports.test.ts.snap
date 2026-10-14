@@ -11,6 +11,8 @@ exports[`exports públicos > angular 1`] = `
 ]
 `;
 
+exports[`exports públicos > auto 1`] = `[]`;
+
 exports[`exports públicos > element 1`] = `
 [
   "VitralRemoteElement",
@@ -35,6 +37,7 @@ exports[`exports públicos > index 1`] = `
   "navigate",
   "preload",
   "register",
+  "registerSrc",
   "render",
   "unsafeHTML",
 ]
