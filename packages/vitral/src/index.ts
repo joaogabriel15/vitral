@@ -27,6 +27,7 @@ export { createSlot, type RemoteSlot, type SlotOptions, type SlotStatus } from '
 export { defineRemote } from './core/remote'
 export { createEventBus, events } from './core/events'
 export { navigate } from './core/navigate'
+export { checkUpdates, refresh, watchUpdates } from './core/updates'
 export { resetProtocol as __reset } from './core/state'
 
 // Remote em JS/TS puro com template HTML

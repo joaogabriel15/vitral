@@ -23,6 +23,7 @@ exports[`exports públicos > index 1`] = `
 [
   "RemoteError",
   "__reset",
+  "checkUpdates",
   "component",
   "configure",
   "createEventBus",
@@ -35,9 +36,11 @@ exports[`exports públicos > index 1`] = `
   "mountRemote",
   "navigate",
   "preload",
+  "refresh",
   "register",
   "render",
   "unsafeHTML",
+  "watchUpdates",
 ]
 `;
 
