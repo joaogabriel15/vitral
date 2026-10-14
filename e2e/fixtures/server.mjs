@@ -192,6 +192,8 @@ async function host(req, res) {
   let file = null
   if (area === 'vitral') file = join(LIBS.atual, lib ?? '', ...rest)
   else if (area === 'libs' && LIBS[lib]) file = join(LIBS[lib], ...rest)
+  // Página da bateria de vazamento, buildada por memoria/run.mjs.
+  else if (area === 'memoria') file = join(here, '../memoria/dist', lib || 'index.html', ...rest)
   // Rotas sem extensão caem no host (SPA), para testar navigate().
   else file = join(here, 'pages', extname(path) ? path : 'host.html')
   if (!existsSync(file)) return send(req, res, { status: 404, body: 'not found' })
