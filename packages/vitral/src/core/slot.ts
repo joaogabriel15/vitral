@@ -1,7 +1,7 @@
 import { RemoteError } from './errors'
 import { mountRemote } from './mount'
+import type { Isolation, MountedRemote, Props, StyleOptions } from './types'
 import { registerSrc } from './registry'
-import type { Isolation, MountedRemote, Props } from './types'
 
 // Controlador de slot: base dos componentes de host de qualquer framework.
 
@@ -14,6 +14,8 @@ export interface SlotOptions<P extends Props = Props> {
   src?: string
   props?: P
   isolate?: Isolation
+  /** Estilos do host no Shadow DOM (somados aos do `configure`). */
+  styles?: StyleOptions
   /** Chamado a cada mudança de estado (para mostrar fallback / erro). */
   onStatus?: (status: SlotStatus, error: RemoteError | null) => void
 }
@@ -70,7 +72,7 @@ export function createSlot<P extends Props = Props>(target: HTMLElement, options
       setStatus('error', e instanceof RemoteError ? e : new RemoteError('MOUNT_FAILED', name, String(e), e))
     }
     const initial = props
-    mountRemote<P>(holder, name, props, { isolate, onError: fail }).then((h) => {
+    mountRemote<P>(holder, name, props, { isolate, styles: options.styles, onError: fail }).then((h) => {
       if (my !== token) return h.unmount()
       handle = h
       // Props que mudaram enquanto o remote baixava.

@@ -8,8 +8,8 @@
  * que conhecem. Mudanças futuras só acrescentam métodos e sobem `protocol`.
  */
 import { createEventBus } from './bus'
+import type { EventBus, Isolation, RemoteEntry, RemoteModule, StyleOptions } from './types'
 import type { SharedStore } from './store'
-import type { EventBus, Isolation, RemoteEntry, RemoteModule } from './types'
 
 export const PROTOCOL = 1
 
@@ -22,6 +22,7 @@ export interface Settings {
   trusted?: string[]
   /** Liga os overrides de desenvolvimento fora de localhost. */
   devOverrides?: boolean
+  styles?: StyleOptions
 }
 
 /** Remote baixado e pronto para montar. Faz parte do protocolo v1. */
