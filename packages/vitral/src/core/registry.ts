@@ -1,7 +1,8 @@
 import { RemoteError } from './errors'
 import { protocol } from './state'
 import type { RemoteEntry, VitralConfig } from './types'
-import { absolute, fetchJson, pageOrigin } from './util'
+import { absolute, addLink, fetchJson, pageOrigin } from './util'
+
 
 /** Configura a lib. Pode ser chamada mais de uma vez; as opções são mescladas. */
 export function configure(config: VitralConfig): void {
@@ -22,7 +23,14 @@ export function configure(config: VitralConfig): void {
 export function register(name: string, entry: string | RemoteEntry): void {
   const e: RemoteEntry = typeof entry === 'string' ? { url: entry } : entry
   if (!e.url && !e.module) throw new RemoteError('NOT_REGISTERED', name, 'informe url ou module')
-  protocol().register(name, e.url ? { ...e, url: absolute(e.url) } : e)
+  if (!e.url) return protocol().register(name, e)
+  const url = absolute(e.url)
+  protocol().register(name, { ...e, url })
+  // Abre a conexão com a origem do remote antes do primeiro download.
+  const { origin } = new URL(url)
+  if (typeof document !== 'undefined' && origin !== pageOrigin() && origin !== 'null' && !document.querySelector(`link[href="${origin}"]`)) {
+    addLink('preconnect', origin)
+  }
 }
 
 function registerAll(map: Record<string, string | RemoteEntry>, base?: string) {
