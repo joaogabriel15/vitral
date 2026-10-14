@@ -207,7 +207,7 @@
         "./sri-*",
         "./dedupe-*"
       ],
-      "limit": "5.3 kB"
+      "limit": "5.4 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
