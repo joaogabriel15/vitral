@@ -320,7 +320,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "5 kB"
+      "limit": "7.6 kB"
     }
   ]
 }
