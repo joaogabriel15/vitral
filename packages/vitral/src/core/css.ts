@@ -11,10 +11,10 @@ const adopts = () => typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CS
  * o texto já fica em cache para virar stylesheet; fora dele, um
  * `<link rel=preload>` deixa o `<link rel=stylesheet>` da montagem pronto.
  */
-export function prefetchCss(urls: string[], shadow: boolean, sri: Record<string, string> = {}): void {
+export function prefetchCss(urls: string[], shadow: boolean, sri: Record<string, string> = {}, priority: RequestPriority = 'auto'): void {
   for (const href of urls) {
-    if (shadow && adopts()) loadSheet(href, sri[href])
-    else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, { as: 'style', integrity: sri[href] ?? '' })
+    if (shadow && adopts()) loadSheet(href, sri[href], priority)
+    else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, { as: 'style', integrity: sri[href] ?? '', fetchPriority: priority })
   }
 }
 
@@ -53,11 +53,11 @@ function injectShadowCss(urls: string[], root: ShadowRoot, sri: Record<string, s
   })
 }
 
-function loadSheet(href: string, integrity?: string): Promise<CSSStyleSheet | null> {
+function loadSheet(href: string, integrity?: string, priority?: RequestPriority): Promise<CSSStyleSheet | null> {
   let p = cssText.get(href)
   if (!p) {
     // Com integrity, um CSS trocado faz o fetch falhar e não é aplicado.
-    p = fetch(href, { credentials: 'omit', integrity })
+    p = fetch(href, { credentials: 'omit', integrity, priority })
       .then((r) => (r.ok ? r.text() : ''))
       .then((text) => {
         const props: string[] = []

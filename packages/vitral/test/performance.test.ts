@@ -18,7 +18,9 @@ const CDN = 'https://cdn.empresa.com/carrinho'
  * cache no módulo.
  */
 function network(css = 'remote-1.css') {
-  const manifest = { name: 'carrinho', entry: 'remote-1.js', css: [css], integrity: 'sha384-AAAA' }
+  // Hash em base64url: vai direto para o caminho do blob:, que usa fetch (o
+  // vitest buscaria o import() de https: pelo fetch falso e ficaria pendente).
+  const manifest = { name: 'carrinho', entry: 'remote-1.js', css: [css], integrity: 'sha384-AA_A' }
   let releaseJs = () => {}
   const calls: string[] = []
   const fetch = vi.fn((url: string) => {

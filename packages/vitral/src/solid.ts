@@ -7,7 +7,8 @@
 import { createComponent, createEffect, createSignal, mergeProps, on, onCleanup, onMount, type Component, type JSX } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
 import { isServer, render } from 'solid-js/web'
-import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
+import { defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
+import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 
 /** Transforma um componente Solid em um remote. O contexto chega na prop `vitral`. */
 export function solidRemote<P extends Props>(Comp: Component<any>): RemoteModule<P> {
@@ -31,6 +32,14 @@ export interface RemoteProps<P extends Props = Props> {
   fallback?: JSX.Element
   error?: (error: RemoteError, retry: () => void) => JSX.Element
   class?: string
+  /** `'lazy'`: monta perto de aparecer na tela; `'idle'`: com o navegador ocioso. */
+  loading?: Loading
+  /** Baixa antes de montar: `'hover'`, `'visible'` ou `'idle'`. */
+  prefetch?: Prefetch
+  /** `'high'` para o remote que aparece logo ao abrir a página. */
+  priority?: RequestPriority
+  /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
+  keepAlive?: boolean | number
 }
 
 export function Remote<P extends Props = Props>(p: RemoteProps<P>): JSX.Element {
@@ -45,10 +54,14 @@ export function Remote<P extends Props = Props>(p: RemoteProps<P>): JSX.Element 
   let slot: RemoteSlot<P> | null = null
 
   onMount(() => {
-    slot = createSlot<P>(target, {
+    slot = hostSlot<P>(target, {
       name: p.name,
       props: (p.props ?? {}) as P,
       isolate: p.isolate,
+      loading: p.loading,
+      prefetch: p.prefetch,
+      priority: p.priority,
+      keepAlive: p.keepAlive,
       onStatus: (s, e) => {
         host.setAttribute('data-vitral-status', s)
         setError(() => e)

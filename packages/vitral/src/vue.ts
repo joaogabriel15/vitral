@@ -24,13 +24,14 @@ import {
 import {
   defineRemote,
   events,
-  mountRemote,
   type Isolation,
-  type MountedRemote,
   type Props,
+  type RemoteSlot,
+  type SlotStatus,
   type RemoteContext,
   type RemoteModule,
 } from './index'
+import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 
 // ---------------------------------------------------------------------------
 // Lado do remote
@@ -102,69 +103,61 @@ export const VitralRemote = defineComponent({
     name: { type: String, required: true },
     props: { type: Object as PropType<Props>, default: () => ({}) },
     isolate: { type: String as PropType<Isolation>, default: undefined },
+    /** `'lazy'`: monta perto de aparecer na tela; `'idle'`: com o navegador ocioso. */
+    loading: { type: String as PropType<Loading>, default: undefined },
+    /** Baixa antes de montar: `'hover'`, `'visible'` ou `'idle'`. */
+    prefetch: { type: String as PropType<Prefetch>, default: undefined },
+    /** `'high'` para o remote que aparece logo ao abrir a página. */
+    priority: { type: String as PropType<RequestPriority>, default: undefined },
+    /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
+    keepAlive: { type: [Boolean, Number], default: false },
   },
   emits: ['error', 'ready'],
   setup(p, { slots, emit }) {
-    const slot = ref<HTMLElement | null>(null)
-    const status = ref<'loading' | 'ready' | 'error'>('loading')
+    const target = ref<HTMLElement | null>(null)
+    const status = ref<SlotStatus>('loading')
     const error = shallowRef<Error | null>(null)
-    const attempt = ref(0)
-    let handle: MountedRemote | null = null
-    let token = 0
+    let slot: RemoteSlot | null = null
 
-    function fail(e: unknown, my: number) {
-      if (my !== token) return
-      error.value = e as Error
-      status.value = 'error'
-      emit('error', e)
-      if (!slots.error) console.error(e)
-    }
-
-    async function mount() {
-      const my = ++token
-      handle?.unmount()
-      handle = null
-      status.value = 'loading'
-      try {
-        const onError = (e: Error) => fail(e, my)
-        const initial = p.props
-        const h = await mountRemote(slot.value!, p.name, { ...initial }, { isolate: p.isolate, onError })
-        if (my !== token) return h.unmount()
-        handle = h
-        // Props que mudaram enquanto o remote baixava.
-        if (p.props !== initial) h.update?.({ ...p.props })
-        status.value = 'ready'
-        emit('ready')
-      } catch (e) {
-        fail(e, my)
-      }
-    }
-
-    onMounted(mount)
-    watch(() => [p.name, p.isolate, attempt.value], mount, { flush: 'post' })
+    onMounted(() => {
+      slot = hostSlot(target.value!, {
+        name: p.name,
+        props: { ...p.props },
+        isolate: p.isolate,
+        loading: p.loading,
+        prefetch: p.prefetch,
+        priority: p.priority,
+        keepAlive: p.keepAlive,
+        onStatus(s, e) {
+          status.value = s
+          error.value = e
+          if (s === 'ready') emit('ready')
+          if (e) {
+            emit('error', e)
+            if (!slots.error) console.error(e)
+          }
+        },
+      })
+    })
+    watch(() => [p.name, p.isolate] as const, ([name, isolate]) => slot?.set({ name, isolate }), { flush: 'post' })
     watch(
       () => p.props,
-      (next) => handle?.update?.({ ...next }),
+      (next) => slot?.update({ ...next }),
       { deep: true },
     )
     onBeforeUnmount(() => {
-      token++
-      handle?.unmount()
-      handle = null
+      slot?.destroy()
+      slot = null
     })
 
-    const retry = () => attempt.value++
+    const retry = () => slot?.retry()
 
     return () =>
       h('div', { 'data-vitral': p.name, 'data-vitral-status': status.value }, [
         status.value === 'loading' ? slots.fallback?.() : null,
         status.value === 'error' ? slots.error?.({ error: error.value, retry }) : null,
         // O Vue nunca coloca filhos neste div: ele pertence ao remote.
-        h('div', {
-          key: `${p.name}:${p.isolate}:${attempt.value}`,
-          ref: slot,
-          style: status.value === 'error' ? 'display:none' : undefined,
-        }),
+        h('div', { ref: target }),
       ])
   },
 })

@@ -15,10 +15,16 @@
  *   el.addEventListener('vitral-error', (e) => e.detail.error)
  *   el.retry()
  *
+ * Atributos de performance: `loading="lazy|idle"` (monta perto de aparecer ou
+ * com o navegador ocioso; reserve o espaço com `min-height`),
+ * `prefetch="hover|visible|idle"` (baixa antes de montar), `priority="high"`
+ * e `keep-alive` (ou `keep-alive="3"`: máximo de remotes guardados).
+ *
  * Também exporta `elementRemote()` para publicar um Web Component (Lit,
  * Stencil, vanilla) como remote.
  */
-import { createSlot, defineRemote, type Isolation, type Props, type RemoteModule, type RemoteSlot } from './index'
+import { defineRemote, type Isolation, type Props, type RemoteModule, type RemoteSlot } from './index'
+import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 
 const Base: typeof HTMLElement = typeof HTMLElement === 'undefined' ? (class {} as typeof HTMLElement) : HTMLElement
 
@@ -48,10 +54,15 @@ export class VitralRemoteElement extends Base {
     const name = this.getAttribute('name')
     if (!name) return
     if (this.hasAttribute('props') && !Object.keys(this.#props).length) this.#props = parseProps(this.getAttribute('props'))
-    this.#slot = createSlot(this, {
+    const keep = this.getAttribute('keep-alive')
+    this.#slot = hostSlot(this, {
       name,
       props: this.#props,
       isolate: (this.getAttribute('isolate') as Isolation) || undefined,
+      loading: this.getAttribute('loading') as Loading | null,
+      prefetch: this.getAttribute('prefetch') as Prefetch | null,
+      priority: (this.getAttribute('priority') as RequestPriority) || undefined,
+      keepAlive: keep === null ? false : Number(keep) || true,
       onStatus: (status, error) => {
         this.setAttribute('data-vitral-status', status)
         for (const el of this.querySelectorAll<HTMLElement>(':scope > [slot="fallback"]')) el.hidden = status !== 'loading'

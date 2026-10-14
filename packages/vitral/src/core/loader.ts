@@ -21,8 +21,12 @@ export function preload(name: string): void {
 // mínimo. Ele baixa junto com o primeiro manifesto; sem ele, vale o `blob:`.
 let paths: Promise<typeof import('./sri') | null> | undefined
 
-/** `isolate` diz como o CSS vai ser aplicado, para baixá-lo do jeito certo. */
-export function load(name: string, isolate?: Isolation): Promise<LoadedRemote> {
+/**
+ * `isolate` diz como o CSS vai ser aplicado, para baixá-lo do jeito certo.
+ * `priority: 'high'` vira `fetchpriority` nos downloads (remote que aparece
+ * logo ao abrir a página).
+ */
+export function load(name: string, isolate?: Isolation, priority?: RequestPriority): Promise<LoadedRemote> {
   const p = protocol()
   return p.load(name, async () => {
     paths ??= import('./sri').catch(() => null)
@@ -31,9 +35,9 @@ export function load(name: string, isolate?: Isolation): Promise<LoadedRemote> {
       const entry = p.entry(name)
       if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
       if (entry.module) return await loadLocal(name, entry)
-      const resolved = await resolveEntry(name, entry as RemoteEntry & { url: string })
+      const resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority)
       // O CSS baixa junto com o JS; a montagem espera os dois.
-      prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', resolved.sri)
+      prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', resolved.sri, priority)
       const module = await withRetry(p.settings().retries, () => importModule(name, resolved))
       return { ...resolved, module }
     } catch (e: any) {
@@ -48,12 +52,12 @@ async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote
   return { module: toModule(name, mod), entry: typeof location !== 'undefined' ? location.href : 'http://localhost/', css: entry.css ?? [], isolate: entry.isolate }
 }
 
-type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild }
+type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild; priority?: RequestPriority }
 
 /** Arquivos únicos que já falharam: o mapa de módulos pode guardar o erro, então só `blob:`. */
 const failed = new Set<string>()
 
-async function resolveEntry(name: string, entry: RemoteEntry & { url: string }): Promise<Resolved> {
+async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, priority?: RequestPriority): Promise<Resolved> {
   checkOrigin(name, entry.url)
   // O manifesto é o único arquivo sem hash no nome: sempre revalida, para
   // nunca usar um deploy velho (o resto pode ter cache eterno). Um manifesto
@@ -61,7 +65,7 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }):
   const m: RemoteManifest =
     entry.manifest ??
     (new URL(entry.url).pathname.endsWith('.json')
-      ? await fetchJson<RemoteManifest>(entry.url, protocol().settings().timeout, name, 'no-cache')
+      ? await fetchJson<RemoteManifest>(entry.url, protocol().settings().timeout, name, { cache: 'no-cache', priority })
       : { name, entry: entry.url })
   if (typeof m?.entry !== 'string') throw new RemoteError('INVALID_MODULE', name, `manifesto inválido em ${entry.url}`)
   const abs = (u: string) => absolute(u, entry.url)
@@ -76,7 +80,8 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }):
     isolate: entry.isolate,
     scope: m.scope,
     sri,
-    split: m.split && !entry.integrity ? { entry: abs(m.split.entry), chunks: (m.split.chunks ?? []).map(abs), sri } : undefined,
+    priority,
+    split: m.split && !entry.integrity ? { entry: abs(m.split.entry), chunks: (m.split.chunks ?? []).map(abs), sri, priority } : undefined,
   }
   checkOrigin(name, resolved.entry)
   if (resolved.split) checkOrigin(name, resolved.split.entry)
@@ -85,13 +90,13 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }):
 
 async function importModule(name: string, r: Resolved): Promise<RemoteModule> {
   const { timeout } = protocol().settings()
-  const { entry, integrity } = r
+  const { entry, integrity, priority } = r
   const run = (url: string) => withTimeout(timeout, name, import(/* @vite-ignore */ /* webpackIgnore: true */ url))
   let ns: any
   if (integrity && !failed.has(entry)) {
     try {
       // Caminhos 1 e 2: o navegador confere o hash e o JS roda da própria URL.
-      const url = await (await paths)?.verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity } })
+      const url = await (await paths)?.verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity }, priority })
       if (url) ns = await run(url)
     } catch {
       failed.add(entry)
@@ -101,7 +106,7 @@ async function importModule(name: string, r: Resolved): Promise<RemoteModule> {
     let url = entry
     let revoke: string | null = null
     if (integrity) {
-      const bytes = await fetchBytes(url, timeout, name)
+      const bytes = await fetchBytes(url, timeout, name, { priority })
       await verifyIntegrity(name, bytes, integrity)
       // Caminho 3: executa exatamente os bytes verificados.
       url = revoke = URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }))

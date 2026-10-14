@@ -12,6 +12,8 @@ import type { Isolation, MountedRemote, Props, RemoteContext } from './types'
 
 export interface MountOptions {
   isolate?: Isolation
+  /** `'high'` para o remote que aparece logo ao abrir a página: vira `fetchpriority` nos downloads. */
+  priority?: RequestPriority
   /** Chamado quando o remote quebra depois de montado (erro de render, handler etc.). */
   onError?: (error: RemoteError) => void
 }
@@ -26,7 +28,7 @@ export async function mountRemote<P extends Props = Props>(
   props: P,
   options: MountOptions = {},
 ): Promise<MountedRemote<P>> {
-  const { module: mod, ...resolved } = await load(name, options.isolate)
+  const { module: mod, ...resolved } = await load(name, options.isolate, options.priority)
   const isolate = options.isolate ?? resolved.isolate ?? protocol().settings().isolate
 
   // Cada montagem ganha seu próprio elemento. Assim duas montagens no mesmo
@@ -45,6 +47,8 @@ export async function mountRemote<P extends Props = Props>(
   await injectCss(resolved.css, shadowRoot, resolved.sri)
 
   const scoped = scopedEvents()
+  // Keep-alive avisa o remote com eventos no elemento raiz, que somem com ele.
+  const on = (type: string) => (fn: () => void) => (el.addEventListener(type, fn), () => el.removeEventListener(type, fn))
   const ctx: RemoteContext = {
     name,
     baseUrl: new URL('.', resolved.entry).href,
@@ -57,6 +61,8 @@ export async function mountRemote<P extends Props = Props>(
     },
     navigate,
     protocol: protocol().protocol,
+    onActivate: on('vitral:activate'),
+    onDeactivate: on('vitral:deactivate'),
   }
   let mounted: MountedRemote
   try {
