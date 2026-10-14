@@ -144,3 +144,22 @@ export function scopedShared(by: string, track: Track): SharedApi {
   api.batch = batch
   return api
 }
+
+/**
+ * Seletor com memória, para os hooks: a mesma entrada devolve a mesma saída,
+ * e uma saída igual à anterior (`Object.is`) devolve a anterior. Assim um
+ * componente só re-renderiza quando o que ele lê muda.
+ */
+export function memoSelect(): <T, S>(value: T, select: (value: T) => S) => S {
+  let last: [unknown, unknown, unknown] | undefined
+  return (value, select) => {
+    if (!last || !Object.is(last[0], value) || last[1] !== select) {
+      const out = select(value)
+      last = [value, select, last && Object.is(last[2], out) ? last[2] : out]
+    }
+    return last[2] as any
+  }
+}
+
+/** Seletor padrão dos hooks: o próprio valor. */
+export const same = <T>(value: T): T => value
