@@ -2,11 +2,11 @@
 import * as React from 'react'
 import { act, createElement as h, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
 import { reactRemote, Remote, useVitral } from '../src/react'
 import { failingRemote, mockRemote } from '../src/testing'
-import { cleanup, flush } from './helpers'
+import { cleanup, flush, serveManifest } from './helpers'
 import { protocol } from '../src/core/state'
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
@@ -86,5 +86,14 @@ describe('React: reactRemote', () => {
     await act(flush)
     console.error = orig
     expect(div.textContent).toBe('RENDER_FAILED')
+  })
+})
+
+describe('React: <Remote src>', () => {
+  it('monta pela URL do manifesto, sem configure()', async () => {
+    serveManifest('carrinho')
+    const { div } = await render(h(Remote, { src: 'https://cdn.exemplo.com/c/vitral.json', props: { n: 1 } }))
+    await vi.waitFor(() => expect(div.textContent).toBe('carrinho:1'))
+    expect(div.querySelector('[data-vitral]')!.getAttribute('data-vitral')).toBe('https://cdn.exemplo.com/c/vitral.json')
   })
 })

@@ -97,7 +97,7 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
   // remotes, junto com a entrada. O código do dedupe só vem se houver.
   const share = async (pre?: boolean) => {
     if (!run || !dedupe.length) return
-    const { shared } = await import('./shared')
+    const { shared } = await import('./dedupe')
     for (const d of dedupe)
       shared(p)(d.name, d.range, {
         version: d.version,

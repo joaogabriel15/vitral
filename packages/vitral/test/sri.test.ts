@@ -276,13 +276,13 @@ describe('CSS com SRI', () => {
     const css = CDN + 'remote.css'
     const fetch = vi.fn(async () => new Response('.a{}'))
     vi.stubGlobal('fetch', fetch)
-    const { injectCss, prefetchCss } = await import('../src/core/css')
+    const { injectCss, injectStyles, prefetchCss } = await import('../src/core/css')
     const sri = { [css]: sha('css') }
     prefetchCss([css], false, sri)
     expect(document.head.querySelector<HTMLLinkElement>(`link[rel="preload"][href="${css}"]`)!.integrity).toBe(sha('css'))
 
-    const root = document.body.appendChild(document.createElement('div')).attachShadow({ mode: 'open' })
-    await injectCss([css], root, sri)
+    const el = document.body.appendChild(document.createElement('div'))
+    await injectStyles([css], el.attachShadow({ mode: 'open' }), el, { mirrorTheme: false }, sri)
     expect(fetch).toHaveBeenCalledWith(css, expect.objectContaining({ integrity: sha('css') }))
 
     const done = injectCss([css], null, sri)
@@ -304,7 +304,7 @@ describe('dedupe: cópia própria do remote', () => {
     const state = await import('../src/core/state')
     state.resetProtocol()
     const verified = await load()
-    const { shared } = await import('../src/core/shared')
+    const { shared } = await import('../src/core/dedupe')
     return { p: { dedupe: shared(state.protocol()) }, verified }
   }
 

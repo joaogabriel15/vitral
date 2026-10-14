@@ -10,7 +10,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import * as RealReact from 'react'
 import vitral from '../src/vite'
 import { protocol, resetProtocol } from '../src/core/state'
-import { shared } from '../src/core/shared'
+import { shared } from '../src/core/dedupe'
 import type { RemoteManifest } from '../src/index'
 
 const out = mkdtempSync(join(tmpdir(), 'vitral-dedupe-'))
@@ -22,7 +22,8 @@ beforeAll(async () => {
     root: resolve(__dirname, 'fixtures/vite-dedupe'),
     configFile: false,
     logLevel: 'silent',
-    plugins: [vitral({ entry: 'src/remote.js', dedupe: ['react'] })],
+    // Sem adaptador: o embrulho traria o código da própria lib para o build.
+    plugins: [vitral({ entry: 'src/remote.js', adapter: false, dedupe: ['react'] })],
     build: { outDir: out, emptyOutDir: true },
   })
   m = JSON.parse(read('vitral.json'))
