@@ -73,3 +73,22 @@ export default {
 ```
 
 Os adaptadores (`reactRemote`, `vueRemote` e os outros) escrevem esse objeto para você. Qualquer bundler serve, desde que o arquivo final seja um ES module.
+
+## Frameworks
+
+| Framework | Remote | Host | Import |
+| --- | --- | --- | --- |
+| React 18 e 19 | `reactRemote(App)` | `<Remote>` | `vitral/react` |
+| Next.js (App e Pages Router) | `reactRemote(App)` | `<Remote>` | `vitral/react` |
+| Vue 3 | `vueRemote(App, { setup })` | `<VitralRemote>` | `vitral/vue` |
+| Nuxt 3 e 4 | `vueRemote(App, { setup })` | `<VitralRemote>` | `vitral/vue` |
+| Angular 17+ | `angularRemote(Component, { providers })` | `<vitral-remote>` e `provideVitral()` | `vitral/angular` |
+| Svelte 5 | `svelteRemote(App)` | `use:remote` | `vitral/svelte` |
+| Solid | `solidRemote(App)` | `<Remote>` | `vitral/solid` |
+| Preact | `preactRemote(App)` | `<Remote>` | `vitral/preact` |
+| Lit e Web Components | `elementRemote('meu-widget')` | `<vitral-remote>` | `vitral/element` |
+| JS e TypeScript puro | `component({ render })` | `<vitral-remote>` | `vitral` |
+
+Host e remote não precisam usar o mesmo framework. Os exemplos do repositório cruzam [9 hosts e 8 remotes](https://github.com/joaogabriel15/vitral/tree/main/examples) no e2e.
+
+Próximos passos: [Host](./host), [Remote](./remote) e [Comunicação](./contexto).
