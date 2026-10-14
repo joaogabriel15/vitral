@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 import { flushSync } from 'svelte'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
 import { remote, svelteRemote } from '../src/svelte'
 import { mockRemote } from '../src/testing'
 import Card from './fixtures/Card.svelte'
-import { cleanup, flush } from './helpers'
+import { cleanup, flush, serveManifest } from './helpers'
 
 afterEach(cleanup)
 
@@ -37,5 +37,16 @@ describe('Svelte', () => {
     await flush()
     expect(node.textContent).toBe('B')
     expect(status).toEqual(['loading', 'ready', 'loading', 'ready'])
+  })
+})
+
+describe('Svelte: use:remote com src', () => {
+  it('monta pela URL do manifesto e troca de src', async () => {
+    serveManifest((url) => url.split('/')[3])
+    const node = document.body.appendChild(document.createElement('div'))
+    const action = remote(node, { src: 'https://cdn.exemplo.com/a/vitral.json', props: { n: 1 } })
+    await vi.waitFor(() => expect(node.textContent).toBe('a:1'))
+    action.update({ src: 'https://cdn.exemplo.com/b/vitral.json', props: { n: 2 } })
+    await vi.waitFor(() => expect(node.textContent).toBe('b:2'))
   })
 })

@@ -4,6 +4,7 @@
  * O `<vitral-remote>` e os componentes de cada framework usam `hostSlot()`.
  */
 import { preload } from './loader'
+import { registerSrc } from './registry'
 import { createSlot, type RemoteSlot, type SlotOptions, type SlotStatus } from './slot'
 import type { Props } from './types'
 import type { RemoteError } from './errors'
@@ -125,7 +126,10 @@ export function clearKeepAlive(): void {
  * é o próprio `createSlot`.
  */
 export function hostSlot<P extends Props = Props>(target: HTMLElement, options: HostSlotOptions<P>): RemoteSlot<P> {
-  let { name, props = {} as P, keepAlive } = options
+  let { props = {} as P, keepAlive } = options
+  // Com `src`, a chave do prefetch e do keep-alive é o nome registrado.
+  const key = (o: Pick<SlotOptions<P>, 'name' | 'src'>) => (o.src ? registerSrc(o.src, o.name) : (o.name ?? ''))
+  let name = key(options)
   let status: SlotStatus = 'loading'
   let item: Kept | null = null
   const onStatus = (s: SlotStatus, e: RemoteError | null) => {
@@ -152,7 +156,7 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
       box.style.display = 'contents'
     }
     const it: Kept = { box, on: onStatus, slot: null as unknown as RemoteSlot<P> }
-    it.slot = createSlot<P>(box, { ...options, name, props, onStatus: (s, e) => it.on(s, e) })
+    it.slot = createSlot<P>(box, { ...options, name, src: undefined, props, onStatus: (s, e) => it.on(s, e) })
     item = it
   })
 
@@ -162,8 +166,8 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
       item?.slot.update(next)
     },
     set(next) {
-      if (next.name !== undefined) name = next.name
-      item?.slot.set(next)
+      if (next.src || next.name !== undefined) name = key(next)
+      item?.slot.set({ ...next, src: undefined, name })
     },
     retry: () => item?.slot.retry(),
     destroy() {

@@ -32,7 +32,9 @@ export function load(name: string, isolate?: Isolation, priority?: RequestPriori
     paths ??= import('./sri').catch(() => null)
     try {
       await p.pending()
-      const entry = p.entry(name)
+      // Override troca a URL e descarta a integrity do host; o isolamento continua.
+      const override = await devOverride(name)
+      const entry = override ? { isolate: p.entry(name)?.isolate, ...override } : p.entry(name)
       if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
       if (entry.module) return await loadLocal(name, entry)
       const resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority)
@@ -44,6 +46,16 @@ export function load(name: string, isolate?: Isolation, priority?: RequestPriori
       throw e instanceof RemoteError ? e : new RemoteError('LOAD_FAILED', name, String(e?.message ?? e), e)
     }
   })
+}
+
+/**
+ * Override de desenvolvimento (`?vitral=` ou localStorage). O código fica em
+ * outro módulo, baixado só quando a página pede um override.
+ */
+function devOverride(name: string): Promise<RemoteEntry | undefined> | undefined {
+  try {
+    if (/vitral/.test(location.search + localStorage.getItem('vitral:overrides'))) return import('./overrides').then((m) => m.overrideFor(name))
+  } catch {}
 }
 
 async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote> {
@@ -85,6 +97,13 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, 
   }
   checkOrigin(name, resolved.entry)
   if (resolved.split) checkOrigin(name, resolved.split.entry)
+  // Remote vindo de `src` (nome = URL): o nome do manifesto vira apelido.
+  if (name === entry.url && m.name) {
+    const override = await devOverride(m.name)
+    if (override) return { ...(await resolveEntry(name, override as RemoteEntry & { url: string })), name: m.name }
+    resolved.name = m.name
+    if (!protocol().entry(m.name)) protocol().register(m.name, entry)
+  }
   return resolved
 }
 
