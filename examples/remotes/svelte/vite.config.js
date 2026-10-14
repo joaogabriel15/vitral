@@ -4,5 +4,5 @@ import vitral from 'vitral/vite'
 
 export default defineConfig({
   base: './',
-  plugins: [svelte(), vitral({ entry: 'src/remote.js', name: 'svelte' })],
+  plugins: [svelte(), vitral({ entry: 'src/Cartao.svelte', name: 'svelte' })],
 })
