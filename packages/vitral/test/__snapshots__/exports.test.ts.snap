@@ -1,0 +1,105 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`exports públicos > angular 1`] = `
+[
+  "VITRAL_CONTEXT",
+  "angularRemote",
+  "events",
+  "injectVitral",
+  "navigate",
+  "provideVitral",
+]
+`;
+
+exports[`exports públicos > element 1`] = `
+[
+  "VitralRemoteElement",
+  "defineVitralElement",
+  "elementRemote",
+]
+`;
+
+exports[`exports públicos > index 1`] = `
+[
+  "RemoteError",
+  "__reset",
+  "component",
+  "configure",
+  "createEventBus",
+  "createSlot",
+  "defineRemote",
+  "events",
+  "html",
+  "loadRemote",
+  "mountRemote",
+  "navigate",
+  "preload",
+  "register",
+  "render",
+  "unsafeHTML",
+]
+`;
+
+exports[`exports públicos > preact 1`] = `
+[
+  "Remote",
+  "events",
+  "navigate",
+  "preactRemote",
+]
+`;
+
+exports[`exports públicos > react 1`] = `
+[
+  "Remote",
+  "events",
+  "reactRemote",
+  "useEvent",
+  "useEventValue",
+  "useVitral",
+]
+`;
+
+exports[`exports públicos > solid 1`] = `
+[
+  "Remote",
+  "events",
+  "navigate",
+  "solidRemote",
+]
+`;
+
+exports[`exports públicos > svelte 1`] = `
+[
+  "events",
+  "navigate",
+  "remote",
+  "svelteRemote",
+]
+`;
+
+exports[`exports públicos > testing 1`] = `
+[
+  "failingRemote",
+  "mockRemote",
+  "resetVitral",
+]
+`;
+
+exports[`exports públicos > vite 1`] = `
+[
+  "default",
+  "vitral",
+]
+`;
+
+exports[`exports públicos > vue 1`] = `
+[
+  "VitralRemote",
+  "events",
+  "useEvent",
+  "useEventValue",
+  "useVitral",
+  "vueRemote",
+]
+`;
