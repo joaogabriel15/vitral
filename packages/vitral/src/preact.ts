@@ -20,7 +20,9 @@ export function preactRemote<P extends Props>(Component: ComponentType<any>): Re
 }
 
 export interface RemoteProps<P extends Props = Props> {
-  name: string
+  name?: string
+  /** URL do `vitral.json`. Dispensa `configure()`. */
+  src?: string
   props?: P
   isolate?: Isolation
   fallback?: VNode | string | null
@@ -28,20 +30,20 @@ export interface RemoteProps<P extends Props = Props> {
   class?: string
 }
 
-export function Remote<P extends Props = Props>({ name, props, isolate, fallback = null, error = null, ...rest }: RemoteProps<P>) {
+export function Remote<P extends Props = Props>({ name, src, props, isolate, fallback = null, error = null, ...rest }: RemoteProps<P>) {
   const ref = useRef<HTMLDivElement>(null)
   const slot = useRef<RemoteSlot<P> | null>(null)
   const [state, setState] = useState<{ status: SlotStatus; error: RemoteError | null }>({ status: 'loading', error: null })
 
   useEffect(() => {
-    slot.current = createSlot<P>(ref.current!, { name, props: (props ?? {}) as P, isolate, onStatus: (status, error) => setState({ status, error }) })
+    slot.current = createSlot<P>(ref.current!, { name, src, props: (props ?? {}) as P, isolate, onStatus: (status, error) => setState({ status, error }) })
     return () => slot.current?.destroy()
   }, [])
-  useEffect(() => slot.current?.set({ name, isolate }), [name, isolate])
+  useEffect(() => slot.current?.set({ name, src, isolate }), [name, src, isolate])
   useEffect(() => slot.current?.update((props ?? {}) as P), [props])
 
   const retry = () => slot.current?.retry()
-  return h('div', { 'data-vitral': name, 'data-vitral-status': state.status, class: rest.class }, [
+  return h('div', { 'data-vitral': name ?? src, 'data-vitral-status': state.status, class: rest.class }, [
     state.status === 'loading' ? fallback : null,
     state.status === 'error' && state.error ? (typeof error === 'function' ? error(state.error, retry) : error) : null,
     // O Preact nunca coloca filhos neste div: ele pertence ao remote.

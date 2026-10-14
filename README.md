@@ -193,7 +193,23 @@ O Web Component `<vitral-remote>` funciona em qualquer lugar que renderize HTML:
 ```
 
 `el.props = {...}` atualiza sem remontar, `el.retry()` remonta, e os eventos
-`vitral-ready` / `vitral-error` avisam o estado.
+`vitral-ready` / `vitral-error` avisam o estado. Sem os slots `fallback` e
+`error`, o elemento mostra um "Carregando…" com `role="status"` e um erro com o
+botão "Tentar de novo".
+
+Sem `configure()` e sem build, use `src` com a URL do manifesto e `vitral/auto`,
+que define o `<vitral-remote>` ao ser importado:
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<vitral-remote src="https://cdn.exemplo.com/carrinho/vitral.json"></vitral-remote>
+```
+
+Num projeto com bundler, `import 'vitral/auto'` faz o mesmo. O remote fica
+registrado com o nome do manifesto, então `<vitral-remote name="carrinho">`
+funciona depois. Todos os componentes de host aceitam `src`:
+`<Remote src="…" />` (React, Preact, Solid), `<VitralRemote src="…" />` (Vue) e
+`use:remote={{ src }}` (Svelte).
 
 **Angular:**
 
@@ -257,7 +273,11 @@ for de terceiros).
 ## Segurança
 
 - **Allowlist de origens**: nenhum código é importado de origem não permitida,
-  nem mesmo se um manifesto apontar para fora.
+  nem mesmo se um manifesto apontar para fora. A URL passada em `src` num
+  componente de host é código seu, então a origem dela entra na allowlist. O
+  `src` em atributo do `<vitral-remote>` não entra: com `allowedOrigins`
+  definido, só origens da lista carregam, para HTML injetado não liberar uma
+  origem nova. Se a página mostra HTML de terceiros, defina `allowedOrigins`.
 - **SRI**: quando há `integrity`, a lib baixa o JS, confere o hash sobre os
   bytes e executa exatamente os bytes verificados (via `blob:`). Aceita o
   formato SRI completo: `sha256`, `sha384` ou `sha512`, vários hashes
