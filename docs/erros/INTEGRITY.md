@@ -14,6 +14,8 @@ O hash dos bytes baixados não confere com o `integrity` declarado. O código n�
 - O hash é calculado sobre os bytes exatos da resposta, como no navegador.
 - Com vários hashes (`sha256-A sha384-B`), vale o algoritmo mais forte. O arquivo precisa bater com um dos hashes desse algoritmo.
 - A mensagem do erro mostra o hash esperado e o obtido.
+- Onde o navegador confere o hash sozinho (import map ou modulepreload com `integrity`), uma falha faz a lib tentar de novo pelo `blob:`, que confere os bytes do arquivo único e dá este erro se eles não baterem.
+- O CSS com hash no manifesto também é conferido. CSS que não bate não é aplicado, mas o remote monta.
 
 ## Como corrigir
 
