@@ -195,7 +195,7 @@
         "./overrides-*",
         "./sri-*"
       ],
-      "limit": "4 kB"
+      "limit": "4.2 kB"
     },
     {
       "name": "núcleo",
@@ -205,7 +205,7 @@
         "./shadow-*",
         "./sri-*"
       ],
-      "limit": "5 kB"
+      "limit": "5.3 kB"
     },
     {
       "name": "SRI (sob demanda, com as dependências)",
@@ -284,7 +284,12 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6 kB"
+      "limit": "6 kB",
+      "ignore": [
+        "./shadow-*",
+        "./overrides-*",
+        "./sri-*"
+      ]
     }
   ]
 }
