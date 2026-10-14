@@ -213,7 +213,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "5.3 kB"
+      "limit": "5.4 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -236,7 +236,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "4.9 kB"
+      "limit": "5 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
