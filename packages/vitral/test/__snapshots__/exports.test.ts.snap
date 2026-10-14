@@ -5,14 +5,26 @@ exports[`exports públicos > angular 1`] = `
   "VITRAL_CONTEXT",
   "angularRemote",
   "events",
+  "injectShared",
   "injectVitral",
   "navigate",
   "provideVitral",
 ]
 `;
 
+exports[`exports públicos > auto 1`] = `[]`;
+
+exports[`exports públicos > devtools 1`] = `
+[
+  "devtools",
+  "getOverrides",
+  "setOverride",
+]
+`;
+
 exports[`exports públicos > element 1`] = `
 [
+  "SharedController",
   "VitralRemoteElement",
   "defineVitralElement",
   "elementRemote",
@@ -30,6 +42,7 @@ exports[`exports públicos > index 1`] = `
 [
   "RemoteError",
   "__reset",
+  "batch",
   "checkUpdates",
   "component",
   "configure",
@@ -42,10 +55,16 @@ exports[`exports públicos > index 1`] = `
   "loadRemote",
   "mountRemote",
   "navigate",
+  "persist",
   "preload",
+  "provide",
   "refresh",
   "register",
+  "registerSrc",
   "render",
+  "serializeShared",
+  "shared",
+  "syncTabs",
   "unsafeHTML",
   "watchUpdates",
 ]
@@ -57,6 +76,7 @@ exports[`exports públicos > preact 1`] = `
   "events",
   "navigate",
   "preactRemote",
+  "useShared",
 ]
 `;
 
@@ -67,6 +87,7 @@ exports[`exports públicos > react 1`] = `
   "reactRemote",
   "useEvent",
   "useEventValue",
+  "useShared",
   "useVitral",
 ]
 `;
@@ -86,6 +107,7 @@ exports[`exports públicos > solid 1`] = `
   "events",
   "navigate",
   "solidRemote",
+  "useShared",
 ]
 `;
 
@@ -119,6 +141,7 @@ exports[`exports públicos > vue 1`] = `
   "events",
   "useEvent",
   "useEventValue",
+  "useShared",
   "useVitral",
   "vueRemote",
 ]
