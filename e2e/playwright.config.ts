@@ -8,6 +8,8 @@ const DEVICES = { chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit
 // Rode antes: pnpm build:all (na raiz). Os servidores abaixo só servem o que já foi buildado.
 export default defineConfig({
   testDir: '.',
+  // A CLI tem e2e próprio, com rede: pnpm test:create.
+  testIgnore: 'create.spec.ts',
   timeout: 30_000,
   fullyParallel: true,
   reporter: [['list']],
