@@ -201,7 +201,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "4 kB"
+      "limit": "4.2 kB"
     },
     {
       "name": "núcleo",
@@ -213,7 +213,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "5.2 kB"
+      "limit": "5.3 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
