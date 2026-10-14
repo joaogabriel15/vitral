@@ -44,6 +44,13 @@ describe('fontes e @import no Shadow DOM', () => {
     expect(up).toContain(`url(${cdn('fonts/r.woff2')})`)
   })
 
+  it('URL só com o caminho vale a partir do CSS do remote, não da página', async () => {
+    files({ 'css/a.css': '@font-face { font-family: Raiz; src: url("/f/r.woff2") } .a { background-image: url(//img.com/a.png) }' })
+    const { root } = await mount('x', [cdn('css/a.css')])
+    expect(hoisted()).toContain(`url("${cdn('f/r.woff2')}")`)
+    expect(text(root.adoptedStyleSheets[0])).toContain('url("//img.com/a.png")')
+  })
+
   it('@import vira outra folha adotada antes da que importa', async () => {
     const fetch = files({
       'main.css': '@import "fontes.css?family=A:wght@400;700&x=1"; @import url(base/b.css) screen; @import url(/raiz.css); .main { color: red }',

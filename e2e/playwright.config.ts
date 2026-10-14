@@ -20,5 +20,6 @@ export default defineConfig({
     { command: 'pnpm --dir ../examples/hosts/next start', url: 'http://localhost:4208', reuseExistingServer: true, env: { NEXT_TELEMETRY_DISABLED: '1' } },
     { command: 'pnpm --dir ../examples/hosts/nuxt start', url: 'http://localhost:4209', reuseExistingServer: true },
     { command: 'node ../demo/serve.mjs', url: 'http://localhost:5173', reuseExistingServer: true },
+    { command: 'node ../examples/estilos/serve.mjs', url: 'http://localhost:4311/index.html', reuseExistingServer: true },
   ],
 })
