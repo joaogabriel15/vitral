@@ -69,7 +69,7 @@ export function create({ dir, kind, framework, src = DEFAULT_SRC }) {
     devDependencies: { ...dev, ...(app ? {} : { vite: '^8.0.0' }), '@playwright/test': '^1.56.0' },
   }
   writeFileSync(join(dir, 'package.json'), JSON.stringify(pkg, null, 2) + '\n')
-  if (!app) writeFileSync(join(dir, 'vite.config.js'), viteConfig(kind, imp, call))
+  if (!app) writeFileSync(join(dir, 'vite.config.js'), viteConfig(kind, framework, imp, call))
 
   const files = walk(dir).map((f) => relative(dir, f).split(sep).join('/'))
   const main = files.find((f) => /^src\/main\./.test(f))
@@ -82,13 +82,17 @@ export function create({ dir, kind, framework, src = DEFAULT_SRC }) {
   return files.sort()
 }
 
-function viteConfig(kind, imp, call) {
+function viteConfig(kind, framework, imp, call) {
   const remote = kind === 'remote'
   const imports = ["import { defineConfig } from 'vite'", imp, remote && "import vitral from 'vitral/vite'"].filter(Boolean)
   const plugins = `  plugins: [${[call, remote && 'vitral()'].filter(Boolean).join(', ')}],`
   const body = remote
     ? `  // O remote é servido de qualquer pasta da CDN; em dev, na porta 5174.\n  base: './',\n${plugins}\n  server: { port: 5174 },`
-    : plugins
+    : framework === 'vanilla' || framework === 'lit'
+      ? // `vitral/element` é importado dinamicamente: sem isto o Vite só o descobre
+        // depois de abrir a página e a recarrega no meio do carregamento.
+        `${plugins}\n  optimizeDeps: { include: ['vitral/auto', 'vitral/element'] },`
+      : plugins
   return `${imports.join('\n')}\n\nexport default defineConfig({\n${body}\n})\n`
 }
 
