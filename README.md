@@ -65,6 +65,25 @@ testadas no navegador a cada execução do e2e.
 
 ### Publicar um remote
 
+Exporte o componente e use o plugin. O plugin descobre o framework pelos
+plugins do Vite e embrulha o `export default` com o adaptador certo:
+
+```js
+// src/App.jsx (ou .tsx, .vue, .svelte…)
+export default App
+
+// vite.config.js
+import vitral from 'vitral/vite'
+export default { plugins: [react(), vitral()] }
+```
+
+A entrada padrão é `src/remote.*` ou `src/App.*`; troque com
+`vitral({ entry: 'src/Carrinho.vue' })`. Sem plugin de framework, uma classe
+de Web Component vira `elementRemote` e uma função que devolve `html` vira
+`component`. `adapter: 'react'` força um adaptador e `adapter: false` usa o
+export como está. Um export que já tem `mount` nunca é embrulhado, então os
+adaptadores explícitos continuam valendo quando você precisa de opções:
+
 ```js
 // React                                  // Vue
 import { reactRemote } from 'vitral/react'  import { vueRemote } from 'vitral/vue'
@@ -111,7 +130,7 @@ Build com o plugin (o mesmo para todos os frameworks):
 ```js
 // vite.config.js
 import vitral from 'vitral/vite'
-export default { plugins: [react() /* ou vue(), svelte(), solid(), angular()… */, vitral({ entry: 'src/remote.jsx' })] }
+export default { plugins: [react() /* ou vue(), svelte(), solid(), angular()… */, vitral()] }
 ```
 
 `vite build` gera `dist/remote-[hash].js`, `dist/remote-[hash].css` e
