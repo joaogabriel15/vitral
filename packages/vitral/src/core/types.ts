@@ -66,6 +66,13 @@ export interface VitralConfig {
   retries?: number
   /** Isolamento padrão para todos os remotes. Padrão `'none'`. */
   isolate?: Isolation
+  /**
+   * Liga os overrides de desenvolvimento (`?vitral=nome@url` e
+   * `localStorage['vitral:overrides']`) fora de localhost. Em localhost já
+   * valem. Nunca ligue em produção: um link com `?vitral=` executaria código
+   * de qualquer origem.
+   */
+  devOverrides?: boolean
 }
 
 

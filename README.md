@@ -156,6 +156,30 @@ remontado, com as props atuais. O CSS sai com o mesmo escopo do build. Com
 `isolate="shadow"`, o CSS de dev ainda vai para o `<head>` e não entra no
 shadow root; teste o modo Shadow DOM com `vite build`.
 
+### Desenvolver contra outro ambiente (overrides)
+
+Troque a URL de um remote sem mexer no host:
+
+```
+http://localhost:3000/?vitral=carrinho@http://localhost:5174
+```
+
+Vários: `?vitral=carrinho@http://localhost:5174,conta@http://localhost:5175`.
+A URL base vira `…/vitral.json`. O override troca a URL, descarta a
+`integrity` do host e passa pela allowlist. Para guardar no navegador, use o
+painel:
+
+```js
+import { devtools } from 'vitral/devtools'
+if (import.meta.env.DEV) devtools()   // ou setOverride('carrinho', 'http://localhost:5174')
+```
+
+Os overrides só valem com a página em `localhost` ou com
+`configure({ devOverrides: true })` (por exemplo, num ambiente de staging).
+Nunca ligue a flag em produção: um link com `?vitral=` executaria código de
+qualquer origem. O código dos overrides fica num módulo à parte, baixado só
+quando a URL ou o `localStorage` pede um override.
+
 ### CSS e Tailwind
 
 Use Tailwind (ou qualquer CSS) no remote normalmente. O plugin prefixa o CSS
