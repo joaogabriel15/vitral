@@ -19,6 +19,23 @@ Junte micro-frontends de qualquer framework numa página só, sem configuração
 - React, Vue, Angular, Svelte e os outros convivem na mesma tela.
 - CSS, erros e deploys ficam isolados por app.
 
+## Começo rápido
+
+Host, em qualquer página:
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<vitral-remote src="https://cdn.exemplo.com/carrinho/vitral.json"></vitral-remote>
+```
+
+Remote, com `vitral()` no `vite.config`:
+
+```js
+export default App
+```
+
+Ou gere os dois: `npm create vitral@latest`.
+
 ```
 host (qualquer framework)                 remote (qualquer framework)
 ┌────────────────────────────┐   URL      ┌──────────────────────────────┐
@@ -421,11 +438,13 @@ No repositório (veja [CONTRIBUTING.md](CONTRIBUTING.md)):
 pnpm install
 pnpm check       # build, tipos, publint/attw, tamanho e testes unitários
 pnpm test:e2e    # builda tudo e roda o Playwright: 9 hosts × 8 remotes + demo
+pnpm test:create # gera cada template do create-vitral e testa o HMR (usa o npm)
 pnpm examples    # sobe os exemplos (hosts em :4201-:4207, remotes em :4100)
 node bench/run.mjs  # benchmark: 3 remotes React + 1 Vue em 4G lento (bench/)
 ```
 
-O CI roda `pnpm check` em Node 22 e 24, o e2e em Chromium, Firefox e WebKit e,
+O CI roda `pnpm check` em Node 22 e 24, o e2e em Chromium, Firefox e WebKit, o
+`test:create` em Chromium e,
 em cada PR, o benchmark contra a main: o PR falha se alguma métrica ficar mais
 de 10% pior. A lib pede Node 20.19 ou mais novo para build e SSR. Versões novas saem
 pelo Changesets: `pnpm changeset`, merge do PR "Versionar pacote" e o GitHub
