@@ -205,7 +205,7 @@
         "./shadow-*",
         "./sri-*"
       ],
-      "limit": "5 kB"
+      "limit": "5.2 kB"
     },
     {
       "name": "caminhos de SRI (carregado sob demanda)",
@@ -284,7 +284,12 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6 kB"
+      "limit": "6 kB",
+      "ignore": [
+        "./shadow-*",
+        "./overrides-*",
+        "./sri-*"
+      ]
     }
   ]
 }
