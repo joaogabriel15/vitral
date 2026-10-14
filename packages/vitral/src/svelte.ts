@@ -3,6 +3,7 @@
  *
  * Remote: export default svelteRemote(App)
  * Host:   <div use:remote={{ name: 'carrinho', props: { userId } }}></div>
+ *         <div use:remote={{ src: 'https://cdn.exemplo.com/carrinho/vitral.json' }}></div>
  *         ou o Web Component <vitral-remote> de 'vitral/element'.
  */
 import type { Component } from 'svelte'
@@ -24,7 +25,9 @@ export function svelteRemote<P extends Props>(component: Component<any>): Remote
 }
 
 export interface RemoteActionParams<P extends Props = Props> {
-  name: string
+  name?: string
+  /** URL do `vitral.json`. Dispensa `configure()`. */
+  src?: string
   props?: P
   isolate?: Isolation
   onStatus?: (status: SlotStatus, error: RemoteError | null) => void
@@ -35,7 +38,7 @@ export function remote<P extends Props = Props>(node: HTMLElement, params: Remot
   const slot = createSlot<P>(node, params)
   return {
     update(next: RemoteActionParams<P>) {
-      slot.set({ name: next.name, isolate: next.isolate })
+      slot.set({ name: next.name, src: next.src, isolate: next.isolate })
       slot.update((next.props ?? {}) as P)
     },
     destroy: () => slot.destroy(),
