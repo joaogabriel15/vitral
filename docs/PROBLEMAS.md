@@ -121,12 +121,45 @@ remote local. O próprio repositório roda e2e de 9 hosts × 8 remotes.
 Preact, Lit/Web Components e JS/TS puro, mais o `<vitral-remote>` que serve de
 host em qualquer lugar que renderize HTML.
 
+### 14. Remote só funciona buildado em dev
+
+**O problema.** O plugin de federation para Vite só serve o remote depois do
+build: cada edição pede um build novo e um reload do host.
+
+**No vitral.** `vite dev` no remote serve um `vitral.json` de desenvolvimento
+com o cliente HMR do Vite e o preâmbulo do React Fast Refresh. Editar o remote
+atualiza o host sem recarregar. Testado com os 8 remotes de exemplo e com cada
+template do `create-vitral` (React e Vue mantêm o estado; Svelte 5 perde o
+`$state` local). Limite: em dev o CSS não entra em shadow roots.
+
+### 15. Tipos das props divergem entre deploys
+
+**No vitral.** O build publica `vitral.d.ts` com o tipo das props do
+`export default`, e `npx vitral types` gera `vitral-env.d.ts` no host. Com ele,
+`<Remote name="carrinho" props={…}>` (React, Preact, Solid) e `PropsOf` acusam
+prop errada. Entradas `.vue` e `.svelte` ainda não geram tipos.
+
+### 16. Começar do zero exige montar host e remote na mão
+
+**No vitral.** `npm create vitral@latest` gera host ou remote em 10 frameworks,
+com o plugin configurado, exemplo, `dev` e e2e. O host não precisa de
+`configure()`: `<vitral-remote src="…/vitral.json">` ou `<Remote src>` bastam.
+
+### 17. Estado compartilhado sem dono nem tipo
+
+**O problema.** Sem um store comum, cada time cria o próprio (ou usa
+`window`), sem tipos, sem dono e com listeners que sobram.
+
+**No vitral.** `provide` e `shared` usam um store único na página, mesmo com
+cópias diferentes da lib, com tipos por chave, dono (`writable: false`) e hooks
+para cada framework que só re-renderizam quando o valor muda. O que o remote
+assina por `ctx.shared` é cancelado no unmount. Testado em unidade, com duas
+cópias da lib e com os hooks de cada framework. Veja [contexto.md](contexto.md).
+
 ## Ainda não resolvidos (próximos passos sugeridos)
 
 | Problema | Ideia |
 |---|---|
-| Remote só funciona buildado em dev (limitação documentada do plugin de federation para Vite) | Modo dev: o plugin serve o `vitral.json` apontando para o servidor do Vite, com HMR. **Maior prioridade.** |
-| Tipos das props divergem entre deploys | Plugin gera `.d.ts` das props do remote e o host baixa esses tipos. |
 | Host com Tailwind v3 e remote em Shadow DOM com Tailwind v4 (`@property` com o mesmo nome) | Opção para renomear `--tw-*` do remote no build. |
 | `html.dark` no host não chega no remote com escopo | Repassar o tema por prop/evento, ou mapear `.dark` do `<html>`. |
 
