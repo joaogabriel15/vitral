@@ -6,7 +6,7 @@
  */
 import { h, render, type ComponentType, type VNode } from 'preact'
 import { useEffect, useRef, useState } from 'preact/hooks'
-import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
+import { createSlot, defineRemote, type CheckedProps, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
 
 /** Transforma um componente Preact em um remote. O contexto chega na prop `vitral`. */
 export function preactRemote<P extends Props>(Component: ComponentType<any>): RemoteModule<P> {
@@ -30,7 +30,7 @@ export interface RemoteProps<P extends Props = Props> {
   class?: string
 }
 
-export function Remote<P extends Props = Props>({ name, src, props, isolate, fallback = null, error = null, ...rest }: RemoteProps<P>) {
+export function Remote<P extends Props = Props, N extends string = string>({ name, src, props, isolate, fallback = null, error = null, ...rest }: RemoteProps<P> & CheckedProps<N>) {
   const ref = useRef<HTMLDivElement>(null)
   const slot = useRef<RemoteSlot<P> | null>(null)
   const [state, setState] = useState<{ status: SlotStatus; error: RemoteError | null }>({ status: 'loading', error: null })

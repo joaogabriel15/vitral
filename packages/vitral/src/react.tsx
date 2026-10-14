@@ -13,6 +13,7 @@ import {
   events,
   mountRemote,
   registerSrc,
+  type CheckedProps,
   type EventBus,
   type Isolation,
   type MountedRemote,
@@ -102,9 +103,10 @@ export interface RemoteProps<P extends Props = Props> {
 
 /**
  * Renderiza um remote. No servidor (Next SSR) renderiza só o fallback; o
- * remote monta no cliente, então não há erro de hidratação.
+ * remote monta no cliente, então não há erro de hidratação. Com o nome em
+ * `Remotes` (`npx vitral types`), as props são checadas.
  */
-export function Remote<P extends Props = Props>({
+export function Remote<P extends Props = Props, N extends string = string>({
   name,
   src,
   props,
@@ -113,7 +115,7 @@ export function Remote<P extends Props = Props>({
   error,
   onError,
   className,
-}: RemoteProps<P>) {
+}: RemoteProps<P> & CheckedProps<N>) {
   const slot = useRef<HTMLDivElement>(null)
   const handle = useRef<MountedRemote<P> | null>(null)
   const latestProps = useRef<P>((props ?? {}) as P)
