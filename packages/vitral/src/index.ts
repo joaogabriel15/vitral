@@ -8,19 +8,22 @@
  * Cada parte mora em `src/core/`; este arquivo só reexporta a API pública.
  */
 export type {
+  CheckedProps,
   EventBus,
   Handler,
   Isolation,
   MountedRemote,
   Props,
+  PropsOf,
   RemoteContext,
   RemoteEntry,
   RemoteManifest,
   RemoteModule,
+  Remotes,
   VitralConfig,
 } from './core/types'
 export { RemoteError, type RemoteErrorCode } from './core/errors'
-export { configure, register } from './core/registry'
+export { configure, register, registerSrc } from './core/registry'
 export { loadRemote, preload } from './core/loader'
 export { mountRemote, type MountOptions } from './core/mount'
 export { createSlot, type RemoteSlot, type SlotOptions, type SlotStatus } from './core/slot'

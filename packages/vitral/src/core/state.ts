@@ -18,6 +18,10 @@ export interface Settings {
   retries: number
   isolate: Isolation
   allowedOrigins: string[] | null
+  /** Origens de URLs escritas no código do host (`src`). Valem mesmo com `allowedOrigins`. */
+  trusted?: string[]
+  /** Liga os overrides de desenvolvimento fora de localhost. */
+  devOverrides?: boolean
 }
 
 /** Remote baixado e pronto para montar. Faz parte do protocolo v1. */
@@ -28,6 +32,8 @@ export interface LoadedRemote {
   css: string[]
   isolate?: Isolation
   scope?: string
+  /** Nome que o manifesto declara (usado quando o remote veio de `src`). */
+  name?: string
 }
 
 export interface Protocol {
