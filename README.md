@@ -63,6 +63,20 @@ testadas no navegador a cada execução do e2e.
 
 ## Uso
 
+### Criar um projeto
+
+```bash
+npm create vitral@latest carrinho -- --remote -f react
+npm create vitral@latest loja -- --host -f next --src http://localhost:5174/vitral.json
+```
+
+Sem opções, o comando pergunta. Hosts: `react`, `next`, `vue`, `nuxt`,
+`angular`, `sveltekit`, `solid`, `preact`, `lit` e `vanilla`. Remotes: os
+mesmos, com `next`, `nuxt` e `sveltekit` virando `react`, `vue` e `svelte`.
+O projeto sai com o plugin configurado, um exemplo, `npm run dev` e um teste
+e2e (`npm run test:e2e`). O remote roda na porta 5174 e o host carrega o
+`vitral.json` dele.
+
 ### Publicar um remote
 
 Exporte o componente e use o plugin. O plugin descobre o framework pelos
