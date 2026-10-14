@@ -1,6 +1,7 @@
 import { injectCss } from './css'
 import { RemoteError } from './errors'
 import { scopedEvents } from './events'
+import { ctxHooks } from './hooks'
 import { load } from './loader'
 import { navigate } from './navigate'
 import { protocol } from './state'
@@ -59,6 +60,7 @@ export async function mountRemote<P extends Props = Props>(
     navigate,
     protocol: protocol().protocol,
   }
+  if (ctxHooks.shared) ctx.shared = ctxHooks.shared(name, scoped.track)
   let mounted: MountedRemote
   try {
     mounted = await mod.mount(el, props, ctx)

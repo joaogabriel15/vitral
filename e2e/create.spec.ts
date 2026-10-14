@@ -2,11 +2,11 @@
 // empacotado, sobe o remote e o host em modo dev, edita o remote e vê o host
 // mudar sem recarregar. Precisa de rede (npm) e roda à parte: pnpm test:create.
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
-import { mkdtempSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const cli = join(root, 'packages/create-vitral/index.js')
@@ -48,18 +48,58 @@ function scaffold(dir: string, args: string[]) {
   execFileSync('pnpm', ['install', '--prefer-offline', '--no-frozen-lockfile', '--ignore-workspace', '--reporter=silent'], { cwd: dir, env, stdio: 'pipe' })
 }
 
-/** `npm run dev` com a porta pedida; espera a URL responder. */
-async function dev(dir: string, port: number, url: string, log: string[]): Promise<ChildProcess> {
-  const proc = spawn('pnpm', ['run', 'dev', '--port', String(port)], { cwd: dir, env, detached: true })
-  proc.stdout!.on('data', (d) => log.push(String(d)))
-  proc.stderr!.on('data', (d) => log.push(String(d)))
-  for (let i = 0; i < 240; i++) {
-    if (proc.exitCode !== null) break
-    const ok = await fetch(url).then((r) => r.ok, () => false)
-    if (ok) return proc
-    await new Promise((r) => setTimeout(r, 500))
+/**
+ * `npm run dev` numa porta livre; espera a URL responder. Os testes rodam em
+ * paralelo e outro servidor pode pegar a porta entre a escolha e o bind: Vite,
+ * Next e Nuxt então sobem em outra porta e avisam "in use". Nesse caso para e
+ * tenta outra porta.
+ */
+async function dev(dir: string, path: string, log: string[]): Promise<{ proc: ChildProcess; port: number }> {
+  for (let attempt = 0; ; attempt++) {
+    const port = await freePort()
+    const url = `http://localhost:${port}${path}`
+    const own: string[] = []
+    const proc = spawn('pnpm', ['run', 'dev', '--port', String(port)], { cwd: dir, env, detached: true })
+    const add = (d: unknown) => (own.push(String(d)), log.push(String(d)))
+    proc.stdout!.on('data', add)
+    proc.stderr!.on('data', add)
+    const taken = () => /in use/i.test(own.join(''))
+    for (let i = 0; i < 240 && proc.exitCode === null && !taken(); i++) {
+      const ok = await fetch(url).then((r) => r.ok, () => false)
+      if (ok && !taken()) return { proc, port }
+      await new Promise((r) => setTimeout(r, 500))
+    }
+    stop(proc)
+    if (!taken() || attempt === 2) throw new Error(`dev não subiu em ${url}:\n${log.join('').slice(-3000)}`)
   }
-  throw new Error(`dev não subiu em ${url}:\n${log.join('').slice(-3000)}`)
+}
+
+/** Troca a URL do remote nos arquivos gerados do host (fora de node_modules). */
+function pointHost(dir: string, from: string, to: string) {
+  for (const f of readdirSync(dir)) {
+    const path = join(dir, f)
+    if (f === 'node_modules' || f.startsWith('.')) continue
+    if (statSync(path).isDirectory()) pointHost(path, from, to)
+    else {
+      const text = readFileSync(path, 'utf8')
+      if (text.includes(from)) writeFileSync(path, text.replaceAll(from, to))
+    }
+  }
+}
+
+/**
+ * Abre a página. Na primeira visita o Vite pode terminar de otimizar as
+ * dependências e recarregar no meio do carregamento; aí abre de novo.
+ */
+async function open(page: Page, url: string) {
+  for (let i = 0; ; i++) {
+    try {
+      return await page.goto(url)
+    } catch (e) {
+      if (i === 2 || !/ERR_ABORTED|interrupted by another navigation/.test(String(e))) throw e
+      await page.waitForTimeout(1000)
+    }
+  }
 }
 
 const stop = (p?: ChildProcess) => {
@@ -76,24 +116,29 @@ for (const [host, remote] of PARES) {
     const base = mkdtempSync(join(tmp, `${host}-`))
     const remoteDir = join(base, 'remote')
     const hostDir = join(base, 'host')
-    const [rPort, hPort] = [await freePort(), await freePort()]
-    const src = `http://localhost:${rPort}/vitral.json`
+    // A porta do remote só se sabe ao subir: o host é gerado com esta URL e apontado depois.
+    const placeholder = 'http://localhost:1/vitral.json'
     const log: string[] = []
     let r: ChildProcess | undefined
     let h: ChildProcess | undefined
     try {
       scaffold(remoteDir, ['--remote', '-f', remote])
-      scaffold(hostDir, ['--host', '-f', host, '--src', src])
-      r = await dev(remoteDir, rPort, src, log)
-      h = await dev(hostDir, hPort, `http://localhost:${hPort}/`, log)
+      scaffold(hostDir, ['--host', '-f', host, '--src', placeholder])
+      const remoteDev = await dev(remoteDir, '/vitral.json', log)
+      r = remoteDev.proc
+      const rPort = remoteDev.port
+      pointHost(hostDir, placeholder, `http://localhost:${rPort}/vitral.json`)
+      const hostDev = await dev(hostDir, '/', log)
+      h = hostDev.proc
+      const hPort = hostDev.port
 
       const erros: string[] = []
       page.on('pageerror', (e) => erros.push(e.message))
       // Página de desenvolvimento do próprio remote.
-      await page.goto(`http://localhost:${rPort}/`)
+      await open(page, `http://localhost:${rPort}/`)
       await expect(page.getByRole('heading', { name: 'Olá, dev' })).toBeVisible({ timeout: 60_000 })
 
-      await page.goto(`http://localhost:${hPort}/`)
+      await open(page, `http://localhost:${hPort}/`)
       const titulo = page.getByRole('heading', { level: 2 })
       await expect(titulo).toHaveText('Olá, host', { timeout: 60_000 })
       await page.getByRole('button', { name: /Cliques/ }).click()
