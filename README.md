@@ -162,6 +162,19 @@ events.last('carrinho:total') // 120
 
 Todos os remotes usam o mesmo barramento. O que um remote assina é cancelado quando ele desmonta.
 
+Para estado comum (usuário, tema, carrinho), use o contexto compartilhado:
+
+```js
+import { provide, shared } from 'vitral'
+
+provide('usuario', { id: 42 })                    // host: cria e é o dono
+provide('tema', 'claro', { writable: false })     // só o dono altera
+shared('tema').subscribe((tema) => console.log(tema))
+const nome = useShared('usuario', (u) => u?.nome) // React, Preact, Vue e Solid
+```
+
+Angular usa `injectShared`, Svelte usa `$tema` e Lit usa `SharedController`. Detalhes em [docs/contexto.md](https://github.com/joaogabriel15/vitral/blob/main/docs/contexto.md).
+
 Para mudar de página de dentro de um remote, use `navigate('/pedidos/42')`. Todos os roteadores da página recebem a mudança.
 
 ## CSS e Tailwind
