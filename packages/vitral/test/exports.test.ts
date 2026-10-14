@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 const entries = {
   index: () => import('../src/index'),
   element: () => import('../src/element'),
+  routes: () => import('../src/routes'),
   react: () => import('../src/react'),
   vue: () => import('../src/vue'),
   svelte: () => import('../src/svelte'),

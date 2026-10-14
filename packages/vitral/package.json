@@ -49,6 +49,10 @@
       "types": "./dist/element.d.ts",
       "import": "./dist/element.js"
     },
+    "./routes": {
+      "types": "./dist/routes.d.ts",
+      "import": "./dist/routes.js"
+    },
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
@@ -202,6 +206,12 @@
       "path": "dist/element.js",
       "import": "{ defineVitralElement }",
       "limit": "6 kB"
+    },
+    {
+      "name": "routes",
+      "path": "dist/routes.js",
+      "import": "{ routes }",
+      "limit": "5 kB"
     }
   ]
 }
