@@ -123,11 +123,10 @@ describe('<vitral-outlet>', () => {
     stop = routes(TABLE)
     document.body.innerHTML = `<vitral-outlet isolate="shadow"></vitral-outlet>`
     const outlet = document.querySelector('vitral-outlet')!
-    await flush()
-    expect(outlet.querySelector('[data-vitral-slot]')!.shadowRoot!.querySelector('b')).not.toBeNull()
+    // Com Shadow DOM a montagem baixa o módulo de estilos antes: mais que um flush.
+    await vi.waitFor(() => expect(outlet.querySelector('[data-vitral-slot]')?.shadowRoot?.querySelector('b')).toBeTruthy())
     outlet.setAttribute('isolate', '')
-    await flush()
-    expect(outlet.querySelector('b')).not.toBeNull()
+    await vi.waitFor(() => expect(outlet.querySelector('b')).not.toBeNull())
   })
 
   it('props inválidas no atributo vão para o console', async () => {

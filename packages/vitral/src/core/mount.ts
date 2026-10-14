@@ -1,4 +1,4 @@
-import { injectCss, injectStyles } from './css'
+import { injectStyles } from './css'
 import { isRemoteError, RemoteError } from './errors'
 import { scopedEvents } from './events'
 import { ctxHooks } from './hooks'
