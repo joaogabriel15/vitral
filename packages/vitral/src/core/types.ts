@@ -2,6 +2,20 @@
 
 export type Props = Record<string, unknown>
 
+/**
+ * Props de cada remote, por nome. `npx vitral types` gera um
+ * `vitral-env.d.ts` que preenche esta interface:
+ *
+ *   declare module 'vitral' { interface Remotes { carrinho: { userId: number } } }
+ */
+export interface Remotes {}
+
+/** Props do remote `N`: as declaradas em `Remotes`, ou qualquer objeto. */
+export type PropsOf<N extends string> = N extends keyof Remotes ? Remotes[N] : Props
+
+/** Restrição extra nas props de um componente de host quando o nome está em `Remotes`. */
+export type CheckedProps<N extends string> = N extends keyof Remotes ? { name?: N; props?: Remotes[N] } : { name?: N }
+
 export interface RemoteContext {
   /** Nome com que o host registrou este remote. */
   name: string
