@@ -1,6 +1,8 @@
-// Host das baterias de rede, deploy e segurança. Os testes chamam
+// Host das baterias de rede, deploy, versões e segurança. Os testes chamam
 // window.vitral.configure() e window.montar() por page.evaluate.
-import * as vitral from '/vitral/index.js'
+// ?lib=<versão> escolhe a cópia da lib do host (veja /libs/ em server.mjs).
+const lib = new URLSearchParams(location.search).get('lib') ?? 'atual'
+const vitral = await import(`/libs/${lib}/index.js`)
 
 window.vitral = vitral
 window.slots = new Map()

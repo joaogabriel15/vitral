@@ -12,6 +12,8 @@ export default defineConfig({
   timeout: 30_000,
   fullyParallel: true,
   reporter: [['list']],
+  // Remotes da bateria de versões cruzadas, buildados com cada versão da lib.
+  globalSetup: './versoes/build.mjs',
   use: { trace: 'retain-on-failure' },
   projects: browsers.map((name) => ({ name, use: { ...devices[DEVICES[name as keyof typeof DEVICES]] } })),
   webServer: [
