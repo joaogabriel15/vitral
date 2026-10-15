@@ -1,11 +1,13 @@
 // @vitest-environment happy-dom
+import * as React from 'react'
 import { act, createElement as h, useState } from 'react'
 import { createRoot } from 'react-dom/client'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
 import { reactRemote, Remote, useVitral } from '../src/react'
 import { failingRemote, mockRemote } from '../src/testing'
-import { cleanup, flush } from './helpers'
+import { cleanup, flush, serveManifest } from './helpers'
+import { protocol } from '../src/core/state'
 
 ;(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true
 afterEach(cleanup)
@@ -19,6 +21,18 @@ async function render(node: React.ReactNode) {
 }
 
 describe('React: host <Remote>', () => {
+  it('oferece o grupo do React aos remotes com dedupe', async () => {
+    mockRemote('a', () => {})
+    await render(h(Remote, { name: 'a' }))
+    await protocol().pending()
+    const mods = (await protocol().dedupe!('react', `^${React.version}`))!
+    expect(Object.keys(mods)).toEqual(['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react/compiler-runtime'])
+    expect((mods.react as typeof React).useState).toBe(React.useState)
+    expect(typeof (mods['react/compiler-runtime'] as any).c).toBe('function')
+    // Versão de outro major não serve.
+    expect(protocol().dedupe!('react', '^18.0.0')).toBeUndefined()
+  })
+
   it('mostra fallback, monta e repassa props sem remontar', async () => {
     const m = mockRemote('a', (el, p) => (el.textContent = `n=${p.n}`))
     let set!: (n: number) => void
@@ -72,5 +86,14 @@ describe('React: reactRemote', () => {
     await act(flush)
     console.error = orig
     expect(div.textContent).toBe('RENDER_FAILED')
+  })
+})
+
+describe('React: <Remote src>', () => {
+  it('monta pela URL do manifesto, sem configure()', async () => {
+    serveManifest('carrinho')
+    const { div } = await render(h(Remote, { src: 'https://cdn.exemplo.com/c/vitral.json', props: { n: 1 } }))
+    await vi.waitFor(() => expect(div.textContent).toBe('carrinho:1'))
+    expect(div.querySelector('[data-vitral]')!.getAttribute('data-vitral')).toBe('https://cdn.exemplo.com/c/vitral.json')
   })
 })
