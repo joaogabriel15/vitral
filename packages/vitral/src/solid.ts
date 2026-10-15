@@ -4,10 +4,12 @@
  * Remote: export default solidRemote(App)
  * Host:   <Remote name="carrinho" props={{ userId: id() }} />
  */
-import { createComponent, createEffect, createSignal, mergeProps, on, onCleanup, onMount, type Component, type JSX } from 'solid-js'
+import { createComponent, createEffect, createSignal, getOwner, mergeProps, on, onCleanup, onMount, type Accessor, type Component, type JSX } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
 import { isServer, render } from 'solid-js/web'
-import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus } from './index'
+import { defineRemote, shared, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus, type Shared, type CheckedProps } from './index'
+import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
+import { memoSelect, same } from './core/shared'
 
 /** Transforma um componente Solid em um remote. O contexto chega na prop `vitral`. */
 export function solidRemote<P extends Props>(Comp: Component<any>): RemoteModule<P> {
@@ -25,30 +27,45 @@ export function solidRemote<P extends Props>(Comp: Component<any>): RemoteModule
 }
 
 export interface RemoteProps<P extends Props = Props> {
-  name: string
+  name?: string
+  /** URL do `vitral.json`. Dispensa `configure()`. */
+  src?: string
   props?: P
   isolate?: Isolation
   fallback?: JSX.Element
   error?: (error: RemoteError, retry: () => void) => JSX.Element
   class?: string
+  /** `'lazy'`: monta perto de aparecer na tela; `'idle'`: com o navegador ocioso. */
+  loading?: Loading
+  /** Baixa antes de montar: `'hover'`, `'visible'` ou `'idle'`. */
+  prefetch?: Prefetch
+  /** `'high'` para o remote que aparece logo ao abrir a página. */
+  priority?: RequestPriority
+  /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
+  keepAlive?: boolean | number
 }
 
-export function Remote<P extends Props = Props>(p: RemoteProps<P>): JSX.Element {
+export function Remote<P extends Props = Props, N extends string = string>(p: RemoteProps<P> & CheckedProps<N>): JSX.Element {
   // No servidor (SolidStart) só o fallback; o remote monta no cliente.
   if (isServer) return p.fallback ?? null
   const [status, setStatus] = createSignal<SlotStatus>('loading')
   const [error, setError] = createSignal<RemoteError | null>(null)
   const host = document.createElement('div')
-  host.setAttribute('data-vitral', p.name)
+  host.setAttribute('data-vitral', p.name ?? p.src ?? '')
   if (p.class) host.className = p.class
   const target = document.createElement('div')
   let slot: RemoteSlot<P> | null = null
 
   onMount(() => {
-    slot = createSlot<P>(target, {
+    slot = hostSlot<P>(target, {
       name: p.name,
+      src: p.src,
       props: (p.props ?? {}) as P,
       isolate: p.isolate,
+      loading: p.loading,
+      prefetch: p.prefetch,
+      priority: p.priority,
+      keepAlive: p.keepAlive,
       onStatus: (s, e) => {
         host.setAttribute('data-vitral-status', s)
         setError(() => e)
@@ -56,7 +73,7 @@ export function Remote<P extends Props = Props>(p: RemoteProps<P>): JSX.Element 
       },
     })
   })
-  createEffect(on(() => [p.name, p.isolate] as const, ([name, isolate]) => slot?.set({ name, isolate }), { defer: true }))
+  createEffect(on(() => [p.name, p.src, p.isolate] as const, ([name, src, isolate]) => slot?.set({ name, src, isolate }), { defer: true }))
   createEffect(on(() => ({ ...(p.props ?? {}) }), (props) => slot?.update(props as P), { defer: true }))
   onCleanup(() => slot?.destroy())
 
@@ -66,6 +83,24 @@ export function Remote<P extends Props = Props>(p: RemoteProps<P>): JSX.Element 
     () => (status() === 'error' && error() && p.error ? p.error(error()!, retry) : null),
     (host.appendChild(target), host),
   ] as unknown as JSX.Element
+}
+
+/**
+ * Accessor de uma chave compartilhada (`provide`/`shared`). Com seletor, só
+ * muda quando o resultado do seletor muda (`Object.is`). A assinatura acaba
+ * junto com o dono reativo (componente ou `createRoot`).
+ *
+ *   const nome = useShared('usuario', (u) => u?.nome)
+ */
+export function useShared<K extends keyof Shared, S = Shared[K] | undefined>(key: K, select?: (value: Shared[K] | undefined) => S): Accessor<S>
+export function useShared<T = unknown, S = T | undefined>(key: string, select?: (value: T | undefined) => S): Accessor<S>
+export function useShared(key: string, select: (value: unknown) => unknown = same): Accessor<unknown> {
+  const handle = shared(key)
+  const pick = memoSelect()
+  const [value, setValue] = createSignal(pick(handle.get(), select), { equals: Object.is })
+  const off = handle.subscribe((v) => setValue(() => pick(v, select)))
+  if (getOwner()) onCleanup(off)
+  return value
 }
 
 export type { RemoteContext }

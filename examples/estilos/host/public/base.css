@@ -1,0 +1,4 @@
+/* CSS base do host, adotado no shadow root com styles.inherit. */
+.base-do-host {
+  text-decoration-line: underline;
+}

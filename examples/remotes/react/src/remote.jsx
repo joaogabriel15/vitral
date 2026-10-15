@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { reactRemote, useVitral } from 'vitral/react'
+import { useVitral } from 'vitral/react'
 
 function Cartao({ mensagem }) {
   const vitral = useVitral()
@@ -15,4 +15,5 @@ function Cartao({ mensagem }) {
   )
 }
 
-export default reactRemote(Cartao)
+// Sem reactRemote(): o plugin vitral embrulha o export default.
+export default Cartao
