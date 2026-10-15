@@ -236,6 +236,18 @@ Todo erro é um `RemoteError` com `code`, o nome do remote e `docs`, o link da [
 | `MOUNT_FAILED` | O remote lançou erro ao montar |
 | `RENDER_FAILED` | O remote quebrou depois de montado |
 
+### Performance
+
+Assim que o manifesto chega, o JS e o CSS do remote baixam juntos. A montagem
+espera os dois, para o remote não aparecer sem estilo. `configure()` abre a
+conexão com a origem de cada remote (`<link rel="preconnect">`).
+
+```js
+import { preload } from 'vitral'
+// Baixa JS e CSS sem montar, por exemplo no hover de um link
+link.addEventListener('pointerenter', () => preload('checkout'), { once: true })
+```
+
 ## Segurança
 
 - Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra. O `src` de um componente de host entra na allowlist; o atributo `src` do `<vitral-remote>` não entra quando há `allowedOrigins`.

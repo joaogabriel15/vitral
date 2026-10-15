@@ -29,7 +29,7 @@ export async function mountRemote<P extends Props = Props>(
   props: P,
   options: MountOptions = {},
 ): Promise<MountedRemote<P>> {
-  const { module: mod, ...resolved } = await load(name)
+  const { module: mod, ...resolved } = await load(name, options.isolate)
   const isolate = options.isolate ?? resolved.isolate ?? protocol().settings().isolate
   const label = resolved.name ?? name
 

@@ -55,3 +55,14 @@ export async function fetchJson<T>(url: string, timeout: number, name: string, c
     throw new RemoteError('INVALID_MODULE', name, `JSON inválido em ${url}`, e)
   }
 }
+
+/** Adiciona um `<link>` com CORS anônimo (o mesmo modo dos downloads da lib). */
+export function addLink(rel: string, href: string, as = '', parent: Node = document.head): HTMLLinkElement {
+  const link = document.createElement('link')
+  link.rel = rel
+  if (as) link.as = as
+  link.crossOrigin = 'anonymous'
+  link.href = href
+  parent.appendChild(link)
+  return link
+}
