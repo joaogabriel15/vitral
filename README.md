@@ -21,18 +21,15 @@ npm install vitral
 - React, Vue, Angular, Svelte, Solid, Preact, Lit e JS puro na mesma página.
 - Cada remote tem o próprio CSS, os próprios erros e o próprio deploy.
 
-Documentação completa: **[joaogabriel15.github.io/vitral](https://joaogabriel15.github.io/vitral/)**
-
 ## Começo rápido
 
-**1. No remote**, exporte o componente:
+Para gerar host e remote prontos: `npm create vitral@latest`.
+
+**1. No remote**, exporte o componente e use o plugin:
 
 ```jsx
-// src/remote.jsx
-import { reactRemote } from 'vitral/react'
-import Carrinho from './Carrinho'
-
-export default reactRemote(Carrinho)
+// src/App.jsx (ou .vue, .svelte, .tsx…)
+export default function Carrinho({ userId }) { … }
 ```
 
 ```js
@@ -40,8 +37,10 @@ export default reactRemote(Carrinho)
 import react from '@vitejs/plugin-react'
 import vitral from 'vitral/vite'
 
-export default { plugins: [react(), vitral({ entry: 'src/remote.jsx' })] }
+export default { plugins: [react(), vitral()] }
 ```
+
+O plugin descobre o framework e embrulha o `export default` com o adaptador certo. A entrada padrão é `src/remote.*` ou `src/App.*`.
 
 `vite build` gera o JS, o CSS e um `vitral.json`. Publique a pasta `dist` em qualquer CDN com CORS.
 
@@ -68,6 +67,15 @@ export function App() {
 ```
 
 Pronto. Mudar `props` atualiza o remote sem remontar.
+
+Sem build no host, numa página HTML qualquer:
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json"></vitral-remote>
+```
+
+Todos os componentes de host aceitam `src` no lugar de `name`.
 
 ## Frameworks
 
@@ -136,6 +144,12 @@ export default component<{ nome: string }>({
 
 O que entra em `${}` é escapado. Mudar `state` ou as props atualiza a tela.
 
+## Desenvolvimento
+
+- **HMR:** com o remote em `vite dev`, aponte o host para `http://localhost:5174/vitral.json`. Editar o remote atualiza o host sem recarregar a página.
+- **Overrides:** `http://localhost:3000/?vitral=carrinho@http://localhost:5174` troca a URL de um remote sem mexer no host. Só vale em `localhost` ou com `configure({ devOverrides: true })`. Para guardar no navegador, use `devtools()` de `vitral/devtools`.
+- **Tipos das props:** o build publica `vitral.d.ts`. No host, `npx vitral types` gera `vitral-env.d.ts`, e uma prop errada passa a não compilar.
+
 ## Comunicação entre remotes
 
 ```js
@@ -148,6 +162,19 @@ events.last('carrinho:total') // 120
 
 Todos os remotes usam o mesmo barramento. O que um remote assina é cancelado quando ele desmonta.
 
+Para estado comum (usuário, tema, carrinho), use o contexto compartilhado:
+
+```js
+import { provide, shared } from 'vitral'
+
+provide('usuario', { id: 42 })                    // host: cria e é o dono
+provide('tema', 'claro', { writable: false })     // só o dono altera
+shared('tema').subscribe((tema) => console.log(tema))
+const nome = useShared('usuario', (u) => u?.nome) // React, Preact, Vue e Solid
+```
+
+Angular usa `injectShared`, Svelte usa `$tema` e Lit usa `SharedController`. Detalhes em [docs/contexto.md](https://github.com/joaogabriel15/vitral/blob/main/docs/contexto.md).
+
 Para mudar de página de dentro de um remote, use `navigate('/pedidos/42')`. Todos os roteadores da página recebem a mudança.
 
 ## CSS e Tailwind
@@ -159,6 +186,17 @@ Para isolar por completo, use Shadow DOM:
 ```jsx
 <Remote name="carrinho" isolate="shadow" />
 ```
+
+Com Shadow DOM, as regras `@property` e `@font-face` sobem para o documento, então sombras, rings, gradientes e fontes do Tailwind v4 funcionam.
+
+O remote também pode usar o tema do host:
+
+```js
+vitral({ theme: 'host' })                                  // var(--x) usa o valor do host, se existir
+configure({ styles: { inherit: ['/assets/base.css'] } })   // CSS base do host dentro do Shadow DOM
+```
+
+Tema com Tailwind v4, dark mode, CSS legado e Tailwind v3 no host: [docs/estilos.md](https://github.com/joaogabriel15/vitral/blob/main/docs/estilos.md).
 
 ## Configuração
 
@@ -185,27 +223,110 @@ configure({
 
 ## Erros
 
-Todo erro é um `RemoteError` com `code`, o nome do remote e `docs`, o link da página do código com causa e correção. Um remote que falha mostra o próprio erro e não derruba a página. `retry` monta só aquele remote de novo.
+Todo erro é um `RemoteError` com `code`, o nome do remote e `docs`, o link da [página do erro](https://github.com/joaogabriel15/vitral/tree/main/docs/erros) com causas e correção. Um remote que falha mostra o próprio erro e não derruba a página. `retry` monta só aquele remote de novo.
 
 | `code` | Quando |
 |---|---|
-| [`NOT_REGISTERED`](https://joaogabriel15.github.io/vitral/erros/NOT_REGISTERED) | Nome não registrado em `configure` |
-| [`ORIGIN_BLOCKED`](https://joaogabriel15.github.io/vitral/erros/ORIGIN_BLOCKED) | URL fora de `allowedOrigins` |
-| [`TIMEOUT`](https://joaogabriel15.github.io/vitral/erros/TIMEOUT) | Não respondeu dentro de `timeout` |
-| [`INTEGRITY`](https://joaogabriel15.github.io/vitral/erros/INTEGRITY) | O hash do JS não confere |
-| [`INVALID_MODULE`](https://joaogabriel15.github.io/vitral/erros/INVALID_MODULE) | O arquivo não exporta `mount()` |
-| [`LOAD_FAILED`](https://joaogabriel15.github.io/vitral/erros/LOAD_FAILED) | Erro de rede ou HTTP |
-| [`MOUNT_FAILED`](https://joaogabriel15.github.io/vitral/erros/MOUNT_FAILED) | O remote lançou erro ao montar |
-| [`RENDER_FAILED`](https://joaogabriel15.github.io/vitral/erros/RENDER_FAILED) | O remote quebrou depois de montado |
+| `NOT_REGISTERED` | Nome não registrado em `configure` |
+| `ORIGIN_BLOCKED` | URL fora de `allowedOrigins` |
+| `TIMEOUT` | Não respondeu dentro de `timeout` |
+| `INTEGRITY` | O hash do JS não confere |
+| `INVALID_MODULE` | O arquivo não exporta `mount()` |
+| `LOAD_FAILED` | Erro de rede ou HTTP |
+| `MOUNT_FAILED` | O remote lançou erro ao montar |
+| `RENDER_FAILED` | O remote quebrou depois de montado |
+
+## Performance
+
+Remote com `import()` também gera `dist/split/`: o navegador baixa só o que o remote usa ao abrir, e o resto chega no `import()`, conferido pelo mesmo hash. Hosts antigos continuam usando o arquivo único.
+
+No CDN, sirva `vitral.json` com `Cache-Control: no-cache` e o resto (nome com hash) com `public, max-age=31536000, immutable`.
+
+
+Assim que o manifesto chega, o JS e o CSS do remote baixam juntos. A montagem
+espera os dois, para o remote não aparecer sem estilo. `configure()` abre a
+conexão com a origem de cada remote (`<link rel="preconnect">`).
+
+```js
+import { preload } from 'vitral'
+// Baixa JS e CSS sem montar, por exemplo no hover de um link
+link.addEventListener('pointerenter', () => preload('checkout'), { once: true })
+```
+
+Nos componentes de host e no `<vitral-remote>`:
+
+```html
+<!-- monta perto de aparecer na tela; reserve o espaço para a página não pular -->
+<vitral-remote name="comentarios" loading="lazy" style="display:block;min-height:400px"></vitral-remote>
+<!-- monta com o navegador ocioso, mas já baixa no hover -->
+<vitral-remote name="checkout" loading="idle" prefetch="hover"></vitral-remote>
+<!-- remote que aparece logo ao abrir a página -->
+<vitral-remote name="cabecalho" priority="high"></vitral-remote>
+```
+
+```jsx
+<Remote name="checkout" loading="lazy" prefetch="visible" keepAlive />
+```
+
+| Opção | Valores | O que faz |
+| --- | --- | --- |
+| `loading` | `lazy`, `idle` | Monta a 200px de aparecer na tela, ou com o navegador ocioso |
+| `prefetch` | `hover`, `visible`, `idle` | Chama `preload()` antes de montar |
+| `priority` | `high` | `fetchpriority` alto no manifesto, no JS e no CSS |
+| `keepAlive` (`keep-alive`) | `true` ou o máximo | Ao sair da página, o remote vai para um contêiner oculto (LRU, padrão 5); na volta só recebe as props novas |
+
+Com keep-alive, o remote pode pausar timers e assinaturas:
+
+```js
+mount(el, props, ctx) {
+  ctx.onDeactivate?.(() => clearInterval(timer))
+  ctx.onActivate?.(() => (timer = setInterval(tick, 1000)))
+}
+```
+
+### Métricas
+
+Cada etapa do carregamento vira um `performance.measure` com o nome
+`vitral:<remote>:<etapa>`. As etapas são `manifest`, `js`, `css` e `mount`.
+Elas aparecem na aba Performance do DevTools. Para mandar ao seu RUM:
+
+```js
+configure({
+  onMetric: ({ name, stage, duration }) => rum.send(`vitral.${stage}`, duration, { remote: name }),
+})
+```
+
+O evento `vitral-ready` (e o `ready` do componente Vue) traz os tempos em
+`detail.timings`, por exemplo `{ manifest: 12.3, js: 40.1, css: 8, mount: 2.4 }`.
+Um remote local (`module`) só mede `css` e `mount`. Erros dentro do
+`onMetric` são ignorados.
+
+## Dependências compartilhadas
+
+Para não baixar React ou Vue mais de uma vez, liste-os em `dedupe` no remote:
+
+```js
+vitral({ dedupe: ['react'] })
+```
+
+O remote usa a cópia que já está na página quando a versão serve (padrão: `^` da versão instalada no remote) e baixa a própria só quando não serve. Os componentes de host em React oferecem o React do host sem configuração.
+
+### Mais formas de usar
+
+Vários componentes por remote (`<Remote name="carrinho/MiniCarrinho" />`),
+módulos sem UI (`loadModule('carrinho/api')`), deploy novo sem recarregar a
+página (`watchUpdates()` e `refresh('carrinho')`) e app shell por rota
+(`routes()` e `<vitral-outlet>`, em `vitral/routes`). Veja
+[docs/formas-de-usar.md](docs/formas-de-usar.md).
 
 ## Segurança
 
-- Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra.
-- Com `integrity`, confere o hash sobre os bytes baixados e executa exatamente os bytes conferidos. Aceita `sha256`, `sha384` e `sha512`, e vários hashes (vale o mais forte). Com CSP, inclua `blob:` em `script-src`.
+- Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra. O `src` de um componente de host entra na allowlist; o atributo `src` do `<vitral-remote>` não entra quando há `allowedOrigins`.
+- Com `integrity`, nada roda sem o hash conferir. A lib usa o primeiro caminho que o navegador garante: import map com `integrity` (Chrome 133+, Safari 18.4+), `<link rel="modulepreload" integrity>` (Firefox 115+) ou, nos outros, baixa, confere e executa exatamente os bytes conferidos via `blob:`. Aceita `sha256`, `sha384` e `sha512`, e vários hashes separados por espaço (vale o mais forte). O CSS do manifesto também é conferido.
+- Com CSP, a lib copia o `nonce` de um `<script nonce>` da página para o import map. Sem nonce, cai para o `modulepreload`.
+- O hash só protege contra CDN comprometido se vier de outro lugar: fixe `integrity` no host ou embuta o manifesto (`{ url, manifest }`).
 - Sem `eval` e sem iframes.
 - Shadow DOM isola o CSS, não o JS. Para código de terceiros em que você não confia, use iframe.
-
-Detalhes em [Segurança](https://joaogabriel15.github.io/vitral/guia/seguranca).
 
 ## Testes do host
 
@@ -219,25 +340,21 @@ expect(carrinho.lastProps).toEqual({ itens: 2 })
 failingRemote('recomendacoes') // testa a tela de erro
 ```
 
-## Comparado com outras ferramentas
+## Comparado com Module Federation e single-spa
 
-<p><img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/tamanho-host.svg" width="680" alt="Código de host com brotli: vitral 3,4 kB, single-spa 5,8 kB, Module Federation 19,4 kB, wujie 23,6 kB, micro-app 28,9 kB, qiankun 37,9 kB, Garfish 40,0 kB (14/10/2026)"></p>
-
-| Afirmação | Prova |
-|---|---|
-| Código de host de 3,4 kB, o menor entre as 7 ferramentas medidas | [Medição de 14/10/2026](https://joaogabriel15.github.io/vitral/benchmarks#tamanho-do-codigo-de-host) com [`bench/tamanho.mjs`](https://github.com/joaogabriel15/vitral/blob/main/bench/tamanho.mjs) |
-| Nenhum plugin de build no host | `configure()` em runtime. O Module Federation configura `remotes` no [plugin de build](https://module-federation.io/integrations/build-tool/vite.html) (consultado em 14/10/2026) |
-| Confere o hash (SRI) e a origem antes de executar | Testes em [`core.test.ts`](https://github.com/joaogabriel15/vitral/blob/main/packages/vitral/test/core.test.ts) |
-| Tailwind v4 funciona dentro de Shadow DOM | e2e em [`demo.spec.ts`](https://github.com/joaogabriel15/vitral/blob/main/e2e/demo.spec.ts). No Tailwind, a issue [#15005](https://github.com/tailwindlabs/tailwindcss/issues/15005) estava aberta em 14/10/2026 |
-| Remote fora do ar não derruba a página | e2e nos 9 hosts em [`matriz.spec.ts`](https://github.com/joaogabriel15/vitral/blob/main/e2e/matriz.spec.ts). No Nx com Module Federation, um remote com falha derruba o host ([nx #10404](https://github.com/nrwl/nx/issues/10404)) |
-| Next.js com App Router | Host Next 16 no e2e. O plugin de Module Federation para Next não suporta App Router ([documentação](https://module-federation.io/integrations/framework/nextjs), 14/10/2026) |
-
-Tabela completa, com o que o vitral ainda não faz: [Comparação](https://joaogabriel15.github.io/vitral/comparacao) e [Quando não usar o vitral](https://joaogabriel15.github.io/vitral/quando-nao-usar). Vindo de outra ferramenta? Veja os guias de migração de [Module Federation](https://joaogabriel15.github.io/vitral/migracao/module-federation), [single-spa](https://joaogabriel15.github.io/vitral/migracao/single-spa) e [qiankun](https://joaogabriel15.github.io/vitral/migracao/qiankun).
+| | Module Federation / single-spa | vitral |
+|---|---|---|
+| Build do host | Config combinada com cada remote | Nenhuma. Só `configure()` |
+| Versões de React/Vue | `shared` e singletons, conflitos de versão | Cada remote leva a sua. Compartilhar é opcional |
+| Remote fora do ar | Pode derrubar a página | Só aquele remote mostra erro |
+| CSS | Vaza entre apps | Escopo automático ou Shadow DOM |
+| Deploy novo | `ChunkLoadError` com cache velho | Arquivos com hash; só o `vitral.json` revalida |
+| Conceitos | Containers, exposes, lifecycles, root config | `mount(el, props, ctx)` → `{ update, unmount }` |
 
 ## Links
 
-- [Documentação](https://joaogabriel15.github.io/vitral/): guia, receitas, referência da API e erros.
 - [Exemplos](https://github.com/joaogabriel15/vitral/tree/main/examples): o mesmo remote em 8 frameworks e 9 hosts.
 - [Problemas resolvidos](https://github.com/joaogabriel15/vitral/blob/main/docs/PROBLEMAS.md) e o que ainda falta.
 - [Como contribuir](https://github.com/joaogabriel15/vitral/blob/main/CONTRIBUTING.md)
+- [Benchmark](https://github.com/joaogabriel15/vitral/tree/main/bench)
 - Licença [MIT](https://github.com/joaogabriel15/vitral/blob/main/LICENSE)

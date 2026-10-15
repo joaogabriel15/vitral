@@ -1,17 +1,6 @@
 // Cada host (9 frameworks) carrega cada remote (8 frameworks): 72 combinações.
 import { expect, test } from '@playwright/test'
-
-const HOSTS = {
-  'JS/TS puro': 4201,
-  React: 4202,
-  Vue: 4203,
-  Svelte: 4204,
-  Solid: 4205,
-  Preact: 4206,
-  Angular: 4207,
-  Next: 4208,
-  Nuxt: 4209,
-}
+import { HOSTS } from './hosts'
 
 const REMOTES = {
   react: 'React',
