@@ -13,7 +13,7 @@ function App() {
   return (
     <>
       <h1>Host Solid</h1>
-      <input id="mensagem" value={mensagem()} onInput={(e) => setMensagem(e.currentTarget.value)} />
+      <input id="mensagem" aria-label="Mensagem" value={mensagem()} onInput={(e) => setMensagem(e.currentTarget.value)} />
       <p>Último ping: <span id="ultimo-ping">{ping()}</span></p>
       <For each={REMOTES}>
         {(n) => (

@@ -9,7 +9,7 @@ defineVitralElement()
 
 document.querySelector('#app')!.innerHTML = `
   <h1>Host JS/TS puro</h1>
-  <input id="mensagem" value="olá" />
+  <input id="mensagem" aria-label="Mensagem" value="olá" />
   <p>Último ping: <span id="ultimo-ping">-</span></p>
   ${REMOTES.map((n) => `<section data-remote="${n}"><vitral-remote name="${n}" isolate="shadow"><p slot="fallback">carregando ${n}…</p></vitral-remote></section>`).join('')}
   <section data-remote="quebrado">
