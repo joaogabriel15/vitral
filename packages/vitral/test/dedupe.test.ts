@@ -63,3 +63,28 @@ describe('protocolo: dedupe', () => {
     expect(protocol().settings()).not.toHaveProperty('dedupe')
   })
 })
+
+describe('dedupe: cópia já no cache', () => {
+  it('prefere a URL que carregou na visita anterior, se ela chega logo', async () => {
+    const a = vi.fn(async () => ({ react: 'a' }))
+    const b = vi.fn(async () => ({ react: 'b' }))
+    localStorage.setItem('vitral:dedupe:react@19.2.0', 'https://b/react.js')
+    const d = shared(protocol())
+    const first = d('react', '^19.0.0', { version: '19.2.0', url: 'https://a/react.js', load: a })
+    const second = d('react', '^19.0.0', { version: '19.2.0', url: 'https://b/react.js', load: b })
+    expect(await first).toEqual({ react: 'b' })
+    expect(await second).toEqual({ react: 'b' })
+    expect(a).not.toHaveBeenCalled()
+  })
+
+  it('sem a URL lembrada a tempo, carrega a própria e passa a lembrar dela', async () => {
+    vi.useFakeTimers()
+    const a = vi.fn(async () => ({ react: 'a' }))
+    localStorage.setItem('vitral:dedupe:react@19.2.0', 'https://b/react.js')
+    const p = shared(protocol())('react', '^19.0.0', { version: '19.2.0', url: 'https://a/react.js', load: a })
+    await vi.advanceTimersByTimeAsync(300)
+    expect(await p).toEqual({ react: 'a' })
+    expect(localStorage.getItem('vitral:dedupe:react@19.2.0')).toBe('https://a/react.js')
+    vi.useRealTimers()
+  })
+})
