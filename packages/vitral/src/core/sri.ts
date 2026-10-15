@@ -15,7 +15,8 @@
  */
 import { verifyIntegrity } from './integrity'
 import type { Protocol } from './state'
-import { addLink, fetchBytes } from './util'
+import { RemoteError } from './errors'
+import { addLink, fetchBytes, withTimeout } from './util'
 
 export interface SplitBuild {
   /** Entrada do build dividido. */
@@ -47,14 +48,24 @@ export async function importVerified(name: string, r: Verifiable, run: (url: str
   if (!failed.has(entry)) {
     try {
       // Caminhos 1 e 2: o navegador confere o hash e o JS roda da própria URL.
-      const url = await verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity }, priority }, run)
-      if (url) return await run(url)
-    } catch {
+      // O timeout cobre também os modulepreload, que esperam o download.
+      const go = async () => {
+        const url = await verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity }, priority }, run)
+        return url && { ns: await run(url) }
+      }
+      const done = await withTimeout(timeout, name, go())
+      if (done) return done.ns
+    } catch (e) {
+      // O mapa de módulos guarda a URL que travou: as próximas tentativas
+      // vão pelo caminho 3. Esta já gastou o tempo dela e termina em TIMEOUT.
       failed.add(entry)
+      if (e instanceof RemoteError && e.code === 'TIMEOUT') throw e
     }
   }
   // Caminho 3: executa exatamente os bytes verificados.
-  const bytes = await fetchBytes(entry, timeout, name, { priority })
+  // Depois de uma falha, sem esperar pela requisição anterior que pode
+  // continuar presa no cache HTTP do navegador.
+  const bytes = await fetchBytes(entry, timeout, name, failed.has(entry) ? { priority, cache: 'reload' } : { priority })
   await verifyIntegrity(name, bytes, integrity)
   const url = URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }))
   try {
