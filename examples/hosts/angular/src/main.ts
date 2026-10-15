@@ -9,7 +9,7 @@ import { provideVitral } from 'vitral/angular'
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <h1>Host Angular</h1>
-    <input id="mensagem" [value]="mensagem()" (input)="mensagem.set($any($event.target).value)" />
+    <input id="mensagem" aria-label="Mensagem" [value]="mensagem()" (input)="mensagem.set($any($event.target).value)" />
     <p>Último ping: <span id="ultimo-ping">{{ ping() }}</span></p>
     @for (n of remotes; track n) {
       <section [attr.data-remote]="n">
