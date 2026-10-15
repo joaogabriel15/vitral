@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineVitralElement, elementRemote } from '../src/element'
 import { register } from '../src/index'
 import { failingRemote, mockRemote } from '../src/testing'
@@ -57,9 +57,18 @@ describe('<vitral-remote> (host universal)', () => {
   it('isolate="shadow" monta dentro de um shadow root', async () => {
     mockRemote('a', (el) => (el.innerHTML = '<b>dentro</b>'))
     document.body.innerHTML = `<vitral-remote name="a" isolate="shadow"></vitral-remote>`
-    await flush()
-    const holder = document.querySelector('[data-vitral-slot]')!
-    expect(holder.shadowRoot?.querySelector('b')?.textContent).toBe('dentro')
+    // O CSS do Shadow DOM vem de um módulo à parte, importado na hora.
+    await vi.waitFor(() => expect(document.querySelector('[data-vitral-slot]')!.shadowRoot?.querySelector('b')?.textContent).toBe('dentro'))
+  })
+
+  it('inherit-styles adota o CSS do host no shadow root', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('.base { color: red }')))
+    mockRemote('a')
+    document.body.innerHTML = `<vitral-remote name="a" isolate="shadow" inherit-styles="/assets/base.css  /assets/b.css"></vitral-remote>`
+    await vi.waitFor(() => expect(document.querySelector('vitral-remote')!.getAttribute('data-vitral-status')).toBe('ready'))
+    expect(document.querySelector('[data-vitral-slot]')!.shadowRoot!.adoptedStyleSheets).toHaveLength(2)
+    expect(fetch).toHaveBeenCalledWith(new URL('/assets/base.css', document.baseURI).href, expect.anything())
+    vi.unstubAllGlobals()
   })
 })
 
