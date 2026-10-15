@@ -40,6 +40,13 @@ export interface RemoteContext {
    */
   protocol?: number
   /**
+   * Com keep-alive: `fn` roda quando o remote volta para a página. Devolve a
+   * função que cancela. Hosts antigos não mandam este campo.
+   */
+  onActivate?(fn: () => void): () => void
+  /** Com keep-alive: `fn` roda quando o remote sai da página sem desmontar (pause timers e assinaturas). */
+  onDeactivate?(fn: () => void): () => void
+  /**
    * O mesmo `shared` de `import { shared } from 'vitral'`, mas as assinaturas
    * feitas por aqui são canceladas no unmount, e as chaves criadas com
    * `ctx.shared.provide` perdem o dono. Vem quando o host usa o store

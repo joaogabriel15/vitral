@@ -7,7 +7,8 @@
 import { createComponent, createEffect, createSignal, getOwner, mergeProps, on, onCleanup, onMount, type Accessor, type Component, type JSX } from 'solid-js'
 import { createStore, reconcile } from 'solid-js/store'
 import { isServer, render } from 'solid-js/web'
-import { createSlot, defineRemote, shared, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus, type CheckedProps } from './index'
+import { defineRemote, shared, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus, type Shared, type CheckedProps } from './index'
+import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 import { memoSelect, same } from './core/shared'
 
 /** Transforma um componente Solid em um remote. O contexto chega na prop `vitral`. */
@@ -34,6 +35,14 @@ export interface RemoteProps<P extends Props = Props> {
   fallback?: JSX.Element
   error?: (error: RemoteError, retry: () => void) => JSX.Element
   class?: string
+  /** `'lazy'`: monta perto de aparecer na tela; `'idle'`: com o navegador ocioso. */
+  loading?: Loading
+  /** Baixa antes de montar: `'hover'`, `'visible'` ou `'idle'`. */
+  prefetch?: Prefetch
+  /** `'high'` para o remote que aparece logo ao abrir a página. */
+  priority?: RequestPriority
+  /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
+  keepAlive?: boolean | number
 }
 
 export function Remote<P extends Props = Props, N extends string = string>(p: RemoteProps<P> & CheckedProps<N>): JSX.Element {
@@ -48,11 +57,15 @@ export function Remote<P extends Props = Props, N extends string = string>(p: Re
   let slot: RemoteSlot<P> | null = null
 
   onMount(() => {
-    slot = createSlot<P>(target, {
+    slot = hostSlot<P>(target, {
       name: p.name,
       src: p.src,
       props: (p.props ?? {}) as P,
       isolate: p.isolate,
+      loading: p.loading,
+      prefetch: p.prefetch,
+      priority: p.priority,
+      keepAlive: p.keepAlive,
       onStatus: (s, e) => {
         host.setAttribute('data-vitral-status', s)
         setError(() => e)

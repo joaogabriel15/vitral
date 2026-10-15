@@ -14,6 +14,8 @@ export interface SlotOptions<P extends Props = Props> {
   src?: string
   props?: P
   isolate?: Isolation
+  /** `'high'` para o remote que aparece logo ao abrir a página. */
+  priority?: RequestPriority
   /** Estilos do host no Shadow DOM (somados aos do `configure`). */
   styles?: StyleOptions
   /** Chamado a cada mudança de estado (para mostrar fallback / erro). */
@@ -72,7 +74,7 @@ export function createSlot<P extends Props = Props>(target: HTMLElement, options
       setStatus('error', e instanceof RemoteError ? e : new RemoteError('MOUNT_FAILED', name, String(e), e))
     }
     const initial = props
-    mountRemote<P>(holder, name, props, { isolate, styles: options.styles, onError: fail }).then((h) => {
+    mountRemote<P>(holder, name, props, { isolate, priority: options.priority, styles: options.styles, onError: fail }).then((h) => {
       if (my !== token) return h.unmount()
       handle = h
       // Props que mudaram enquanto o remote baixava.
