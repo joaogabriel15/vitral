@@ -11,6 +11,18 @@ const here = fileURLToPath(new URL('.', import.meta.url))
 export const REMOTES = ['js', 'react']
 
 export default async function buildAll() {
+  // O build do Vite põe NODE_ENV=production no processo, e os workers do
+  // Playwright herdam: o dev server do dev.spec perderia o HMR com estado.
+  const env = process.env.NODE_ENV
+  try {
+    await buildEach()
+  } finally {
+    if (env === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = env
+  }
+}
+
+async function buildEach() {
   for (const [versao, pkg] of Object.entries(VERSOES)) {
     const { default: vitral } = await import(`${pkg}/vite`)
     for (const remote of REMOTES) {
