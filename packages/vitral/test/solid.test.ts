@@ -1,11 +1,11 @@
 // @vitest-environment happy-dom
 import { createEffect, createSignal, createComponent } from 'solid-js'
 import { render } from 'solid-js/web'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
 import { Remote, solidRemote } from '../src/solid'
 import { failingRemote, mockRemote } from '../src/testing'
-import { cleanup, flush } from './helpers'
+import { cleanup, flush, serveManifest } from './helpers'
 
 afterEach(cleanup)
 
@@ -52,5 +52,14 @@ describe('Solid', () => {
     div.querySelector('button')!.click()
     await flush()
     expect(div.textContent).toBe('ok')
+  })
+})
+
+describe('Solid: <Remote src>', () => {
+  it('monta pela URL do manifesto, sem configure()', async () => {
+    serveManifest('carrinho')
+    const div = document.body.appendChild(document.createElement('div'))
+    render(() => createComponent(Remote, { src: 'https://cdn.exemplo.com/c/vitral.json', props: { n: 1 } }), div)
+    await vi.waitFor(() => expect(div.textContent).toBe('carrinho:1'))
   })
 })

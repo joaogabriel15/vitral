@@ -23,8 +23,13 @@ export function scopeSelector(selector: string, scope: string): string {
 }
 
 export function scopeCss(css: string, scopeName: string): string {
-  const scope = `[data-vitral-scope="${scopeName}"]`
   const root: Root = postcss.parse(css)
+  scopeRoot(root, scopeName)
+  return root.toString()
+}
+
+export function scopeRoot(root: Root, scopeName: string): void {
+  const scope = `[data-vitral-scope="${scopeName}"]`
   root.walkRules((rule: Rule) => {
     // Dentro de @keyframes os "seletores" são 0%, from, to.
     let p = rule.parent
@@ -36,5 +41,4 @@ export function scopeCss(css: string, scopeName: string): string {
     }
     rule.selectors = rule.selectors.map((sel) => scopeSelector(sel, scope))
   })
-  return root.toString()
 }

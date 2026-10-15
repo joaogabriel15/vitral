@@ -12,7 +12,7 @@
 </script>
 
 <h1>Host Svelte</h1>
-<input id="mensagem" bind:value={mensagem} />
+<input id="mensagem" aria-label="Mensagem" bind:value={mensagem} />
 <p>Último ping: <span id="ultimo-ping">{ping}</span></p>
 {#each REMOTES as n (n)}
   <section data-remote={n}>

@@ -10,3 +10,5 @@ playwright-report
 coverage
 .vitepress/cache
 docs/api
+__screenshots__
+.vitral-dev-*
