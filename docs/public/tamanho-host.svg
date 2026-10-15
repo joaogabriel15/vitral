@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 288" width="680" height="288" font-family="system-ui, sans-serif" font-size="14" fill="#64748b">
+  <text x="20" y="26" font-size="15" font-weight="600">Código de host, minificado e com brotli (menor é melhor)</text>
+  <text x="220" y="63" text-anchor="end">vitral</text><rect x="230" y="49" width="30.6" height="20" rx="3" fill="#8b5cf6"/><text x="268.6" y="63">3,4 kB</text>
+  <text x="220" y="93" text-anchor="end">single-spa</text><rect x="230" y="79" width="52.2" height="20" rx="3" fill="#94a3b8"/><text x="290.2" y="93">5,8 kB</text>
+  <text x="220" y="123" text-anchor="end">Module Federation (runtime)</text><rect x="230" y="109" width="174.6" height="20" rx="3" fill="#94a3b8"/><text x="412.6" y="123">19,4 kB</text>
+  <text x="220" y="153" text-anchor="end">wujie</text><rect x="230" y="139" width="212.4" height="20" rx="3" fill="#94a3b8"/><text x="450.4" y="153">23,6 kB</text>
+  <text x="220" y="183" text-anchor="end">micro-app</text><rect x="230" y="169" width="260.1" height="20" rx="3" fill="#94a3b8"/><text x="498.1" y="183">28,9 kB</text>
+  <text x="220" y="213" text-anchor="end">qiankun</text><rect x="230" y="199" width="341.1" height="20" rx="3" fill="#94a3b8"/><text x="579.1" y="213">37,9 kB</text>
+  <text x="220" y="243" text-anchor="end">Garfish</text><rect x="230" y="229" width="360.0" height="20" rx="3" fill="#94a3b8"/><text x="598.0" y="243">40,0 kB</text>
+  <text x="20" y="276" font-size="12">Medido em 14/10/2026 com bench/tamanho.mjs</text>
+</svg>
