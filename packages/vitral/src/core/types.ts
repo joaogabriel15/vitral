@@ -86,7 +86,11 @@ export interface RemoteEntry {
   manifest?: RemoteManifest
 }
 
-export type Isolation = 'shadow' | 'none'
+/**
+ * `none`: CSS com escopo. `shadow`: Shadow DOM. `iframe`: iframe com
+ * `sandbox`, para código de terceiros (precisa de `enableIframe()`).
+ */
+export type Isolation = 'shadow' | 'none' | 'iframe'
 
 /** Estilos do host dentro do Shadow DOM. Sem efeito no modo escopo. */
 export interface StyleOptions {

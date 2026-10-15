@@ -119,3 +119,39 @@ App shell sem framework: cada rota monta um remote.
 - `outlet.props = {...}` passa props ao remote da rota. `outlet.route` diz qual está montado.
 - `routes()` devolve a função que desfaz as rotas e a interceptação de links.
 - `matchRoute('/produto/42')` devolve `{ name, pattern, params: { id: '42' } }`, para quem tem roteador próprio.
+
+## Isolamento por iframe
+
+Para código de terceiros ou legado que suja `window`. Não é o padrão.
+
+```ts
+import { enableIframe } from 'vitral/iframe'
+enableIframe() // uma vez, no host
+```
+
+```html
+<vitral-remote name="widget-parceiro" isolate="iframe" props='{"cor":"azul"}'></vitral-remote>
+```
+
+Também vale `<Remote isolate="iframe">`, `register('x', { url, isolate: 'iframe' })` e `configure({ isolate: 'iframe' })`.
+
+- O remote roda num iframe `sandbox="allow-scripts"`, com origem opaca: não lê `parent.document`, cookies nem o storage do host.
+- A página baixa o JS, confere origem e SRI, e manda os bytes verificados para o iframe. O JS do remote nunca roda na página.
+- Props, `ctx.events` (`emit`, `on`, `last`) e `ctx.navigate` passam por `postMessage`. Só dados serializáveis: funções nas props somem, com um aviso no console.
+- `ctx.navigate` só navega dentro da origem da página.
+- A altura do iframe acompanha o conteúdo.
+- O CSS do remote entra dentro do iframe, isolado de vez.
+- `import { events } from 'vitral'` dentro do remote fala com uma cópia da lib que fica no iframe. Use `ctx.events`.
+- Mais permissões: `enableIframe({ sandbox: 'allow-scripts allow-forms allow-popups' })`. Com `allow-same-origin` o iframe deixa de isolar (a lib avisa).
+- Estado compartilhado (`provide`/`shared`) ainda não atravessa o iframe.
+
+CSP: o iframe usa `srcdoc` e herda o CSP da página. Libere o hash do script do iframe e, com SRI, `blob:`:
+
+```ts
+import { createHash } from 'node:crypto'
+import { FRAME_SCRIPT } from 'vitral/iframe'
+console.log(`'sha256-${createHash('sha256').update(FRAME_SCRIPT).digest('base64')}'`)
+// Content-Security-Policy: script-src 'self' blob: 'sha256-…' https://cdn.parceiro.com
+```
+
+O texto de `FRAME_SCRIPT` só muda entre versões da lib, então o hash vale para todo build.
