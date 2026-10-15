@@ -9,3 +9,5 @@ test-results
 playwright-report
 coverage
 .vitepress/cache
+__screenshots__
+.vitral-dev-*

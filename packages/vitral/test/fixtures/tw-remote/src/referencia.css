@@ -1,0 +1,7 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) theme(reference);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+@source "./app.js";
+@custom-variant dark (&:where(.dark, .dark *));
+@theme reference { --color-marca: oklch(0.6 0.15 145); }
