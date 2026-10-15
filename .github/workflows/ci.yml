@@ -27,6 +27,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       # build, typecheck, publint + attw, size-limit e testes de unidade
       - run: pnpm run check
+      - name: Relatório de cobertura
+        if: matrix.node == 22
+        run: node scripts/cobertura.mjs packages/vitral/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
 
   # Site: o build falha com link quebrado, e check-erros.mjs confere que
   # cada código de erro tem a página para onde RemoteError.docs aponta.
@@ -43,13 +46,16 @@ jobs:
       - run: pnpm --dir docs build
       - run: pnpm --dir docs check
 
+  # Todo o e2e em cada navegador, mais o Chromium com tela de celular,
+  # dividido em shards.
   e2e:
-    name: e2e (${{ matrix.browser }})
+    name: e2e (${{ matrix.browser }} ${{ matrix.shard }}/2)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        browser: [chromium, firefox, webkit]
+        browser: [chromium, firefox, webkit, mobile]
+        shard: [1, 2]
     env:
       E2E_BROWSERS: ${{ matrix.browser }}
     steps:
@@ -60,12 +66,34 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --dir e2e exec playwright install --with-deps ${{ matrix.browser }}
-      - run: pnpm test:e2e
+      - run: pnpm --dir e2e exec playwright install --with-deps ${{ matrix.browser == 'mobile' && 'chromium' || matrix.browser }}
+      - run: pnpm build:all
+      - run: pnpm --dir e2e test --shard=${{ matrix.shard }}/2
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: playwright-traces-${{ matrix.browser }}
+          name: playwright-traces-${{ matrix.browser }}-${{ matrix.shard }}
+          path: e2e/test-results
+          retention-days: 7
+
+  # create-vitral: gera cada template, sobe host e remote em dev e edita o
+  # remote (instala do npm, por isso fica fora do e2e principal).
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir e2e exec playwright install --with-deps chromium
+      - run: pnpm test:create
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces-create
           path: e2e/test-results
           retention-days: 7
 
@@ -105,3 +133,38 @@ jobs:
             base.json
             head.json
           retention-days: 30
+
+  # Regressão visual: screenshots da demo (escopo e Shadow DOM, claro e escuro)
+  # do PR contra os da base, gerados na mesma máquina (e2e/visual). Um PR que
+  # muda o visual de propósito leva o rótulo "muda-visual".
+  visual:
+    if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'muda-visual')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir e2e exec playwright install --with-deps chromium
+      - name: Build do PR
+        run: pnpm build && pnpm --filter './demo/**' build
+      - name: Build da base
+        run: |
+          git fetch --depth=1 origin ${{ github.event.pull_request.base.sha }}
+          git worktree add ../base ${{ github.event.pull_request.base.sha }}
+          cd ../base
+          pnpm install --frozen-lockfile
+          pnpm build && pnpm --filter './demo/**' build
+      - name: Screenshots da base
+        run: VISUAL_ROOT="$GITHUB_WORKSPACE/../base" pnpm --dir e2e exec playwright test -c visual --update-snapshots
+      - name: Compara o PR com a base
+        run: pnpm --dir e2e exec playwright test -c visual
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: visual-diff
+          path: e2e/test-results
+          retention-days: 7

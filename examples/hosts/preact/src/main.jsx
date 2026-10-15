@@ -13,7 +13,7 @@ function App() {
   return (
     <>
       <h1>Host Preact</h1>
-      <input id="mensagem" value={mensagem} onInput={(e) => setMensagem(e.currentTarget.value)} />
+      <input id="mensagem" aria-label="Mensagem" value={mensagem} onInput={(e) => setMensagem(e.currentTarget.value)} />
       <p>Último ping: <span id="ultimo-ping">{ping}</span></p>
       {REMOTES.map((n) => (
         <section key={n} data-remote={n}>
