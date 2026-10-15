@@ -42,7 +42,11 @@ const checks = (href: string, integrity: string) => !href.startsWith('data:') ||
 /** Navegador que ignora o integrity do modulepreload (WebKit). */
 const ignores = () => true
 
-const load = async () => (await import('../src/core/sri')).verified
+const load = async () => {
+  // O loader sempre cria o protocolo antes; aqui o teste chama verified() direto.
+  ;(await import('../src/core/state')).protocol()
+  return (await import('../src/core/sri')).verified
+}
 
 beforeEach(() => {
   vi.resetModules()
@@ -111,6 +115,8 @@ describe('caminho 2: modulepreload com integrity', () => {
       [CDN + 'split/a.js', build.sri[CDN + 'split/a.js'], 'anonymous'],
       [build.entry, build.sri[build.entry], 'anonymous'],
     ])
+    // Os import() do remote (helper do plugin) leem os hashes daqui.
+    expect((globalThis as any)[Symbol.for('vitral')].sri).toMatchObject(build.sri)
   })
 
   it('navegador que ignora o hash do preload fica com o caminho 3', async () => {
