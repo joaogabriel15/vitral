@@ -101,6 +101,7 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
     for (const d of dedupe)
       shared(p)(d.name, d.range, {
         version: d.version,
+        url: d.file,
         load: async () => {
           if (pre) await Promise.all([...(d.chunks ?? []), d.file].map((u) => preload(u, sri[u], priority)))
           return (await run!(d.file)).default

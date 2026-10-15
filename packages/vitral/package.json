@@ -218,12 +218,12 @@
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.1 kB"
+      "limit": "2.3 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
       "path": "dist/dedupe-*.js",
-      "limit": "0.5 kB"
+      "limit": "0.65 kB"
     },
     {
       "name": "host mínimo + store",
