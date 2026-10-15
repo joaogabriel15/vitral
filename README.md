@@ -314,8 +314,9 @@ O remote usa a cópia que já está na página quando a versão serve (padrão: 
 ### Mais formas de usar
 
 Vários componentes por remote (`<Remote name="carrinho/MiniCarrinho" />`),
-módulos sem UI (`loadModule('carrinho/api')`) e deploy novo sem recarregar a
-página (`watchUpdates()` e `refresh('carrinho')`). Veja
+módulos sem UI (`loadModule('carrinho/api')`), deploy novo sem recarregar a
+página (`watchUpdates()` e `refresh('carrinho')`) e app shell por rota
+(`routes()` e `<vitral-outlet>`, em `vitral/routes`). Veja
 [docs/formas-de-usar.md](docs/formas-de-usar.md).
 
 ## Segurança

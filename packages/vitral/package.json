@@ -62,6 +62,10 @@
       "types": "./dist/element.d.ts",
       "import": "./dist/element.js"
     },
+    "./routes": {
+      "types": "./dist/routes.d.ts",
+      "import": "./dist/routes.js"
+    },
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
@@ -311,6 +315,12 @@
         "./dedupe-*",
         "./expose-*"
       ]
+    },
+    {
+      "name": "routes",
+      "path": "dist/routes.js",
+      "import": "{ routes }",
+      "limit": "7.7 kB"
     }
   ]
 }
