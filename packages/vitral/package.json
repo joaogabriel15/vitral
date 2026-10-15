@@ -192,7 +192,8 @@
       "import": "{ configure, createSlot }",
       "ignore": [
         "./shadow-*",
-        "./overrides-*"
+        "./overrides-*",
+        "./sri-*"
       ],
       "limit": "4 kB"
     },
@@ -201,9 +202,15 @@
       "path": "dist/index.js",
       "import": "{ RemoteError, __reset, component, configure, createEventBus, createSlot, defineRemote, events, html, loadRemote, mountRemote, navigate, preload, register, render, unsafeHTML }",
       "ignore": [
-        "./shadow-*"
+        "./shadow-*",
+        "./sri-*"
       ],
-      "limit": "5 kB"
+      "limit": "5.2 kB"
+    },
+    {
+      "name": "caminhos de SRI (carregado sob demanda)",
+      "path": "dist/sri-*.js",
+      "limit": "0.8 kB"
     },
     {
       "name": "host mínimo + store",
@@ -211,7 +218,8 @@
       "import": "{ configure, createSlot, provide, shared, batch }",
       "ignore": [
         "./shadow-*",
-        "./overrides-*"
+        "./overrides-*",
+        "./sri-*"
       ],
       "limit": "4.9 kB"
     },
@@ -221,7 +229,8 @@
       "import": "{ configure, createSlot, provide, shared, batch, persist, syncTabs }",
       "ignore": [
         "./shadow-*",
-        "./overrides-*"
+        "./overrides-*",
+        "./sri-*"
       ],
       "limit": "5.2 kB"
     },
@@ -240,7 +249,8 @@
       "ignore": [
         "react",
         "react-dom",
-        "./shadow-*"
+        "./shadow-*",
+        "./sri-*"
       ],
       "limit": "6 kB"
     },
@@ -250,7 +260,8 @@
       "import": "{ VitralRemote, vueRemote }",
       "ignore": [
         "vue",
-        "./shadow-*"
+        "./shadow-*",
+        "./sri-*"
       ],
       "limit": "6 kB"
     },
@@ -259,7 +270,8 @@
       "path": "dist/element.js",
       "import": "{ defineVitralElement }",
       "ignore": [
-        "./shadow-*"
+        "./shadow-*",
+        "./sri-*"
       ],
       "limit": "6 kB"
     },
@@ -272,7 +284,12 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6 kB"
+      "limit": "6 kB",
+      "ignore": [
+        "./shadow-*",
+        "./overrides-*",
+        "./sri-*"
+      ]
     }
   ]
 }

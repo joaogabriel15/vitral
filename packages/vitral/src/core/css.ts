@@ -8,11 +8,14 @@ const noop = () => {}
 
 const adopts = () => typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype
 
-/** Texto do CSS, baixado uma vez só. CSS quebrado vira texto vazio. */
-export function fetchCssText(href: string): Promise<string> {
+/**
+ * Texto do CSS, baixado uma vez só. CSS quebrado vira texto vazio. Com
+ * integrity, um CSS trocado faz o fetch falhar e não é aplicado.
+ */
+export function fetchCssText(href: string, integrity?: string): Promise<string> {
   let p = cssText.get(href)
   if (!p) {
-    p = fetch(href, { credentials: 'omit' })
+    p = fetch(href, { credentials: 'omit', integrity })
       .then((r) => (r.ok ? r.text() : ''))
       .catch(() => '')
     cssText.set(href, p)
@@ -25,26 +28,33 @@ export function fetchCssText(href: string): Promise<string> {
  * o texto fica em cache para virar stylesheet; fora dele, um
  * `<link rel=preload>` deixa o `<link rel=stylesheet>` da montagem pronto.
  */
-export function prefetchCss(urls: string[], shadow: boolean): void {
+export function prefetchCss(urls: string[], shadow: boolean, sri: Record<string, string> = {}): void {
   for (const href of urls) {
-    if (shadow && adopts()) void fetchCssText(href)
-    else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, 'style')
+    if (shadow && adopts()) void fetchCssText(href, sri[href])
+    else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, { as: 'style', integrity: sri[href] ?? '' })
   }
 }
 
 /**
  * Põe o CSS do remote na página. Sem Shadow DOM, vira `<link>` no `<head>`.
  * Com Shadow DOM, o trabalho fica em `./shadow`, baixado só por quem usa.
+ * Com hash em `sri`, o navegador confere os bytes antes de aplicar.
  * Devolve a função que desfaz o que precisa ser desfeito no unmount.
  */
-export function injectStyles(urls: string[], root: ShadowRoot | null, el: HTMLElement, styles?: StyleOptions): Promise<() => void> {
+export function injectStyles(
+  urls: string[],
+  root: ShadowRoot | null,
+  el: HTMLElement,
+  styles?: StyleOptions,
+  sri: Record<string, string> = {},
+): Promise<() => void> {
   return root
-    ? import('./shadow').then((m) => m.attachStyles(root, el, urls, protocol().settings().styles, styles))
-    : injectCss(urls, null).then(() => noop)
+    ? import('./shadow').then((m) => m.attachStyles(root, el, urls, protocol().settings().styles, styles, sri))
+    : injectCss(urls, null, sri).then(() => noop)
 }
 
 /** `<link>` para cada URL, uma vez só por documento ou shadow root. */
-export function injectCss(urls: string[], root: ShadowRoot | null): Promise<unknown> {
+export function injectCss(urls: string[], root: ShadowRoot | null, sri: Record<string, string> = {}): Promise<unknown> {
   const owner = root ?? document
   let seen = loadedCss.get(owner)
   if (!seen) loadedCss.set(owner, (seen = new Map()))
@@ -55,7 +65,7 @@ export function injectCss(urls: string[], root: ShadowRoot | null): Promise<unkn
       if (!p) {
         p = new Promise<void>((resolve) => {
           // CSS quebrado não deve impedir o remote de aparecer.
-          const link = addLink('stylesheet', href, '', parent)
+          const link = addLink('stylesheet', href, { integrity: sri[href] ?? '' }, parent)
           link.onload = link.onerror = () => resolve()
         })
         seen!.set(href, p)
