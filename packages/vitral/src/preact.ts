@@ -6,8 +6,9 @@
  */
 import { h, render, type ComponentType, type VNode } from 'preact'
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
-import { createSlot, defineRemote, shared, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus, type CheckedProps } from './index'
+import { defineRemote, shared, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus, type CheckedProps } from './index'
 import { memoSelect, same } from './core/shared'
+import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 
 /** Transforma um componente Preact em um remote. O contexto chega na prop `vitral`. */
 export function preactRemote<P extends Props>(Component: ComponentType<any>): RemoteModule<P> {
@@ -29,15 +30,23 @@ export interface RemoteProps<P extends Props = Props> {
   fallback?: VNode | string | null
   error?: VNode | string | ((error: RemoteError, retry: () => void) => VNode | string | null) | null
   class?: string
+  /** `'lazy'`: monta perto de aparecer na tela; `'idle'`: com o navegador ocioso. */
+  loading?: Loading
+  /** Baixa antes de montar: `'hover'`, `'visible'` ou `'idle'`. */
+  prefetch?: Prefetch
+  /** `'high'` para o remote que aparece logo ao abrir a página. */
+  priority?: RequestPriority
+  /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
+  keepAlive?: boolean | number
 }
 
-export function Remote<P extends Props = Props, N extends string = string>({ name, src, props, isolate, fallback = null, error = null, ...rest }: RemoteProps<P> & CheckedProps<N>) {
+export function Remote<P extends Props = Props, N extends string = string>({ name, src, props, isolate, fallback = null, error = null, loading, prefetch, priority, keepAlive, ...rest }: RemoteProps<P> & CheckedProps<N>) {
   const ref = useRef<HTMLDivElement>(null)
   const slot = useRef<RemoteSlot<P> | null>(null)
   const [state, setState] = useState<{ status: SlotStatus; error: RemoteError | null }>({ status: 'loading', error: null })
 
   useEffect(() => {
-    slot.current = createSlot<P>(ref.current!, { name, src, props: (props ?? {}) as P, isolate, onStatus: (status, error) => setState({ status, error }) })
+    slot.current = hostSlot<P>(ref.current!, { name, src, props: (props ?? {}) as P, isolate, loading, prefetch, priority, keepAlive, onStatus: (status, error) => setState({ status, error }) })
     return () => slot.current?.destroy()
   }, [])
   useEffect(() => slot.current?.set({ name, src, isolate }), [name, src, isolate])

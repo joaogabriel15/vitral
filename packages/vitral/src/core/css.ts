@@ -12,10 +12,10 @@ const adopts = () => typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CS
  * Texto do CSS, baixado uma vez só. CSS quebrado vira texto vazio. Com
  * integrity, um CSS trocado faz o fetch falhar e não é aplicado.
  */
-export function fetchCssText(href: string, integrity?: string): Promise<string> {
+export function fetchCssText(href: string, integrity?: string, priority?: RequestPriority): Promise<string> {
   let p = cssText.get(href)
   if (!p) {
-    p = fetch(href, { credentials: 'omit', integrity })
+    p = fetch(href, { credentials: 'omit', integrity, priority })
       .then((r) => (r.ok ? r.text() : ''))
       .catch(() => '')
     cssText.set(href, p)
@@ -28,10 +28,10 @@ export function fetchCssText(href: string, integrity?: string): Promise<string> 
  * o texto fica em cache para virar stylesheet; fora dele, um
  * `<link rel=preload>` deixa o `<link rel=stylesheet>` da montagem pronto.
  */
-export function prefetchCss(urls: string[], shadow: boolean, sri: Record<string, string> = {}): void {
+export function prefetchCss(urls: string[], shadow: boolean, sri: Record<string, string> = {}, priority: RequestPriority = 'auto'): void {
   for (const href of urls) {
-    if (shadow && adopts()) void fetchCssText(href, sri[href])
-    else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, { as: 'style', integrity: sri[href] ?? '' })
+    if (shadow && adopts()) void fetchCssText(href, sri[href], priority)
+    else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, { as: 'style', integrity: sri[href] ?? '', fetchPriority: priority })
   }
 }
 

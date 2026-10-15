@@ -248,6 +248,37 @@ import { preload } from 'vitral'
 link.addEventListener('pointerenter', () => preload('checkout'), { once: true })
 ```
 
+Nos componentes de host e no `<vitral-remote>`:
+
+```html
+<!-- monta perto de aparecer na tela; reserve o espaço para a página não pular -->
+<vitral-remote name="comentarios" loading="lazy" style="display:block;min-height:400px"></vitral-remote>
+<!-- monta com o navegador ocioso, mas já baixa no hover -->
+<vitral-remote name="checkout" loading="idle" prefetch="hover"></vitral-remote>
+<!-- remote que aparece logo ao abrir a página -->
+<vitral-remote name="cabecalho" priority="high"></vitral-remote>
+```
+
+```jsx
+<Remote name="checkout" loading="lazy" prefetch="visible" keepAlive />
+```
+
+| Opção | Valores | O que faz |
+| --- | --- | --- |
+| `loading` | `lazy`, `idle` | Monta a 200px de aparecer na tela, ou com o navegador ocioso |
+| `prefetch` | `hover`, `visible`, `idle` | Chama `preload()` antes de montar |
+| `priority` | `high` | `fetchpriority` alto no manifesto, no JS e no CSS |
+| `keepAlive` (`keep-alive`) | `true` ou o máximo | Ao sair da página, o remote vai para um contêiner oculto (LRU, padrão 5); na volta só recebe as props novas |
+
+Com keep-alive, o remote pode pausar timers e assinaturas:
+
+```js
+mount(el, props, ctx) {
+  ctx.onDeactivate?.(() => clearInterval(timer))
+  ctx.onActivate?.(() => (timer = setInterval(tick, 1000)))
+}
+```
+
 ## Segurança
 
 - Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra. O `src` de um componente de host entra na allowlist; o atributo `src` do `<vitral-remote>` não entra quando há `allowedOrigins`.

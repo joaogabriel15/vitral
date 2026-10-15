@@ -12,7 +12,7 @@ export function configure(config: VitralConfig): void {
   if (typeof remotes === 'string') {
     const url = absolute(remotes)
     p.pending(
-      fetchJson<Record<string, string | RemoteEntry>>(url, p.settings().timeout, 'remotes', 'no-cache').then((map) => registerAll(map, url)),
+      fetchJson<Record<string, string | RemoteEntry>>(url, p.settings().timeout, 'remotes', { cache: 'no-cache' }).then((map) => registerAll(map, url)),
     ).catch(() => {})
   } else if (remotes) {
     registerAll(remotes)

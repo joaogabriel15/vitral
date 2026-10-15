@@ -22,6 +22,7 @@ export interface SplitBuild {
   chunks: string[]
   /** Hash SRI de cada arquivo, por URL absoluta. */
   sri: Record<string, string>
+  priority?: RequestPriority
 }
 
 // Só hashes no formato que todo navegador entende. Um token que o navegador
@@ -47,14 +48,14 @@ const tick = () => new Promise<void>((resolve) => {
  * devolve a URL a importar, ou `undefined` para usar o caminho 3.
  */
 export async function verified(build: SplitBuild): Promise<string | undefined> {
-  const { entry, chunks, sri } = build
+  const { entry, chunks, sri, priority = 'auto' } = build
   if (![entry, ...chunks].every((u) => STRICT.test(sri[u] ?? ''))) return
   if (maps !== false && (maps = await addMap(sri))) {
-    for (const u of chunks) fetch(u).catch(() => {})
+    for (const u of chunks) fetch(u, { priority }).catch(() => {})
     return entry
   }
   if (await (preloads ??= checkPreloads())) {
-    await Promise.all([...chunks, entry].map((u) => preload(u, sri[u])))
+    await Promise.all([...chunks, entry].map((u) => preload(u, sri[u], priority)))
     return entry
   }
 }
@@ -79,9 +80,9 @@ async function addMap(integrity: Record<string, string>): Promise<boolean> {
   return ok
 }
 
-function preload(href: string, integrity: string): Promise<unknown> {
+function preload(href: string, integrity: string, fetchPriority: RequestPriority = 'auto'): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    const link = addLink('modulepreload', href, { integrity })
+    const link = addLink('modulepreload', href, { integrity, fetchPriority })
     link.onload = resolve
     link.onerror = reject
   })

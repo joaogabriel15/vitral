@@ -8,7 +8,8 @@
  */
 import type { Component } from 'svelte'
 import { createClassComponent } from 'svelte/legacy'
-import { createSlot, defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type SlotStatus } from './index'
+import { defineRemote, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type SlotStatus } from './index'
+import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 
 /** Transforma um componente Svelte em um remote. O contexto chega na prop `vitral`. */
 export function svelteRemote<P extends Props>(component: Component<any>): RemoteModule<P> {
@@ -31,11 +32,19 @@ export interface RemoteActionParams<P extends Props = Props> {
   props?: P
   isolate?: Isolation
   onStatus?: (status: SlotStatus, error: RemoteError | null) => void
+  /** `'lazy'`: monta perto de aparecer na tela; `'idle'`: com o navegador ocioso. */
+  loading?: Loading
+  /** Baixa antes de montar: `'hover'`, `'visible'` ou `'idle'`. */
+  prefetch?: Prefetch
+  /** `'high'` para o remote que aparece logo ao abrir a página. */
+  priority?: RequestPriority
+  /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
+  keepAlive?: boolean | number
 }
 
 /** Action Svelte: `<div use:remote={{ name, props }}>`. Funciona também em SvelteKit (só roda no cliente). */
 export function remote<P extends Props = Props>(node: HTMLElement, params: RemoteActionParams<P>) {
-  const slot = createSlot<P>(node, params)
+  const slot = hostSlot<P>(node, params)
   return {
     update(next: RemoteActionParams<P>) {
       slot.set({ name: next.name, src: next.src, isolate: next.isolate })
