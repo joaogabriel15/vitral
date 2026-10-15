@@ -1,0 +1,41 @@
+{
+  "name": "create-vitral",
+  "version": "0.1.0",
+  "description": "Cria um host ou um remote vitral: npm create vitral@latest",
+  "keywords": [
+    "vitral",
+    "micro-frontend",
+    "create",
+    "vite"
+  ],
+  "homepage": "https://github.com/joaogabriel15/vitral#readme",
+  "bugs": {
+    "url": "https://github.com/joaogabriel15/vitral/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joaogabriel15/vitral.git",
+    "directory": "packages/create-vitral"
+  },
+  "license": "MIT",
+  "author": "João (https://github.com/joaogabriel15)",
+  "type": "module",
+  "bin": {
+    "create-vitral": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "src",
+    "templates"
+  ],
+  "engines": {
+    "node": ">=20.19"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "test": "node --test test/create.test.js"
+  }
+}

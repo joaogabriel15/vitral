@@ -82,7 +82,7 @@ describe('host', () => {
 
   it('<Remote> do React aceita props tipadas', () => {
     expectTypeOf<RemoteProps<Carrinho>['props']>().toEqualTypeOf<Carrinho | undefined>()
-    expectTypeOf(Remote<Carrinho>).parameter(0).toMatchTypeOf<{ name: string; props?: Carrinho }>()
+    expectTypeOf(Remote<Carrinho>).parameter(0).toMatchTypeOf<{ props?: Carrinho }>()
     expectTypeOf(useEventValue<string>('ping')).toEqualTypeOf<string | undefined>()
   })
 
@@ -113,7 +113,7 @@ describe('eventos e erros', () => {
 describe('build', () => {
   it('manifesto e plugin', () => {
     expectTypeOf<RemoteManifest>().toMatchTypeOf<{ name: string; entry: string; integrity?: string; css?: string[]; scope?: string }>()
-    expectTypeOf(vitral).parameter(0).toMatchTypeOf<{ entry: string; name?: string }>()
+    expectTypeOf(vitral).parameter(0).toMatchTypeOf<{ entry?: string; name?: string } | undefined>()
     expectTypeOf(mockRemote<Carrinho>('x').lastProps).toEqualTypeOf<Carrinho | undefined>()
   })
 })

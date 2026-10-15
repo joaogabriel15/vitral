@@ -1,28 +1,42 @@
 import { createHash } from 'node:crypto'
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import vitral from '../src/vite'
+import { collect } from '../src/vite/manifest'
 import type { RemoteManifest } from '../src/index'
 
-const root = resolve(__dirname, 'fixtures/vite-remote')
 const outDir = mkdtempSync(join(tmpdir(), 'vitral-vite-'))
+const splitDir = mkdtempSync(join(tmpdir(), 'vitral-split-'))
 let manifest: RemoteManifest
+let splitManifest: RemoteManifest
 
-beforeAll(async () => {
+async function buildRemote(fixture: string, out: string): Promise<RemoteManifest> {
   await build({
-    root,
+    root: resolve(__dirname, 'fixtures', fixture),
     configFile: false,
     logLevel: 'silent',
-    plugins: [vitral({ entry: 'src/remote.js' })],
-    build: { outDir, emptyOutDir: true, assetsInlineLimit: 0 },
+    // Sem adaptador: o embrulho traria o código da própria lib (que tem
+    // import()) e o teste do build dividido deixaria de medir o remote.
+    plugins: [vitral({ entry: 'src/remote.js', adapter: false })],
+    build: { outDir: out, emptyOutDir: true, assetsInlineLimit: 0 },
   })
-  manifest = JSON.parse(readFileSync(join(outDir, 'vitral.json'), 'utf8'))
+  return JSON.parse(readFileSync(join(out, 'vitral.json'), 'utf8'))
+}
+
+beforeAll(async () => {
+  manifest = await buildRemote('vite-remote', outDir)
+  splitManifest = await buildRemote('vite-split', splitDir)
 }, 60_000)
 
-afterAll(() => rmSync(outDir, { recursive: true, force: true }))
+afterAll(() => {
+  rmSync(outDir, { recursive: true, force: true })
+  rmSync(splitDir, { recursive: true, force: true })
+})
+
+const sha384 = (file: string) => 'sha384-' + createHash('sha384').update(readFileSync(file)).digest('base64')
 
 describe('plugin vite', () => {
   it('gera vitral.json com nome e versão do package.json', () => {
@@ -51,5 +65,78 @@ describe('plugin vite', () => {
     expect(text).not.toMatch(/(^|[\s,}]):root/)
     const hash = createHash('sha256').update(text).digest('base64url').slice(0, 8)
     expect(css).toBe(`remote-${hash}.css`)
+  })
+})
+
+describe('manifesto v2', () => {
+  it('sem import dinâmico, só o arquivo único, com o hash de cada arquivo em files', () => {
+    expect(manifest.split).toBeUndefined()
+    expect(readdirSync(outDir)).not.toContain('split')
+    expect(Object.keys(manifest.files!)).toEqual([manifest.entry, ...manifest.css!])
+    for (const [file, hash] of Object.entries(manifest.files!)) expect(hash).toBe(sha384(join(outDir, file)))
+    expect(manifest.files![manifest.entry]).toBe(manifest.integrity)
+  })
+
+  it('com import dinâmico, o build dividido sai ao lado do arquivo único', () => {
+    const m = splitManifest
+    expect(m.entry).toMatch(/^remote-[\w-]+\.js$/)
+    expect(m.split!.entry).toMatch(/^split\/remote-[\w-]+\.js$/)
+    expect(m.split!.chunks).toEqual([expect.stringMatching(/^split\/comum-[\w-]+\.js$/)])
+    const js = readdirSync(join(splitDir, 'split')).map((f) => `split/${f}`)
+    expect(js.sort()).toEqual(Object.keys(m.files!).filter((f) => f.startsWith('split/')).sort())
+    expect(js).toHaveLength(3)
+    for (const [file, hash] of Object.entries(m.files!)) expect(hash).toBe(sha384(join(splitDir, file)))
+    // Um CSS só, o do arquivo único, com escopo e conferido.
+    expect(readdirSync(splitDir, { recursive: true }).filter((f) => String(f).endsWith('.css'))).toEqual(m.css)
+    expect(m.files![m.css![0]]).toBeDefined()
+  })
+
+  it('o arquivo único não tem import() e o dividido passa pelo helper', () => {
+    const single = readFileSync(join(splitDir, splitManifest.entry), 'utf8')
+    expect(single).not.toMatch(/\bimport\(/)
+    expect(single).toContain('Gráfico: ')
+    const entry = readFileSync(join(splitDir, splitManifest.split!.entry), 'utf8')
+    const lazy = readdirSync(join(splitDir, 'split')).find((f) => f.startsWith('grafico-'))!
+    const dep = splitManifest.split!.chunks![0].slice('split/'.length)
+    expect(entry).toContain(`__vitralImport("./${lazy}",["./${dep}"])`)
+    expect(entry).toMatch(/function __vitralImport\(u,d\)/)
+    expect(entry.replace(/function __vitralImport[^\n]*/, '')).not.toMatch(/\bimport\(/)
+  })
+
+  it('recusa o build se um import() do remote não puder passar pelo helper', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitral-collect-'))
+    try {
+      mkdirSync(join(dir, 'split'))
+      writeFileSync(join(dir, 'split/a.js'), 'const n = "./b.js"; export default () => import(n)')
+      writeFileSync(join(dir, 'split/b.js'), 'export default 1')
+      const bundle = {
+        'split/a.js': { type: 'chunk', fileName: 'split/a.js', isEntry: true, imports: [], dynamicImports: ['split/b.js'] },
+        'split/b.js': { type: 'chunk', fileName: 'split/b.js', isEntry: false, imports: [], dynamicImports: [] },
+      }
+      expect(() => collect(dir, bundle)).toThrow(/split\/b\.js/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('import() que o tree-shaking tirou não gera build dividido', () => {
+    // Caso real: o remote empacota a lib, cujo import('./sri') some com o
+    // código do host, mas o chunk continua listado em dynamicImports.
+    const dir = mkdtempSync(join(tmpdir(), 'vitral-collect-'))
+    try {
+      mkdirSync(join(dir, 'split'))
+      writeFileSync(join(dir, 'split/a.js'), 'import { x } from "./c.js"; export default x')
+      writeFileSync(join(dir, 'split/b.js'), 'import { x } from "./c.js"; export default x')
+      writeFileSync(join(dir, 'split/c.js'), 'export const x = 1')
+      const bundle = {
+        'split/a.js': { type: 'chunk', fileName: 'split/a.js', isEntry: true, imports: ['split/c.js'], dynamicImports: ['split/b.js'] },
+        'split/b.js': { type: 'chunk', fileName: 'split/b.js', isEntry: false, imports: ['split/c.js'], dynamicImports: [] },
+        'split/c.js': { type: 'chunk', fileName: 'split/c.js', isEntry: false, imports: [], dynamicImports: [] },
+      }
+      expect(collect(dir, bundle)).toBeUndefined()
+      expect(readdirSync(dir)).toEqual([])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })
