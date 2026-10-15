@@ -200,6 +200,9 @@ Tailwind v3 de verdade no host.
 |---|---|
 | Host com Tailwind v3 e remote em Shadow DOM com Tailwind v4 (`@property` com o mesmo nome) | Opção para renomear `--tw-*` do remote no build. |
 | `html.dark` no host não chega no remote com escopo | Repassar o tema por prop/evento, ou mapear `.dark` do `<html>`. |
+| `provide`/`shared` não atravessam `isolate="iframe"` | Ponte de estado sobre o canal `bridges` de `vitral/iframe` quando o store da Fase 2 entrar. |
+| Remote feito com webpack, Rspack ou esbuild precisa escrever o `vitral.json` à mão | `npx vitral manifest dist/remote.js` gera manifesto, SRI e escopo de CSS. |
+| Remote não renderiza no servidor | SSR de fragmentos (`server.js` com `render(props)`), previsto para uma 1.x. |
 
 | Remote só funciona buildado em dev (limitação documentada do plugin de federation para Vite) | Modo dev: o plugin serve o `vitral.json` apontando para o servidor do Vite, com HMR. **Maior prioridade.** |
 | Tipos das props divergem entre deploys | Plugin gera `.d.ts` das props do remote e o host baixa esses tipos. |
