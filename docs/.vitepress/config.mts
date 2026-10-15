@@ -31,7 +31,17 @@ export default defineConfig({
     sidebar: [
       {
         text: 'Guia',
-        items: [{ text: 'Começo rápido', link: '/guia/' }],
+        items: [
+          { text: 'Começo rápido', link: '/guia/' },
+          { text: 'Host', link: '/guia/host' },
+          { text: 'Remote', link: '/guia/remote' },
+          { text: 'Comunicação e contexto', link: '/guia/contexto' },
+          { text: 'Estilos', link: '/guia/estilos' },
+          { text: 'Performance', link: '/guia/performance' },
+          { text: 'Segurança', link: '/guia/seguranca' },
+          { text: 'Testes', link: '/guia/testes' },
+          { text: 'Configuração', link: '/guia/configuracao' },
+        ],
       },
       {
         text: 'Erros',
