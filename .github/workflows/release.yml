@@ -14,7 +14,12 @@ permissions:
   id-token: write # proveniência no npm
 
 jobs:
+  # Antes de cada release: o pacote empacotado nos apps das CLIs oficiais.
+  pacote:
+    uses: ./.github/workflows/pacote.yml
+
   release:
+    needs: pacote
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,0 +1,29 @@
+name: Memória
+
+# Vazamento de memória: 500 ciclos de montar e desmontar por adaptador, com
+# heap, objetos por tipo, nós soltos e listeners medidos pelo CDP (e2e/memoria).
+on:
+  schedule:
+    - cron: '0 4 * * *' # toda noite
+  workflow_dispatch:
+
+jobs:
+  memoria:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir e2e exec playwright install --with-deps chromium
+      - run: pnpm build && pnpm --filter './examples/remotes/**' build
+      - run: node e2e/memoria/run.mjs --out memoria.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: memoria
+          path: memoria.json
+          retention-days: 30

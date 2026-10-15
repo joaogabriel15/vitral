@@ -11,7 +11,7 @@ export function Remotes() {
   const ping = useEventValue<string>('ping') ?? '-'
   return (
     <>
-      <input id="mensagem" value={mensagem} onChange={(e) => setMensagem(e.target.value)} />
+      <input id="mensagem" aria-label="Mensagem" value={mensagem} onChange={(e) => setMensagem(e.target.value)} />
       <p>Último ping: <span id="ultimo-ping">{ping}</span></p>
       {REMOTES.map((n) => (
         <section key={n} data-remote={n}>
