@@ -18,6 +18,7 @@ import { createServer } from 'node:http'
 import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
+import { distDe, VERSOES } from '../versoes/libs.mjs'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const repo = join(here, '../..')
@@ -30,8 +31,14 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const sha = (alg, data, enc = 'base64') => createHash(alg).update(data).digest(enc)
 const safe = (p) => normalize(p).replace(/^(\.\.[/\\])+/, '')
 
-/** Pastas servidas em /libs/<nome>/ (a Fase 6 de versões cruzadas acrescenta outras). */
-export const LIBS = { atual: join(repo, 'packages/vitral/dist') }
+/**
+ * Pastas servidas em /libs/<nome>/: cada versão de versoes/libs.mjs e "copia",
+ * a lib atual em outra URL (outra instância do módulo, como num segundo bundle).
+ */
+export const LIBS = {
+  ...Object.fromEntries(Object.keys(VERSOES).map((v) => [v, distDe(v)])),
+  copia: distDe('atual'),
+}
 
 // ---------------------------------------------------------------------------
 // Remotes
@@ -39,8 +46,12 @@ export const LIBS = { atual: join(repo, 'packages/vitral/dist') }
 
 /** Arquivos de um remote: manifesto e conteúdo de cada arquivo. */
 function remoteFiles(remote) {
-  if (remote.startsWith('ex-')) {
-    const dist = join(repo, 'examples/remotes', remote.slice(3), 'dist')
+  // ex-<fw>: remote de examples/. v-<versão>-<remote>: buildado por versoes/build.mjs.
+  const prefix = remote.match(/^(ex|v)-/)?.[1]
+  if (prefix) {
+    const rest = remote.slice(prefix.length + 1)
+    const dist = prefix === 'ex' ? join(repo, 'examples/remotes', rest, 'dist') : join(here, '../versoes/dist', rest)
+    if (!existsSync(join(dist, 'vitral.json'))) return null
     const manifest = JSON.parse(readFileSync(join(dist, 'vitral.json'), 'utf8'))
     const files = Object.fromEntries([manifest.entry, ...manifest.css].map((f) => [f, readFileSync(join(dist, f))]))
     return { manifest, files }
