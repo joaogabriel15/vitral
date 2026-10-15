@@ -12,6 +12,7 @@ export function cleanup() {
   document.body.replaceChildren()
   __reset()
   vi.unstubAllGlobals()
+  globalThis.localStorage?.clear()
 }
 
 /** Remote em disco (`ctx.name:props.n`): o Node importa file:, com URL hierárquica para ctx.baseUrl. */
