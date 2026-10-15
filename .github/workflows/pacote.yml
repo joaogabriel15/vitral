@@ -1,0 +1,36 @@
+name: Pacote real
+
+# O pacote empacotado (pnpm pack) instalado em apps gerados na hora pelas CLIs
+# oficiais, com build de produção e teste no navegador (e2e/pacote).
+# Roda toda semana, à mão e antes de cada release (o workflow de release chama
+# este e só publica se ele passar).
+on:
+  schedule:
+    - cron: '0 5 * * 1' # segunda-feira
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  pacote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # A CLI do Angular pede Node 22.22.3+ ou 24.15+.
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir e2e exec playwright install --with-deps chromium
+      - run: pnpm build
+      - run: node e2e/pacote/run.mjs --dir "$RUNNER_TEMP/pacote" --out pacote.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pacote
+          path: |
+            pacote.json
+            ${{ runner.temp }}/pacote/*.log
+          retention-days: 30
