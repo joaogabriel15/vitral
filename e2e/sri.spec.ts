@@ -183,8 +183,12 @@ for (const [label, csp] of Object.entries(CSPS) as [keyof typeof CSPS, string | 
       expect(await state(page)).toMatchObject({ status: 'error', error: 'LOAD_FAILED' })
       healed.add(id)
       const before = requests.length
+      const logs: string[] = []
+      page.on('console', (m) => logs.push(m.text()))
+      page.on('pageerror', (e) => logs.push(String(e)))
       await page.evaluate(() => (window as any).__slot.retry())
-      await expect(page.locator('body[data-status="ready"]')).toHaveCount(1)
+      // Com o estado inteiro na mensagem, uma falha mostra o código e o caminho usado.
+      await expect.poll(async () => ({ ...(await state(page)), logs, requests: requests.slice(before) })).toMatchObject({ status: 'ready' })
       const s = await state(page)
       expect(s.text).toBe('ok arquivo único')
       expect(requests.slice(before).filter((p) => p.includes(`/${id}/split/`))).toEqual([])
