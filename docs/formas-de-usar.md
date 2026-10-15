@@ -62,3 +62,24 @@ export const exposes = {
 ```
 
 Erros: parte que não existe é [`NOT_EXPOSED`](erros/NOT_EXPOSED.md); módulo sem `mount` usado como componente é [`INVALID_MODULE`](erros/INVALID_MODULE.md).
+
+## Atualização sem reload
+
+Uma SPA aberta por horas vê o deploy novo de um remote:
+
+```ts
+import { events, refresh, watchUpdates } from 'vitral'
+
+watchUpdates() // revalida os manifestos a cada navegação
+
+events.on<{ name: string; entry: string }>('vitral:update-available', ({ name }) => {
+  refresh(name) // ou mostre um aviso e chame refresh quando o usuário quiser
+})
+```
+
+- `watchUpdates()` revalida os manifestos dos remotes montados a cada `popstate` (o `navigate()` dispara um) e a cada navegação da Navigation API, onde ela existe. Devolve a função que desliga.
+- Em navegadores sem Navigation API e com um roteador próprio, chame `checkUpdates()` na troca de rota. Ela devolve os nomes com versão nova.
+- `vitral:update-available` sai uma vez por deploy novo, com `{ name, entry }`.
+- `refresh('carrinho')` baixa a versão nova e troca cada montagem de `carrinho` (e de `carrinho/…`) pela nova, com as props atuais. Funciona em todos os componentes de host e em `mountRemote`.
+- Se a versão nova não carregar, `refresh` rejeita e a antiga continua na tela. Se o `mount()` da nova falhar, a antiga também fica, e o erro vai para o console.
+- Só remotes registrados pela URL do `vitral.json` são revalidados.

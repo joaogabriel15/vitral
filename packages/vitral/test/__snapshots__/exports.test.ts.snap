@@ -36,6 +36,7 @@ exports[`exports públicos > index 1`] = `
   "RemoteError",
   "__reset",
   "batch",
+  "checkUpdates",
   "component",
   "configure",
   "createEventBus",
@@ -50,6 +51,7 @@ exports[`exports públicos > index 1`] = `
   "persist",
   "preload",
   "provide",
+  "refresh",
   "register",
   "registerSrc",
   "render",
@@ -57,6 +59,7 @@ exports[`exports públicos > index 1`] = `
   "shared",
   "syncTabs",
   "unsafeHTML",
+  "watchUpdates",
 ]
 `;
 

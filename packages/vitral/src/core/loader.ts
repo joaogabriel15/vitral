@@ -1,6 +1,5 @@
 import { prefetchCss } from './css'
 import { isRemoteError, RemoteError } from './errors'
-import { resolveModule, resolveTarget } from './expose'
 import { checkOrigin } from './registry'
 import type { SplitBuild, Verifiable } from './sri'
 import { protocol, type LoadedRemote } from './state'
@@ -21,7 +20,7 @@ export function loadRemote<P extends Props = Props>(name: string): Promise<Remot
  * Sem `/`, devolve os exports do arquivo principal do remote.
  */
 export function loadModule<T = Record<string, unknown>>(name: string): Promise<T> {
-  return resolveModule<T>(name, (n) => loadFile(n))
+  return import('./expose').then((m) => m.resolveModule<T>(name, (n) => loadFile(n)))
 }
 
 /** Começa a baixar um remote (JS e CSS) sem montar (ex.: no hover de um link). */
@@ -39,7 +38,10 @@ let paths: Promise<typeof import('./sri') | null> | undefined
  * logo ao abrir a página).
  */
 export function load(name: string, isolate?: Isolation, priority?: RequestPriority): Promise<LoadedRemote> {
-  return resolveTarget(name, (n) => loadFile(n, isolate, priority))
+  const file = (n: string) => loadFile(n, isolate, priority)
+  // Partes (`carrinho/MiniCarrinho`) ficam num módulo à parte, fora do host mínimo.
+  if (protocol().entry(name) || !name.includes('/')) return file(name).then((r) => mountable(name, r))
+  return import('./expose').then((m) => m.resolveTarget(name, file))
 }
 
 /** Baixa o arquivo de um remote registrado, sem conferir o formato (base de `load` e `loadModule`). */
@@ -87,7 +89,7 @@ async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote
 
 type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild; priority?: RequestPriority }
 
-async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, priority?: RequestPriority): Promise<Resolved> {
+export async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, priority?: RequestPriority): Promise<Resolved> {
   checkOrigin(name, entry.url)
   // O manifesto é o único arquivo sem hash no nome: sempre revalida, para
   // nunca usar um deploy velho (o resto pode ter cache eterno). Um manifesto
@@ -146,4 +148,11 @@ async function importModule(name: string, r: Resolved): Promise<any> {
   const sri = await paths
   if (!sri) throw new RemoteError('LOAD_FAILED', name, 'não foi possível carregar o verificador de integrity')
   return sri.importVerified(name, r as Verifiable, run, timeout)
+}
+
+export function mountable(name: string, r: LoadedRemote): LoadedRemote {
+  if (typeof r.module?.mount != 'function') {
+    throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount(). Use defineRemote(), ou loadModule() para módulo sem UI.')
+  }
+  return r
 }
