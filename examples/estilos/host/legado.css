@@ -1,0 +1,5 @@
+/* CSS de um host antigo, sem @layer: vence qualquer regra em camada. */
+button {
+  background-color: rgb(0, 128, 0);
+  color: white;
+}

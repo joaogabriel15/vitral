@@ -1,0 +1,5 @@
+{
+  "loja": "http://localhost:4100/loja/vitral.json",
+  "vanilla": "http://localhost:4100/vanilla/vitral.json",
+  "intruso": { "url": "http://localhost:4100/intruso/vitral.json", "isolate": "iframe" }
+}

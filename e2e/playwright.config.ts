@@ -9,6 +9,8 @@ const DEVICES = { chromium: 'Desktop Chrome', firefox: 'Desktop Firefox', webkit
 // Rode antes: pnpm build:all (na raiz). Os servidores abaixo só servem o que já foi buildado.
 export default defineConfig({
   testDir: '.',
+  // A CLI tem e2e próprio, com rede: pnpm test:create.
+  testIgnore: 'create.spec.ts',
   timeout: 30_000,
   fullyParallel: true,
   reporter: [['list']],
@@ -21,5 +23,6 @@ export default defineConfig({
     { command: 'node ../demo/serve.mjs', url: 'http://localhost:5173', reuseExistingServer: true },
     // Host e CDN de teste das baterias de rede, deploy, versões e segurança.
     { command: 'node fixtures/server.mjs', url: 'http://localhost:4400/vitral/index.js', reuseExistingServer: true },
+    { command: 'node ../examples/estilos/serve.mjs', url: 'http://localhost:4311/index.html', reuseExistingServer: true },
   ],
 })
