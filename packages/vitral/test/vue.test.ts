@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 import { createApp, defineComponent, h, nextTick, ref } from 'vue'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
 import { VitralRemote, useVitral, vueRemote } from '../src/vue'
 import { failingRemote, mockRemote } from '../src/testing'
-import { cleanup, flush } from './helpers'
+import { cleanup, flush, serveManifest } from './helpers'
 
 afterEach(cleanup)
 
@@ -73,5 +73,13 @@ describe('Vue: vueRemote', () => {
     await flush()
     console.warn = orig
     expect(div.textContent).toBe('RENDER_FAILED')
+  })
+})
+
+describe('Vue: <VitralRemote src>', () => {
+  it('monta pela URL do manifesto, sem configure()', async () => {
+    serveManifest('carrinho')
+    const { div } = mount({ render: () => h(VitralRemote, { src: 'https://cdn.exemplo.com/c/vitral.json', props: { n: 1 } }) })
+    await vi.waitFor(() => expect(div.textContent).toBe('carrinho:1'))
   })
 })
