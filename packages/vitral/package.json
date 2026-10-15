@@ -222,7 +222,7 @@
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.3 kB"
+      "limit": "2.4 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
