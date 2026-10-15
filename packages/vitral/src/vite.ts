@@ -15,6 +15,8 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
+import { scopeCss } from './css-scope'
+import { collect, isSplit, outputs, withSplit, type Split } from './vite/manifest'
 import { type CssBuildOptions, transformCss } from './css-build'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
 import { extractProps, typesFile } from './vite/types'
@@ -59,6 +61,8 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   let outDir = 'dist'
   let root = process.cwd()
   let pkg: { name?: string; version?: string } = {}
+  let manifest: RemoteManifest | undefined
+  let split: Split | undefined
   let entry = options.entry
   let adapter: AdapterName = 'element'
   let framework: AdapterName = 'element'
@@ -73,7 +77,6 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       if (!entry) throw new Error('[vitral] não achei a entrada do remote (src/remote.* ou src/App.*). Use vitral({ entry }).')
       // Vite 8+ (rolldown) usa codeSplitting; Vite 5-7 (rollup) usa inlineDynamicImports.
       const rolldown = 'rolldownVersion' in (this as any).meta
-      const output = rolldown ? { codeSplitting: false } : { inlineDynamicImports: true }
       return {
         // Código de biblioteca não tem process.env; React e Vue precisam disso.
         define: { 'process.env.NODE_ENV': JSON.stringify(mode === 'development' ? 'development' : 'production') },
@@ -85,9 +88,9 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         optimizeDeps: user.optimizeDeps?.entries ? undefined : { entries: [entry] },
         build: {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
-          lib: { entry: options.adapter === false ? entry : ENTRY_ID, formats: ['es'], fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
-          // Um arquivo só: necessário para verificar o hash SRI no host.
-          rollupOptions: { external: options.shared ?? [], output: output as any },
+          lib: { entry: options.adapter === false ? entry : ENTRY_ID, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
+          // Arquivo único (hosts antigos e caminho com blob:) e build dividido (manifesto v2).
+          rollupOptions: { external: options.shared ?? [], output: outputs(rolldown) as any },
           cssCodeSplit: false,
         },
       }
@@ -119,7 +122,8 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     transform(code, id) {
       if (serve && options.scopeCss !== false) return scopeDevCss(code, id, scopeName())
     },
-    async writeBundle(_, bundle) {
+    writeBundle(_, bundle) {
+      if (isSplit(bundle)) return void (split = collect(outDir, bundle))
       const files = Object.values(bundle)
       const entry = files.find((f) => f.type === 'chunk' && f.isEntry)
       if (!entry) return
@@ -137,7 +141,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
           return name
         })
       const code = readFileSync(join(outDir, entry.fileName))
-      const manifest: RemoteManifest = {
+      manifest = {
         name: options.name ?? pkg.name ?? 'remote',
         version: options.version ?? pkg.version,
         entry: entry.fileName,
@@ -145,9 +149,14 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         integrity: 'sha384-' + createHash('sha384').update(code).digest('base64'),
         ...(options.scopeCss === false ? {} : { scope: scopeName() }),
       }
-      writeFileSync(join(outDir, 'vitral.json'), JSON.stringify(manifest, null, 2) + '\n')
+    },
+    async closeBundle() {
+      if (!manifest) return
+      const done = withSplit(manifest, outDir, split)
+      manifest = split = undefined
+      writeFileSync(join(outDir, 'vitral.json'), JSON.stringify(done, null, 2) + '\n')
       const props = options.types === false ? null : await extractProps(root, entryFile())
-      if (props) writeFileSync(join(outDir, 'vitral.d.ts'), typesFile(manifest.name, props))
+      if (props) writeFileSync(join(outDir, 'vitral.d.ts'), typesFile(done.name, props))
     },
   }
 }
