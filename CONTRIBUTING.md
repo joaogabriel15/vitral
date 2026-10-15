@@ -16,6 +16,12 @@ Na primeira vez, instale o navegador do Playwright:
 Outros navegadores: `E2E_BROWSERS=firefox,webkit,mobile pnpm test:e2e`
 (`mobile` é o Chromium com tela de celular).
 
+Baterias longas, fora do CI de cada PR:
+
+```bash
+node e2e/memoria/run.mjs   # vazamento: 500 ciclos por adaptador (noturno)
+```
+
 ## Estrutura
 
 | Pasta | O que tem |
