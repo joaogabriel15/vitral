@@ -8,7 +8,8 @@
  * que conhecem. Mudanças futuras só acrescentam métodos e sobem `protocol`.
  */
 import { createEventBus } from './bus'
-import type { EventBus, Isolation, RemoteEntry, RemoteModule } from './types'
+import type { EventBus, Isolation, RemoteEntry, RemoteMetric, RemoteModule, SharedModules, StyleOptions } from './types'
+import type { SharedStore } from './store'
 
 export const PROTOCOL = 1
 
@@ -17,6 +18,12 @@ export interface Settings {
   retries: number
   isolate: Isolation
   allowedOrigins: string[] | null
+  onMetric?: (metric: RemoteMetric) => void
+  /** Origens de URLs escritas no código do host (`src`). Valem mesmo com `allowedOrigins`. */
+  trusted?: string[]
+  /** Liga os overrides de desenvolvimento fora de localhost. */
+  devOverrides?: boolean
+  styles?: StyleOptions
 }
 
 /** Remote baixado e pronto para montar. Faz parte do protocolo v1. */
@@ -27,6 +34,12 @@ export interface LoadedRemote {
   css: string[]
   isolate?: Isolation
   scope?: string
+  /** Namespace ES do arquivo (inclui `exposes`). Cópias antigas não mandam. */
+  exports?: Record<string, unknown>
+  /** Hash SRI dos arquivos do remote (CSS incluído), por URL absoluta. */
+  sri?: Record<string, string>
+  /** Nome que o manifesto declara (usado quando o remote veio de `src`). */
+  name?: string
 }
 
 export interface Protocol {
@@ -43,8 +56,34 @@ export interface Protocol {
    * existem. Uma carga que falhou continua falhando: o host precisa corrigir a URL.
    */
   pending(work?: Promise<unknown>): Promise<void>
+  /**
+   * Hashes por URL, presentes só quando a lib usa `modulepreload` com
+   * `integrity` (caminho 2 do SRI). O helper de `import()` do plugin lê daqui.
+   */
+  sri?: Record<string, string>
+  /**
+   * Dependência compartilhada do grupo `name` (`dedupe`). Devolve a primeira
+   * oferta com versão em `range`; sem nenhuma, registra `own` (que fica
+   * disponível para os próximos) e devolve a dela. A oferta carrega uma vez
+   * só; se falhar, sai da lista. Instalado sob demanda (`core/shared.ts`).
+   */
+  dedupe?(name: string, range: string, own?: Offer): Promise<SharedModules> | undefined
   /** Baixa um remote uma vez só; falhas não ficam em cache. */
   load(name: string, fetcher: () => Promise<LoadedRemote>): Promise<LoadedRemote>
+  /**
+   * Store do contexto compartilhado (`provide`/`shared`). Não vem no objeto
+   * criado aqui: a primeira cópia da lib que usa o store instala este método,
+   * para o host mínimo não pagar por ele.
+   */
+  shared?(): SharedStore
+}
+
+/** Uma versão de um grupo de `dedupe`, oferecida pelo host ou por um remote. */
+export interface Offer {
+  version: string
+  /** Arquivo da cópia, para preferir na próxima visita a que já está no cache. */
+  url?: string
+  load(): Promise<SharedModules>
 }
 
 const KEY = Symbol.for('vitral')

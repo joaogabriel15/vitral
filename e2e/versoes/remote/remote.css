@@ -1,0 +1,3 @@
+:root { --cor-remote: rgb(0, 0, 255); }
+.remote { color: var(--cor-remote); }
+p { margin: 2px; }

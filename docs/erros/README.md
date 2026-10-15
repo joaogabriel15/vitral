@@ -14,10 +14,12 @@ createSlot(el, {
 | Código | Quando acontece |
 | --- | --- |
 | [NOT_REGISTERED](NOT_REGISTERED.md) | O nome não foi registrado em `configure({ remotes })` |
+| [NOT_EXPOSED](NOT_EXPOSED.md) | O remote não expõe a parte pedida (`carrinho/MiniCarrinho`) |
 | [ORIGIN_BLOCKED](ORIGIN_BLOCKED.md) | A URL do remote está fora de `allowedOrigins` |
 | [TIMEOUT](TIMEOUT.md) | O remote não respondeu dentro de `timeout` |
 | [INTEGRITY](INTEGRITY.md) | O hash do JS não confere com o `integrity` |
-| [INVALID_MODULE](INVALID_MODULE.md) | O arquivo não exporta `mount()` ou o JSON é inválido |
+| [INVALID_MODULE](INVALID_MODULE.md) | O arquivo não exporta `mount()` (ou a parte é um módulo sem UI) ou o JSON é inválido |
 | [LOAD_FAILED](LOAD_FAILED.md) | Erro de rede, HTTP ou erro ao executar o JS |
 | [MOUNT_FAILED](MOUNT_FAILED.md) | `mount()` do remote lançou erro |
 | [RENDER_FAILED](RENDER_FAILED.md) | O remote quebrou depois de montado |
+| [SHARED_READONLY](SHARED_READONLY.md) | `set` numa chave com `writable: false` sem ser o dono |
