@@ -27,7 +27,7 @@ export type {
 } from './core/types'
 export { RemoteError, type RemoteErrorCode } from './core/errors'
 export { configure, register, registerSrc } from './core/registry'
-export { loadRemote, preload } from './core/loader'
+export { loadModule, loadRemote, preload } from './core/loader'
 export { mountRemote, type MountOptions } from './core/mount'
 export { createSlot, type RemoteSlot, type SlotOptions, type SlotStatus } from './core/slot'
 export { defineRemote } from './core/remote'

@@ -311,6 +311,12 @@ vitral({ dedupe: ['react'] })
 
 O remote usa a cópia que já está na página quando a versão serve (padrão: `^` da versão instalada no remote) e baixa a própria só quando não serve. Os componentes de host em React oferecem o React do host sem configuração.
 
+### Mais formas de usar
+
+Vários componentes por remote (`<Remote name="carrinho/MiniCarrinho" />`) e
+módulos sem UI (`loadModule('carrinho/api')`). Veja
+[docs/formas-de-usar.md](docs/formas-de-usar.md).
+
 ## Segurança
 
 - Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra. O `src` de um componente de host entra na allowlist; o atributo `src` do `<vitral-remote>` não entra quando há `allowedOrigins`.

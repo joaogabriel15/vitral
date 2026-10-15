@@ -1,5 +1,6 @@
 import { prefetchCss } from './css'
 import { isRemoteError, RemoteError } from './errors'
+import { resolveModule, resolveTarget } from './expose'
 import { checkOrigin } from './registry'
 import type { SplitBuild, Verifiable } from './sri'
 import { protocol, type LoadedRemote } from './state'
@@ -9,6 +10,18 @@ import { absolute, fetchJson, metric, withRetry, withTimeout } from './util'
 /** Baixa (uma vez só) e devolve o módulo de um remote. */
 export function loadRemote<P extends Props = Props>(name: string): Promise<RemoteModule<P>> {
   return load(name).then((r) => r.module as unknown as RemoteModule<P>)
+}
+
+/**
+ * Carrega um módulo sem UI que um remote expõe (funções, stores, constantes),
+ * com a mesma verificação de SRI e de origem dos componentes.
+ *
+ *   const api = await loadModule<typeof import('./tipos/carrinho-api')>('carrinho/api')
+ *
+ * Sem `/`, devolve os exports do arquivo principal do remote.
+ */
+export function loadModule<T = Record<string, unknown>>(name: string): Promise<T> {
+  return resolveModule<T>(name, (n) => loadFile(n))
 }
 
 /** Começa a baixar um remote (JS e CSS) sem montar (ex.: no hover de um link). */
@@ -26,6 +39,11 @@ let paths: Promise<typeof import('./sri') | null> | undefined
  * logo ao abrir a página).
  */
 export function load(name: string, isolate?: Isolation, priority?: RequestPriority): Promise<LoadedRemote> {
+  return resolveTarget(name, (n) => loadFile(n, isolate, priority))
+}
+
+/** Baixa o arquivo de um remote registrado, sem conferir o formato (base de `load` e `loadModule`). */
+export function loadFile(name: string, isolate?: Isolation, priority?: RequestPriority): Promise<LoadedRemote> {
   const p = protocol()
   return p.load(name, async () => {
     paths ??= import('./sri').catch(() => null)
@@ -42,9 +60,9 @@ export function load(name: string, isolate?: Isolation, priority?: RequestPriori
       // O CSS baixa junto com o JS; a montagem espera os dois.
       prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', resolved.sri, priority)
       t = performance.now()
-      const module = await withRetry(p.settings().retries, () => importModule(name, resolved))
+      const ns = await withRetry(p.settings().retries, () => importModule(name, resolved))
       metric(name, 'js', t)
-      return { ...resolved, module }
+      return { ...resolved, module: ns?.default ?? ns, exports: ns }
     } catch (e: any) {
       throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, String(e?.message ?? e), e)
     }
@@ -62,9 +80,9 @@ function devOverride(name: string): Promise<RemoteEntry | undefined> | undefined
 }
 
 async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote> {
-  let mod: any = entry.module
-  if (typeof mod === 'function') mod = await mod()
-  return { module: toModule(name, mod), entry: typeof location !== 'undefined' ? location.href : 'http://localhost/', css: entry.css ?? [], isolate: entry.isolate }
+  let ns: any = entry.module
+  if (typeof ns === 'function') ns = await ns()
+  return { module: ns?.default ?? ns, exports: ns, entry: typeof location !== 'undefined' ? location.href : 'http://localhost/', css: entry.css ?? [], isolate: entry.isolate }
 }
 
 type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild; priority?: RequestPriority }
@@ -116,21 +134,16 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, 
   return resolved
 }
 
-async function importModule(name: string, r: Resolved): Promise<RemoteModule> {
+/** Namespace ES do arquivo do remote. */
+async function importModule(name: string, r: Resolved): Promise<any> {
   const { timeout } = protocol().settings()
   const run = (url: string) =>
     withTimeout(timeout, name, import(/* @vite-ignore */ /* webpackIgnore: true */ url)).catch((e) => {
       throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, `falha ao importar ${r.entry}`, e)
     })
-  if (!r.integrity) return toModule(name, await run(r.entry))
+  if (!r.integrity) return run(r.entry)
   // Com integrity, a conferência mora no módulo de SRI. Sem ele, nada roda.
   const sri = await paths
   if (!sri) throw new RemoteError('LOAD_FAILED', name, 'não foi possível carregar o verificador de integrity')
-  return toModule(name, await sri.importVerified(name, r as Verifiable, run, timeout))
-}
-
-function toModule(name: string, ns: any): RemoteModule {
-  const mod = ns?.default ?? ns
-  if (typeof mod?.mount !== 'function') throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount(). Use defineRemote() no remote.')
-  return mod
+  return sri.importVerified(name, r as Verifiable, run, timeout)
 }

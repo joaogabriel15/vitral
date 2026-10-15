@@ -161,6 +161,11 @@ export interface RemoteManifest {
   /** Escopo usado pelo plugin para prefixar o CSS (`[data-vitral-scope]`). */
   scope?: string
   /**
+   * Componentes e módulos extras do remote (`./MiniCarrinho`, `./api`). Vêm
+   * do mesmo `entry`, no export `exposes`. O host usa `carrinho/MiniCarrinho`.
+   */
+  exposes?: string[]
+  /**
    * Hash SRI de cada arquivo publicado (CSS e JS do build dividido), pelo
    * caminho relativo ao manifesto.
    */
@@ -178,7 +183,6 @@ export interface RemoteManifest {
    */
   dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
 }
-
 
 export type Handler<T = unknown> = (payload: T) => void
 
