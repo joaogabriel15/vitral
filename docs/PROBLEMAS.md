@@ -84,7 +84,7 @@ erro é um "chunk load error" sem contexto.
 **No vitral.** Todo erro é um `RemoteError` com `code` (`NOT_REGISTERED`,
 `ORIGIN_BLOCKED`, `TIMEOUT`, `INTEGRITY`, `LOAD_FAILED`, `MOUNT_FAILED`,
 `RENDER_FAILED`), o nome do remote e um link (`error.docs`) para a página do
-código em [docs/erros](erros/README.md), com causas e correção. O erro de
+código em [docs/erros](erros/), com causas e correção. O erro de
 integridade mostra o hash esperado e o obtido.
 
 ### 9. Barramento de eventos com vazamento de memória
