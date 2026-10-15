@@ -8,7 +8,7 @@
  * que conhecem. Mudanças futuras só acrescentam métodos e sobem `protocol`.
  */
 import { createEventBus } from './bus'
-import type { EventBus, Isolation, RemoteEntry, RemoteModule, StyleOptions } from './types'
+import type { EventBus, Isolation, RemoteEntry, RemoteMetric, RemoteModule, StyleOptions } from './types'
 import type { SharedStore } from './store'
 
 export const PROTOCOL = 1
@@ -18,6 +18,7 @@ export interface Settings {
   retries: number
   isolate: Isolation
   allowedOrigins: string[] | null
+  onMetric?: (metric: RemoteMetric) => void
   /** Origens de URLs escritas no código do host (`src`). Valem mesmo com `allowedOrigins`. */
   trusted?: string[]
   /** Liga os overrides de desenvolvimento fora de localhost. */

@@ -18,6 +18,7 @@
  *
  *   el.props = { userId: 43 }          // atualiza sem remontar
  *   el.addEventListener('vitral-error', (e) => e.detail.error)
+ *   el.addEventListener('vitral-ready', (e) => e.detail.timings) // { manifest, js, css, mount } em ms
  *   el.retry()
  *
  * Atributos de performance: `loading="lazy|idle"` (monta perto de aparecer ou
@@ -29,7 +30,7 @@
  * Stencil, vanilla) como remote.
  */
 import { defineRemote, shared, type Isolation, type Props, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus } from './index'
-import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
+import { hostSlot, timings, type Loading, type Prefetch } from './core/host-slot'
 import { memoSelect, same } from './core/shared'
 import { registerSrc } from './core/registry'
 
@@ -86,7 +87,7 @@ export class VitralRemoteElement extends Base {
           const custom = { loading: has('fallback'), error: has('error'), ready: true }
           this.#showDefault(custom[status] ? null : status)
         })
-        if (status === 'ready') this.dispatchEvent(new CustomEvent('vitral-ready', { bubbles: true }))
+        if (status === 'ready') this.dispatchEvent(new CustomEvent('vitral-ready', { bubbles: true, detail: { timings: timings(name) } }))
         if (status === 'error') this.dispatchEvent(new CustomEvent('vitral-error', { bubbles: true, detail: { error } }))
       },
     })

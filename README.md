@@ -279,6 +279,23 @@ mount(el, props, ctx) {
 }
 ```
 
+#### Métricas
+
+Cada etapa do carregamento vira um `performance.measure` com o nome
+`vitral:<remote>:<etapa>`. As etapas são `manifest`, `js`, `css` e `mount`.
+Elas aparecem na aba Performance do DevTools. Para mandar ao seu RUM:
+
+```js
+configure({
+  onMetric: ({ name, stage, duration }) => rum.send(`vitral.${stage}`, duration, { remote: name }),
+})
+```
+
+O evento `vitral-ready` (e o `ready` do componente Vue) traz os tempos em
+`detail.timings`, por exemplo `{ manifest: 12.3, js: 40.1, css: 8, mount: 2.4 }`.
+Um remote local (`module`) só mede `css` e `mount`. Erros dentro do
+`onMetric` são ignorados.
+
 ## Segurança
 
 - Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra. O `src` de um componente de host entra na allowlist; o atributo `src` do `<vitral-remote>` não entra quando há `allowedOrigins`.

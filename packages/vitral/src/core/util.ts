@@ -1,4 +1,6 @@
-import { RemoteError } from './errors'
+import { isRemoteError, RemoteError } from './errors'
+import { protocol } from './state'
+import type { RemoteMetric } from './types'
 
 export function pageOrigin(): string | null {
   return typeof location !== 'undefined' ? location.origin : null
@@ -13,7 +15,7 @@ export async function withRetry<T>(retries: number, fn: () => Promise<T>): Promi
     try {
       return await fn()
     } catch (e) {
-      const retryable = e instanceof RemoteError && (e.code === 'LOAD_FAILED' || e.code === 'TIMEOUT')
+      const retryable = isRemoteError(e) && (e.code === 'LOAD_FAILED' || e.code === 'TIMEOUT')
       if (!retryable || i >= retries) throw e
       await new Promise((r) => setTimeout(r, 200 * 2 ** i))
     }
@@ -23,10 +25,7 @@ export async function withRetry<T>(retries: number, fn: () => Promise<T>): Promi
 export function withTimeout<T>(ms: number, name: string, p: Promise<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const t = setTimeout(() => reject(new RemoteError('TIMEOUT', name, `não respondeu em ${ms}ms`)), ms)
-    p.then(
-      (v) => (clearTimeout(t), resolve(v)),
-      (e) => (clearTimeout(t), reject(e)),
-    )
+    p.then(resolve, reject).finally(() => clearTimeout(t))
   })
 }
 
@@ -60,4 +59,12 @@ export async function fetchJson<T>(url: string, timeout: number, name: string, i
 /** Adiciona um `<link>` com CORS anônimo (o mesmo modo dos downloads da lib). */
 export function addLink(rel: string, href: string, props: Partial<HTMLLinkElement> = {}, parent: Node = document.head): HTMLLinkElement {
   return parent.appendChild(Object.assign(document.createElement('link'), { rel, crossOrigin: 'anonymous', href }, props))
+}
+
+/** Marca o fim de uma etapa que começou em `start` (performance.now()). */
+export function metric(name: string, stage: RemoteMetric['stage'], start: number): void {
+  try {
+    performance.measure(`vitral:${name}:${stage}`, { start })
+    protocol().settings().onMetric?.({ name, stage, start, duration: performance.now() - start })
+  } catch {}
 }
