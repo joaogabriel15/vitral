@@ -34,6 +34,8 @@ export interface LoadedRemote {
   css: string[]
   isolate?: Isolation
   scope?: string
+  /** Namespace ES do arquivo (inclui `exposes`). Cópias antigas não mandam. */
+  exports?: Record<string, unknown>
   /** Hash SRI dos arquivos do remote (CSS incluído), por URL absoluta. */
   sri?: Record<string, string>
   /** Nome que o manifesto declara (usado quando o remote veio de `src`). */

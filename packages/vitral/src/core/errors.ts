@@ -1,5 +1,6 @@
 export type RemoteErrorCode =
   | 'NOT_REGISTERED'
+  | 'NOT_EXPOSED'
   | 'ORIGIN_BLOCKED'
   | 'TIMEOUT'
   | 'INTEGRITY'

@@ -16,6 +16,7 @@ import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
+import { EXPOSES_ENTRY, exposeKeys, loadExposes, resolveExposesId } from './vite-exposes'
 import { collect, isSplit, outputs, withSplit, type Split } from './vite/manifest'
 import { BOOT, dedupeHooks, groups, type Group } from './vite/dedupe'
 import { type CssBuildOptions, transformCss } from './css-build'
@@ -52,6 +53,15 @@ export interface VitralViteOptions extends CssBuildOptions {
    */
   scopeCss?: boolean
   /**
+   * Outros componentes e módulos do remote, por nome. O host usa
+   * `carrinho/MiniCarrinho` ou `loadModule('carrinho/api')`.
+   *
+   *   exposes: { './MiniCarrinho': 'src/MiniCarrinho.tsx', './api': 'src/api.ts' }
+   *
+   * Um componente exporta `default` com `mount` (`reactRemote(Mini)` etc.).
+   */
+  exposes?: Record<string, string>
+  /**
    * Dependências que o remote usa da página, se a versão servir (padrão: `^`
    * da versão instalada), ou da própria cópia. Ex.: `['react']` (o grupo do
    * React inteiro) ou `['vue']`.
@@ -78,7 +88,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   let serve = false
   let shared: Group[] = []
   const dedupe = !!options.dedupe?.length
-  const hooks = dedupeHooks(() => (options.adapter === false ? entryFile() : ENTRY_ID), () => shared)
+  const hooks = dedupeHooks(() => (options.exposes ? EXPOSES_ENTRY : options.adapter === false ? entryFile() : ENTRY_ID), () => shared)
   const scopeName = () =>
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
   return {
@@ -99,7 +109,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         optimizeDeps: user.optimizeDeps?.entries ? undefined : { entries: [entry] },
         build: {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
-          lib: { entry: dedupe ? BOOT : options.adapter === false ? entry : ENTRY_ID, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
+          lib: { entry: dedupe ? BOOT : options.exposes ? EXPOSES_ENTRY : options.adapter === false ? entry : ENTRY_ID, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
           // Arquivo único (hosts antigos e caminho com blob:) e build dividido (manifesto v2).
           rollupOptions: { external: options.shared ?? [], output: outputs(rolldown) as any },
           cssCodeSplit: false,
@@ -130,6 +140,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       handler(id, importer) {
         const own = dedupe && !serve ? hooks.resolveId.handler(id, importer) : null
         if (own) return own
+        if (options.exposes && resolveExposesId(id)) return resolveExposesId(id)
         if (id.endsWith(ENTRY_ID)) return VIRTUAL_ENTRY
         return resolveDevId(id)
       },
@@ -137,6 +148,8 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     load(id) {
       const own = dedupe && !serve ? hooks.load(id) : null
       if (own != null) return own
+      const exposed = options.exposes ? loadExposes(id, root, entry!, options.exposes, options.adapter === false ? undefined : ENTRY_ID) : null
+      if (exposed != null) return exposed
       if (id === VIRTUAL_ENTRY) return entryCode(resolve(root, entry!), adapter, scopeName())
       if (id === VIRTUAL_DEV_ENTRY) return devEntryCode(framework, options.adapter === false ? resolve(root, entry!) : undefined)
       return loadPreamble(id)
@@ -170,6 +183,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         css,
         integrity: 'sha384-' + createHash('sha384').update(code).digest('base64'),
         ...(options.scopeCss === false ? {} : { scope: scopeName() }),
+        ...(options.exposes ? { exposes: Object.keys(exposeKeys(options.exposes)) } : {}),
       }
     },
     async closeBundle() {
