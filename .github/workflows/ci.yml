@@ -31,6 +31,21 @@ jobs:
         if: matrix.node == 22
         run: node scripts/cobertura.mjs packages/vitral/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
 
+  # Site: o build falha com link quebrado, e check-erros.mjs confere que
+  # cada código de erro tem a página para onde RemoteError.docs aponta.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir docs build
+      - run: pnpm --dir docs check
+
   # Todo o e2e em cada navegador, mais o Chromium com tela de celular,
   # dividido em shards.
   e2e:

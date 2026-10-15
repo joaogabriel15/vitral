@@ -32,7 +32,7 @@ node e2e/pacote/run.mjs    # pnpm pack em apps das CLIs oficiais (semanal e ante
 | `examples/hosts` | 9 hosts (JS puro, React, Vue, Svelte, Solid, Preact, Angular, Next, Nuxt) |
 | `e2e` | Testes Playwright: todos os hosts × remotes e as baterias de rede, deploy e versões cruzadas (`e2e/fixtures` tem o host e o CDN de teste; `e2e/versoes`, os remotes buildados com cada versão da lib) |
 | `demo` | Demo com Tailwind (catálogo Vue + carrinho React) |
-| `docs` | Pesquisa de problemas das outras soluções |
+| `docs` | Site da documentação (VitePress). `pnpm --dir docs dev` abre em localhost |
 
 ## Adicionando um framework
 
@@ -42,6 +42,11 @@ node e2e/pacote/run.mjs    # pnpm pack em apps das CLIs oficiais (semanal e ante
 3. Escreva `test/<framework>.test.ts`.
 4. Crie `examples/remotes/<framework>` e, se houver host, `examples/hosts/<framework>`,
    e inclua o nome nas listas de `e2e/matriz.spec.ts`.
+
+## Código de erro novo
+
+Todo código em `RemoteErrorCode` precisa de uma página em `docs/erros/<CÓDIGO>.md`
+e de uma linha na tabela de `docs/erros/README.md`. O CI confere.
 
 ## Publicação
 
