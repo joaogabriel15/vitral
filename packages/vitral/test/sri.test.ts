@@ -58,6 +58,7 @@ afterEach(() => {
   vi.restoreAllMocks()
   vi.unstubAllGlobals()
   document.head.replaceChildren()
+  localStorage.clear()
 })
 
 describe('caminho 1: import map com integrity', () => {
