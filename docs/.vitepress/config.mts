@@ -25,6 +25,8 @@ export default defineConfig({
     logo: '/logo.svg',
     nav: [
       { text: 'Guia', link: '/guia/' },
+      { text: 'Receitas', link: '/receitas/tailwind' },
+      { text: 'Migração', link: '/migracao/module-federation' },
       { text: 'Erros', link: '/erros/' },
       { text: 'npm', link: 'https://www.npmjs.com/package/vitral' },
     ],
@@ -41,6 +43,25 @@ export default defineConfig({
           { text: 'Segurança', link: '/guia/seguranca' },
           { text: 'Testes', link: '/guia/testes' },
           { text: 'Configuração', link: '/guia/configuracao' },
+        ],
+      },
+      {
+        text: 'Receitas',
+        items: [
+          { text: 'Tailwind', link: '/receitas/tailwind' },
+          { text: 'Autenticação', link: '/receitas/autenticacao' },
+          { text: 'Idioma (i18n)', link: '/receitas/i18n' },
+          { text: 'Rotas', link: '/receitas/rotas' },
+          { text: 'Design system', link: '/receitas/design-system' },
+        ],
+      },
+      {
+        text: 'Migração',
+        items: [
+          { text: 'Module Federation', link: '/migracao/module-federation' },
+          { text: 'single-spa', link: '/migracao/single-spa' },
+          { text: 'qiankun', link: '/migracao/qiankun' },
+          { text: 'Quando não usar o vitral', link: '/quando-nao-usar' },
         ],
       },
       {
