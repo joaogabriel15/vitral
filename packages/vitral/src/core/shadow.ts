@@ -28,22 +28,23 @@ export async function attachStyles(
   css: string[],
   global: StyleOptions = {},
   local: StyleOptions = {},
+  sri: Record<string, string> = {},
 ): Promise<() => void> {
   // CSS base do host primeiro: o do remote vence quando os dois definem algo.
   const urls = [...(global.inherit ?? []), ...(local.inherit ?? [])].map((u) => new URL(u, document.baseURI).href).concat(css)
   if (typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype) {
-    const loaded = await Promise.all(urls.map((u) => loadSheet(u, [])))
+    const loaded = await Promise.all(urls.map((u) => loadSheet(u, [], sri[u])))
     root.adoptedStyleSheets = [...new Set([...root.adoptedStyleSheets, ...loaded.flat()])]
   } else {
-    await injectCss(urls, root)
+    await injectCss(urls, root, sri)
   }
   return (local.mirrorTheme ?? global.mirrorTheme) === false ? () => {} : mirrorTheme(el)
 }
 
-function loadSheet(href: string, chain: string[]): Promise<CSSStyleSheet[]> {
+function loadSheet(href: string, chain: string[], integrity?: string): Promise<CSSStyleSheet[]> {
   let p = sheets.get(href)
   if (!p) {
-    p = fetchCssText(href)
+    p = fetchCssText(href, integrity)
       .then((text) => {
         const up: string[] = []
         const imports: string[] = []

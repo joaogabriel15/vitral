@@ -2,6 +2,7 @@ import { prefetchCss } from './css'
 import { RemoteError } from './errors'
 import { verifyIntegrity } from './integrity'
 import { checkOrigin } from './registry'
+import type { SplitBuild } from './sri'
 import { protocol, type LoadedRemote } from './state'
 import type { Isolation, Props, RemoteEntry, RemoteManifest, RemoteModule } from './types'
 import { absolute, fetchBytes, fetchJson, withRetry, withTimeout } from './util'
@@ -16,10 +17,15 @@ export function preload(name: string): void {
   load(name).catch(() => {})
 }
 
+// Os caminhos de SRI sem `blob:` ficam num módulo à parte, fora do host
+// mínimo. Ele baixa junto com o primeiro manifesto; sem ele, vale o `blob:`.
+let paths: Promise<typeof import('./sri') | null> | undefined
+
 /** `isolate` diz como o CSS vai ser aplicado, para baixá-lo do jeito certo. */
 export function load(name: string, isolate?: Isolation): Promise<LoadedRemote> {
   const p = protocol()
   return p.load(name, async () => {
+    paths ??= import('./sri').catch(() => null)
     try {
       await p.pending()
       // Override troca a URL e descarta a integrity do host; o isolamento continua.
@@ -27,10 +33,10 @@ export function load(name: string, isolate?: Isolation): Promise<LoadedRemote> {
       const entry = override ? { isolate: p.entry(name)?.isolate, ...override } : p.entry(name)
       if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
       if (entry.module) return await loadLocal(name, entry)
-      const { integrity, ...resolved } = await resolveEntry(name, entry as RemoteEntry & { url: string })
+      const resolved = await resolveEntry(name, entry as RemoteEntry & { url: string })
       // O CSS baixa junto com o JS; a montagem espera os dois.
-      prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow')
-      const module = await withRetry(p.settings().retries, () => importModule(name, resolved.entry, integrity))
+      prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', resolved.sri)
+      const module = await withRetry(p.settings().retries, () => importModule(name, resolved))
       return { ...resolved, module }
     } catch (e: any) {
       throw e instanceof RemoteError ? e : new RemoteError('LOAD_FAILED', name, String(e?.message ?? e), e)
@@ -51,32 +57,41 @@ function devOverride(name: string): Promise<RemoteEntry | undefined> | undefined
 async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote> {
   let mod: any = entry.module
   if (typeof mod === 'function') mod = await mod()
-  mod = mod?.default ?? mod
-  if (typeof mod?.mount !== 'function') throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount()')
-  return { module: mod, entry: typeof location !== 'undefined' ? location.href : 'http://localhost/', css: entry.css ?? [], isolate: entry.isolate }
+  return { module: toModule(name, mod), entry: typeof location !== 'undefined' ? location.href : 'http://localhost/', css: entry.css ?? [], isolate: entry.isolate }
 }
 
-type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string }
+type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild }
+
+/** Arquivos únicos que já falharam: o mapa de módulos pode guardar o erro, então só `blob:`. */
+const failed = new Set<string>()
 
 async function resolveEntry(name: string, entry: RemoteEntry & { url: string }): Promise<Resolved> {
   checkOrigin(name, entry.url)
-  const isManifest = new URL(entry.url).pathname.endsWith('.json')
-  if (!isManifest) {
-    return { entry: entry.url, css: (entry.css ?? []).map((c) => absolute(c, entry.url)), integrity: entry.integrity, isolate: entry.isolate }
-  }
   // O manifesto é o único arquivo sem hash no nome: sempre revalida, para
-  // nunca usar um deploy velho (o resto pode ter cache eterno).
-  const m = await fetchJson<RemoteManifest>(entry.url, protocol().settings().timeout, name, 'no-cache')
-  if (!m || typeof m.entry !== 'string') throw new RemoteError('INVALID_MODULE', name, `manifesto inválido em ${entry.url}`)
+  // nunca usar um deploy velho (o resto pode ter cache eterno). Um manifesto
+  // embutido no registro do host poupa essa ida e volta.
+  const m: RemoteManifest =
+    entry.manifest ??
+    (new URL(entry.url).pathname.endsWith('.json')
+      ? await fetchJson<RemoteManifest>(entry.url, protocol().settings().timeout, name, 'no-cache')
+      : { name, entry: entry.url })
+  if (typeof m?.entry !== 'string') throw new RemoteError('INVALID_MODULE', name, `manifesto inválido em ${entry.url}`)
+  const abs = (u: string) => absolute(u, entry.url)
+  const sri: Record<string, string> = {}
+  for (const file in m.files ?? {}) sri[abs(file)] = m.files![file]
   const resolved: Resolved = {
-    entry: absolute(m.entry, entry.url),
-    css: [...(m.css ?? []), ...(entry.css ?? [])].map((c) => absolute(c, entry.url)),
-    // A integridade declarada pelo host vence a do manifesto.
+    entry: abs(m.entry),
+    css: [...(m.css ?? []), ...(entry.css ?? [])].map(abs),
+    // A integridade declarada pelo host vence a do manifesto, e aí só o
+    // arquivo único (o que ela descreve) é usado.
     integrity: entry.integrity ?? m.integrity,
     isolate: entry.isolate,
     scope: m.scope,
+    sri,
+    split: m.split && !entry.integrity ? { entry: abs(m.split.entry), chunks: (m.split.chunks ?? []).map(abs), sri } : undefined,
   }
   checkOrigin(name, resolved.entry)
+  if (resolved.split) checkOrigin(name, resolved.split.entry)
   // Remote vindo de `src` (nome = URL): o nome do manifesto vira apelido.
   if (name === entry.url && m.name) {
     const override = await devOverride(m.name)
@@ -87,27 +102,43 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }):
   return resolved
 }
 
-async function importModule(name: string, entry: string, integrity?: string): Promise<RemoteModule> {
+async function importModule(name: string, r: Resolved): Promise<RemoteModule> {
   const { timeout } = protocol().settings()
-  let url = entry
-  let revoke: string | null = null
-  if (integrity) {
-    const bytes = await fetchBytes(url, timeout, name)
-    await verifyIntegrity(name, bytes, integrity)
-    // Executa exatamente os bytes verificados.
-    url = revoke = URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }))
-  }
-  try {
-    const ns = await withTimeout(timeout, name, import(/* @vite-ignore */ /* webpackIgnore: true */ url))
-    const mod = (ns.default ?? ns) as RemoteModule
-    if (typeof mod?.mount !== 'function') {
-      throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount(). Use defineRemote() no remote.')
+  const { entry, integrity } = r
+  const run = (url: string) => withTimeout(timeout, name, import(/* @vite-ignore */ /* webpackIgnore: true */ url))
+  let ns: any
+  if (integrity && !failed.has(entry)) {
+    try {
+      // Caminhos 1 e 2: o navegador confere o hash e o JS roda da própria URL.
+      const url = await (await paths)?.verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity } })
+      if (url) ns = await run(url)
+    } catch {
+      failed.add(entry)
     }
-    return mod
-  } catch (e) {
-    if (e instanceof RemoteError) throw e
-    throw new RemoteError('LOAD_FAILED', name, `falha ao importar ${entry}`, e)
-  } finally {
-    if (revoke) URL.revokeObjectURL(revoke)
   }
+  if (!ns) {
+    let url = entry
+    let revoke: string | null = null
+    if (integrity) {
+      const bytes = await fetchBytes(url, timeout, name)
+      await verifyIntegrity(name, bytes, integrity)
+      // Caminho 3: executa exatamente os bytes verificados.
+      url = revoke = URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }))
+    }
+    try {
+      ns = await run(url)
+    } catch (e) {
+      if (e instanceof RemoteError) throw e
+      throw new RemoteError('LOAD_FAILED', name, `falha ao importar ${entry}`, e)
+    } finally {
+      if (revoke) URL.revokeObjectURL(revoke)
+    }
+  }
+  return toModule(name, ns)
+}
+
+function toModule(name: string, ns: any): RemoteModule {
+  const mod = ns?.default ?? ns
+  if (typeof mod?.mount !== 'function') throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount(). Use defineRemote() no remote.')
+  return mod
 }
