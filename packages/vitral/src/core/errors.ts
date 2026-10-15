@@ -27,3 +27,6 @@ export class RemoteError extends Error {
     this.docs = `${ERROR_DOCS}${code}.md`
   }
 }
+
+/** `RemoteError` de qualquer cópia da lib (o `instanceof` falha entre cópias). */
+export const isRemoteError = (e: unknown): e is RemoteError => (e as Error)?.name === 'RemoteError'

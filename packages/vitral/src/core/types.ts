@@ -125,8 +125,22 @@ export interface VitralConfig {
   devOverrides?: boolean
   /** Estilos do host no Shadow DOM: `{ inherit: ['/assets/base.css'] }`. */
   styles?: StyleOptions
+  /** Recebe o tempo de cada etapa do carregamento (para RUM). */
+  onMetric?: (metric: RemoteMetric) => void
 }
 
+/**
+ * Tempo de uma etapa do carregamento de um remote. Cada etapa também vira
+ * `performance.measure('vitral:<nome>:<etapa>')`, visível no painel
+ * Performance do DevTools.
+ */
+export interface RemoteMetric {
+  name: string
+  stage: 'manifest' | 'js' | 'css' | 'mount'
+  /** Início, em ms desde `performance.timeOrigin`. */
+  start: number
+  duration: number
+}
 
 /** Formato do `vitral.json` emitido pelo plugin de build. */
 export interface RemoteManifest {

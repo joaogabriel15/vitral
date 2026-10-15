@@ -208,9 +208,9 @@
       "limit": "5.3 kB"
     },
     {
-      "name": "caminhos de SRI (carregado sob demanda)",
+      "name": "SRI (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "0.8 kB"
+      "limit": "1.6 kB"
     },
     {
       "name": "host mínimo + store",

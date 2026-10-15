@@ -27,6 +27,20 @@ export interface HostSlotOptions<P extends Props = Props> extends SlotOptions<P>
 
 const noop = () => {}
 
+/**
+ * Último tempo de cada etapa do remote `name`, em ms, lido das medidas
+ * `vitral:<nome>:<etapa>`. Vai no `detail` do evento `vitral-ready`.
+ */
+export function timings(name: string): Partial<Record<'manifest' | 'js' | 'css' | 'mount', number>> {
+  const out: Record<string, number> = {}
+  if (typeof performance === 'undefined' || !performance.getEntriesByName) return out
+  for (const stage of ['manifest', 'js', 'css', 'mount']) {
+    const m = performance.getEntriesByName(`vitral:${name}:${stage}`, 'measure').pop()
+    if (m) out[stage] = Math.round(m.duration * 10) / 10
+  }
+  return out
+}
+
 /** Chama `fn` uma vez, na hora pedida por `mode`. Devolve a função que cancela. */
 export function when(el: Element, mode: string | null | undefined, fn: () => void): () => void {
   if (mode === 'lazy' || mode === 'visible') {
