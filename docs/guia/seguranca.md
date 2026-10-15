@@ -1,64 +1,59 @@
 # Segurança
 
-Duas checagens rodam antes de executar o JS de um remote: a origem e o hash. As duas vêm ligadas.
+Carregue remotes de quem você confia como confia no próprio código. No modo padrão e no Shadow DOM, eles executam com os privilégios da página.
 
 ## Origens permitidas
 
-Sem `allowedOrigins`, a lib aceita a origem da página e as origens das URLs registradas em `configure({ remotes })`. Com `allowedOrigins`, só as da lista:
+Registre as URLs no host e, para uma lista explícita, use:
 
 ```ts
+import { configure } from 'vitral'
+
 configure({
-  allowedOrigins: ['https://cdn.empresa.com', 'https://static.parceiro.com'],
+  remotes: { produtos: 'https://cdn.empresa.com/produtos/vitral.json' },
+  allowedOrigins: ['https://cdn.empresa.com'],
 })
 ```
 
-O `entry` do `vitral.json` também é conferido. Um manifesto em `cdn.empresa.com` não consegue apontar o JS para outra origem. URL fora da lista gera [`ORIGIN_BLOCKED`](/erros/ORIGIN_BLOCKED).
+Sem `allowedOrigins`, o vitral aceita a origem da página e as origens registradas. A origem da entrada JavaScript também é conferida.
 
-`['*']` libera tudo. Use só em desenvolvimento.
+A prop `src` dos componentes de host é tratada como URL confiável e adiciona sua origem às permitidas. Use URLs definidas pela aplicação, não valores arbitrários enviados por usuários. O atributo `src` de `<vitral-remote>` respeita a lista explícita.
 
-## Integridade (SRI)
+## Integridade
 
-O plugin grava o hash `sha384` do JS no `vitral.json`. Com hash, a lib:
+O plugin gera hashes no manifesto. Quando há hash, o vitral confere o conteúdo antes de executá-lo. **Sem hash, o carregamento de JavaScript ainda é permitido.**
 
-1. baixa o JS com `fetch`;
-2. calcula o hash sobre os bytes exatos da resposta;
-3. compara com o esperado e, se não bater, para com [`INTEGRITY`](/erros/INTEGRITY);
-4. executa exatamente os bytes conferidos, por uma URL `blob:`.
-
-Aceita o formato SRI completo: `sha256`, `sha384` ou `sha512`, e vários hashes separados por espaço. Vale o algoritmo mais forte.
-
-O manifesto vem do mesmo CDN que o JS. Para remote de terceiros, fixe o hash no host. O hash do host vence o do manifesto:
+Se manifesto e código vêm do mesmo CDN, alguém que altere os dois pode trocar também o hash. Para fixar a versão confiável, forneça o hash no host:
 
 ```ts
 configure({
   remotes: {
-    pagamento: { url: 'https://cdn.parceiro.com/pagamento/vitral.json', integrity: 'sha384-…' },
+    produtos: {
+      url: 'https://cdn.empresa.com/produtos/vitral.json',
+      integrity: 'sha384-…',
+    },
   },
 })
 ```
 
-Atualize o valor a cada deploy do remote.
+Atualize esse valor ao aprovar um novo build. O hash do host prevalece sobre o do manifesto. O CSS também é conferido quando seu hash está no manifesto; falhas de CSS podem deixar a área sem estilo sem impedir a montagem.
 
 ## CSP
 
-O JS conferido roda de uma URL `blob:`. Com Content Security Policy, inclua `blob:` em `script-src`:
+Permita a origem do remote nas diretivas necessárias:
 
-```
-Content-Security-Policy: script-src 'self' https://cdn.empresa.com blob:
-```
+- `connect-src`: manifesto, JavaScript e CSS baixados por fetch;
+- `script-src`: execução dos módulos;
+- `style-src`: folhas de estilo.
 
-A lib baixa com `fetch` o `vitral.json`, o JS com hash e o CSS no Shadow DOM, então a origem do remote precisa estar em `connect-src`. No modo escopo o CSS entra por `<link>` e a origem precisa estar em `style-src`.
+O carregamento com integridade usa os recursos disponíveis no navegador: import map com integridade, modulepreload com SRI ou verificação dos bytes e execução via `blob:`. Esse último caminho exige `blob:` em `script-src`. A lib repassa o nonce de um script da página ao import map.
 
-## O que não é isolado
+Não adicione permissões sem necessidade: teste a política nos navegadores suportados pela aplicação. Os detalhes dos caminhos e dos hashes estão em [INTEGRITY](/erros/INTEGRITY).
 
-- Shadow DOM isola o CSS, não o JS. O remote roda com os mesmos privilégios da página: lê cookies sem `HttpOnly`, `localStorage` e o DOM do host.
-- Só carregue remotes de quem você confia como confia no próprio código.
-- A lib não usa `eval` nem iframes. Ela guarda um único objeto global, em `Symbol.for('vitral')`.
+## Limites do isolamento
 
-## HTML no remote sem framework
+Shadow DOM separa estilos, não JavaScript. Ele não impede acesso ao DOM do host, ao localStorage ou a cookies acessíveis por JavaScript.
 
-Em `component()`, tudo que entra em `${}` passa por escape. `unsafeHTML(texto)` desliga o escape; use só com HTML que você gerou.
+Para uma fronteira de execução separada, existe o modo opt-in `vitral/iframe`, com restrições de comunicação. Veja [Isolar por iframe](/formas-de-usar). Revise as permissões e as pontes que você expõe antes de carregar código de terceiros.
 
-::: info Em breve
-Isolamento por iframe com `sandbox`, para código de terceiros ou legado. SRI também no CSS.
-:::
+Em `component()`, interpolações de texto são escapadas. `unsafeHTML()` desliga esse escape: use apenas conteúdo confiável.

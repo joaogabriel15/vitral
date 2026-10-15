@@ -67,8 +67,10 @@ describe('entrada virtual', () => {
 
   it('reexporta o remote e gera um import() por parte', () => {
     const code = loadExposes('\0vitral-exposes', '/proj', 'src/r.js', { Mini: 'src/m.js' })!
-    expect(code).toContain('export { default } from "/proj/src/r.js"')
-    expect(code).toContain('export * from "/proj/src/r.js"')
-    expect(code).toContain('"./Mini": () => import("/proj/src/m.js")')
+    const entry = JSON.stringify(resolve('/proj/src/r.js').replace(/\\/g, '/'))
+    const mini = JSON.stringify(resolve('/proj/src/m.js').replace(/\\/g, '/'))
+    expect(code).toContain(`export { default } from ${entry}`)
+    expect(code).toContain(`export * from ${entry}`)
+    expect(code).toContain(`"./Mini": () => import(${mini})`)
   })
 })

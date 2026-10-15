@@ -1,68 +1,54 @@
-# Autenticação
+# Login e usuário
 
-O host faz o login e entrega aos remotes só o que eles precisam: o usuário e uma função que devolve o token. O remote nunca guarda o token.
+O host mantém o login e a sessão. O remote recebe o usuário e as operações de que precisa. O backend continua responsável por autorizar cada requisição.
 
-## Host
+## No host
+
+Neste exemplo, `sessao` é o serviço de autenticação que sua aplicação já usa:
 
 ```jsx
-import { events } from 'vitral'
 import { Remote } from 'vitral/react'
 
-function App({ sessao }) {
-  // Avisa todos os remotes quando o usuário muda.
-  useEffect(() => events.emit('auth:usuario', sessao.usuario), [sessao.usuario])
+export function AreaEmployee({ sessao }) {
+  if (!sessao.usuario) return <p>Entre para acessar esta área.</p>
 
   return (
     <Remote
-      name="pedidos"
+      name="employee"
       props={{
         usuario: sessao.usuario,
-        getToken: () => sessao.tokenAtual(), // renova sozinho no host
         sair: () => sessao.logout(),
       }}
+      fallback={<p>Carregando…</p>}
     />
   )
 }
 ```
 
-## Remote
+Ao sair, atualize o estado de sessão do host para desmontar a área protegida. O vitral não implementa login nem renovação de token.
+
+## No remote
 
 ```jsx
-export default reactRemote(function Pedidos({ usuario, getToken }) {
-  const [pedidos, setPedidos] = useState([])
+import { reactRemote } from 'vitral/react'
 
-  useEffect(() => {
-    getToken()
-      .then((token) => fetch('/api/pedidos', { headers: { Authorization: `Bearer ${token}` } }))
-      .then((r) => r.json())
-      .then(setPedidos)
-  }, [usuario.id])
-
-  return <Lista pedidos={pedidos} />
-})
-```
-
-## Remote que não recebe props do host
-
-Um remote dentro de outro remote não recebe as props do host. Ele lê o último usuário emitido e assina as mudanças:
-
-```jsx
-import { useEventValue } from 'vitral/react'
-
-function Saudacao() {
-  const usuario = useEventValue('auth:usuario')
-  return usuario ? <p>Olá, {usuario.nome}</p> : null
+function EmployeeApp({ usuario, sair }) {
+  return (
+    <section>
+      <p>Olá, {usuario.nome}</p>
+      <button onClick={sair}>Sair</button>
+    </section>
+  )
 }
+
+export default reactRemote(EmployeeApp)
 ```
 
-`events.last('auth:usuario')` devolve o valor mesmo para quem montou depois do `emit`.
+## E as chamadas à API?
 
-## Cuidados
+- Com cookie `HttpOnly`, o remote pode usar a sessão sem receber um token por props.
+- Se a API exige Bearer token, o host pode passar uma função `getToken()` que retorna um token válido; o remote a chama antes da requisição.
+- Um caminho como `/api/pedidos` é relativo à origem do **host**, não à CDN do remote.
+- Não publique tokens no barramento de eventos nem persista credenciais no remote.
 
-- Não emita o token no barramento: qualquer código da página lê `events.last`.
-- Prefira cookie `HttpOnly` quando a API está no mesmo domínio. Aí o remote só faz `fetch` com `credentials: 'include'`.
-- Todo remote roda com os privilégios da página. Veja [Segurança](/guia/seguranca).
-
-::: info Em breve
-Estado compartilhado com dono e escrita controlada, para o host expor a sessão como um serviço.
-:::
+Para várias áreas acompanharem o mesmo usuário, veja [Estado compartilhado](/contexto). Passar funções organiza a integração, mas não cria uma barreira contra código malicioso: confira [Segurança](/guia/seguranca).

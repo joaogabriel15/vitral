@@ -2,12 +2,12 @@
 
 Use Tailwind ou qualquer CSS no remote. O CSS vai junto com o remote: o host não precisa conhecer as classes dele.
 
-Há dois modos de isolar o CSS.
+Há dois modos comuns de organizar o CSS. Regras globais, como fontes e propriedades registradas, exigem cuidado; veja os detalhes abaixo.
 
 | Modo | Como ligar | CSS do remote afeta o host? | CSS do host afeta o remote? |
 | --- | --- | --- | --- |
-| Escopo (padrão) | nada | Não | Sim, o que não for sobrescrito |
-| Shadow DOM | `isolate="shadow"` | Não | Só o que herda (fonte, cor, variáveis CSS) |
+| Escopo (padrão) | nada | Seletores ficam limitados à área | Sim, o que não for sobrescrito |
+| Shadow DOM | `isolate="shadow"` | Seletores ficam na árvore separada | Herança de fonte, cor e variáveis CSS |
 
 ## Escopo
 
@@ -71,6 +71,8 @@ configure({
 
 Um arquivo de CSS que falha não impede o remote de aparecer.
 
-::: info Em breve
-Herdar o tema, o dark mode e o CSS base do host, nos dois modos; `@font-face` e `@import` no Shadow DOM; e o CSS legado do host sem sobrepor o Tailwind v4 do remote.
-:::
+Para tema do host, dark mode, fontes, CSS base no Shadow DOM e compatibilidade entre versões do Tailwind, veja [Estilos do host no remote](/estilos).
+
+## Ícones SVG externos
+
+O navegador bloqueia referências como `<use href="https://cdn.empresa.com/icons.svg#icone">` entre origens, mesmo com CORS. Prefira SVG inline no componente ou um sprite servido na origem do host. Isso também se aplica a ícones de templates usados como ponto de partida.

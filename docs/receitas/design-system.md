@@ -39,6 +39,4 @@ if (!customElements.get('ui-botao')) customElements.define('ui-botao', UiBotao)
 
 Sem essa checagem, o segundo remote que registrar a mesma tag lança erro.
 
-::: info Em breve
-Tema e CSS base do host aplicados aos remotes em runtime, inclusive no Shadow DOM.
-:::
+Para herdar tema e CSS base do host em runtime, veja [Estilos do host no remote](/estilos).

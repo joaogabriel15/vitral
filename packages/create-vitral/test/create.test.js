@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { after, test } from 'node:test'
 import { create, DEFAULT_SRC, HOSTS, REMOTES } from '../src/create.js'
 import { parseArgs, run } from '../src/cli.js'
@@ -86,6 +87,6 @@ test('parseArgs e perguntas', async () => {
 
 test('o bin roda', async () => {
   const { execFileSync } = await import('node:child_process')
-  const out = execFileSync(process.execPath, [new URL('../index.js', import.meta.url).pathname, '--help'], { encoding: 'utf8' })
+  const out = execFileSync(process.execPath, [fileURLToPath(new URL('../index.js', import.meta.url)), '--help'], { encoding: 'utf8' })
   assert.match(out, /--framework/)
 })
