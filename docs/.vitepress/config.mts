@@ -44,6 +44,16 @@ export default defineConfig({
           text: 'Guia',
           items: [
             { text: 'Começo rápido', link: '/guia/' },
+            { text: 'Conectar repositórios', link: '/guia/repositorios' },
+            { text: 'Rotas entre aplicações', link: '/receitas/rotas' },
+            { text: 'Login e usuário', link: '/receitas/autenticacao' },
+            { text: 'Publicar', link: '/guia/publicacao' },
+          ],
+        },
+        {
+          text: 'Uso e referência',
+          collapsed: true,
+          items: [
             { text: 'Host', link: '/guia/host' },
             { text: 'Remote', link: '/guia/remote' },
             { text: 'Comunicação e contexto', link: '/guia/contexto' },

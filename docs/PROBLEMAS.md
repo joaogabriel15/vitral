@@ -1,10 +1,12 @@
-# Problemas das outras soluções e como o vitral trata cada um
+# Notas técnicas e problemas tratados
 
-Levantamento feito em 13/10/2026 a partir de documentação, issues e relatos de
+Registro técnico iniciado em 13/10/2026 a partir de documentação, issues e relatos de
 quem usa Module Federation, single-spa e afins. "Testado" significa que há
 teste automatizado ou verificação no navegador com a demo deste repositório.
 
-## Já resolvidos
+Estas notas explicam decisões de implementação. Não são uma comparação universal entre ferramentas; para avaliar adoção, comece pelo [guia](guia/) e pela [comparação](comparacao).
+
+## Casos tratados
 
 ### 1. Classes do Tailwind que "não funcionam" no remote (o seu caso)
 
@@ -194,19 +196,14 @@ mantendo a ordem. Testado com um host legado.
 `--tw-*` registradas do remote para `--tw-<escopo>-*`. Testado com o CSS do
 Tailwind v3 de verdade no host.
 
-## Ainda não resolvidos (próximos passos sugeridos)
+## Limitações atuais
 
-| Problema | Ideia |
-|---|---|
-| Host com Tailwind v3 e remote em Shadow DOM com Tailwind v4 (`@property` com o mesmo nome) | Opção para renomear `--tw-*` do remote no build. |
-| `html.dark` no host não chega no remote com escopo | Repassar o tema por prop/evento, ou mapear `.dark` do `<html>`. |
-| `provide`/`shared` não atravessam `isolate="iframe"` | Ponte de estado sobre o canal `bridges` de `vitral/iframe` quando o store da Fase 2 entrar. |
-| Remote feito com webpack, Rspack ou esbuild precisa escrever o `vitral.json` à mão | `npx vitral manifest dist/remote.js` gera manifesto, SRI e escopo de CSS. |
-| Remote não renderiza no servidor | SSR de fragmentos (`server.js` com `render(props)`), previsto para uma 1.x. |
+- O conteúdo do remote não é renderizado no servidor.
+- Entradas Vue/Svelte ainda não geram os tipos de props para o host.
+- O store compartilhado não atravessa automaticamente o iframe.
+- Outros bundlers precisam produzir uma entrada compatível e fornecer os metadados; a CLI não gera manifestos para eles.
 
-| Remote só funciona buildado em dev (limitação documentada do plugin de federation para Vite) | Modo dev: o plugin serve o `vitral.json` apontando para o servidor do Vite, com HMR. **Maior prioridade.** |
-| Tipos das props divergem entre deploys | Plugin gera `.d.ts` das props do remote e o host baixa esses tipos. |
-| Seletor `html.dark .x` escrito no CSS do remote vira `[escopo].dark .x` e não casa no modo escopo (`dark:` do Tailwind funciona) | Copiar o tema do `<html>` também no modo escopo, ou gerar os dois seletores. |
+Veja [Quando não usar](quando-nao-usar) para os limites de adoção.
 
 ## Fontes
 

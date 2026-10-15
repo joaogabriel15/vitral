@@ -115,11 +115,11 @@ O plugin é o mesmo para todos os frameworks. Troque `react()` por `vue()`, `sve
 
 | Opção | Padrão | O que faz |
 | --- | --- | --- |
-| `entry` | obrigatório | Arquivo que exporta o remote |
+| `entry` | `src/remote.*` ou `src/App.*` | Arquivo que exporta o remote |
 | `name` | `name` do `package.json` | Nome no `vitral.json` e no escopo do CSS |
 | `version` | `version` do `package.json` | Versão no `vitral.json` |
 | `scopeCss` | `true` | Prefixa o CSS para valer só dentro do remote. Veja [Estilos](./estilos) |
-| `shared` | nenhuma | Dependências que ficam fora do bundle e vêm do import map do host. Veja [Performance](./performance#dependencias-compartilhadas) |
+| `dedupe` | nenhuma | Reutiliza dependências compatíveis da página, com fallback para a própria cópia. Veja [Performance](./performance#dependencias-compartilhadas) |
 
 `vite build` gera:
 
@@ -141,7 +141,7 @@ dist/
 }
 ```
 
-Publique a pasta `dist` em qualquer CDN com CORS. Só o `vitral.json` muda de nome a cada deploy; os outros arquivos têm hash no nome.
+Publique a pasta `dist` em qualquer CDN com CORS. O `vitral.json` mantém o nome; os arquivos com hash mudam quando seu conteúdo muda. Veja [Publicar](./publicacao).
 
 ## Outros bundlers
 
@@ -161,6 +161,4 @@ configure({
 
 Sem o plugin, o CSS não é prefixado. Use `isolate: 'shadow'` ou prefixe o CSS você mesmo.
 
-::: info Em breve
-Remote sem adaptador (o plugin descobre o framework), modo dev com HMR, tipos das props entre deploys e geração do `vitral.json` para outros bundlers.
-:::
+O plugin também aceita um componente sem adaptador explícito, descobre o framework e oferece HMR em `vite dev`. A geração de tipos produz `vitral.d.ts` para entradas JS/TS; entradas Vue/Svelte ainda têm limitações. Veja a [referência da API](/api/).

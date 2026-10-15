@@ -1,35 +1,29 @@
 # Quando não usar o vitral
 
-Casos em que outra ferramenta resolve melhor hoje. As referências são da documentação oficial de cada uma, consultada em 14/10/2026.
+Use o vitral quando deploys independentes resolvem uma necessidade do produto ou das equipes. Ter vários repositórios, sozinho, não obriga a usar micro-frontends.
 
-## Um time, um framework, um deploy
+## Uma equipe publica tudo junto
 
-Se todas as partes são do mesmo time e saem juntas, um monorepo com pacotes comuns é mais simples. Micro-frontends servem para times com deploys independentes.
+Se as partes têm o mesmo ciclo de entrega, pacotes compartilhados ou uma aplicação modular costumam exigir menos configuração.
 
-## SSR dos remotes
+## Você precisa do HTML do remote no servidor
 
-No vitral, o servidor do host renderiza só o `fallback`. O remote monta no cliente. Se o HTML do remote precisa vir pronto do servidor (SEO, primeira pintura), use:
+O host pode renderizar o fallback no servidor, mas o remote monta no cliente. Isso não oferece SSR do conteúdo remoto nem transfere automaticamente recursos de servidor do Next/Nuxt.
 
-- [Native Federation](https://native-federation.com/docs/v4/angular-adapter/), com o SSR do Angular;
-- [Piral](https://github.com/smapiot/piral/blob/develop/docs/questions/general.md), com servidor próprio;
-- [Podium](https://podium-lib.io/), que monta fragmentos de HTML no servidor.
+Se SEO ou a primeira resposta HTML dependem desse conteúdo, avalie composição no servidor antes de escolher esta arquitetura.
 
-## Código legado que altera `window`
+## Você precisa executar código não confiável
 
-O vitral não tem sandbox de JS. O remote roda direto na página. Se o código mexe em globais, polyfills ou listeners de `window` e você não pode mudar isso, use uma ferramenta com sandbox:
+O modo padrão e o Shadow DOM não isolam JavaScript. O modo opt-in por iframe existe, mas muda a comunicação e exige revisar as permissões. Ele não torna automaticamente qualquer aplicação legada compatível. Veja [Segurança](/guia/seguranca).
 
-- [wujie](https://wujie-micro.github.io/doc/guide/communication.html), que roda o JS num iframe;
-- [micro-app](https://github.com/jd-opensource/micro-app), com sandbox de `Proxy` ou iframe;
-- [qiankun](https://qiankun.umijs.org/api), com sandbox de `Proxy`.
+## Cada área já é uma página independente
 
-## Uma aplicação por rota, na plataforma
+Se navegar entre aplicações completas atende ao produto, o servidor pode escolher a aplicação por caminho. Não é necessário compor todas elas no navegador.
 
-Se cada parte é uma página inteira e a divisão é por caminho (`/loja` num app, `/conta` em outro), o roteamento pode ficar na plataforma de deploy, sem código no cliente. Exemplo: [Vercel Microfrontends](https://vercel.com/changelog/microfrontends-now-generally-available).
+## Você precisa de garantias automáticas entre deploys
 
-## Tipos das props conferidos entre deploys, hoje
+O vitral gera tipos para entradas JS/TS e permite baixá-los no host com `npx vitral types`. Entradas `.vue` e `.svelte` ainda não geram esses tipos.
 
-O vitral ainda não gera os tipos das props de um remote para o host. O Module Federation gera com o [dts-plugin](https://module-federation.io/guide/runtime/index.html).
+Tipos ajudam no desenvolvimento, mas não impedem um deploy incompatível depois que o host foi compilado. Combine contratos, testes de integração e uma estratégia de rollback.
 
-::: info Em breve
-Tipos entre deploys e isolamento por iframe estão no plano do vitral. Esta página muda quando eles saírem.
-:::
+Veja [Comparação](/comparacao) para avaliar as diferenças de proposta.

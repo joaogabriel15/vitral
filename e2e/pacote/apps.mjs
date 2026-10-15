@@ -27,6 +27,22 @@ const remote = (nome, template, entry, codigo) => ({
   tipo: 'remote',
   criar: viteCreate(template),
   preparar(dir) {
+    // <use href="/icons.svg#..."> dos templates Vue não aceita outra origem,
+    // mesmo com CORS. Incorpora os símbolos locais, mantendo os ícones e o
+    // contador do template. Não silencia erros de console no teste do host.
+    if (nome === 'vue') {
+      const component = join(dir, 'src/components/HelloWorld.vue')
+      const sprite = join(dir, 'public/icons.svg')
+      if (existsSync(component) && existsSync(sprite)) {
+        const svg = readFileSync(sprite, 'utf8')
+        const source = readFileSync(component, 'utf8').replace(/<use href="\/icons\.svg#([\w-]+)"><\/use>/g, (_, id) => {
+          const symbol = svg.match(new RegExp(`<symbol\\b[^>]*\\bid="${id}"[^>]*>([\\s\\S]*?)<\\/symbol>`))
+          if (!symbol) throw new Error(`símbolo SVG não encontrado: ${id}`)
+          return symbol[1]
+        })
+        writeFileSync(component, source)
+      }
+    }
     writeFileSync(join(dir, entry), codigo())
     pluginVitral(dir, nome, entry)
   },

@@ -1,94 +1,69 @@
 # Começo rápido
 
-Um remote é um app publicado em qualquer CDN. O host é a página que mostra os remotes. O host só precisa da URL do `vitral.json` de cada remote.
+O vitral conecta aplicações de repositórios diferentes na mesma página. O **host** é a aplicação principal; cada **remote** é uma área que você publica separadamente.
+
+Você configura uma entrada por aplicação, não uma por página. Por exemplo: o principal cuida do login e do menu; produtos e employee têm seus próprios repositórios e páginas.
+
+## Experimente com dois projetos
+
+Use Node.js 22.12+ ou 24 LTS e npm. Este exemplo cria um host React e um remote React; eles também podem usar frameworks diferentes.
+
+### 1. Suba o remote
+
+Em um terminal:
 
 ```bash
-npm install vitral
+npm create vitral@latest produtos -- --remote --framework react
+cd produtos
+npm install
+npm run dev
 ```
 
-## 1. Remote
+Deixe o terminal aberto. O remote serve seu manifesto em `http://localhost:5174/vitral.json`.
 
-Exporte o componente com o adaptador do framework:
+### 2. Suba o host
+
+Em outro terminal, a partir da pasta onde você criou `produtos`:
+
+```bash
+npm create vitral@latest principal -- --host --framework react --src http://localhost:5174/vitral.json
+cd principal
+npm install
+npm run dev
+```
+
+Abra o endereço que o Vite mostrar, normalmente `http://localhost:5173`. Você verá o componente do remote dentro do host. Edite `produtos/src/App.jsx` e veja a alteração no navegador.
+
+::: tip Já tem os repositórios?
+Não precisa gerar novos projetos. Siga [Conectar projetos existentes](./repositorios).
+:::
+
+## O que conecta os dois?
+
+No remote, o plugin `vitral/vite` prepara a aplicação e gera o `vitral.json`. No host, o componente recebe essa URL:
 
 ```jsx
-// src/remote.jsx
-import { reactRemote } from 'vitral/react'
-import Carrinho from './Carrinho'
-
-export default reactRemote(Carrinho)
-```
-
-Adicione o plugin:
-
-```js
-// vite.config.js
-import react from '@vitejs/plugin-react'
-import vitral from 'vitral/vite'
-
-export default { plugins: [react(), vitral({ entry: 'src/remote.jsx' })] }
-```
-
-`vite build` gera o JS, o CSS e um `vitral.json`. Publique a pasta `dist` em qualquer CDN com CORS.
-
-## 2. Host
-
-Registre a URL e use o componente:
-
-```jsx
-import { configure } from 'vitral'
 import { Remote } from 'vitral/react'
 
-configure({
-  remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' },
-})
-
-export function App() {
+export default function App() {
   return (
     <Remote
-      name="carrinho"
-      props={{ userId: 42 }}
+      src="http://localhost:5174/vitral.json"
+      props={{ nome: 'João' }}
       fallback={<p>Carregando…</p>}
-      error={(erro, tentarDeNovo) => <button onClick={tentarDeNovo}>Tentar de novo</button>}
+      error={(erro, retry) => <button onClick={retry}>Tentar novamente</button>}
     />
   )
 }
 ```
 
-Mudar `props` atualiza o remote sem remontar.
+O remote pode ser um widget, uma página ou uma aplicação com várias rotas. O host não precisa de plugin de build do vitral.
 
-## O contrato
+## Próximos passos
 
-Todo remote é um ES module que exporta `mount`:
+- [Conectar projetos existentes](./repositorios): configure uma entrada por repositório.
+- [Navegar entre áreas](/receitas/rotas): escolha o remote pela URL, sem recarregar o documento.
+- [Compartilhar login e usuário](/receitas/autenticacao): mantenha a sessão no host.
+- [Publicar](./publicacao): leve host e remotes para produção.
 
-```ts
-export default {
-  mount(el, props, ctx) {
-    el.textContent = `Olá, ${props.nome}`
-    return {
-      update(props) { el.textContent = `Olá, ${props.nome}` },
-      unmount() { el.textContent = '' },
-    }
-  },
-}
-```
-
-Os adaptadores (`reactRemote`, `vueRemote` e os outros) escrevem esse objeto para você. Qualquer bundler serve, desde que o arquivo final seja um ES module.
-
-## Frameworks
-
-| Framework | Remote | Host | Import |
-| --- | --- | --- | --- |
-| React 18 e 19 | `reactRemote(App)` | `<Remote>` | `vitral/react` |
-| Next.js (App e Pages Router) | `reactRemote(App)` | `<Remote>` | `vitral/react` |
-| Vue 3 | `vueRemote(App, { setup })` | `<VitralRemote>` | `vitral/vue` |
-| Nuxt 3 e 4 | `vueRemote(App, { setup })` | `<VitralRemote>` | `vitral/vue` |
-| Angular 17+ | `angularRemote(Component, { providers })` | `<vitral-remote>` e `provideVitral()` | `vitral/angular` |
-| Svelte 5 | `svelteRemote(App)` | `use:remote` | `vitral/svelte` |
-| Solid | `solidRemote(App)` | `<Remote>` | `vitral/solid` |
-| Preact | `preactRemote(App)` | `<Remote>` | `vitral/preact` |
-| Lit e Web Components | `elementRemote('meu-widget')` | `<vitral-remote>` | `vitral/element` |
-| JS e TypeScript puro | `component({ render })` | `<vitral-remote>` | `vitral` |
-
-Host e remote não precisam usar o mesmo framework. Os exemplos do repositório cruzam [9 hosts e 8 remotes](https://github.com/joaogabriel15/vitral/tree/main/examples) no e2e.
-
-Próximos passos: [Host](./host), [Remote](./remote) e [Comunicação](./contexto).
+Para outros frameworks, veja os exemplos de [Host](./host) e [Remote](./remote). Antes de adotar a arquitetura, confira [Quando não usar](/quando-nao-usar).

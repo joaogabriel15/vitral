@@ -164,7 +164,7 @@ slot.destroy()
 
 ## Erros
 
-Um remote que falha mostra o `error` do componente e não derruba a página. `retry` monta só aquele remote de novo. Todo erro é um `RemoteError` com `code`, `remote` e `docs`, o link da página do código. A lista está em [Erros](/erros/).
+Falhas de carregamento e erros reportados pelo remote aparecem no `error` do componente. Isso não isola JavaScript nem captura toda exceção possível. `retry` monta só aquele remote de novo. Todo erro é um `RemoteError` com `code`, `remote` e `docs`, o link da página do código. A lista está em [Erros](/erros/).
 
 ## Baixar antes de mostrar
 
@@ -178,6 +178,4 @@ link.addEventListener('mouseenter', () => preload('checkout'), { once: true })
 
 O remote é baixado uma vez só por página, mesmo com várias instâncias.
 
-::: info Em breve
-Passar a URL direto no componente, sem `configure`, e telas padrão de carregando e de erro no `<vitral-remote>`.
-:::
+Também pode usar a URL direto: `<Remote src="https://cdn.empresa.com/produtos/vitral.json" />`. Para vários repositórios, veja [Conectar projetos existentes](./repositorios).

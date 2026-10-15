@@ -39,7 +39,7 @@ Detalhes em [Estilos](/guia/estilos).
 
 ## Mesmas cores no host e no remote
 
-Hoje o tema do remote vence o do host dentro do remote. Para usar as mesmas cores, os dois importam o mesmo pacote de tokens no build:
+Uma opção para usar as mesmas cores é importar um pacote de tokens nos dois projetos:
 
 ```css
 /* @empresa/tema/tokens.css */
@@ -54,8 +54,4 @@ Hoje o tema do remote vence o do host dentro do remote. Para usar as mesmas core
 @import "@empresa/tema/tokens.css";
 ```
 
-Mudar uma cor exige um build novo de cada remote.
-
-::: info Em breve
-Remote herdando o tema e o dark mode do host em runtime, sem build novo, nos modos escopo e Shadow DOM.
-:::
+Nesse modelo, mudar o pacote exige novo build. Para herdar os valores do host em runtime, use `theme(reference)` ou `vitral({ theme: 'host' })`, conforme o [guia de estilos](/estilos).

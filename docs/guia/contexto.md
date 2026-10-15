@@ -1,70 +1,78 @@
 # Comunicação e contexto
 
-Host e remotes conversam de três jeitos:
+Comece passando props. Use eventos para avisos entre áreas e estado compartilhado quando várias áreas precisam acompanhar o mesmo valor.
 
-| Use | Para | Exemplo |
-| --- | --- | --- |
-| props | Dados de uma instância, do host para o remote | `userId`, `produtoId` |
-| `events` | Avisos pontuais entre quaisquer partes | "item adicionado", "usuário saiu" |
-| `navigate` | Trocar de página de dentro de um remote | `/pedidos/42` |
+| Necessidade | Use |
+| --- | --- |
+| Passar usuário ou uma função do host ao remote | Props |
+| Avisar que um item foi adicionado | Eventos |
+| Compartilhar tema ou sessão atual | `provide` e `shared` |
+| Abrir uma página de outra área | `navigate` |
 
 ## Props
 
-O host passa, o remote recebe em `mount` e depois em `update`. Funções também passam:
-
 ```jsx
-<Remote name="carrinho" props={{ userId, aoFinalizar: (pedido) => navegarPara(pedido) }} />
+<Remote name="produtos" props={{ usuario, aoSelecionar: (id) => abrirProduto(id) }} />
 ```
 
-No `<vitral-remote>`, o atributo `props` só aceita JSON. Para funções, use a propriedade `el.props`.
+O remote recebe essas props no componente exportado. Elas são atualizadas sem remontar a área.
+
+No `<vitral-remote>`, o atributo `props` aceita JSON. Para funções, use a propriedade JavaScript `elemento.props`.
 
 ## Eventos
 
 ```ts
 import { events } from 'vitral'
 
-events.emit('carrinho:total', 120)
 const parar = events.on('carrinho:total', (total) => console.log(total))
-events.last('carrinho:total') // 120
-parar()
+events.emit('carrinho:total', 120)
+parar() // encerre a assinatura quando ela não for mais necessária
 ```
 
-- Todos os remotes usam o mesmo barramento, mesmo com cópias ou versões diferentes da lib na página.
-- `last(tipo)` devolve o último valor emitido. Serve para estado simples, como o usuário logado.
-- Um handler que lança erro não impede os outros de rodar.
-- Dentro do remote, use `ctx.events`: o que ele assina é cancelado no unmount.
-
-Use um prefixo no nome do evento (`carrinho:`) para saber quem emite.
-
-### Hooks
-
-`vitral/react` e `vitral/vue` têm hooks que assinam enquanto o componente existe:
+O `events.on()` global exige limpeza manual. Dentro do remote, assinaturas via `ctx.events` são encerradas no unmount. Os hooks também cuidam da limpeza:
 
 ```jsx
-import { useEvent, useEventValue } from 'vitral/react'
+import { useEventValue } from 'vitral/react'
 
-function Contador() {
-  const total = useEventValue('carrinho:total') // re-renderiza a cada emit
-  useEvent('carrinho:limpo', () => alert('Carrinho vazio'))
+export function Total() {
+  const total = useEventValue('carrinho:total')
   return <span>{total ?? 0}</span>
 }
 ```
 
-Em Vue, `useEventValue` devolve uma `ShallowRef`.
+O barramento global compartilhado requer versões do vitral com suporte ao protocolo global; a versão 0.1.0 não o implementa. Para remotes antigos, use o barramento fornecido em `ctx.events`.
+
+## Estado compartilhado
+
+O host cria o valor:
+
+```ts
+import { provide } from 'vitral'
+
+const tema = provide('tema', 'claro', { writable: false })
+```
+
+Uma área React acompanha as mudanças:
+
+```jsx
+import { useShared } from 'vitral/react'
+
+export function TemaAtual() {
+  const tema = useShared('tema')
+  return <span>{tema}</span>
+}
+```
+
+Consulte [Estado compartilhado](/contexto) para atualizar valores, declarar tipos e usar outros frameworks. A permissão de escrita organiza a API; não é uma barreira de segurança contra JavaScript malicioso na página.
 
 ## Navegação
 
 ```ts
 import { navigate } from 'vitral'
 
-navigate('/pedidos/42')
-navigate('/login', { replace: true })
+navigate('/employee/123')
 ```
 
-`navigate` atualiza o histórico e dispara `popstate`, que React Router, Vue Router, Next, Nuxt e os outros roteadores escutam. Também emite `vitral:navigate` no barramento. URL de outra origem recarrega a página.
+Para URLs da mesma origem, o vitral muda o histórico e sinaliza `popstate`. O roteador do host precisa estar integrado para montar a área correta. URLs de outra origem fazem uma navegação completa.
 
-Dentro do remote, `ctx.navigate` faz o mesmo.
-
-::: info Em breve
-Estado compartilhado entre host e remotes, com dono, permissão de escrita, tipos e hooks para cada framework. Até lá, use props e `events.last`.
-:::
+Veja [Rotas entre aplicações](/receitas/rotas) e [Login e usuário](/receitas/autenticacao).

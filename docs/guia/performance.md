@@ -1,63 +1,67 @@
 # Performance
 
-## O que já acontece
+Comece com a configuração padrão. Otimize as áreas que o usuário realmente precisa carregar.
 
-- O host mínimo (`configure` + `createSlot`) tem orçamento de 4 kB com brotli. O CI mede a cada PR e falha se passar.
-- Cada remote é baixado uma vez por página, mesmo com várias instâncias ou cópias da lib.
-- O `vitral.json` é pedido com `cache: 'no-cache'`: o navegador revalida a cada carga e nunca usa um deploy velho.
-- O JS e o CSS têm hash no nome. O cache deles pode ser eterno.
-- Falha de rede ou `TIMEOUT` ao baixar o JS tenta de novo `retries` vezes (padrão 1), com espera de 200 ms, 400 ms, 800 ms…
-
-## Cabeçalhos de cache no CDN
-
-| Arquivo | `Cache-Control` |
-| --- | --- |
-| `vitral.json` | `no-cache` (com `ETag` ou `Last-Modified`) |
-| `remote-*.js`, `remote-*.css` | `public, max-age=31536000, immutable` |
-
-O remote também precisa de CORS: `Access-Control-Allow-Origin` com a origem do host ou `*`.
-
-## Baixar antes
+## Baixe antes de abrir
 
 ```ts
 import { preload } from 'vitral'
 
-preload('checkout') // baixa o manifesto e o JS, sem montar
+preload('produtos')
 ```
 
-Use no hover de um link ou logo depois da primeira tela.
+O preload inicia o carregamento de JavaScript e CSS sem montar a área. Ele é útil no hover de um link ou depois da primeira tela.
 
-## Tempo limite
+## Adie áreas fora da tela
 
-```ts
-configure({ timeout: 15000, retries: 1 })
+```jsx
+<Remote
+  name="comentarios"
+  loading="lazy"
+  fallback={<p>Carregando comentários…</p>}
+/>
 ```
 
-`timeout` vale para cada download: `remotes.json`, `vitral.json` e o JS.
+Reserve espaço no layout para evitar saltos quando a área aparecer.
+
+| Opção | Uso |
+| --- | --- |
+| `loading="lazy"` | Montar perto de entrar na tela |
+| `loading="idle"` | Montar quando o navegador estiver ocioso |
+| `prefetch="hover"` | Antecipar o download ao passar o ponteiro |
+| `prefetch="visible"` | Antecipar o download perto da tela |
+| `priority="high"` | Priorizar downloads de uma área importante |
+| `keepAlive` | Manter a área montada em cache ao sair; desativada, ela deve pausar trabalho desnecessário |
+
+O keep-alive pode consumir memória e manter timers ativos. Use os hooks `ctx.onDeactivate` e `ctx.onActivate` para pausar e retomar trabalho.
 
 ## Dependências compartilhadas
 
-Por padrão cada remote leva o próprio React ou Vue, na própria root. Nunca há conflito de versão. Para baixar o framework uma vez só, tire-o do bundle e sirva por um import map no host:
+Por padrão, cada remote leva seu framework e monta sua própria raiz. Isso reduz o acoplamento de versões, mas pode duplicar downloads.
+
+Para tentar reutilizar uma versão compatível já oferecida na página:
 
 ```js
 // vite.config.js do remote
-vitral({ entry: 'src/remote.jsx', shared: ['react', 'react-dom', 'react-dom/client'] })
+vitral({ dedupe: ['react'] })
 ```
 
-```html
-<!-- host -->
-<script type="importmap">
-  {
-    "imports": {
-      "react": "https://esm.sh/react@19.2.0",
-      "react-dom/client": "https://esm.sh/react-dom@19.2.0/client"
-    }
-  }
-</script>
+Se não houver versão compatível, o remote usa a própria cópia. O host React oferece seu React automaticamente. A opção antiga `shared`, baseada em import maps manuais, está depreciada; prefira `dedupe`.
+
+## Meça no host
+
+```ts
+import { configure } from 'vitral'
+
+configure({
+  onMetric: ({ name, stage, duration }) => {
+    console.log(name, stage, duration)
+  },
+})
 ```
 
-A versão do import map vale para todos os remotes que usam `shared`. Todos precisam funcionar com ela.
+As etapas são `manifest`, `js`, `css` e `mount`. Elas também aparecem como `performance.measure` no DevTools.
 
-::: info Em breve
-Downloads de JS e CSS em paralelo, carregamento só quando o remote aparece na tela, keep-alive entre rotas, framework compartilhado com fallback por versão e métricas de carregamento para RUM.
-:::
+JavaScript e CSS começam a baixar em paralelo após o manifesto. O manifesto é revalidado ao ser solicitado; módulos já carregados ficam em cache na sessão. Um deploy novo não substitui automaticamente o código em uma aba aberta.
+
+Veja [Publicar](./publicacao) para os cabeçalhos de cache, [Formas de usar](/formas-de-usar) para atualização durante a sessão e [Benchmarks](/benchmarks) para medições e método.
