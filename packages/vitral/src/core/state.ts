@@ -79,6 +79,8 @@ export interface Protocol {
 /** Uma versão de um grupo de `dedupe`, oferecida pelo host ou por um remote. */
 export interface Offer {
   version: string
+  /** Arquivo da cópia, para preferir na próxima visita a que já está no cache. */
+  url?: string
   load(): Promise<SharedModules>
 }
 
