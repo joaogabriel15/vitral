@@ -20,6 +20,12 @@ import {
 } from 'react'
 import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 import { createRoot } from 'react-dom/client'
+import * as ReactAll from 'react'
+import * as ReactDOM from 'react-dom'
+import * as ReactDOMClient from 'react-dom/client'
+import * as JSXRuntime from 'react/jsx-runtime'
+import * as JSXDevRuntime from 'react/jsx-dev-runtime'
+import { protocol } from './core/state'
 import {
   defineRemote,
   events,
@@ -143,6 +149,30 @@ export interface RemoteProps<P extends Props = Props> {
   keepAlive?: boolean | number
 }
 
+let offeredTo: object | undefined
+
+/**
+ * Oferece o React do host aos remotes com `dedupe: ['react']`. O grupo vem
+ * inteiro daqui, porque o React DOM exige a mesma versão do React.
+ */
+function offerReact() {
+  const p = protocol()
+  if (offeredTo === p) return
+  offeredTo = p
+  const compiler = (ReactAll as any).__COMPILER_RUNTIME
+  const modules = {
+    react: ReactAll,
+    'react-dom': ReactDOM,
+    'react-dom/client': ReactDOMClient,
+    'react/jsx-runtime': JSXRuntime,
+    'react/jsx-dev-runtime': JSXDevRuntime,
+    // O React 19 expõe o react/compiler-runtime pelo próprio react.
+    ...(compiler && { 'react/compiler-runtime': compiler }),
+  }
+  // Fora do host mínimo; os downloads esperam a oferta (pending).
+  p.pending(import('./core/dedupe').then((m) => m.offer(p, { react: { version: ReactAll.version, modules } })).catch(() => {}))
+}
+
 /**
  * Renderiza um remote. No servidor (Next SSR) renderiza só o fallback; o
  * remote monta no cliente, então não há erro de hidratação. Com o nome em
@@ -169,6 +199,7 @@ export function Remote<P extends Props = Props, N extends string = string>({
   onErrorRef.current = onError
 
   useEffect(() => {
+    offerReact()
     const s = hostSlot<P>(target.current!, {
       name,
       src,

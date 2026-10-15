@@ -7,8 +7,10 @@ import { absolute, addLink, fetchJson, pageOrigin } from './util'
 /** Configura a lib. Pode ser chamada mais de uma vez; as opções são mescladas. */
 export function configure(config: VitralConfig): void {
   const p = protocol()
-  const { remotes, ...rest } = config
+  const { remotes, dedupe, ...rest } = config
   p.configure(rest)
+  // Os downloads esperam as ofertas (pending), então ficam prontas antes.
+  if (dedupe) p.pending(import('./dedupe').then((m) => m.offer(p, dedupe)).catch(() => {}))
   if (typeof remotes === 'string') {
     const url = absolute(remotes)
     p.pending(
