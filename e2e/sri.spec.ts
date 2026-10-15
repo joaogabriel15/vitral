@@ -67,6 +67,9 @@ test.beforeAll(async () => {
   server = createServer(async (req, res) => {
     const url = new URL(req.url!, origin)
     requests.push(url.pathname)
+    // Sem reaproveitar conexão: um socket derrubado de propósito não pode
+    // deixar a próxima requisição presa numa conexão morta.
+    res.shouldKeepAlive = false
     const csp = url.searchParams.get('csp')
     if (url.pathname === '/') {
       const headers: Record<string, string> = { 'content-type': 'text/html; charset=utf-8' }
@@ -194,8 +197,17 @@ for (const [label, csp] of Object.entries(CSPS) as [keyof typeof CSPS, string | 
       expect(await state(page)).toMatchObject({ status: 'error', error: 'LOAD_FAILED' })
       healed.add(id)
       const before = requests.length
+      const logs: string[] = []
+      page.on('console', (m) => logs.push(m.text()))
+      page.on('pageerror', (e) => logs.push(String(e)))
       await page.evaluate(() => (window as any).__slot.retry())
-      await expect(page.locator('body[data-status="ready"]')).toHaveCount(1)
+      // Com o estado inteiro na mensagem, uma falha mostra o código e o caminho usado.
+      try {
+        await expect(page.locator('body[data-status="ready"]')).toHaveCount(1)
+      } catch (e) {
+        const info = { ...(await state(page)), logs, requests: requests.slice(before) }
+        throw new Error(`retry não chegou a ready: ${JSON.stringify(info)}`, { cause: e })
+      }
       const s = await state(page)
       expect(s.text).toBe('ok arquivo único')
       expect(requests.slice(before).filter((p) => p.includes(`/${id}/split/`))).toEqual([])
