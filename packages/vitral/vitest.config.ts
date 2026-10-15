@@ -8,6 +8,8 @@ export default defineConfig({
     // Força o build de navegador do Solid/Svelte (o padrão do Node é o de SSR).
     server: { deps: { inline: [/solid-js/, /svelte/] } },
     include: ['test/**/*.test.{ts,tsx}'],
+    // Testes de tipos da API pública (expectTypeOf), checados pelo tsc.
+    typecheck: { enabled: true, include: ['test/**/*.test-d.ts'], tsconfig: './tsconfig.tipos.json' },
     // Testes não acessam a rede: o CSS dos remotes é simulado.
     environmentOptions: { happyDOM: { settings: { disableCSSFileLoading: true } } },
     coverage: {
