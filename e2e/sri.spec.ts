@@ -157,6 +157,8 @@ const CSPS = {
 // (fica no 2) e o WebKit ignora o integrity do modulepreload (pula o 2).
 const EXPECTED: Record<string, Record<keyof typeof CSPS, number>> = {
   chromium: { 'sem CSP': 1, 'CSP sem inline': 2, 'CSP sem inline nem data:': 3 },
+  // Chromium com tela de celular: mesmo motor.
+  mobile: { 'sem CSP': 1, 'CSP sem inline': 2, 'CSP sem inline nem data:': 3 },
   firefox: { 'sem CSP': 2, 'CSP sem inline': 2, 'CSP sem inline nem data:': 3 },
   webkit: { 'sem CSP': 1, 'CSP sem inline': 3, 'CSP sem inline nem data:': 3 },
 }
