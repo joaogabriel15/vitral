@@ -4,5 +4,5 @@ import vitral from 'vitral/vite'
 
 export default defineConfig({
   base: './',
-  plugins: [vue(), vitral({ entry: 'src/remote.js', name: 'vue' })],
+  plugins: [vue(), vitral({ entry: 'src/Cartao.vue', name: 'vue' })],
 })

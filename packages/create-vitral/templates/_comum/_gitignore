@@ -1,0 +1,8 @@
+node_modules
+dist
+.next
+.nuxt
+.output
+.svelte-kit
+test-results
+playwright-report
