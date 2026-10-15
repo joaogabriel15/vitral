@@ -17,6 +17,7 @@ import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
 import { collect, isSplit, outputs, withSplit, type Split } from './vite/manifest'
+import { BOOT, dedupeHooks, groups, type Group } from './vite/dedupe'
 import { type CssBuildOptions, transformCss } from './css-build'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
 import { extractProps, typesFile } from './vite/types'
@@ -42,6 +43,7 @@ export interface VitralViteOptions extends CssBuildOptions {
    * Dependências que NÃO entram no bundle e vêm do import map do host
    * (ex.: ['react', 'react-dom', 'react-dom/client']). Padrão: nenhuma, cada
    * remote leva suas dependências e nunca há conflito de versão.
+   * @deprecated Use `dedupe`, que cai na própria cópia se a versão não servir.
    */
   shared?: string[]
   /**
@@ -49,6 +51,12 @@ export interface VitralViteOptions extends CssBuildOptions {
    * preflight/tema do Tailwind). Padrão: true.
    */
   scopeCss?: boolean
+  /**
+   * Dependências que o remote usa da página, se a versão servir (padrão: `^`
+   * da versão instalada), ou da própria cópia. Ex.: `['react']` (o grupo do
+   * React inteiro) ou `['vue']`.
+   */
+  dedupe?: string[]
   /**
    * Publica `vitral.d.ts` com o tipo das props do `export default`, para o
    * host checar as props (`npx vitral types`). Precisa de TypeScript no
@@ -68,6 +76,9 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   let framework: AdapterName = 'element'
   const entryFile = () => resolve(root, entry!)
   let serve = false
+  let shared: Group[] = []
+  const dedupe = !!options.dedupe?.length
+  const hooks = dedupeHooks(() => (options.adapter === false ? entryFile() : ENTRY_ID), () => shared)
   const scopeName = () =>
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
   return {
@@ -88,7 +99,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         optimizeDeps: user.optimizeDeps?.entries ? undefined : { entries: [entry] },
         build: {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
-          lib: { entry: options.adapter === false ? entry : ENTRY_ID, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
+          lib: { entry: dedupe ? BOOT : options.adapter === false ? entry : ENTRY_ID, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
           // Arquivo único (hosts antigos e caminho com blob:) e build dividido (manifesto v2).
           rollupOptions: { external: options.shared ?? [], output: outputs(rolldown) as any },
           cssCodeSplit: false,
@@ -105,16 +116,27 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
       } catch {}
     },
+    async buildStart() {
+      // Em dev cada pacote vem do próprio node_modules: o dedupe é só do build.
+      if (dedupe && !serve) shared = await groups(options.dedupe!, root, entry!, (id, importer) => this.resolve(id, importer, { skipSelf: true }))
+    },
     // Modo dev: /vitral.json aponta para um módulo com o cliente HMR.
     configureServer(server) {
       const scope = options.scopeCss === false ? undefined : scopeName()
       serveDevManifest(server, () => devManifest(options.name ?? pkg.name ?? 'remote', scope))
     },
-    resolveId(id) {
-      if (id.endsWith(ENTRY_ID)) return VIRTUAL_ENTRY
-      return resolveDevId(id)
+    resolveId: {
+      order: 'pre',
+      handler(id, importer) {
+        const own = dedupe && !serve ? hooks.resolveId.handler(id, importer) : null
+        if (own) return own
+        if (id.endsWith(ENTRY_ID)) return VIRTUAL_ENTRY
+        return resolveDevId(id)
+      },
     },
     load(id) {
+      const own = dedupe && !serve ? hooks.load(id) : null
+      if (own != null) return own
       if (id === VIRTUAL_ENTRY) return entryCode(resolve(root, entry!), adapter, scopeName())
       if (id === VIRTUAL_DEV_ENTRY) return devEntryCode(framework, options.adapter === false ? resolve(root, entry!) : undefined)
       return loadPreamble(id)
@@ -152,7 +174,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     },
     async closeBundle() {
       if (!manifest) return
-      const done = withSplit(manifest, outDir, split)
+      const done = withSplit(manifest, outDir, split, shared)
       manifest = split = undefined
       writeFileSync(join(outDir, 'vitral.json'), JSON.stringify(done, null, 2) + '\n')
       const props = options.types === false ? null : await extractProps(root, entryFile())

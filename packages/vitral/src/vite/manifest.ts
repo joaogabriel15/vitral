@@ -10,6 +10,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, posix } from 'node:path'
 import type { RemoteManifest } from '../core/types'
+import type { Group } from './dedupe'
 
 export const SPLIT = 'split/'
 
@@ -19,6 +20,7 @@ interface Chunk {
   isEntry: boolean
   imports: string[]
   dynamicImports: string[]
+  facadeModuleId?: string | null
 }
 type Bundle = Record<string, { type: string; fileName: string }>
 
@@ -28,6 +30,8 @@ export interface Split {
   chunks: string[]
   /** Todos os JS do build dividido. */
   files: string[]
+  /** Cópia própria de cada grupo de `dedupe`: o arquivo e o que ele importa. */
+  own: Record<string, { file: string; chunks: string[] }>
 }
 
 export const sri = (file: string): string => 'sha384-' + createHash('sha384').update(readFileSync(file)).digest('base64')
@@ -86,7 +90,16 @@ export function collect(outDir: string, bundle: Bundle): Split | undefined {
   }
   // Chunk que nada alcança não é publicado.
   for (const c of chunks) if (!used.has(c.fileName)) rmSync(join(outDir, c.fileName), { force: true })
-  return { entry, chunks: [...deps(entry)], files: [...used] }
+  // Cópias próprias do dedupe: o loader decide se baixa.
+  const own: Split['own'] = {}
+  for (const c of chunks) if (used.has(c.fileName) && c.facadeModuleId?.startsWith('\0vitral-own:'))
+    own[c.facadeModuleId.slice('\0vitral-own:'.length)] = { file: c.fileName, chunks: [...deps(c.fileName)] }
+  // O que a entrada usa logo: os imports dela e o import() do remote, que a
+  // inicialização do dedupe faz assim que resolve as dependências.
+  const soon = deps(entry)
+  if (Object.keys(own).length) for (const d of live.get(entry)!) if (!Object.values(own).some((o) => o.file === d)) soon.add(d), deps(d, soon)
+  soon.delete(entry)
+  return { entry, chunks: [...soon], files: [...used], own }
 }
 
 /** Troca os `import()` de `c` pelo helper. Devolve os chunks importados assim. */
@@ -121,9 +134,12 @@ function rewrite(file: string, c: Chunk, byName: Map<string, Chunk>, deps: (name
   return [...done]
 }
 
-/** Acrescenta `files` e `split` ao manifesto. */
-export function withSplit(m: RemoteManifest, outDir: string, s?: Split): RemoteManifest {
+/** Acrescenta `files`, `split` e `dedupe` ao manifesto. */
+export function withSplit(m: RemoteManifest, outDir: string, s?: Split, groups: Group[] = []): RemoteManifest {
   const files: Record<string, string> = {}
   for (const f of [m.entry, ...(m.css ?? []), ...(s?.files ?? [])]) files[f] = sri(join(outDir, f))
-  return { ...m, files, ...(s && { split: { entry: s.entry, chunks: s.chunks } }) }
+  const dedupe = groups
+    .filter((g) => s?.own[g.name])
+    .map(({ name, range, version }) => ({ name, range, version, ...s!.own[name] }))
+  return { ...m, files, ...(s && { split: { entry: s.entry, chunks: s.chunks } }), ...(dedupe.length && { dedupe }) }
 }

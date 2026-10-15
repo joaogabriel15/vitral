@@ -93,10 +93,19 @@ async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, 
     scope: m.scope,
     sri,
     priority,
-    split: m.split && !entry.integrity ? { entry: abs(m.split.entry), chunks: (m.split.chunks ?? []).map(abs), sri, priority } : undefined,
+    split:
+      m.split && !entry.integrity
+        ? {
+            entry: abs(m.split.entry),
+            chunks: (m.split.chunks ?? []).map(abs),
+            sri,
+            priority,
+            dedupe: m.dedupe?.map((d) => ({ ...d, file: abs(d.file), chunks: d.chunks?.map(abs) })),
+          }
+        : undefined,
   }
   checkOrigin(name, resolved.entry)
-  if (resolved.split) checkOrigin(name, resolved.split.entry)
+  for (const u of [resolved.split?.entry, ...(resolved.split?.dedupe ?? []).map((d) => d.file)]) if (u) checkOrigin(name, u)
   // Remote vindo de `src` (nome = URL): o nome do manifesto vira apelido.
   if (name === entry.url && m.name) {
     const override = await devOverride(m.name)
