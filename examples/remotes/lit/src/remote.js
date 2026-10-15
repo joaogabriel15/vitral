@@ -1,5 +1,4 @@
 import { LitElement, html } from 'lit'
-import { elementRemote } from 'vitral/element'
 
 class LitCartao extends LitElement {
   static properties = { mensagem: {}, cliques: { state: true } }
@@ -25,4 +24,5 @@ class LitCartao extends LitElement {
   }
 }
 
-export default elementRemote('lit-cartao', () => customElements.get('lit-cartao') || customElements.define('lit-cartao', LitCartao))
+// Sem elementRemote(): o plugin vitral registra a tag e embrulha a classe.
+export default LitCartao
