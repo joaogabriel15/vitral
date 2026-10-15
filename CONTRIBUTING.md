@@ -20,6 +20,7 @@ Baterias longas, fora do CI de cada PR:
 
 ```bash
 node e2e/memoria/run.mjs   # vazamento: 500 ciclos por adaptador (noturno)
+node e2e/pacote/run.mjs    # pnpm pack em apps das CLIs oficiais (semanal e antes do release)
 ```
 
 ## Estrutura
