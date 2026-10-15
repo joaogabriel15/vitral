@@ -2,11 +2,11 @@
 import { h, render } from 'preact'
 import { useState } from 'preact/hooks'
 import { act } from 'preact/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
 import { preactRemote, Remote } from '../src/preact'
 import { failingRemote, mockRemote } from '../src/testing'
-import { cleanup, flush } from './helpers'
+import { cleanup, flush, serveManifest } from './helpers'
 
 afterEach(cleanup)
 
@@ -39,5 +39,14 @@ describe('Preact', () => {
     await act(() => div.querySelector('button')!.click())
     await act(flush)
     expect(div.textContent).toBe('ok')
+  })
+})
+
+describe('Preact: <Remote src>', () => {
+  it('monta pela URL do manifesto, sem configure()', async () => {
+    serveManifest('carrinho')
+    const div = document.body.appendChild(document.createElement('div'))
+    await act(() => render(h(Remote, { src: 'https://cdn.exemplo.com/c/vitral.json', props: { n: 1 } }), div))
+    await vi.waitFor(() => expect(div.textContent).toBe('carrinho:1'))
   })
 })
