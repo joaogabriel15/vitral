@@ -1,0 +1,61 @@
+{
+  "data": "2026-10-14",
+  "metodo": "esbuild 0.28.2 (bundle, minify, esm, browser, es2020) e brotli nível 11",
+  "maquina": {
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "nucleos": 4,
+    "so": "linux 6.18.44-fc-v114",
+    "node": "v22.22.0"
+  },
+  "resultados": [
+    {
+      "nome": "vitral",
+      "pacote": "vitral@0.1.0 (commit da92b8f)",
+      "entrada": "export { configure, createSlot } from \"vitral\"",
+      "minKB": 8.6,
+      "brotliKB": 3.4
+    },
+    {
+      "nome": "single-spa",
+      "pacote": "single-spa@6.0.3",
+      "entrada": "export { registerApplication, start } from 'single-spa'",
+      "minKB": 18.1,
+      "brotliKB": 5.8
+    },
+    {
+      "nome": "wujie",
+      "pacote": "wujie@2.1.0",
+      "entrada": "export { startApp } from 'wujie'",
+      "minKB": 91.8,
+      "brotliKB": 23.6
+    },
+    {
+      "nome": "Module Federation (runtime)",
+      "pacote": "@module-federation/runtime@2.9.2",
+      "entrada": "export { init, loadRemote } from '@module-federation/runtime'",
+      "minKB": 70.9,
+      "brotliKB": 19.4
+    },
+    {
+      "nome": "micro-app",
+      "pacote": "@micro-zoe/micro-app@1.0.0-rc.32",
+      "entrada": "export { default } from '@micro-zoe/micro-app'",
+      "minKB": 114.8,
+      "brotliKB": 28.9
+    },
+    {
+      "nome": "qiankun",
+      "pacote": "qiankun@2.10.16",
+      "entrada": "export { registerMicroApps, start } from 'qiankun'",
+      "minKB": 132.8,
+      "brotliKB": 37.9
+    },
+    {
+      "nome": "Garfish",
+      "pacote": "garfish@1.19.12",
+      "entrada": "export { default } from 'garfish'",
+      "minKB": 135.1,
+      "brotliKB": 40
+    }
+  ]
+}
