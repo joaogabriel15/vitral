@@ -83,3 +83,39 @@ events.on<{ name: string; entry: string }>('vitral:update-available', ({ name })
 - `refresh('carrinho')` baixa a versão nova e troca cada montagem de `carrinho` (e de `carrinho/…`) pela nova, com as props atuais. Funciona em todos os componentes de host e em `mountRemote`.
 - Se a versão nova não carregar, `refresh` rejeita e a antiga continua na tela. Se o `mount()` da nova falhar, a antiga também fica, e o erro vai para o console.
 - Só remotes registrados pela URL do `vitral.json` são revalidados.
+
+## Composição por rota
+
+App shell sem framework: cada rota monta um remote.
+
+```html
+<script type="module">
+  import { configure } from 'vitral'
+  import { routes } from 'vitral/routes'
+
+  configure({ remotes: '/remotes.json' })
+  routes({
+    '/checkout/*': 'checkout',     // /checkout e tudo abaixo
+    '/conta': 'conta',             // só /conta
+    '/produto/:id': 'produto',
+    '/': 'inicio',
+    '*': 'nao-encontrado',         // qualquer outra
+  })
+</script>
+
+<nav><a href="/conta">Conta</a> <a href="/checkout">Checkout</a></nav>
+
+<vitral-outlet isolate="shadow">
+  <p slot="fallback">Carregando…</p>
+  <p slot="error">Indisponível</p>
+  <p slot="empty">Página não encontrada</p>
+</vitral-outlet>
+```
+
+- A primeira rota que bate vence.
+- O `<vitral-outlet>` troca de remote em `navigate()`, voltar e avançar, e nas navegações da Navigation API.
+- Navegar dentro do mesmo remote (`/checkout/pagamento`) não remonta: o roteador do remote cuida da subrota.
+- Links `<a href>` da mesma origem que batem com uma rota navegam sem recarregar, inclusive dentro de Shadow DOM. Desligue com `routes(mapa, { links: false })`.
+- `outlet.props = {...}` passa props ao remote da rota. `outlet.route` diz qual está montado.
+- `routes()` devolve a função que desfaz as rotas e a interceptação de links.
+- `matchRoute('/produto/42')` devolve `{ name, pattern, params: { id: '42' } }`, para quem tem roteador próprio.

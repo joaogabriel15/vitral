@@ -8,6 +8,7 @@ const entries = {
   auto: () => import('../src/auto'),
   devtools: () => import('../src/devtools'),
   element: () => import('../src/element'),
+  routes: () => import('../src/routes'),
   react: () => import('../src/react'),
   vue: () => import('../src/vue'),
   svelte: () => import('../src/svelte'),
