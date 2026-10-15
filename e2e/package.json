@@ -2,6 +2,15 @@
   "name": "vitral-e2e",
   "private": true,
   "type": "module",
-  "scripts": { "test": "playwright test" },
-  "devDependencies": { "@playwright/test": "1.56.1" }
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vite": "^8.0.0",
+    "vitral": "workspace:*",
+    "vitral-publicada": "npm:vitral@0.1.0"
+  }
 }

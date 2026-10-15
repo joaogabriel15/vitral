@@ -61,8 +61,10 @@ export interface Host {
   recarregar(): Promise<void>
 }
 
-export const test = base.extend<{ host: Host }>({
-  host: async ({ page }, use) => {
+export const test = base.extend<{ host: Host; lib: string }>({
+  /** Versão da lib no host (`test.use({ lib: 'publicada' })`). */
+  lib: ['atual', { option: true }],
+  host: async ({ page, lib }, use) => {
     const erros: string[] = []
     page.on('pageerror', (e) => {
       // O WebKit avisa como erro de página toda requisição barrada por CORS,
@@ -70,7 +72,7 @@ export const test = base.extend<{ host: Host }>({
       if (/due to access control checks\.$/.test(e.message)) return
       erros.push(e.message)
     })
-    await page.goto(HOST_URL)
+    await page.goto(`${HOST_URL}/?lib=${lib}`)
     await page.waitForFunction(() => (window as any).__pronto)
     const slot = (name: string) => page.locator(`section[data-slot="${name}"]`)
     let cliques = 0

@@ -102,6 +102,21 @@ importers:
       '@playwright/test':
         specifier: 1.56.1
         version: 1.56.1
+      react:
+        specifier: ^19.0.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.3.0(react@19.3.0)
+      vite:
+        specifier: ^8.0.0
+        version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)
+      vitral:
+        specifier: workspace:*
+        version: link:../packages/vitral
+      vitral-publicada:
+        specifier: npm:vitral@0.1.0
+        version: vitral@0.1.0(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))(@angular/platform-browser@22.2.2(@angular/common@22.2.2(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2)))(preact@10.29.8)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.17)(svelte@5.57.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))(vue@3.5.44(typescript@6.0.3))
 
   examples/estilos:
     dependencies:
@@ -6663,6 +6678,39 @@ packages:
       jsdom:
         optional: true
 
+  vitral@0.1.0:
+    resolution: {integrity: sha512-H4eog+uIrnz90DZ+UkvP5Swfih0Q6UhwwnlBy5ftXzfXlFrSGJX1qs/LCjmF7KUSiMstocVKV/2hZS46lcH9sA==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@angular/core': '>=17'
+      '@angular/platform-browser': '>=17'
+      preact: '>=10'
+      react: '>=18'
+      react-dom: '>=18'
+      solid-js: '>=1.8'
+      svelte: '>=5'
+      vite: '>=5'
+      vue: '>=3.3'
+    peerDependenciesMeta:
+      '@angular/core':
+        optional: true
+      '@angular/platform-browser':
+        optional: true
+      preact:
+        optional: true
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      solid-js:
+        optional: true
+      svelte:
+        optional: true
+      vite:
+        optional: true
+      vue:
+        optional: true
+
   vue-bundle-renderer@2.4.0:
     resolution: {integrity: sha512-IxHopQZgzTGBiuGERrQrAS7Lr3dCv+qxvgirEgCUFGAD4gYNfiaGYzC1DDojeZmJAmehp9gG8+17PGuVP6Ab2Q==}
 
@@ -13057,6 +13105,20 @@ snapshots:
     transitivePeerDependencies:
       - msw
     optional: true
+
+  vitral@0.1.0(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))(@angular/platform-browser@22.2.2(@angular/common@22.2.2(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2)))(preact@10.29.8)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.17)(svelte@5.57.2)(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2))(vue@3.5.44(typescript@6.0.3)):
+    dependencies:
+      postcss: 8.5.30
+    optionalDependencies:
+      '@angular/core': 22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2)
+      '@angular/platform-browser': 22.2.2(@angular/common@22.2.2(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@22.2.2(@angular/compiler@22.2.2)(rxjs@7.8.2))
+      preact: 10.29.8
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+      solid-js: 1.9.17
+      svelte: 5.57.2
+      vite: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)
+      vue: 3.5.44(typescript@6.0.3)
 
   vue-bundle-renderer@2.4.0:
     dependencies:

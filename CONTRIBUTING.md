@@ -23,7 +23,7 @@ Outros navegadores: `E2E_BROWSERS=firefox,webkit,mobile pnpm test:e2e`
 | `packages/vitral` | O pacote publicado no npm (núcleo, adaptadores, plugin Vite, testes unitários) |
 | `examples/remotes` | O mesmo remote em 8 frameworks |
 | `examples/hosts` | 9 hosts (JS puro, React, Vue, Svelte, Solid, Preact, Angular, Next, Nuxt) |
-| `e2e` | Testes Playwright: todos os hosts × remotes e as baterias de rede e deploy (`e2e/fixtures` tem o host e o CDN de teste) |
+| `e2e` | Testes Playwright: todos os hosts × remotes e as baterias de rede, deploy e versões cruzadas (`e2e/fixtures` tem o host e o CDN de teste; `e2e/versoes`, os remotes buildados com cada versão da lib) |
 | `demo` | Demo com Tailwind (catálogo Vue + carrinho React) |
 | `docs` | Pesquisa de problemas das outras soluções |
 
