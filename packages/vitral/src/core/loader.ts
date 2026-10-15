@@ -1,8 +1,9 @@
+import { prefetchCss } from './css'
 import { RemoteError } from './errors'
 import { verifyIntegrity } from './integrity'
 import { checkOrigin } from './registry'
 import { protocol, type LoadedRemote } from './state'
-import type { Props, RemoteEntry, RemoteManifest, RemoteModule } from './types'
+import type { Isolation, Props, RemoteEntry, RemoteManifest, RemoteModule } from './types'
 import { absolute, fetchBytes, fetchJson, withRetry, withTimeout } from './util'
 
 /** Baixa (uma vez só) e devolve o módulo de um remote. */
@@ -10,12 +11,13 @@ export function loadRemote<P extends Props = Props>(name: string): Promise<Remot
   return load(name).then((r) => r.module as unknown as RemoteModule<P>)
 }
 
-/** Começa a baixar um remote sem montar (ex.: no hover de um link). */
+/** Começa a baixar um remote (JS e CSS) sem montar (ex.: no hover de um link). */
 export function preload(name: string): void {
   load(name).catch(() => {})
 }
 
-export function load(name: string): Promise<LoadedRemote> {
+/** `isolate` diz como o CSS vai ser aplicado, para baixá-lo do jeito certo. */
+export function load(name: string, isolate?: Isolation): Promise<LoadedRemote> {
   const p = protocol()
   return p.load(name, async () => {
     try {
@@ -26,6 +28,8 @@ export function load(name: string): Promise<LoadedRemote> {
       if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
       if (entry.module) return await loadLocal(name, entry)
       const { integrity, ...resolved } = await resolveEntry(name, entry as RemoteEntry & { url: string })
+      // O CSS baixa junto com o JS; a montagem espera os dois.
+      prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow')
       const module = await withRetry(p.settings().retries, () => importModule(name, resolved.entry, integrity))
       return { ...resolved, module }
     } catch (e: any) {

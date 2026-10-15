@@ -11,7 +11,7 @@
  * - `class` e `data-theme` do `<html>` são copiados para a raiz do remote,
  *   para `.dark` e `[data-theme]` funcionarem lá dentro.
  */
-import { injectCss } from './css'
+import { fetchCssText, injectCss } from './css'
 import type { StyleOptions } from './types'
 
 const sheets = new Map<string, Promise<CSSStyleSheet[]>>()
@@ -43,8 +43,7 @@ export async function attachStyles(
 function loadSheet(href: string, chain: string[]): Promise<CSSStyleSheet[]> {
   let p = sheets.get(href)
   if (!p) {
-    p = fetch(href, { credentials: 'omit' })
-      .then((r) => (r.ok ? r.text() : ''))
+    p = fetchCssText(href)
       .then((text) => {
         const up: string[] = []
         const imports: string[] = []
