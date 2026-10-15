@@ -194,7 +194,8 @@
         "./shadow-*",
         "./overrides-*",
         "./sri-*",
-        "./dedupe-*"
+        "./dedupe-*",
+        "./expose-*"
       ],
       "limit": "4.2 kB"
     },
@@ -205,7 +206,8 @@
       "ignore": [
         "./shadow-*",
         "./sri-*",
-        "./dedupe-*"
+        "./dedupe-*",
+        "./expose-*"
       ],
       "limit": "5.4 kB"
     },
@@ -227,9 +229,10 @@
         "./shadow-*",
         "./overrides-*",
         "./sri-*",
-        "./dedupe-*"
+        "./dedupe-*",
+        "./expose-*"
       ],
-      "limit": "4.9 kB"
+      "limit": "5 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -239,7 +242,8 @@
         "./shadow-*",
         "./overrides-*",
         "./sri-*",
-        "./dedupe-*"
+        "./dedupe-*",
+        "./expose-*"
       ],
       "limit": "5.2 kB"
     },
@@ -260,7 +264,8 @@
         "react-dom",
         "./shadow-*",
         "./sri-*",
-        "./dedupe-*"
+        "./dedupe-*",
+        "./expose-*"
       ],
       "limit": "6.2 kB"
     },
@@ -272,7 +277,8 @@
         "vue",
         "./shadow-*",
         "./sri-*",
-        "./dedupe-*"
+        "./dedupe-*",
+        "./expose-*"
       ],
       "limit": "6 kB"
     },
@@ -283,7 +289,8 @@
       "ignore": [
         "./shadow-*",
         "./sri-*",
-        "./dedupe-*"
+        "./dedupe-*",
+        "./expose-*"
       ],
       "limit": "6 kB"
     },
@@ -301,7 +308,8 @@
         "./shadow-*",
         "./overrides-*",
         "./sri-*",
-        "./dedupe-*"
+        "./dedupe-*",
+        "./expose-*"
       ]
     }
   ]
