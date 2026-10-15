@@ -37,7 +37,22 @@ export async function mountRemote<P extends Props = Props>(
   return refreshable(await mountOnce(target, name, props, options), name, props, (latest) => mountOnce(target, name, latest, options))
 }
 
+type Mounter = <P extends Props>(target: HTMLElement, name: string, props: P, options: MountOptions) => Promise<MountedRemote<P>>
+let frames: Mounter | undefined
+
+/** Liga `isolate: 'iframe'` (chamado por `enableIframe()`, de `vitral/iframe`). */
+export function setFrameMounter(mounter: Mounter): void {
+  frames = mounter
+}
+
 async function mountOnce<P extends Props>(target: HTMLElement, name: string, props: P, options: MountOptions): Promise<MountedRemote<P>> {
+  const p = protocol()
+  await p.pending()
+  // Decide antes de baixar: no modo iframe o JS do remote nunca roda na página.
+  if ((options.isolate ?? registered(name)?.isolate ?? p.settings().isolate) === 'iframe') {
+    if (!frames) throw new RemoteError('MOUNT_FAILED', name, 'isolate="iframe" precisa de enableIframe(), de vitral/iframe')
+    return frames(target, name, props, options)
+  }
   const { module: mod, ...resolved } = await load(name, options.isolate, options.priority)
   track(name, resolved.entry)
   const isolate = options.isolate ?? resolved.isolate ?? protocol().settings().isolate
@@ -107,4 +122,12 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
       }
     },
   }
+}
+
+/** Registro de `name` ou do remote de que ele é parte (`carrinho/Mini` → `carrinho`). */
+function registered(name: string) {
+  const p = protocol()
+  let n = name
+  while (n && !p.entry(n)) n = n.slice(0, Math.max(0, n.lastIndexOf('/')))
+  return n ? p.entry(n) : undefined
 }
