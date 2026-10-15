@@ -9,7 +9,7 @@ const ping = useEventValue('ping')
 
 <template>
   <h1>Host Vue</h1>
-  <input id="mensagem" v-model="mensagem" />
+  <input id="mensagem" aria-label="Mensagem" v-model="mensagem" />
   <p>Último ping: <span id="ultimo-ping">{{ ping ?? '-' }}</span></p>
   <section v-for="n in REMOTES" :key="n" :data-remote="n">
     <VitralRemote :name="n" :props="{ mensagem }">

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 const here = fileURLToPath(new URL('.', import.meta.url))
 const types = { '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.html': 'text/html; charset=utf-8', '.svg': 'image/svg+xml' }
 
-export const HOSTS = { vanilla: 4201, react: 4202, vue: 4203, svelte: 4204, solid: 4205, preact: 4206, angular: 4207 }
+export const HOSTS = { vanilla: 4201, react: 4202, vue: 4203, svelte: 4204, solid: 4205, preact: 4206, angular: 4207, formas: 4210 }
 
 function serve(port, resolveFile, spa) {
   createServer(async (req, res) => {
