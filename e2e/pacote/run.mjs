@@ -157,8 +157,11 @@ try {
       const page = await browser.newPage()
       const erros = []
       page.on('pageerror', (e) => erros.push(e.message))
-      // 404 de ícones dos templates (/icons.svg, /favicon.svg na origem do host) não é do vitral.
-      page.on('console', (m) => m.type() === 'error' && !m.text().startsWith('Failed to load resource') && erros.push(`console: ${m.text()}`))
+      // Ícones dos templates não são do vitral: 404 de /icons.svg e /favicon.svg na origem do host,
+      // e o sprite do create-vite (<use href="/icons.svg#...">), que o navegador bloqueia
+      // quando o remote está em outra origem ("Unsafe attempt to load URL .../icons.svg").
+      const doTemplate = (t) => t.startsWith('Failed to load resource') || /^Unsafe attempt to load URL \S+\/icons\.svg /.test(t)
+      page.on('console', (m) => m.type() === 'error' && !doTemplate(m.text()) && erros.push(`console: ${m.text()}`))
       await page.goto(url)
       // Confere todos os remotes, mesmo depois de uma falha, para o relatório dizer quais quebram.
       const quebrados = []
