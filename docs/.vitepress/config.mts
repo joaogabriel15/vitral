@@ -15,6 +15,113 @@ try {
   api = JSON.parse(readFileSync(new URL('../api/typedoc-sidebar.json', import.meta.url), 'utf8'))
 } catch {}
 
+const aprender: DefaultTheme.SidebarItem[] = [
+  {
+    text: 'Começar',
+    items: [
+      { text: 'Configurar host e remote', link: '/aprender/configurar' },
+      { text: 'Início rápido', link: '/aprender/' },
+      { text: 'Instalação', link: '/aprender/instalacao' },
+      { text: 'Seu primeiro remote', link: '/aprender/primeiro-remote' },
+      { text: 'Seu primeiro host', link: '/aprender/primeiro-host' },
+    ],
+  },
+  {
+    text: 'Usar',
+    items: [
+      { text: 'Props e eventos', link: '/aprender/props-eventos' },
+      { text: 'Contexto compartilhado', link: '/aprender/contexto' },
+      { text: 'Estilos', link: '/aprender/estilos' },
+      { text: 'Carregamento', link: '/aprender/carregamento' },
+      { text: 'Erros', link: '/aprender/erros' },
+      { text: 'Testes', link: '/aprender/testes' },
+      { text: 'Deploy', link: '/aprender/deploy' },
+    ],
+  },
+  {
+    text: 'Mais recursos',
+    collapsed: true,
+    items: [
+      { text: 'SRI e origens', link: '/aprender/seguranca' },
+      { text: 'Rotas', link: '/aprender/rotas' },
+      { text: 'Iframe', link: '/aprender/iframe' },
+      { text: 'Exposes e loadModule', link: '/aprender/exposes' },
+      { text: 'Dedupe de dependências', link: '/aprender/dedupe' },
+      { text: 'Atualização sem reload', link: '/aprender/atualizacoes' },
+      { text: 'SSR', link: '/aprender/ssr' },
+      { text: 'Desenvolvimento e HMR', link: '/aprender/desenvolvimento' },
+    ],
+  },
+  {
+    text: 'Frameworks',
+    collapsed: true,
+    items: [
+      { text: 'React', link: '/frameworks/react' },
+      { text: 'Next.js', link: '/frameworks/next' },
+      { text: 'Vue', link: '/frameworks/vue' },
+      { text: 'Nuxt', link: '/frameworks/nuxt' },
+      { text: 'Angular', link: '/frameworks/angular' },
+      { text: 'Svelte', link: '/frameworks/svelte' },
+      { text: 'Solid', link: '/frameworks/solid' },
+      { text: 'Preact', link: '/frameworks/preact' },
+      { text: 'Lit e Web Components', link: '/frameworks/lit' },
+      { text: 'JS e TS puro', link: '/frameworks/javascript' },
+    ],
+  },
+  {
+    text: 'Migração',
+    collapsed: true,
+    items: [
+      { text: 'Module Federation', link: '/migracao/module-federation' },
+      { text: 'single-spa', link: '/migracao/single-spa' },
+      { text: 'qiankun', link: '/migracao/qiankun' },
+    ],
+  },
+]
+
+const referencia: DefaultTheme.SidebarItem[] = [
+  { text: 'Visão geral', link: '/referencia/' },
+  {
+    text: 'vitral',
+    items: [
+      ['configure', 'configure'],
+      ['register', 'register'],
+      ['defineRemote', 'define-remote'],
+      ['mountRemote', 'mount-remote'],
+      ['createSlot', 'create-slot'],
+      ['loadModule', 'load-module'],
+      ['events', 'events'],
+      ['navigate', 'navigate'],
+      ['provide', 'provide'],
+      ['shared', 'shared'],
+      ['persist', 'persist'],
+      ['component', 'component'],
+      ['watchUpdates', 'updates'],
+      ['RemoteError', 'remote-error'],
+    ].map(([text, p]) => ({ text, link: `/referencia/vitral/${p}` })),
+  },
+  {
+    text: 'vitral/react',
+    items: [
+      { text: '<Remote>', link: '/referencia/react/remote' },
+      { text: 'reactRemote', link: '/referencia/react/react-remote' },
+      { text: 'Hooks', link: '/referencia/react/hooks' },
+    ],
+  },
+  {
+    text: 'Outros frameworks',
+    items: ['vue', 'angular', 'svelte', 'solid', 'preact', 'element'].map((p) => ({ text: `vitral/${p}`, link: `/referencia/${p}` })),
+  },
+  {
+    text: 'Ferramentas',
+    items: [
+      ...['vite', 'routes', 'iframe', 'testing', 'devtools'].map((p) => ({ text: `vitral/${p}`, link: `/referencia/${p}` })),
+      { text: 'CLI', link: '/referencia/cli' },
+    ],
+  },
+  { text: 'TypeDoc (todos os tipos)', link: '/api/' },
+]
+
 export default defineConfig({
   lang: 'pt-BR',
   title: 'vitral',
@@ -27,70 +134,29 @@ export default defineConfig({
   sitemap: { hostname: SITE },
   head: [['link', { rel: 'icon', type: 'image/svg+xml', href: `${BASE}logo.svg` }]],
 
+  markdown: {
+    container: { tipLabel: 'Nota', warningLabel: 'Atenção', dangerLabel: 'Perigo', infoLabel: 'Info', detailsLabel: 'Detalhes' },
+  },
+
   themeConfig: {
     logo: '/logo.svg',
     nav: [
-      { text: 'Começo rápido', link: '/comecar' },
-      { text: 'Frameworks', link: '/frameworks/react' },
-      { text: 'Funcionalidades', link: '/funcionalidades/props-eventos' },
-      { text: 'Migração', link: '/migracao/module-federation' },
-      { text: 'Erros', link: '/erros/' },
-      { text: 'API', link: '/api/' },
+      { text: 'Aprender', link: '/aprender/configurar', activeMatch: '^/(aprender|frameworks|migracao)/' },
+      { text: 'Referência', link: '/referencia/', activeMatch: '^/(referencia|api)/' },
+      { text: 'Erros', link: '/erros/', activeMatch: '^/erros/' },
       { text: 'npm', link: 'https://www.npmjs.com/package/vitral' },
     ],
     sidebar: {
-      '/api/': [{ text: 'Referência da API', link: '/api/' }, ...api],
-      '/': [
-        { text: 'Começo rápido', link: '/comecar' },
-        {
-          text: 'Frameworks',
-          items: [
-            { text: 'React', link: '/frameworks/react' },
-            { text: 'Next.js', link: '/frameworks/next' },
-            { text: 'Vue', link: '/frameworks/vue' },
-            { text: 'Nuxt', link: '/frameworks/nuxt' },
-            { text: 'Angular', link: '/frameworks/angular' },
-            { text: 'Svelte', link: '/frameworks/svelte' },
-            { text: 'Solid', link: '/frameworks/solid' },
-            { text: 'Preact', link: '/frameworks/preact' },
-            { text: 'Lit e Web Components', link: '/frameworks/lit' },
-            { text: 'JS e TS puro', link: '/frameworks/javascript' },
-          ],
-        },
-        {
-          text: 'Funcionalidades',
-          items: [
-            { text: 'Props e eventos', link: '/funcionalidades/props-eventos' },
-            { text: 'Contexto compartilhado', link: '/funcionalidades/contexto' },
-            { text: 'Estilos, Tailwind e tema', link: '/funcionalidades/estilos' },
-            { text: 'Lazy, prefetch e keep-alive', link: '/funcionalidades/carregamento' },
-            { text: 'Dedupe de dependências', link: '/funcionalidades/dedupe' },
-            { text: 'SRI e origens', link: '/funcionalidades/seguranca' },
-            { text: 'Rotas', link: '/funcionalidades/rotas' },
-            { text: 'Iframe', link: '/funcionalidades/iframe' },
-            { text: 'Exposes e loadModule', link: '/funcionalidades/exposes' },
-            { text: 'Atualização sem reload', link: '/funcionalidades/atualizacoes' },
-            { text: 'SSR', link: '/funcionalidades/ssr' },
-            { text: 'Desenvolvimento e HMR', link: '/funcionalidades/desenvolvimento' },
-            { text: 'Tratamento de erros', link: '/funcionalidades/erros' },
-            { text: 'Testes', link: '/funcionalidades/testes' },
-            { text: 'Configuração', link: '/funcionalidades/configuracao' },
-          ],
-        },
-        {
-          text: 'Migração',
-          items: [
-            { text: 'Module Federation', link: '/migracao/module-federation' },
-            { text: 'single-spa', link: '/migracao/single-spa' },
-            { text: 'qiankun', link: '/migracao/qiankun' },
-          ],
-        },
+      '/aprender/': aprender,
+      '/frameworks/': aprender,
+      '/migracao/': aprender,
+      '/referencia/': referencia,
+      '/api/': [{ text: 'Referência', link: '/referencia/' }, { text: 'TypeDoc', link: '/api/' }, ...api],
+      '/erros/': [
         {
           text: 'Erros',
-          collapsed: true,
           items: [{ text: 'Todos os códigos', link: '/erros/' }, ...erros.map((code) => ({ text: code, link: `/erros/${code}` }))],
         },
-        { text: 'Referência da API', link: '/api/' },
       ],
     },
     socialLinks: [{ icon: 'github', link: REPO }],
@@ -111,7 +177,7 @@ export default defineConfig({
     },
     footer: { message: 'Licença MIT', copyright: 'Feito de partes. Visto como um todo.' },
     outline: { label: 'Nesta página' },
-    docFooter: { prev: 'Anterior', next: 'Próxima' },
+    docFooter: { prev: 'Anterior', next: 'Próximo' },
     darkModeSwitchLabel: 'Tema',
     lightModeSwitchTitle: 'Usar tema claro',
     darkModeSwitchTitle: 'Usar tema escuro',

@@ -55,4 +55,4 @@ import { useShared } from 'vitral/preact'
 const nome = useShared('usuario', (u) => u?.nome)
 ```
 
-Veja [Contexto compartilhado](/funcionalidades/contexto).
+Veja [Contexto compartilhado](/aprender/contexto).

@@ -1,80 +1,187 @@
 ---
-layout: home
-
-hero:
-  name: vitral
-  text: Feito de partes. Visto como um todo.
-  tagline: Junte micro-frontends de qualquer framework numa página só, sem configuração de build no host.
-  image:
-    src: /logo.svg
-    alt: vitral
-  actions:
-    - theme: brand
-      text: Começo rápido
-      link: /comecar
-    - theme: alt
-      text: Frameworks
-      link: /frameworks/react
-    - theme: alt
-      text: GitHub
-      link: https://github.com/joaogabriel15/vitral
-
-features:
-  - title: Só a URL no host
-    details: O host registra a URL de cada remote em runtime. Nenhum plugin de build no host.
-  - title: Qualquer framework
-    details: React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS puro na mesma página.
-  - title: CSS isolado
-    details: O CSS de cada remote vale só dentro dele. Tailwind funciona, inclusive em Shadow DOM.
-  - title: Seguro por padrão
-    details: Confere o hash do JS (SRI) e a origem antes de executar.
-  - title: Falha isolada
-    details: Um remote que quebra mostra o próprio erro. O resto da página continua funcionando.
-  - title: Pequeno
-    details: O código de host mínimo tem 3,4 kB com brotli.
+layout: page
+title: vitral
+titleTemplate: Micro-frontends de qualquer framework
 ---
 
-## Vantagens
+<script setup>
+import { withBase } from 'vitepress'
+</script>
 
-- O host não muda o build. Ele chama `configure()` com as URLs.
-- Host e remote não precisam usar o mesmo framework.
-- Cada remote tem o próprio deploy. O host vê a versão nova sem novo build.
-- Mudar `props` atualiza o remote sem remontar.
-- Um contrato só para todos os frameworks: `mount(el, props, ctx)` devolve `{ update, unmount }`.
-- Estado compartilhado, eventos, rotas, iframe, SSR com fallback, HMR e mocks para testes já vêm na lib.
+<div class="vp-doc vt-home">
 
-## Por que usar o vitral
+<div class="vt-hero">
+  <img :src="withBase('/logo.svg')" alt="" width="112" height="112">
+  <h1>vitral</h1>
+  <p class="vt-tagline">Feito de partes. Visto como um todo.</p>
+  <p class="vt-desc">Junte micro-frontends de qualquer framework numa página só, sem configuração de build no host.</p>
+  <div class="vt-actions">
+    <a class="vt-btn primary" :href="withBase('/aprender/configurar')">Começar</a>
+    <a class="vt-btn" :href="withBase('/referencia/')">Referência</a>
+  </div>
+</div>
 
-| | Module Federation | single-spa | qiankun | vitral |
-| --- | --- | --- | --- | --- |
-| Configuração no host | Plugin no build do host | Root config e import map | `registerMicroApps` e `start` | `configure({ remotes })` |
-| Framework do host e do remote | Precisam combinar dependências em `shared` | Um adaptador por framework | Qualquer, com entrada HTML | Qualquer, com um componente de host por framework |
-| Isolamento de CSS | Nenhum | Nenhum | Shadow DOM ou prefixo | Escopo automático ou Shadow DOM |
-| Tamanho do código de host (brotli) | 19,4 kB (runtime) | 5,8 kB | 37,9 kB | 3,4 kB |
-| Confere o hash do JS (SRI) | Não | Não | Não | Sim, com lista de origens |
+<div class="vt-section">
+<div>
 
-Tamanhos medidos com esbuild e brotli em `@module-federation/runtime@2.9.2`, `single-spa@6.0.3`, `qiankun@2.10.16` e `vitral@0.1.0`. Os dados estão em [`bench/tamanho.json`](https://github.com/joaogabriel15/vitral/blob/main/bench/tamanho.json).
+## <span class="vt-dot" style="background:var(--vt-cobalto)"></span>O host só precisa da URL
 
-Vindo de uma dessas ferramentas? Veja [Migração](/migracao/module-federation).
+Registre a URL do `vitral.json` de cada remote e renderize. Nenhum plugin no build do host.
 
-## Em 30 segundos
+</div>
+<div>
 
 ```jsx
-// host
 import { configure } from 'vitral'
 import { Remote } from 'vitral/react'
 
-configure({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })
+configure({
+  remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' },
+})
 
 export const App = () => <Remote name="carrinho" props={{ userId: 42 }} />
 ```
 
+</div>
+</div>
+
+<div class="vt-section">
+<div>
+
+## <span class="vt-dot" style="background:var(--vt-esmeralda)"></span>O remote é um componente comum
+
+Exporte o componente como `default` e adicione o plugin. O build gera o `vitral.json`.
+
+</div>
+<div>
+
 ```js
-// vite.config.js do remote
+// vite.config.js
 import vue from '@vitejs/plugin-vue'
 import vitral from 'vitral/vite'
 
 export default { plugins: [vue(), vitral()] }
 ```
 
-O host em React mostra um remote em Vue. [Começo rápido](/comecar).
+</div>
+</div>
+
+<div class="vt-section">
+<div>
+
+## <span class="vt-dot" style="background:var(--vt-ambar)"></span>Qualquer framework
+
+React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS puro. Host e remote não precisam combinar.
+
+</div>
+<div>
+
+```vue
+<template>
+  <VitralRemote name="carrinho" :props="{ userId }">
+    <template #fallback>Carregando…</template>
+  </VitralRemote>
+</template>
+```
+
+```html
+<vitral-remote name="carrinho" props='{"userId": 42}'></vitral-remote>
+```
+
+</div>
+</div>
+
+<div class="vt-section">
+<div>
+
+## <span class="vt-dot" style="background:var(--vt-rubi)"></span>CSS isolado
+
+O CSS de cada remote vale só dentro dele. Tailwind funciona. Para isolar também o CSS do host, use Shadow DOM.
+
+</div>
+<div>
+
+```css
+/* CSS do remote */
+.botao { color: red }
+
+/* depois do build */
+[data-vitral-scope="carrinho"] .botao { color: red }
+```
+
+```jsx
+<Remote name="carrinho" isolate="shadow" />
+```
+
+</div>
+</div>
+
+<div class="vt-section">
+<div>
+
+## <span class="vt-dot" style="background:var(--vt-cobalto)"></span>Um remote que falha não derruba a página
+
+Cada remote mostra o próprio erro. `tentarDeNovo` monta só aquele remote de novo.
+
+</div>
+<div>
+
+```jsx
+<Remote
+  name="carrinho"
+  fallback={<p>Carregando…</p>}
+  error={(erro, tentarDeNovo) => <button onClick={tentarDeNovo}>Tentar de novo</button>}
+  onError={(erro) => log(erro.code)}
+/>
+```
+
+</div>
+</div>
+
+<div class="vt-section">
+<div>
+
+## <span class="vt-dot" style="background:var(--vt-esmeralda)"></span>Pequeno
+
+O código de host mínimo tem 3,4 kB com brotli. Sem build no host, uma tag de script basta.
+
+</div>
+<div>
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+
+<vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json"></vitral-remote>
+```
+
+</div>
+</div>
+
+<div class="vt-wide">
+
+## Comparação
+
+| | Module Federation | single-spa | qiankun | vitral |
+| --- | --- | --- | --- | --- |
+| Configuração no host | Plugin no build | Root config e import map | `registerMicroApps` e `start` | `configure({ remotes })` |
+| Frameworks | Combinar dependências em `shared` | Um adaptador por framework | Qualquer, com entrada HTML | Qualquer |
+| Isolamento de CSS | Nenhum | Nenhum | Shadow DOM ou prefixo | Escopo automático ou Shadow DOM |
+| Código de host (brotli) | 19,4 kB | 5,8 kB | 37,9 kB | 3,4 kB |
+| Confere o hash do JS (SRI) | Não | Não | Não | Sim |
+
+Vindo de uma dessas ferramentas? Veja [Migração](/migracao/module-federation).
+
+</div>
+
+<div class="vt-cta">
+
+## Comece agora
+
+<div class="vt-actions">
+  <a class="vt-btn primary" :href="withBase('/aprender/configurar')">Configurar host e remote</a>
+  <a class="vt-btn" href="https://github.com/joaogabriel15/vitral">GitHub</a>
+</div>
+
+</div>
+
+</div>

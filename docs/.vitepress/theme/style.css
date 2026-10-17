@@ -1,0 +1,264 @@
+/* Cores do vitral: vidro cobalto, esmeralda, rubi e âmbar sobre chumbo. */
+:root {
+  --vt-cobalto: #2563eb;
+  --vt-esmeralda: #059669;
+  --vt-rubi: #e11d48;
+  --vt-ambar: #d97706;
+  --vt-chumbo: #161b26;
+
+  --vp-c-brand-1: #1d4ed8;
+  --vp-c-brand-2: #2563eb;
+  --vp-c-brand-3: #3b82f6;
+  --vp-c-brand-soft: rgba(37, 99, 235, 0.12);
+
+  --vp-c-tip-1: var(--vp-c-brand-1);
+  --vp-c-tip-soft: rgba(37, 99, 235, 0.08);
+  --vp-c-warning-1: #b45309;
+  --vp-c-warning-soft: rgba(217, 119, 6, 0.1);
+  --vp-c-danger-1: #be123c;
+  --vp-c-danger-soft: rgba(225, 29, 72, 0.08);
+
+  --vp-font-family-base: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --vp-layout-max-width: 1380px;
+}
+
+.dark {
+  --vp-c-brand-1: #8fb3ff;
+  --vp-c-brand-2: #6b9bff;
+  --vp-c-brand-3: #3b82f6;
+  --vp-c-brand-soft: rgba(107, 155, 255, 0.16);
+
+  --vp-c-bg: var(--vt-chumbo);
+  --vp-c-bg-alt: #10141d;
+  --vp-c-bg-elv: #1d2330;
+  --vp-c-bg-soft: #1d2330;
+
+  --vp-c-tip-1: #8fb3ff;
+  --vp-c-tip-soft: rgba(107, 155, 255, 0.1);
+  --vp-c-warning-1: #fbbf24;
+  --vp-c-warning-soft: rgba(251, 191, 36, 0.1);
+  --vp-c-danger-1: #fb7185;
+  --vp-c-danger-soft: rgba(251, 113, 133, 0.1);
+}
+
+/* Faixa de vidro sob a barra de navegação */
+.VPNav::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -3px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--vt-cobalto) 0 25%, var(--vt-esmeralda) 25% 50%, var(--vt-ambar) 50% 75%, var(--vt-rubi) 75%);
+  pointer-events: none;
+}
+
+/* Texto das páginas: mais espaço, como react.dev */
+.vp-doc p,
+.vp-doc li {
+  line-height: 1.75;
+}
+.vp-doc h1 {
+  font-size: 2.4rem;
+  letter-spacing: -0.02em;
+}
+.vp-doc h2 {
+  border-top: none;
+  margin-top: 56px;
+}
+
+/* Nota e Atenção no estilo react.dev: faixa à esquerda, título com cor */
+.vp-doc .custom-block {
+  border: none;
+  border-left: 4px solid;
+  border-radius: 12px;
+  padding: 16px 20px 8px;
+}
+.vp-doc .custom-block.tip {
+  border-left-color: var(--vt-cobalto);
+}
+.vp-doc .custom-block.warning {
+  border-left-color: var(--vt-ambar);
+}
+.vp-doc .custom-block.danger {
+  border-left-color: var(--vt-rubi);
+}
+.vp-doc .custom-block-title {
+  font-size: 15px;
+  text-transform: none;
+}
+
+/* Duas colunas lado a lado (texto e código, ou remote e host) */
+.vt-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.vt-split > div {
+  min-width: 0;
+}
+@media (max-width: 860px) {
+  .vt-split {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------------- Página inicial ---------------- */
+.vt-home {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
+}
+.vt-hero {
+  text-align: center;
+  padding: 72px 0 56px;
+}
+.vt-hero img {
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 24px;
+}
+.vt-hero h1 {
+  font-size: 72px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+.vt-hero .vt-tagline {
+  font-size: 30px;
+  line-height: 1.25;
+  font-weight: 700;
+  margin: 20px 0 0;
+  color: var(--vp-c-text-1);
+}
+.vt-hero .vt-desc {
+  font-size: 20px;
+  max-width: 640px;
+  margin: 16px auto 0;
+  color: var(--vp-c-text-2);
+}
+.vt-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 32px;
+}
+.vp-doc a.vt-btn {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 17px;
+  text-decoration: none;
+  border: 1px solid var(--vp-c-divider);
+  color: var(--vp-c-text-1);
+}
+.vp-doc a.vt-btn.primary {
+  background: var(--vp-c-brand-1);
+  border-color: var(--vp-c-brand-1);
+  color: #fff;
+}
+.dark .vp-doc a.vt-btn.primary {
+  color: var(--vt-chumbo);
+}
+.vp-doc a.vt-btn:hover {
+  opacity: 0.88;
+}
+
+.vt-section {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 48px;
+  align-items: center;
+  padding: 48px 0;
+  border-top: 1px solid var(--vp-c-divider);
+}
+.vt-section > div {
+  min-width: 0;
+}
+.vp-doc .vt-section h2 {
+  margin: 0 0 12px;
+  padding: 0;
+  font-size: 30px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.vt-section p {
+  font-size: 18px;
+  color: var(--vp-c-text-2);
+}
+.vt-wide {
+  padding: 48px 0;
+  border-top: 1px solid var(--vp-c-divider);
+}
+.vp-doc .vt-wide h2 {
+  margin: 0 0 16px;
+  padding: 0;
+  font-size: 30px;
+  text-align: center;
+}
+.vt-wide > p {
+  text-align: center;
+  color: var(--vp-c-text-2);
+}
+.vt-cta {
+  text-align: center;
+  padding: 56px 0 0;
+  border-top: 1px solid var(--vp-c-divider);
+}
+.vp-doc .vt-cta h2 {
+  margin: 0;
+  padding: 0;
+  font-size: 30px;
+}
+.vt-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  transform: rotate(45deg);
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+@media (max-width: 860px) {
+  .vt-hero {
+    padding: 40px 0 32px;
+  }
+  .vt-hero h1 {
+    font-size: 52px;
+  }
+  .vt-hero .vt-tagline {
+    font-size: 22px;
+  }
+  .vt-hero .vt-desc {
+    font-size: 17px;
+  }
+  .vt-section {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 36px 0;
+  }
+  .vp-doc .vt-section h2,
+  .vp-doc .vt-wide h2,
+  .vp-doc .vt-cta h2 {
+    font-size: 24px;
+  }
+  .vt-home {
+    padding: 0 16px 48px;
+  }
+}
+
+.vt-home div[class*='language-'] {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  border-radius: 12px !important;
+}
+.vt-split div[class*='language-'] code {
+  font-size: 12.5px;
+}
