@@ -11,7 +11,7 @@ O single-spa e o vitral usam o mesmo modelo: o remote exporta funções de ciclo
 | `bootstrap`, `mount`, `unmount` | `mount(el, props, ctx)` devolvendo `{ update, unmount }` |
 | `update` de parcels | `update(props)`, sempre disponível |
 | `customProps` | `props` |
-| `activeWhen` | O roteador do host renderiza `<Remote>` na rota. Veja [Rotas](/funcionalidades/rotas) |
+| `activeWhen` | O roteador do host renderiza `<Remote>` na rota. Veja [Rotas](/aprender/rotas) |
 | `single-spa-react`, `single-spa-vue`… | `reactRemote`, `vueRemote`… |
 | `mountRootParcel` | `<Remote>`, `<vitral-remote>` ou `createSlot` |
 | `navigateToUrl` | `navigate` |
@@ -86,7 +86,7 @@ Sem framework, use `vitral/routes`:
 </script>
 ```
 
-Veja [Rotas](/funcionalidades/rotas).
+Veja [Rotas](/aprender/rotas).
 
 ## O que muda no comportamento
 
