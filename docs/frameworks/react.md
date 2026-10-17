@@ -31,12 +31,12 @@ Mudar `props` atualiza o remote. Mudar `name`, `src` ou `isolate` remonta.
 | `name` | `string` | Nome registrado em `configure` |
 | `src` | `string` | URL do `vitral.json`. Dispensa `configure` |
 | `props` | `object` | Props do remote. Funções também passam |
-| `isolate` | `'none' \| 'shadow' \| 'iframe'` | Isolamento. Veja [Estilos](/funcionalidades/estilos) e [Iframe](/funcionalidades/iframe) |
+| `isolate` | `'none' \| 'shadow' \| 'iframe'` | Isolamento. Veja [Estilos](/aprender/estilos) e [Iframe](/aprender/iframe) |
 | `fallback` | `ReactNode` | Mostrado enquanto carrega |
 | `error` | `ReactNode` ou `(erro, tentarDeNovo) => ReactNode` | Mostrado se falhar |
 | `onError` | `(erro) => void` | Chamado em cada erro |
 | `className` | `string` | Classe do elemento que recebe o remote |
-| `loading` | `'lazy' \| 'idle'` | Quando montar. Veja [Carregamento](/funcionalidades/carregamento) |
+| `loading` | `'lazy' \| 'idle'` | Quando montar. Veja [Carregamento](/aprender/carregamento) |
 | `prefetch` | `'hover' \| 'visible' \| 'idle'` | Baixar antes de montar |
 | `priority` | `'high'` | Prioridade alta nos downloads |
 | `keepAlive` | `boolean \| number` | Guarda o remote montado ao sair da página |
@@ -90,8 +90,8 @@ function Carrinho() {
 | `useVitral()` | Devolve o `ctx` do remote |
 | `useEvent(tipo, fn)` | Assina um evento enquanto o componente existe |
 | `useEventValue(tipo)` | Último valor de um evento. Re-renderiza a cada `emit` |
-| `useShared(chave, seletor?)` | Valor do [contexto compartilhado](/funcionalidades/contexto) |
+| `useShared(chave, seletor?)` | Valor do [contexto compartilhado](/aprender/contexto) |
 
 ## React do host nos remotes
 
-`<Remote>` oferece o React do host. Remotes com `dedupe: ['react']` usam essa cópia quando a versão serve. Veja [Dedupe](/funcionalidades/dedupe).
+`<Remote>` oferece o React do host. Remotes com `dedupe: ['react']` usam essa cópia quando a versão serve. Veja [Dedupe](/aprender/dedupe).
