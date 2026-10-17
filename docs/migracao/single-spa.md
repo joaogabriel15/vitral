@@ -11,12 +11,12 @@ O single-spa e o vitral usam o mesmo modelo: o remote exporta funções de ciclo
 | `bootstrap`, `mount`, `unmount` | `mount(el, props, ctx)` devolvendo `{ update, unmount }` |
 | `update` de parcels | `update(props)`, sempre disponível |
 | `customProps` | `props` |
-| `activeWhen` | O roteador do host renderiza `<Remote>` na rota. Veja [Rotas](/receitas/rotas) |
+| `activeWhen` | O roteador do host renderiza `<Remote>` na rota. Veja [Rotas](/funcionalidades/rotas) |
 | `single-spa-react`, `single-spa-vue`… | `reactRemote`, `vueRemote`… |
 | `mountRootParcel` | `<Remote>`, `<vitral-remote>` ou `createSlot` |
 | `navigateToUrl` | `navigate` |
 | Root config sem framework | `<vitral-remote>` |
-| Layout por rota sem framework | <Badge type="warning" text="em breve" /> |
+| Layout por rota sem framework | `routes()` e `<vitral-outlet>` |
 
 ## Passo a passo: um app React
 
@@ -67,13 +67,14 @@ configure({ remotes: { conta: 'https://cdn.empresa.com/conta/vitral.json' } })
 { path: '/conta/*', element: <Remote name="conta" props={{ authToken }} /> }
 ```
 
-Sem framework, troque o conteúdo de um elemento quando a rota muda:
+Sem framework, use `vitral/routes`:
 
 ```html
-<main id="app"></main>
+<vitral-outlet></vitral-outlet>
 
 <script type="module">
-  import { configure, createSlot } from 'vitral'
+  import { configure } from 'vitral'
+  import { routes } from 'vitral/routes'
 
   configure({
     remotes: {
@@ -81,24 +82,11 @@ Sem framework, troque o conteúdo de um elemento quando a rota muda:
       checkout: 'https://cdn.empresa.com/checkout/vitral.json',
     },
   })
-
-  const rotas = { '/conta': 'conta', '/checkout': 'checkout' }
-  let atual = null
-  let slot = null
-  function rota() {
-    const prefixo = Object.keys(rotas).find((p) => location.pathname.startsWith(p))
-    const nome = prefixo ? rotas[prefixo] : null
-    if (nome === atual) return // navegação dentro do mesmo remote
-    slot?.destroy()
-    slot = nome ? createSlot(document.querySelector('#app'), { name: nome }) : null
-    atual = nome
-  }
-  addEventListener('popstate', rota)
-  rota()
+  routes({ '/conta/*': 'conta', '/checkout/*': 'checkout' })
 </script>
 ```
 
-`navigate()` dispara `popstate`, então a troca de rota de dentro de um remote também passa por aqui.
+Veja [Rotas](/funcionalidades/rotas).
 
 ## O que muda no comportamento
 

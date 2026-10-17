@@ -1,8 +1,12 @@
 # Testes
 
-## Testes do host
+`vitral/testing` registra remotes falsos para testar o host sem rede.
 
-`vitral/testing` registra remotes falsos. O host renderiza sem baixar nada.
+## Quando usar
+
+Em testes de unidade do host e do remote, com happy-dom ou jsdom.
+
+## Host
 
 ```ts
 import { mockRemote, failingRemote, resetVitral } from 'vitral/testing'
@@ -18,7 +22,7 @@ test('passa os itens para o carrinho', async () => {
   expect(carrinho.mounts).toBe(1)
 })
 
-test('mostra o erro quando o remote falha', async () => {
+test('mostra o erro', async () => {
   failingRemote('recomendacoes')
   render(<App />)
   await screen.findByText('Tentar de novo')
@@ -27,17 +31,13 @@ test('mostra o erro quando o remote falha', async () => {
 
 | Função | O que faz |
 | --- | --- |
-| `mockRemote(nome, render?)` | Registra um remote local. `render(el, props, ctx)` roda no mount e a cada update |
-| `failingRemote(nome, mensagem?)` | Registra um remote que lança erro ao montar |
-| `resetVitral()` | Apaga o estado global da lib entre testes |
+| `mockRemote(nome, render?)` | Registra um remote local. `render(el, props, ctx)` roda no mount e em cada update |
+| `failingRemote(nome, mensagem?)` | Registra um remote que falha ao montar |
+| `resetVitral()` | Limpa o estado da lib entre testes |
 
 O objeto de `mockRemote` tem `mounts`, `lastProps`, `ctx` e `mounted`.
 
-Rode em um ambiente com DOM (happy-dom ou jsdom).
-
-## Testes do remote
-
-Monte o remote como o host montaria, com `register` e `mountRemote`:
+## Remote
 
 ```ts
 import { register, mountRemote } from 'vitral'
@@ -52,7 +52,3 @@ test('mostra o nome', async () => {
   montado.unmount()
 })
 ```
-
-## Testes no navegador
-
-Para testar o host com o remote de verdade, sirva o `dist` do remote e o host em portas diferentes e use Playwright. Os exemplos do repositório fazem isso com 9 hosts e 8 remotes: veja [`e2e/`](https://github.com/joaogabriel15/vitral/tree/main/e2e).
