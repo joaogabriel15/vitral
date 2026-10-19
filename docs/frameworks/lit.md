@@ -75,4 +75,4 @@ class Perfil extends LitElement {
 }
 ```
 
-`SharedController(host, chave, seletor?)` assina enquanto o elemento está conectado. Veja [Contexto compartilhado](/funcionalidades/contexto).
+`SharedController(host, chave, seletor?)` assina enquanto o elemento está conectado. Veja [Contexto compartilhado](/aprender/contexto).

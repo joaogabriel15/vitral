@@ -90,4 +90,4 @@ const nome = useShared('usuario', (u) => u?.nome) // só leitura
 | `useVitral()` | Devolve o `ctx` do remote |
 | `useEvent(tipo, fn)` | Assina um evento enquanto o componente existe |
 | `useEventValue(tipo)` | Último valor de um evento, como `ShallowRef` |
-| `useShared(chave, seletor?)` | Valor do [contexto compartilhado](/funcionalidades/contexto). Sem seletor, aceita escrita |
+| `useShared(chave, seletor?)` | Valor do [contexto compartilhado](/aprender/contexto). Sem seletor, aceita escrita |

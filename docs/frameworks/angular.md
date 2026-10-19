@@ -99,4 +99,4 @@ class Carrinho {
 | --- | --- |
 | `injectVitral()` | Devolve o `ctx` do remote |
 | `VITRAL_CONTEXT` | Token de injeção do `ctx` |
-| `injectShared(chave, seletor?)` | Valor do [contexto compartilhado](/funcionalidades/contexto) como `Signal` |
+| `injectShared(chave, seletor?)` | Valor do [contexto compartilhado](/aprender/contexto) como `Signal` |

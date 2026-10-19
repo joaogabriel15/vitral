@@ -58,4 +58,4 @@ const nome = useShared('usuario', (u) => u?.nome) // accessor
 return <p>{nome()}</p>
 ```
 
-Veja [Contexto compartilhado](/funcionalidades/contexto).
+Veja [Contexto compartilhado](/aprender/contexto).

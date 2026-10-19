@@ -39,7 +39,7 @@ As props de `<Remote>` são as mesmas do [React](./react#host).
 
 ## Estado do servidor no cliente
 
-Para mandar valores do [contexto compartilhado](/funcionalidades/contexto) do servidor para o cliente, use `serializeShared`:
+Para mandar valores do [contexto compartilhado](/aprender/contexto) do servidor para o cliente, use `serializeShared`:
 
 ```tsx
 import { serializeShared } from 'vitral'
@@ -51,7 +51,7 @@ import { serializeShared } from 'vitral'
 />
 ```
 
-Veja [SSR](/funcionalidades/ssr).
+Veja [SSR](/aprender/ssr).
 
 ## Remote
 
