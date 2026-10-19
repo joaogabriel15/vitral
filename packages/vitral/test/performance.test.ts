@@ -54,9 +54,10 @@ describe('downloads em paralelo', () => {
     configure({ retries: 0 })
     register('carrinho', `${CDN}/vitral.json`)
     const mounting = mountRemote(document.body.appendChild(document.createElement('div')), 'carrinho', {}, { isolate: 'shadow' }).catch((e) => e)
-    // O JS começa depois do manifesto e do chunk de SRI; espera o fetch dele.
-    await vi.waitFor(() => expect(net.calls).toContain(`${CDN}/remote-1.js`))
-    expect(net.calls).toEqual([`${CDN}/vitral.json`, `${CDN}/shadow.css`, `${CDN}/remote-1.js`])
+    // O CSS sai pelo módulo do Shadow DOM, que baixa junto: começa enquanto
+    // o JS ainda não terminou (o JS só termina com releaseJs).
+    await vi.waitFor(() => expect(net.calls).toContain(`${CDN}/shadow.css`))
+    expect(net.calls).toEqual([`${CDN}/vitral.json`, `${CDN}/remote-1.js`, `${CDN}/shadow.css`])
     expect(document.head.querySelector('link[rel="preload"]')).toBeNull()
     net.releaseJs()
     await mounting

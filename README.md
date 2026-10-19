@@ -187,7 +187,7 @@ Para isolar por completo, use Shadow DOM:
 <Remote name="carrinho" isolate="shadow" />
 ```
 
-Com Shadow DOM, as regras `@property` e `@font-face` sobem para o documento, então sombras, rings, gradientes e fontes do Tailwind v4 funcionam.
+Com Shadow DOM, as regras `@property` e `@font-face` sobem para o documento, então sombras, rings, gradientes e fontes do Tailwind v4 funcionam. O plugin já faz essa separação no build (campo `shadow` do `vitral.json`): a página só adota o CSS pronto. Manifestos antigos continuam funcionando, com a separação feita no navegador.
 
 O remote também pode usar o tema do host:
 
