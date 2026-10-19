@@ -1,6 +1,6 @@
 # SRI e origens permitidas
 
-Antes de executar o JS de um remote, a lib confere a origem e o hash. As duas checagens vêm ligadas.
+Antes de executar o JS de um remote, a lib confere a origem. Se o remote tem hash (`integrity`), confere também os bytes. A checagem de origem vem ligada; a de hash depende de existir um hash.
 
 ## Quando usar
 
@@ -16,11 +16,27 @@ configure({
 
 Sem `allowedOrigins`, valem a origem da página e as origens das URLs em `configure({ remotes })`. Um `vitral.json` não consegue apontar o JS para outra origem. URL fora da lista gera [`ORIGIN_BLOCKED`](/erros/ORIGIN_BLOCKED). `['*']` libera tudo: use só em desenvolvimento.
 
+### Origens que entram sozinhas na lista
+
+Algumas URLs entram na lista mesmo com `allowedOrigins` definido, porque são escritas por quem desenvolve o host:
+
+| De onde vem a URL | Entra na lista? |
+| --- | --- |
+| `src` em `<Remote>`, `createSlot` e nos componentes de framework | Sim |
+| `registerSrc(url)` (o terceiro argumento, `trusted`, é `true` por padrão) | Sim |
+| `registerSrc(url, nome, false)` | Não |
+| `src` em `<vitral-remote>` (atributo do HTML) | Não |
+| Override de desenvolvimento (`?vitral=` ou o painel do devtools) | Sim, só em `localhost` ou com `devOverrides: true` |
+
+Nunca passe para `src` uma URL que vem de dados (API, query string, CMS). Para isso, use `registerSrc(url, nome, false)` ou o `<vitral-remote src>`, que respeitam `allowedOrigins`.
+
 ## Integridade (SRI)
 
-O plugin grava o hash `sha384` do JS no `vitral.json`. Se o arquivo baixado não bater, o remote não roda e o erro é [`INTEGRITY`](/erros/INTEGRITY). O CSS do manifesto também é conferido.
+O plugin `vitral/vite` grava o hash `sha384` do JS e do CSS no `vitral.json`. Se o arquivo baixado não bater, o remote não roda e o erro é [`INTEGRITY`](/erros/INTEGRITY).
 
-O manifesto vem do mesmo CDN que o JS. Para proteger contra um CDN comprometido, fixe o hash no host:
+A conferência só acontece quando existe um hash. Sem `integrity` no host e sem hash no `vitral.json` (um manifesto escrito à mão, ou um remote registrado direto pela URL do JS), o JS é importado sem conferência.
+
+O hash do `vitral.json` protege contra arquivo corrompido ou trocado no caminho, mas não contra um CDN comprometido: quem troca o JS pode trocar o manifesto junto. Para isso, fixe o hash no host:
 
 ```ts
 configure({
@@ -49,6 +65,10 @@ Content-Security-Policy: script-src 'self' https://cdn.empresa.com blob:; connec
 ```
 
 Se a página tem um `<script nonce>`, a lib usa o mesmo `nonce`.
+
+## Overrides de desenvolvimento
+
+`?vitral=nome@http://localhost:5174` troca a URL de um remote e descarta a `integrity` do host. Só funciona com a página em `localhost` ou com `configure({ devOverrides: true })`. Não ligue `devOverrides` em produção: qualquer link com `?vitral=` executaria código de outra origem.
 
 ## O que não é isolado
 
