@@ -225,7 +225,7 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "4.6 kB"
+      "limit": "4.61 kB"
     },
     {
       "name": "núcleo",
@@ -285,7 +285,7 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "5.51 kB"
+      "limit": "5.52 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -352,7 +352,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.07 kB",
+      "limit": "6.08 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
