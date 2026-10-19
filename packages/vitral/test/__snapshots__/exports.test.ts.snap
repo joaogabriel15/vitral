@@ -24,6 +24,13 @@ exports[`exports públicos > devtools 1`] = `
 ]
 `;
 
+exports[`exports públicos > edge 1`] = `
+[
+  "gateway",
+  "toNodeListener",
+]
+`;
+
 exports[`exports públicos > element 1`] = `
 [
   "SharedController",

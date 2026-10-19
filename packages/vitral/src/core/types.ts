@@ -97,6 +97,15 @@ export interface MountedRemote<P extends Props = Props> {
 
 export interface RemoteModule<P extends Props = Props> {
   mount(el: HTMLElement, props: P, ctx: RemoteContext): MountedRemote<P> | Promise<MountedRemote<P>>
+  /**
+   * Opcional. Quando o gateway de `vitral/edge` já renderizou o remote no
+   * servidor, o `<vitral-remote>` chama `hydrate` com `el` cheio do HTML de
+   * `render` (no Shadow DOM declarativo, se for o caso), em vez de limpar e
+   * chamar `mount`. Deve assumir o DOM que existe, sem recriar.
+   */
+  hydrate?(el: HTMLElement, props: P, ctx: RemoteContext): MountedRemote<P> | Promise<MountedRemote<P>>
+  /** Opcional, só no servidor: o HTML do remote para estas props (SSR pelo gateway). */
+  render?(props: P): string | Promise<string>
 }
 
 export interface RemoteEntry {
