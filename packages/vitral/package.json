@@ -233,13 +233,14 @@
       "import": "{ RemoteError, __reset, component, configure, createEventBus, createSlot, defineRemote, events, html, loadRemote, mountRemote, navigate, preload, register, render, unsafeHTML }",
       "ignore": [
         "./shadow-*",
+        "./overrides-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.18 kB"
+      "limit": "5.73 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -250,6 +251,11 @@
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
       "path": "dist/dedupe-*.js",
       "limit": "0.67 kB"
+    },
+    {
+      "name": "overrides (sob demanda)",
+      "path": "dist/overrides-*.js",
+      "limit": "1.29 kB"
     },
     {
       "name": "host mínimo + store",
@@ -297,13 +303,14 @@
         "react",
         "react-dom",
         "./shadow-*",
+        "./overrides-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.6 kB"
+      "limit": "6.2 kB"
     },
     {
       "name": "vue",
@@ -312,13 +319,14 @@
       "ignore": [
         "vue",
         "./shadow-*",
+        "./overrides-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.52 kB"
+      "limit": "6.08 kB"
     },
     {
       "name": "element",
@@ -326,13 +334,14 @@
       "import": "{ defineVitralElement }",
       "ignore": [
         "./shadow-*",
+        "./overrides-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.79 kB"
+      "limit": "6.32 kB"
     },
     {
       "name": "devtools",
@@ -358,13 +367,19 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.12 kB"
+      "limit": "8.67 kB",
+      "ignore": [
+        "./overrides-*"
+      ]
     },
     {
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
-      "limit": "6.34 kB"
+      "limit": "6 kB",
+      "ignore": [
+        "./overrides-*"
+      ]
     }
   ]
 }
