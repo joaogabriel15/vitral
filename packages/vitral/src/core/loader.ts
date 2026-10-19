@@ -60,7 +60,7 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
       const resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority)
       metric(name, 'manifest', t)
       // O CSS baixa junto com o JS; a montagem espera os dois.
-      prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', resolved.sri, priority)
+      prefetchCss(resolved, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', priority)
       t = performance.now()
       const ns = await withRetry(p.settings().retries, () => importModule(name, resolved))
       metric(name, 'js', t)
@@ -106,6 +106,7 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
   const resolved: Resolved = {
     entry: abs(m.entry),
     css: [...(m.css ?? []), ...(entry.css ?? [])].map(abs),
+    shadow: m.shadow,
     // A integridade declarada pelo host vence a do manifesto, e aí só o
     // arquivo único (o que ela descreve) é usado.
     integrity: entry.integrity ?? m.integrity,

@@ -6,12 +6,15 @@ import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import vitral from '../src/vite'
 import { collect } from '../src/vite/manifest'
+import { splitShadowCss } from '../src/css-build'
 import type { RemoteManifest } from '../src/index'
 
 const outDir = mkdtempSync(join(tmpdir(), 'vitral-vite-'))
 const splitDir = mkdtempSync(join(tmpdir(), 'vitral-split-'))
+const shadowDir = mkdtempSync(join(tmpdir(), 'vitral-shadow-'))
 let manifest: RemoteManifest
 let splitManifest: RemoteManifest
+let shadowManifest: RemoteManifest
 
 async function buildRemote(fixture: string, out: string): Promise<RemoteManifest> {
   await build({
@@ -29,11 +32,13 @@ async function buildRemote(fixture: string, out: string): Promise<RemoteManifest
 beforeAll(async () => {
   manifest = await buildRemote('vite-remote', outDir)
   splitManifest = await buildRemote('vite-split', splitDir)
+  shadowManifest = await buildRemote('vite-shadow', shadowDir)
 }, 60_000)
 
 afterAll(() => {
   rmSync(outDir, { recursive: true, force: true })
   rmSync(splitDir, { recursive: true, force: true })
+  rmSync(shadowDir, { recursive: true, force: true })
 })
 
 const sha384 = (file: string) => 'sha384-' + createHash('sha384').update(readFileSync(file)).digest('base64')
@@ -65,6 +70,47 @@ describe('plugin vite', () => {
     expect(text).not.toMatch(/(^|[\s,}]):root/)
     const hash = createHash('sha256').update(text).digest('base64url').slice(0, 8)
     expect(css).toBe(`remote-${hash}.css`)
+  })
+})
+
+describe('CSS preparado para o Shadow DOM', () => {
+  const read = (file: string) => readFileSync(join(shadowDir, file), 'utf8')
+
+  it('sem nada a separar, o Shadow DOM usa o mesmo arquivo', () => {
+    expect(manifest.shadow).toEqual({ css: manifest.css })
+  })
+
+  it('separa @property e @font-face num arquivo global e lista o @import de outra origem', () => {
+    const m = shadowManifest
+    const [css] = m.css!
+    const { css: [ready], global: [global], imports, rebase } = m.shadow as Required<NonNullable<RemoteManifest['shadow']>>
+    expect(ready).toMatch(/^remote-shadow-[\w-]{8}\.css$/)
+    expect(global).toMatch(/^remote-global-[\w-]{8}\.css$/)
+    expect(imports).toEqual(['https://fontes.exemplo.com/familia.css'])
+    // A URL só com o caminho ficou no @font-face, que vai num <link>: nada a reescrever.
+    expect(rebase).toBeUndefined()
+    // O CSS de sempre continua inteiro (hosts antigos e modo escopo).
+    expect(read(css)).toMatch(/@import[^;]*familia\.css/)
+    expect(read(css)).toContain('@property --giro')
+    // O @import local o Vite já embutiu; o pronto não tem nada que a folha construída recuse.
+    expect(read(ready)).toContain('[data-vitral-scope="fontes"] .base')
+    expect(read(ready)).toContain('[data-vitral-scope="fontes"] .cartao')
+    expect(read(ready)).not.toMatch(/@import|@property|@font-face/)
+    expect(read(global)).toMatch(/^@property --giro[^}]*\}\s*@font-face[^}]*remota\.woff2[^}]*\}$/)
+    for (const f of [css, ready, global]) expect(m.files![f]).toBe(sha384(join(shadowDir, f)))
+  })
+
+  it('url() relativa que sobra no CSS pronto marca rebase', () => {
+    expect(splitShadowCss('.a { background: url(img/a.png) } .b { background: url(data:image/png;base64,AA) }').rebase).toBe(true)
+    expect(splitShadowCss('.a { background: url(https://x.com/a.png) } @font-face { src: url(f.woff2) }').rebase).toBe(false)
+  })
+
+  it('@import com media e regras globais aninhadas', () => {
+    const r = splitShadowCss('@import url(a.css) screen; @import "b.css"; @layer x { @font-face { font-family: X } .x { color: red } }')
+    expect(r.imports).toEqual(['a.css', 'b.css'])
+    expect(r.global).toBe('@font-face { font-family: X }')
+    expect(r.css).toBe('@layer x { .x { color: red } }')
+    expect(splitShadowCss('.a { color: red }')).toEqual({ css: '.a { color: red }', global: '', imports: [], rebase: false })
   })
 })
 
