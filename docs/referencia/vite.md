@@ -32,6 +32,7 @@ export default { plugins: [react(), vitral({ entry: 'src/remote.tsx', dedupe: ['
 | `dedupe` | nenhum | Veja [Dedupe](/aprender/dedupe) |
 | `types` | `true` | Gera `vitral.d.ts` |
 | `contract` | nenhum | `{ version }`: versão do contrato no `vitral.json`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
+| `sbom` | `false` | Gera `sbom.cdx.json` (CycloneDX 1.6). Veja [SBOM](/aprender/seguranca#sbom) |
 | `shared` | nenhum | Obsoleta. Use `dedupe` |
 
 ## Saída
@@ -42,6 +43,7 @@ dist/
   remote-[hash].css
   vitral.json
   vitral.d.ts
+  sbom.cdx.json   (com sbom: true)
 ```
 
 ## Observações

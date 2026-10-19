@@ -226,6 +226,11 @@ export interface RemoteManifest {
    * antigos), o runtime faz esse trabalho em cada página.
    */
   shadow?: ShadowCss
+  /**
+   * SBOM CycloneDX do remote (opção `sbom` do plugin): o arquivo, relativo
+   * ao manifesto, e o hash dele. O runtime não usa; é para auditoria.
+   */
+  sbom?: { file: string; integrity: string }
 }
 
 /** Contrato do remote no `vitral.json`. */
