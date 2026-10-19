@@ -61,6 +61,22 @@ export interface RemoteContext {
    * (`provide`, `shared` ou um hook); senão, importe `shared` de 'vitral'.
    */
   shared?: SharedApi
+  /**
+   * Só quando o remote roda como MCP App (`vitral({ target: 'mcp-app' })`):
+   * fala JSON-RPC direto com o host MCP, para o que `events` não cobre
+   * (`tools/call`, `resources/read`, `ui/request-display-mode`…).
+   */
+  mcp?: McpAppBridge
+}
+
+/** `ctx.mcp` de um remote empacotado como MCP App. */
+export interface McpAppBridge {
+  /** Pedido ao host; resolve com `result` ou rejeita com `error.message`. */
+  request<T = unknown>(method: string, params?: Record<string, unknown>): Promise<T>
+  /** Notificação ao host (sem resposta). */
+  notify(method: string, params?: Record<string, unknown>): void
+  /** O `hostContext` atual (tema, idioma, tamanho do container…), já com as mudanças. */
+  hostContext(): Record<string, unknown> | undefined
 }
 
 export interface MountedRemote<P extends Props = Props> {
@@ -87,7 +103,7 @@ export interface RemoteEntry {
   /** Isolamento padrão para este remote. */
   isolate?: Isolation
   /**
-   * O `vitral.json` já baixado (ex.: por `vitral registry`), para não buscá-lo
+   * O `vitral.json` já baixado (ex.: no build do host), para não buscá-lo
    * na hora. Os caminhos dele são relativos a `url`, e os hashes ficam fixos
    * no host.
    */
@@ -237,6 +253,11 @@ export interface RemoteManifest {
    * antigos), o runtime faz esse trabalho em cada página.
    */
   shadow?: ShadowCss
+  /**
+   * SBOM CycloneDX do remote (opção `sbom` do plugin): o arquivo, relativo
+   * ao manifesto, e o hash dele. O runtime não usa; é para auditoria.
+   */
+  sbom?: { file: string; integrity: string }
 }
 
 /** Contrato do remote no `vitral.json`. */
