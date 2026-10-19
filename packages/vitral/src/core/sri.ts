@@ -87,7 +87,29 @@ const PROBE = 'data:text/javascript,export{}'
 const PROBE_SRI = 'sha256-d3bjIZdvLjBurwdLwkSVOnEBPFFly+T1SR9r3VVHBGg='
 
 let maps: boolean | undefined
+/** O primeiro mapa, com os módulos de teste: os remotes que chegam junto esperam por ele. */
+let probing: Promise<boolean> | undefined
 let preloads: Promise<boolean> | undefined
+
+// O módulo de teste com hash errado deixa uma linha de erro no console. O
+// resultado fica guardado por navegador (user agent), então a linha aparece
+// uma vez, não a cada página.
+const KEY = 'vitral:sri-map'
+
+/** Adiciona o mapa do build; o primeiro confere antes que o navegador aplica o hash. */
+async function useMap(sri: Record<string, string>): Promise<boolean> {
+  if (probing) return (await probing) && addMap(sri, false)
+  let seen = false
+  try {
+    seen = localStorage[KEY] === navigator.userAgent
+  } catch {}
+  const ok = await (probing = addMap(sri, !seen))
+  if (ok && !seen)
+    try {
+      localStorage[KEY] = navigator.userAgent
+    } catch {}
+  return ok
+}
 
 /** Próxima tarefa, sem o atraso dos timers em abas em segundo plano. */
 const tick = () => new Promise<void>((resolve) => {
@@ -122,7 +144,7 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
         },
       })
   }
-  if (maps !== false && (maps = await addMap(sri, maps === undefined))) {
+  if (maps !== false && (maps = await useMap(sri))) {
     await share()
     for (const u of chunks) fetch(u, { priority }).catch(() => {})
     return entry
