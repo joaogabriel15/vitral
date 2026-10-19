@@ -1,5 +1,13 @@
 # create-vitral
 
+## 0.3.0
+
+### Patch Changes
+
+- [#48](https://github.com/joaogabriel15/vitral/pull/48) [`116db7b`](https://github.com/joaogabriel15/vitral/commit/116db7b0f054ae3367b00af3cf91973bae12a9b9) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Template Angular: o `vite.config.js` gerado usa `fileURLToPath` para achar o `tsconfig.json`. Antes, no Windows e em pastas com espaço ou acento, o build e o HMR falhavam.
+
+- [#60](https://github.com/joaogabriel15/vitral/pull/60) [`27a7815`](https://github.com/joaogabriel15/vitral/commit/27a7815e294f2fdb0684e17eb5c30ed842180f0e) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - O build do remote não quebra mais com o TypeScript 7 (o que o `create-vite` instala hoje): sem API em JavaScript, o plugin procura outro TypeScript e, sem nenhum, segue sem gerar `vitral.d.ts`. Palavras-chave do npm ampliadas para o pacote ser encontrado na busca.
+
 ## 0.2.0
 
 ### Minor Changes
