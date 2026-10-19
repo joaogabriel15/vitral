@@ -9,6 +9,7 @@
  */
 export type {
   CheckedProps,
+  DevOverrides,
   EventBus,
   Handler,
   Isolation,

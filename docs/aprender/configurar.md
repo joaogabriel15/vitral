@@ -92,7 +92,7 @@ Todas as opções: [`vitral/vite`](/referencia/vite).
 | `timeout` | `15000` | Tempo máximo de cada download, em ms |
 | `retries` | `1` | Tentativas extras se o download falhar |
 | `isolate` | `'none'` | `'shadow'` ou `'iframe'` para todos os remotes |
-| `devOverrides` | `false` | Aceita `?vitral=nome@url` fora de `localhost`. Nunca em produção |
+| `devOverrides` | `false` | Aceita `?vitral=nome@url` fora de `localhost`. `{ preview }` também resolve `?vitral=nome@pr-123`. Nunca em produção |
 | `onMetric` | nenhum | Recebe `{ name, stage, start, duration }` de cada etapa |
 | `styles` | nenhum | `{ inherit, mirrorTheme }` para o Shadow DOM |
 

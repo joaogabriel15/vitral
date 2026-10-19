@@ -76,12 +76,13 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
 }
 
 /**
- * Override de desenvolvimento (`?vitral=` ou localStorage). O código fica em
- * outro módulo, baixado só quando a página pede um override.
+ * Override de desenvolvimento (`?vitral=`, sessionStorage ou localStorage). O
+ * código fica em outro módulo, baixado só quando a página pede um override.
  */
 function devOverride(name: string): Promise<RemoteEntry | undefined> | undefined {
   try {
-    if (/vitral/.test(location.search + localStorage.getItem('vitral:overrides'))) return import('./overrides').then((m) => m.overrideFor(name))
+    const k = 'vitral:overrides'
+    if (location.search.includes('vitral') || localStorage[k] || sessionStorage[k]) return import('./overrides').then((m) => m.overrideFor(name))
   } catch {}
 }
 

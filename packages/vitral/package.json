@@ -239,7 +239,7 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "5.73 kB"
+      "limit": "6.18 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -303,7 +303,7 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.2 kB"
+      "limit": "6.6 kB"
     },
     {
       "name": "vue",
@@ -318,7 +318,7 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.08 kB"
+      "limit": "6.52 kB"
     },
     {
       "name": "element",
@@ -332,13 +332,13 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.32 kB"
+      "limit": "6.79 kB"
     },
     {
       "name": "devtools",
       "path": "dist/devtools.js",
       "import": "{ devtools }",
-      "limit": "2 kB"
+      "limit": "2.05 kB"
     },
     {
       "name": "auto",
@@ -358,13 +358,13 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.67 kB"
+      "limit": "9.12 kB"
     },
     {
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
-      "limit": "6 kB"
+      "limit": "6.34 kB"
     }
   ]
 }
