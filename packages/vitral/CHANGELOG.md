@@ -1,5 +1,33 @@
 # vitral
 
+## 0.3.0
+
+### Minor Changes
+
+- [#57](https://github.com/joaogabriel15/vitral/pull/57) [`c87d157`](https://github.com/joaogabriel15/vitral/commit/c87d1572e7db49e5935e73a93af114cf485ecf7d) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Atribuição de erros por remote. Todo `RemoteError` traz `entry` (URL do JS), `version` (do `vitral.json`) e `route` (`location.pathname` no momento do erro). `configure({ onError })` recebe cada erro de qualquer remote uma vez, além do `onError` de cada montagem. `configure({ captureGlobalErrors: true })` atribui a um remote os erros sem tratamento que saem do código dele. Novos imports `vitral/sentry` (`sentryOnError(Sentry)`) e `vitral/otel` (`otelOnError({ trace, tracer })`), sem dependência dos SDKs.
+
+- [#56](https://github.com/joaogabriel15/vitral/pull/56) [`97570fe`](https://github.com/joaogabriel15/vitral/commit/97570fe488819b2cb18309c5a5776100e513ba85) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Contrato entre host e remote. O plugin `vitral/vite` grava `contract` no `vitral.json`: a versão da opção `contract: { version }` e, com `dedupe`, a faixa de cada dependência em `peers`. O host declara a faixa aceita com `contract: '^2'` no `configure` ou na entrada do remote. Antes de executar o remote, o host confere a versão e as dependências que ele mesmo oferece; se não servir, o remote não monta e o erro é `CONTRACT_MISMATCH`, mostrado pelo `fallback`/`error` como os outros. Sem contrato em um dos lados, nada muda. As faixas aceitam a forma curta (`^2`, `~2.1`), também no `dedupe`.
+
+- [#58](https://github.com/joaogabriel15/vitral/pull/58) [`3d58aa4`](https://github.com/joaogabriel15/vitral/commit/3d58aa45a5d87f00f610c514943e04c95229c583) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Shadow DOM: o plugin prepara o CSS no build. O `vitral.json` ganha o campo `shadow`, com o CSS sem `@import`, `@property` e `@font-face` e um arquivo à parte com `@property` e `@font-face`, que entra num `<link>` no documento. A página só adota o CSS pronto, sem reescrever o texto, e o módulo do Shadow DOM passa a baixar junto com o JS do remote. O `css` continua igual: hosts antigos e manifestos antigos funcionam como antes.
+
+- [#59](https://github.com/joaogabriel15/vitral/pull/59) [`f6ce2cd`](https://github.com/joaogabriel15/vitral/commit/f6ce2cd6d4a77067784a189740e072e3e4acf0ad) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Novo `ctx.portalContainer`: destino para popovers, menus e dialogs (Radix, MUI, `Teleport`). No Shadow DOM é um elemento dentro do shadow root, com o CSS e o tema do remote, e sai no unmount; sem Shadow DOM é o `document.body`. Em React e Vue, `usePortalContainer()`.
+
+- [#55](https://github.com/joaogabriel15/vitral/pull/55) [`a723542`](https://github.com/joaogabriel15/vitral/commit/a7235423281feee3039c0e2d4e5b0a769fa7a654) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - O plugin gera o `vitral.d.ts` com o Oxc (`isolatedDeclaration`) quando ele está disponível (Vite 8 ou `oxc-transform`) e os exports têm tipo explícito: as props saem em poucos milissegundos, sem montar um programa do TypeScript. Sem Oxc, ou se ele reclamar, usa o TypeScript como antes.
+
+  `npx vitral types` registra no `vitral-env.d.ts` o hash do manifesto de onde veio o tipo de cada remote, e o novo `npx vitral types --check` sai com erro quando algum manifesto mudou (útil no CI).
+
+### Patch Changes
+
+- [#49](https://github.com/joaogabriel15/vitral/pull/49) [`09781cb`](https://github.com/joaogabriel15/vitral/commit/09781cbd01ec529ea243f615b1f603fabe65fee8) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - CSS que falha (HTTP de erro, rede, hash diferente) não fica mais preso no cache: a próxima montagem baixa de novo. O `timeout` do `configure` agora vale também para o CSS: um CSS que não responde não segura a montagem além desse prazo.
+
+- [#54](https://github.com/joaogabriel15/vitral/pull/54) [`7ebeb29`](https://github.com/joaogabriel15/vitral/commit/7ebeb2999e081204f0c197cf0dc348a168a0a0bf) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - O plugin Vite agora declara filtros nos hooks `resolveId`, `load` e `transform`. No Vite 8 (Rolldown) e no Vite 6.3+, os módulos que não são do vitral nem chegam ao plugin, e o build fica mais rápido em projetos grandes. Nas versões anteriores do Vite nada muda.
+
+- [#52](https://github.com/joaogabriel15/vitral/pull/52) [`67a346a`](https://github.com/joaogabriel15/vitral/commit/67a346af5c5ba39b0f579b0a725a98950c2fa17b) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `checkUpdates` e `watchUpdates` deixam de revalidar remotes que já foram desmontados. Montar o mesmo remote várias vezes não acumula mais entradas `performance.measure` na página: fica a última de cada remote e etapa.
+
+- [#50](https://github.com/joaogabriel15/vitral/pull/50) [`299750d`](https://github.com/joaogabriel15/vitral/commit/299750d60286ea973a71d73881850f754442d32c) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `await refresh(nome)` agora resolve só depois que as montagens já mostram a versão nova, e rejeita se o `mount` da versão nova falhar (antes o erro ia só para o console). Dois `refresh` seguidos não terminam fora de ordem: fica a versão do último. Props passadas com `update` durante a troca chegam na versão nova.
+
+- [#60](https://github.com/joaogabriel15/vitral/pull/60) [`27a7815`](https://github.com/joaogabriel15/vitral/commit/27a7815e294f2fdb0684e17eb5c30ed842180f0e) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - O build do remote não quebra mais com o TypeScript 7 (o que o `create-vite` instala hoje): sem API em JavaScript, o plugin procura outro TypeScript e, sem nenhum, segue sem gerar `vitral.d.ts`. Palavras-chave do npm ampliadas para o pacote ser encontrado na busca.
+
 ## 0.2.0
 
 ### Minor Changes
