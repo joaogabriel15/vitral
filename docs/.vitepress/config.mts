@@ -36,6 +36,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Erros', link: '/aprender/erros' },
       { text: 'Testes', link: '/aprender/testes' },
       { text: 'Deploy', link: '/aprender/deploy' },
+      { text: 'Vários repositórios', link: '/aprender/varios-repositorios' },
     ],
   },
   {
