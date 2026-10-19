@@ -11,7 +11,11 @@ mkdirSync(cache, { recursive: true })
 const dir = mkdtempSync(join(cache, 'cli-test-'))
 afterAll(() => rmSync(dir, { recursive: true, force: true }))
 
-describe('diffProps', () => {
+// Cada checagem cria um programa do TypeScript em memória: no CI, com cobertura
+// e os outros arquivos rodando juntos, passa dos 5 s padrão.
+const TS = 30_000
+
+describe('diffProps', { timeout: TS }, () => {
   it('lista o que quebra e o que é compatível', () => {
     const d = diffProps(
       '{ itens: number; cupom?: string; tema: "claro"; antigo: boolean; id: string | number; nome?: string }',
@@ -58,7 +62,7 @@ describe('diffProps', () => {
   })
 })
 
-describe('props gravadas contra o Props local', () => {
+describe('props gravadas contra o Props local', { timeout: TS }, () => {
   it('gera literais TypeScript a partir dos marcadores', () => {
     expect(tsLiteral({ a: [1, 'x', null], f: { $fn: true }, d: { $date: '1970-01-01T00:00:00.000Z' }, u: { $unknown: 'Map' }, n: undefined })).toBe(
       '{ "a": [1, "x", null], "f": ((..._a: any[]): any => undefined), "d": new Date("1970-01-01T00:00:00.000Z"), "u": (undefined as any), "n": undefined }',
@@ -127,7 +131,7 @@ const contrato: Contract = {
   ],
 }
 
-describe('npx vitral test', () => {
+describe('npx vitral test', { timeout: TS }, () => {
   it('reproduz o contrato no build do remote, em happy-dom', async () => {
     const root = build('ok', "ctx.events.emit('carrinho:pronto')", '{ itens: number }')
     mkdirSync(join(root, 'contracts'))
