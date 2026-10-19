@@ -73,7 +73,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
   }
   let t = performance.now()
   // No Shadow DOM, `portal` é o destino de portais dentro do shadow root.
-  const [release, portal = document.body] = await injectStyles(resolved.css, shadowRoot, el, options.styles, resolved.sri)
+  const [release, portal = document.body] = await injectStyles(resolved, shadowRoot, el, options.styles)
   metric(name, 'css', t)
   t = performance.now()
 

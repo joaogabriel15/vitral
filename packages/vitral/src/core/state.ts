@@ -8,7 +8,7 @@
  * que conhecem. Mudanças futuras só acrescentam métodos e sobem `protocol`.
  */
 import { createEventBus } from './bus'
-import type { EventBus, Isolation, RemoteEntry, RemoteMetric, RemoteModule, SharedModules, StyleOptions } from './types'
+import type { EventBus, Isolation, RemoteEntry, RemoteMetric, RemoteModule, ShadowCss, SharedModules, StyleOptions } from './types'
 import type { SharedStore } from './store'
 
 export const PROTOCOL = 1
@@ -32,6 +32,8 @@ export interface LoadedRemote {
   /** URL de onde o JS veio (base para assets). */
   entry: string
   css: string[]
+  /** CSS preparado no build para o Shadow DOM (do manifesto, como está). */
+  shadow?: ShadowCss
   isolate?: Isolation
   scope?: string
   /** Namespace ES do arquivo (inclui `exposes`). Cópias antigas não mandam. */

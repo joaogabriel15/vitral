@@ -70,6 +70,9 @@ if (import.meta.hot) {
 `
 }
 
+/** Ids que `resolveDevId` trata, para o filtro do hook. */
+export const DEV_IDS = /^virtual:vitral-react-preamble$|\/@vitral\/entry\.js$/
+
 /** Ids dos módulos virtuais do modo dev. */
 export function resolveDevId(id: string): string | undefined {
   if (id === PREAMBLE_ID) return '\0' + PREAMBLE_ID
@@ -85,9 +88,12 @@ export function devManifest(name: string, scope: string | undefined): RemoteMani
   return { name, entry: DEV_ENTRY, css: [], ...(scope ? { scope } : {}) }
 }
 
+/** CSS que passa por `scopeDevCss`, no formato de filtro de hook. */
+export const DEV_CSS = { include: /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(\?|$)/, exclude: /[?&](raw|url|inline)\b/ }
+
 /** CSS que o Vite injeta em dev também ganha o escopo, como no build. */
 export function scopeDevCss(code: string, id: string, scope: string): string | undefined {
-  if (!/\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(\?|$)/.test(id) || /[?&](raw|url|inline)\b/.test(id)) return
+  if (!DEV_CSS.include.test(id) || DEV_CSS.exclude.test(id)) return
   return scopeCss(code, scope)
 }
 

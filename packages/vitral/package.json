@@ -261,7 +261,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.01 kB"
+      "limit": "1.21 kB"
     },
     {
       "name": "react",
@@ -324,7 +324,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.09 kB"
+      "limit": "8.31 kB"
     },
     {
       "name": "iframe",

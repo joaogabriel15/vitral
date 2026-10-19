@@ -10,11 +10,17 @@
  *   adotada antes da que importa.
  * - `class` e `data-theme` do `<html>` são copiados para a raiz do remote e
  *   para o destino de portais, para `.dark` e `[data-theme]` funcionarem lá.
+ *
+ * Com manifesto novo (`shadow`), o plugin já separou tudo isso no build: o
+ * CSS pronto é adotado como está e `@property`/`@font-face` entram num
+ * `<link>` no documento. O CSS do host (`inherit`), o extra do registro e
+ * manifestos antigos passam pelas expressões abaixo.
  */
-import { fetchCssText, injectCss } from './css'
+import { fetchCssText, injectCss, type RemoteCss } from './css'
 import type { StyleOptions } from './types'
 
 const sheets = new Map<string, Promise<CSSStyleSheet[]>>()
+const noop = () => {}
 const hoisted = new Set<string>()
 // Relativa ou só com o caminho (`/x.woff2`): numa folha construída ou num
 // <style> do documento, valeria a partir da página, não do CSS do remote.
@@ -22,14 +28,34 @@ const RELATIVE_URL = /url\(\s*(['"]?)(?![a-z]+:|\/\/|#)([^'")]+)\1\s*\)/gi
 // 1: nome do @property; 3 ou 4: URL do @import.
 const GLOBAL_RULES = /@property\s+(--[\w-]+)\s*\{[^}]*\}|@font-face\s*\{[^}]*\}|@import\s+(?:url\(\s*)?(?:(['"])(.*?)\2|([^'"\s);]+))\s*\)?[^;]*;/gi
 
+/**
+ * Os arquivos do remote no Shadow DOM, na ordem: os `@import` que o build
+ * deixou, o CSS pronto e o extra do registro (`css` além dos do manifesto).
+ * `ready` são os prontos; `global`, os `@property`/`@font-face` separados.
+ */
+function plan({ css, shadow: s }: RemoteCss): [urls: string[], ready: string[], global: string[]] {
+  // O plugin grava todo o CSS na mesma pasta, ao lado do primeiro arquivo.
+  const at = (u: string) => new URL(u, css[0]).href
+  const ready = s ? s.css.map(at) : []
+  return [s ? [...(s.imports ?? []).map(at), ...ready, ...css.slice(ready.length)] : css, ready, (s?.global ?? []).map(at)]
+}
+
+/** Começa a baixar o CSS que a montagem vai usar (ver `prefetchCss`). */
+export function prefetch(r: RemoteCss, priority?: RequestPriority): void {
+  const [urls, , global] = plan(r)
+  for (const u of urls) fetchCssText(u, r.sri?.[u], priority).catch(noop)
+  injectCss(global, null, r.sri)
+}
+
 export async function attachStyles(
   root: ShadowRoot,
   el: HTMLElement,
-  css: string[],
+  r: RemoteCss,
   global: StyleOptions = {},
   local: StyleOptions = {},
-  sri: Record<string, string> = {},
 ): Promise<[release: () => void, portal: HTMLElement]> {
+  const sri = r.sri ?? {}
+  const [css, ready, up] = plan(r)
   // Destino de portais (popovers, menus, dialogs): irmão da raiz, com os
   // mesmos atributos, para o CSS adotado e o escopo valerem lá também.
   const portal = el.cloneNode() as HTMLElement
@@ -37,26 +63,32 @@ export async function attachStyles(
   el.after(portal)
   // CSS base do host primeiro: o do remote vence quando os dois definem algo.
   const urls = [...(global.inherit ?? []), ...(local.inherit ?? [])].map((u) => new URL(u, document.baseURI).href).concat(css)
+  const props = injectCss(up, null, sri)
   if (typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype) {
-    const loaded = await Promise.all(urls.map((u) => loadSheet(u, [], sri[u])))
+    const loaded = await Promise.all(urls.map((u) => loadSheet(u, [], sri[u], ready.includes(u) ? !!r.shadow!.rebase : undefined)))
     root.adoptedStyleSheets = [...new Set([...root.adoptedStyleSheets, ...loaded.flat()])]
   } else {
     await injectCss(urls, root, sri)
   }
+  await props
   const stop = (local.mirrorTheme ?? global.mirrorTheme) === false ? [] : [mirrorTheme(el), mirrorTheme(portal)]
   return [() => (stop.forEach((fn) => fn()), portal.remove()), portal]
 }
 
-function loadSheet(href: string, chain: string[], integrity?: string): Promise<CSSStyleSheet[]> {
+/** `ready`: CSS preparado no build; `true` se ainda tem `url()` relativa. */
+function loadSheet(href: string, chain: string[], integrity?: string, ready?: boolean): Promise<CSSStyleSheet[]> {
   let p = sheets.get(href)
   if (!p) {
     p = fetchCssText(href, integrity)
       .then((text) => {
+        const sheet = new CSSStyleSheet()
+        // URLs relativas (fontes, imagens) continuam apontando para o remote.
+        if (ready !== false) text = text.replace(RELATIVE_URL, (_, q, u) => `url(${q}${new URL(u, href).href}${q})`)
+        // Pronto no build: nada de @import nem de regra global para separar.
+        if (ready != null) return sheet.replaceSync(text), [sheet]
         const up: string[] = []
         const imports: string[] = []
-        // URLs relativas (fontes, imagens) continuam apontando para o remote.
         const rest = text
-          .replace(RELATIVE_URL, (_, q, u) => `url(${q}${new URL(u, href).href}${q})`)
           .replace(GLOBAL_RULES, (rule, prop?: string, _q?: string, quoted?: string, bare?: string) => {
             const url = quoted ?? bare
             if (url) imports.push(new URL(url, href).href)
@@ -72,7 +104,6 @@ function loadSheet(href: string, chain: string[], integrity?: string): Promise<C
           style.textContent = up.join('\n')
           document.head.appendChild(style)
         }
-        const sheet = new CSSStyleSheet()
         sheet.replaceSync(rest)
         const next = [...chain, href]
         return Promise.all(imports.filter((u) => !next.includes(u)).map((u) => loadSheet(u, next))).then((found) => [...found.flat(), sheet])
