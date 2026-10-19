@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { configure, loadRemote, mountRemote, register, registerSrc, type RemoteError } from '../src/index'
-import { devtools, getOverrides, setOverride } from '../src/devtools'
+import { activeOverrides, clearOverrides, devtools, getOverrides, setOverride } from '../src/devtools'
 import { manifestUrl } from '../src/core/overrides'
 import { cleanup, serveManifest } from './helpers'
 
@@ -14,6 +14,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   localStorage.clear()
+  sessionStorage.clear()
   vi.restoreAllMocks()
 })
 
@@ -30,7 +31,7 @@ describe('overrides', () => {
     expect(fetched(fetch)).toEqual(['http://localhost:5174/vitral.json'])
     // A integrity do host não vale para o override; o isolamento continua.
     expect(host.shadowRoot!.textContent).toBe('carrinho:1')
-    expect(console.warn).toHaveBeenCalledWith('[vitral] override ativo: carrinho → http://localhost:5174/vitral.json')
+    expect(console.warn).toHaveBeenCalledWith('[vitral] override ativo: carrinho → http://localhost:5174/vitral.json (aba). Para limpar: ?vitral=off')
   })
 
   it('aceita vários pares e lê o localStorage', async () => {
@@ -80,6 +81,60 @@ describe('overrides', () => {
     expect(host.textContent).toBe('carrinho:2')
   })
 
+  it('localStorage com URL base, sem ?vitral=, também vale', async () => {
+    localStorage.setItem('vitral:overrides', JSON.stringify({ busca: 'http://localhost:5006' }))
+    const fetch = serveManifest('busca')
+    register('busca', 'https://cdn.loja.com/busca/vitral.json')
+    await loadRemote('busca')
+    expect(fetched(fetch)).toEqual(['http://localhost:5006/vitral.json'])
+  })
+
+  it('?vitral= continua valendo na aba depois de navegar sem o parâmetro', async () => {
+    setURL('http://localhost:3000/?vitral=perfil@http://localhost:5007')
+    const fetch = serveManifest('perfil')
+    register('perfil', 'https://cdn.loja.com/perfil/vitral.json')
+    await loadRemote('perfil')
+    // Outra página da mesma aba (ou reload sem a query): o registro novo baixa de novo.
+    setURL('http://localhost:3000/conta')
+    register('perfil', 'https://cdn.loja.com/perfil/vitral.json')
+    await loadRemote('perfil')
+    expect(fetched(fetch)).toEqual(['http://localhost:5007/vitral.json', 'http://localhost:5007/vitral.json'])
+    expect(activeOverrides()).toEqual([{ name: 'perfil', value: 'http://localhost:5007', url: 'http://localhost:5007/vitral.json', source: 'aba' }])
+  })
+
+  it('?vitral=off limpa todos; nome@off limpa um', () => {
+    localStorage.setItem('vitral:overrides', JSON.stringify({ a: 'http://localhost:5001' }))
+    setURL('http://localhost:3000/?vitral=b@http://localhost:5002,c@http://localhost:5003')
+    expect(activeOverrides().map((o) => `${o.name}:${o.source}`)).toEqual(['a:navegador', 'b:aba', 'c:aba'])
+    setURL('http://localhost:3000/?vitral=b@off')
+    expect(activeOverrides().map((o) => o.name)).toEqual(['a', 'c'])
+    setURL('http://localhost:3000/?vitral=off')
+    expect(activeOverrides()).toEqual([])
+    expect(localStorage.getItem('vitral:overrides')).toBeNull()
+    setURL('http://localhost:3000/')
+    expect(activeOverrides()).toEqual([])
+  })
+
+  it('apelido (@pr-123) vira URL pelo modelo devOverrides.preview', async () => {
+    setURL('https://staging.loja.com/?vitral=checkout@pr-123')
+    const fetch = serveManifest('checkout')
+    configure({ devOverrides: { preview: 'https://{name}-{ref}.preview.loja.com' } })
+    register('checkout', 'https://cdn.loja.com/checkout/vitral.json')
+    register('conta', 'https://staging.loja.com/conta/vitral.json')
+    await Promise.all([loadRemote('checkout'), loadRemote('conta')])
+    // O resto continua vindo do ambiente (staging).
+    expect(fetched(fetch).sort()).toEqual(['https://checkout-pr-123.preview.loja.com/vitral.json', 'https://staging.loja.com/conta/vitral.json'])
+  })
+
+  it('apelido sem modelo é ignorado com aviso', async () => {
+    setURL('http://localhost:3000/?vitral=ajuda@pr-9')
+    const fetch = serveManifest('ajuda')
+    register('ajuda', 'https://cdn.loja.com/ajuda/vitral.json')
+    await loadRemote('ajuda')
+    expect(fetched(fetch)).toEqual(['https://cdn.loja.com/ajuda/vitral.json'])
+    expect(console.warn).toHaveBeenCalledWith('[vitral] override ajuda@pr-9 ignorado: falta configure({ devOverrides: { preview } })')
+  })
+
   it('manifestUrl completa a URL base', () => {
     expect(manifestUrl('http://localhost:5174')).toBe('http://localhost:5174/vitral.json')
     expect(manifestUrl('http://localhost:5174/app/')).toBe('http://localhost:5174/app/vitral.json')
@@ -94,6 +149,31 @@ describe('vitral/devtools', () => {
     setOverride('carrinho', null)
     expect(getOverrides()).toEqual({})
     expect(localStorage.getItem('vitral:overrides')).toBeNull()
+  })
+
+  it('setOverride guarda apelidos como estão', () => {
+    setOverride('checkout', 'pr-123')
+    expect(getOverrides()).toEqual({ checkout: 'pr-123' })
+    clearOverrides()
+    expect(getOverrides()).toEqual({})
+  })
+
+  it('o painel mostra os overrides da aba e limpa todos', () => {
+    setURL('http://localhost:3000/?vitral=checkout@pr-7&x=1')
+    configure({ devOverrides: { preview: 'https://{name}-{ref}.preview.loja.com/vitral.json' } })
+    setOverride('conta', 'http://localhost:5175')
+    devtools({ reload: false })
+    const root = document.querySelector('[data-vitral-devtools]')!.shadowRoot!
+    expect(root.querySelector('.toggle')!.textContent).toBe('vitral (2)')
+    expect([...root.querySelectorAll('li')].map((li) => li.firstChild!.textContent)).toEqual([
+      'conta → http://localhost:5175/vitral.json [navegador]',
+      'checkout → https://checkout-pr-7.preview.loja.com/vitral.json [aba]',
+    ])
+    root.querySelector<HTMLButtonElement>('.limpar')!.click()
+    expect(activeOverrides()).toEqual([])
+    // Tira o ?vitral= da URL para o override não voltar no reload.
+    expect(location.search).toBe('?x=1')
+    expect(root.querySelector('.toggle')!.textContent).toBe('vitral')
   })
 
   it('localStorage inválido é ignorado', () => {

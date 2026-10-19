@@ -7,6 +7,9 @@
 // - `script-src 'self' data: blob:`: o import map inline é bloqueado, sobra o
 //   2 (modulepreload) onde o teste com `data:` passa;
 // - `script-src 'self' blob:`: sem `data:` o teste do modulepreload falha, sobra o 3 (`blob:`).
+// Com `?silent`, o host faz o import map ser ignorado sem evento de erro (como
+// um navegador que recusa o mapa em silêncio): os módulos de teste do mapa
+// mostram que o hash não vale, e a lib não usa o caminho 1.
 import { expect, test, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -23,7 +26,15 @@ import { configure, createSlot } from '/vitral/index.js'
 const q = new URLSearchParams(location.search)
 const create = URL.createObjectURL
 window.__blobs = 0
-URL.createObjectURL = (b) => (window.__blobs++, create.call(URL, b))
+// Só os do caminho 3: os módulos de teste do import map têm até 10 bytes.
+URL.createObjectURL = (b) => (b.size > 10 && window.__blobs++, create.call(URL, b))
+if (q.has('silent')) {
+  const append = Element.prototype.append
+  Element.prototype.append = function (...nodes) {
+    for (const n of nodes) if (n instanceof HTMLScriptElement && n.type === 'importmap') n.type = 'text/x-ignorado'
+    return append.apply(this, nodes)
+  }
+}
 configure({ retries: 0, remotes: { r: q.get('remote') } })
 window.__slot = createSlot(document.getElementById('app'), {
   name: 'r',
@@ -123,10 +134,11 @@ test.beforeAll(async () => {
 test.afterAll(() => server?.close())
 
 let ids = 0
-async function open(page: Page, mode: Mode, csp: string | null) {
+async function open(page: Page, mode: Mode, csp: string | null, silent = false) {
   const id = `t${process.pid}x${ids++}`
   const q = new URLSearchParams({ remote: `/r/${mode}/${id}/vitral.json` })
   if (csp) q.set('csp', csp)
+  if (silent) q.set('silent', '')
   await page.goto(`${origin}/?${q}`)
   await expect(page.locator('body[data-status="ready"], body[data-status="error"]')).toHaveCount(1)
   return id
@@ -245,3 +257,25 @@ for (const [label, csp] of Object.entries(CSPS) as [keyof typeof CSPS, string | 
     })
   })
 }
+
+test.describe('import map ignorado sem evento de erro', () => {
+  // Caminho esperado quando o mapa não vale: o 2 onde o modulepreload confere o hash.
+  const fallback = (project: string) => (project === 'webkit' ? 3 : 2)
+
+  test('não usa o caminho 1 e carrega pelo seguinte', async ({ page }, info) => {
+    await open(page, 'ok', null, true)
+    const s = await state(page)
+    expect(s.status).toBe('ready')
+    expect(pathOf(s)).toBe(fallback(info.project.name))
+  })
+
+  test('hash errado no manifesto: nada executa', async ({ page }) => {
+    await open(page, 'wronghash', null, true)
+    expect(await state(page)).toMatchObject({ status: 'error', error: 'INTEGRITY', ran: [], tampered: [] })
+  })
+
+  test('import() de chunk adulterado não executa', async ({ page }) => {
+    await open(page, 'lazybad', null, true)
+    expect((await state(page)).tampered).toEqual([])
+  })
+})

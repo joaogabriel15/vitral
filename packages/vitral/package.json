@@ -119,6 +119,14 @@
     "./otel": {
       "types": "./dist/otel.d.ts",
       "import": "./dist/otel.js"
+    },
+    "./single-spa": {
+      "types": "./dist/single-spa.d.ts",
+      "import": "./dist/single-spa.js"
+    },
+    "./federation": {
+      "types": "./dist/federation.d.ts",
+      "import": "./dist/federation.js"
     }
   },
   "publishConfig": {
@@ -226,7 +234,7 @@
         "./capture-*",
         "./channel-*"
       ],
-      "limit": "4.65 kB"
+      "limit": "4.64 kB"
     },
     {
       "name": "núcleo",
@@ -234,6 +242,7 @@
       "import": "{ RemoteError, __reset, component, configure, createEventBus, createSlot, defineRemote, events, html, loadRemote, mountRemote, navigate, preload, register, render, unsafeHTML }",
       "ignore": [
         "./shadow-*",
+        "./overrides-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -246,12 +255,17 @@
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.4 kB"
+      "limit": "2.51 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
       "path": "dist/dedupe-*.js",
       "limit": "0.67 kB"
+    },
+    {
+      "name": "overrides (sob demanda)",
+      "path": "dist/overrides-*.js",
+      "limit": "1.29 kB"
     },
     {
       "name": "canal: canary e rollback (sob demanda)",
@@ -275,7 +289,7 @@
         "./capture-*",
         "./channel-*"
       ],
-      "limit": "5.33 kB"
+      "limit": "5.34 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -299,7 +313,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.22 kB"
+      "limit": "1.72 kB"
     },
     {
       "name": "react",
@@ -309,6 +323,7 @@
         "react",
         "react-dom",
         "./shadow-*",
+        "./overrides-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -325,6 +340,7 @@
       "ignore": [
         "vue",
         "./shadow-*",
+        "./overrides-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -340,6 +356,7 @@
       "import": "{ defineVitralElement }",
       "ignore": [
         "./shadow-*",
+        "./overrides-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -347,13 +364,13 @@
         "./capture-*",
         "./channel-*"
       ],
-      "limit": "6.38 kB"
+      "limit": "6.33 kB"
     },
     {
       "name": "devtools",
       "path": "dist/devtools.js",
       "import": "{ devtools }",
-      "limit": "2 kB"
+      "limit": "2.05 kB"
     },
     {
       "name": "auto",
@@ -374,17 +391,31 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.81 kB",
+      "limit": "9.06 kB",
       "ignore": [
+        "./overrides-*",
         "./channel-*"
       ]
+    },
+    {
+      "name": "single-spa",
+      "path": "dist/single-spa.js",
+      "import": "{ singleSpaRemote }",
+      "limit": "0.5 kB"
+    },
+    {
+      "name": "federation",
+      "path": "dist/federation.js",
+      "import": "{ federationRemote }",
+      "limit": "1.25 kB"
     },
     {
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
-      "limit": "6.04 kB",
+      "limit": "6 kB",
       "ignore": [
+        "./overrides-*",
         "./channel-*"
       ]
     }
