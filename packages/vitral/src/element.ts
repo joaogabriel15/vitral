@@ -185,7 +185,14 @@ export function elementRemote<P extends Props = Props>(tag: string, setup?: (reg
     mount(el, props, ctx) {
       // Hosts antigos não mandam o registro.
       const registry = ctx.customElements ?? customElements
-      const node = document.createElement(setup?.(registry) || tag, { customElementRegistry: registry }) as HTMLElement & Record<string, unknown>
+      const name = setup?.(registry) || tag
+      let node: HTMLElement & Record<string, unknown>
+      try {
+        node = document.createElement(name, { customElementRegistry: registry }) as typeof node
+      } catch {
+        // Navegador que conhece a opção e recusa o registro do caminho sem suporte.
+        node = document.createElement(name) as typeof node
+      }
       node.vitral = ctx
       Object.assign(node, props)
       el.appendChild(node)

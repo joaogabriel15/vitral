@@ -63,19 +63,39 @@ export async function attachShadowRoot(
   local: StyleOptions = {},
 ): Promise<[release: () => void, portal: HTMLElement, root: ShadowRoot, registry: CustomElementRegistry, el: HTMLElement]> {
   // O nome do remote vem de um elemento descartável: um argumento a menos no host.
-  const registry = registryFor(make().getAttribute('data-vitral-root')!)
-  // Sem suporte, o navegador ignora a opção. Um shadow root reusado fica com
-  // o registro com que foi criado.
-  const root = target.shadowRoot ?? target.attachShadow({ mode: 'open', customElementRegistry: registry })
+  const name = make().getAttribute('data-vitral-root')!
+  let registry = registryFor(name)
+  // Um shadow root reusado fica com o registro com que foi criado.
+  let root = target.shadowRoot
+  if (!root && !fake(registry))
+    try {
+      root = target.attachShadow({ mode: 'open', customElementRegistry: registry })
+    } catch {
+      // Suporte pela metade: este e os próximos remotes ficam no global.
+      broken = true
+      registries.delete(name)
+      registry = registryFor(name)
+    }
+  root ??= target.attachShadow({ mode: 'open' })
   const own = (root as { customElementRegistry?: CustomElementRegistry }).customElementRegistry ?? registry
   // O que o remote criar com `innerHTML` dentro de `el` usa o registro de `el`.
-  const el = root.appendChild(make({ customElementRegistry: own }))
+  // O objeto do caminho sem suporte não vai na opção: quem a conhece o recusa.
+  let el = make()
+  if (!fake(own))
+    try {
+      el = make({ customElementRegistry: own })
+    } catch {}
+  root.appendChild(el)
   return [...(await attachStyles(root, el, r, global, local)), root, own, el]
 }
 
 declare const process: { env: Record<string, string | undefined> }
 
 const registries = new Map<string, CustomElementRegistry>()
+// O navegador recusou um registro próprio: os próximos remotes vão direto ao global.
+let broken = false
+/** O objeto do caminho sem suporte, que tem o registro global de protótipo. */
+const fake = (registry: CustomElementRegistry) => Object.getPrototypeOf(registry) === customElements
 // Remote que definiu cada tag pelo `ctx.customElements` global (para o aviso).
 const owners = new Map<string, string>()
 
@@ -89,8 +109,16 @@ const owners = new Map<string, string>()
 export function registryFor(name: string): CustomElementRegistry {
   let registry = registries.get(name)
   if (registry) return registry
-  // Detecção recomendada: no Chromium antes do 146 o construtor existe, mas lança.
-  const real = 'initialize' in CustomElementRegistry.prototype ? new CustomElementRegistry() : customElements
+  let real = customElements
+  // Detecção recomendada (`initialize`), mais o construtor: ele existe e lança
+  // no Chromium antes do 146 e no WebKit do Playwright. Depois de lançar uma
+  // vez, não tenta de novo.
+  if (!broken && 'initialize' in CustomElementRegistry.prototype)
+    try {
+      real = new CustomElementRegistry()
+    } catch {
+      broken = true
+    }
   const shared = real === customElements
   // No global, um objeto com o registro de protótipo: `instanceof` continua
   // valendo e o `define` trocado não afeta quem usa `customElements` direto.
