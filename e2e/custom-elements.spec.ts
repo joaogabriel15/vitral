@@ -15,7 +15,18 @@ test('dois remotes no Shadow DOM definem <ds-button> de versões diferentes sem 
   await host.montar('v2', { isolate: 'shadow' })
   await host.pronto('v2')
 
-  const scoped = await host.page.evaluate(() => 'initialize' in CustomElementRegistry.prototype)
+  // O WebKit da bateria tem initialize no protótipo mas recusa o construtor;
+  // a lib cai no registro global, então o teste confere do mesmo jeito.
+  const scoped = await host.page.evaluate(() => {
+    if (!('initialize' in CustomElementRegistry.prototype)) return false
+    try {
+      const customElementRegistry = new CustomElementRegistry()
+      document.createElement('div').attachShadow({ mode: 'open', customElementRegistry } as ShadowRootInit)
+      return true
+    } catch {
+      return false
+    }
+  })
   test.info().annotations.push({ type: 'scoped registries', description: String(scoped) })
   await expect(host.slot('v1').locator('ds-button')).toHaveText('ds-button v1')
   if (scoped) {
