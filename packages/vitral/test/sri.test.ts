@@ -100,10 +100,12 @@ describe('caminho 1: import map com integrity', () => {
     browser({ map: 'ok' })
     const verified = await load()
     await verified(build)
-    await verified(build)
+    const other = CDN + 'split/b.js'
+    await verified({ ...build, chunks: [other], sri: { ...build.sri, [other]: sha('b') } })
     const [first, second] = [...document.head.querySelectorAll('script[type="importmap"]')].map((s) => JSON.parse(s.textContent!).integrity)
     expect(first).toEqual({ ...build.sri, [data('export{}')]: PROBE_SRI, [data('throw new Error("hash")')]: PROBE_SRI })
-    expect(second).toEqual(build.sri)
+    // Só as URLs novas: repetir uma URL em outro mapa gera aviso no console.
+    expect(second).toEqual({ [other]: sha('b') })
   })
 
   it('remotes que chegam juntos esperam o mesmo teste: só o primeiro mapa leva os módulos de teste', async () => {

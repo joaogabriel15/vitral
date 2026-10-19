@@ -22,6 +22,7 @@ const entries = {
   otel: () => import('../src/otel'),
   'single-spa': () => import('../src/single-spa'),
   federation: () => import('../src/federation'),
+  prefetch: () => import('../src/prefetch'),
 }
 
 describe('exports públicos', () => {

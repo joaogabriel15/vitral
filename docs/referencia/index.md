@@ -39,6 +39,7 @@ Cada página mostra a assinatura, os parâmetros, o retorno e um exemplo.
 | --- | --- |
 | [`vitral/vite`](./vite) | Plugin de build do remote |
 | [`vitral/routes`](./routes) | Rotas sem framework |
+| [`vitral/prefetch`](./prefetch) | Pré-carregar o remote da próxima rota |
 | [`vitral/iframe`](./iframe) | Isolamento em iframe |
 | [`vitral/testing`](./testing) | Remotes falsos em testes |
 | [`vitral/devtools`](./devtools) | Trocar URLs em desenvolvimento |
