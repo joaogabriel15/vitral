@@ -83,7 +83,6 @@ async function mountFrame<P extends Props>(
         return bytes
       })
     : undefined
-  track(name, resolved.entry)
   // `data:` e `blob:` não têm pasta: a base é a própria URL.
   const baseUrl = /^https?:/.test(resolved.entry) ? new URL('.', resolved.entry).href : resolved.entry
 
@@ -188,6 +187,7 @@ async function mountFrame<P extends Props>(
     cleanup()
     throw e
   }
+  disposers.push(track(name, resolved.entry))
 
   let alive = true
   return {
