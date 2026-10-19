@@ -24,6 +24,10 @@ export interface Settings {
   /** Liga os overrides de desenvolvimento fora de localhost. */
   devOverrides?: boolean
   styles?: StyleOptions
+  /** Faixa do contrato aceita dos remotes (`configure({ contract })`). */
+  contract?: string
+  /** Versão de cada grupo que o host oferece com `dedupe`, para conferir o contrato. */
+  offered?: Record<string, string>
 }
 
 /** Remote baixado e pronto para montar. Faz parte do protocolo v1. */
