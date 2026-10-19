@@ -56,3 +56,38 @@ export function otelOnError({ trace, tracer }: OtelOptions): (error: RemoteError
     span.end()
   }
 }
+
+/** A parte de um `Meter` de `@opentelemetry/api` que `otelVitals` usa. */
+export interface MeterLike {
+  createHistogram(name: string, options?: { unit?: string; description?: string }): { record(value: number, attributes?: Attributes): void }
+}
+
+/**
+ * `onReport` para o `vitals()` de `vitral/vitals` que grava cada Web Vital
+ * num histograma `vitral.vitals.<lcp|cls|inp|fcp|ttfb>`:
+ *
+ *   import { metrics } from '@opentelemetry/api'
+ *   vitals({ onReport: otelVitals(metrics.getMeter('host')) })
+ *
+ * Atributos: `vitral.remote`, `vitral.version`, `vitral.route`,
+ * `vitral.navigation_id` e `vitral.rating`. Os ausentes ficam de fora.
+ */
+export function otelVitals(meter: MeterLike): (report: {
+  name: string
+  remote?: string
+  version?: string
+  route: string
+  navigationId?: string
+  value: number
+  rating: string
+}) => void {
+  const histograms: Record<string, ReturnType<MeterLike['createHistogram']>> = {}
+  return (r) => {
+    const attributes: Attributes = { 'vitral.route': r.route, 'vitral.rating': r.rating }
+    if (r.remote) attributes['vitral.remote'] = r.remote
+    if (r.version) attributes['vitral.version'] = r.version
+    if (r.navigationId) attributes['vitral.navigation_id'] = r.navigationId
+    const name = r.name.toLowerCase()
+    ;(histograms[name] ??= meter.createHistogram('vitral.vitals.' + name, { unit: name == 'cls' ? '1' : 'ms' })).record(r.value, attributes)
+  }
+}
