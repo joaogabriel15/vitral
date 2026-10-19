@@ -186,6 +186,26 @@ export interface RemoteManifest {
    * cópia própria e o arquivo dela, para o loader baixar junto com a entrada.
    */
   dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
+  /**
+   * CSS já preparado no build para o Shadow DOM. Sem este campo (manifestos
+   * antigos), o runtime faz esse trabalho em cada página.
+   */
+  shadow?: ShadowCss
+}
+
+/**
+ * CSS do remote preparado no build para `isolate: 'shadow'`. Os caminhos são
+ * relativos ao primeiro arquivo de `css` (o plugin grava tudo na mesma pasta).
+ */
+export interface ShadowCss {
+  /** Cada arquivo de `css`, na mesma ordem, sem `@import`, `@property` e `@font-face`. */
+  css: string[]
+  /** `@property` e `@font-face`, que só valem no documento (vão num `<link>`). */
+  global?: string[]
+  /** `@import` que o build não embutiu (outra origem), adotados antes de `css`. */
+  imports?: string[]
+  /** O CSS ainda tem `url()` relativa, que precisa apontar para o remote. */
+  rebase?: boolean
 }
 
 export type Handler<T = unknown> = (payload: T) => void

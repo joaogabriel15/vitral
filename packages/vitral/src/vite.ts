@@ -15,11 +15,12 @@ import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { RemoteManifest } from './index'
+import type { ShadowCss } from './core/types'
 import { scopeCss } from './css-scope'
 import { EXPOSES_ENTRY, EXPOSES_IDS, exposeKeys, loadExposes, resolveExposesId } from './vite-exposes'
 import { collect, isSplit, outputs, withSplit, type Split } from './vite/manifest'
 import { BOOT, dedupeHooks, dedupeIds, groups, type Group } from './vite/dedupe'
-import { type CssBuildOptions, transformCss } from './css-build'
+import { type CssBuildOptions, splitShadowCss, transformCss } from './css-build'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
 import { extractProps, typesFile } from './vite/types'
 import { DEV_CSS, DEV_IDS, devEntryCode, devManifest, devOptimizeDeps, loadPreamble, resolveDevId, scopeDevCss, serveDevManifest, VIRTUAL_DEV_ENTRY } from './vite/dev'
@@ -173,16 +174,26 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       const entry = files.find((f) => f.type === 'chunk' && f.isEntry)
       if (!entry) return
       // CSS: aplica o escopo e põe hash no nome (Vite não põe hash no CSS em modo lib).
+      const emit = (file: string, text: string, kind = '') => {
+        const hash = createHash('sha256').update(text).digest('base64url').slice(0, 8)
+        const name = file.replace(/\.css$/, `${kind}-${hash}.css`)
+        writeFileSync(join(outDir, name), text)
+        return name
+      }
+      const shadow: ShadowCss = { css: [] }
       const css = files
         .filter((f) => f.type === 'asset' && f.fileName.endsWith('.css'))
         .map((f) => {
           const from = join(outDir, f.fileName)
-          let text = readFileSync(from, 'utf8')
-          text = transformCss(text, options, scopeName())
-          const hash = createHash('sha256').update(text).digest('base64url').slice(0, 8)
-          const name = f.fileName.replace(/\.css$/, `-${hash}.css`)
-          writeFileSync(join(outDir, name), text)
+          const text = transformCss(readFileSync(from, 'utf8'), options, scopeName())
+          const name = emit(f.fileName, text)
           if (name !== f.fileName) rmSync(from)
+          // Para o Shadow DOM, o mesmo CSS já separado: o runtime só adota.
+          const split = splitShadowCss(text)
+          shadow.css.push(split.css === text ? name : emit(f.fileName, split.css, '-shadow'))
+          if (split.global) (shadow.global ??= []).push(emit(f.fileName, split.global, '-global'))
+          if (split.imports.length) (shadow.imports ??= []).push(...split.imports)
+          if (split.rebase) shadow.rebase = true
           return name
         })
       const code = readFileSync(join(outDir, entry.fileName))
@@ -191,6 +202,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         version: options.version ?? pkg.version,
         entry: entry.fileName,
         css,
+        ...(css.length ? { shadow } : {}),
         integrity: 'sha384-' + createHash('sha384').update(code).digest('base64'),
         ...(options.scopeCss === false ? {} : { scope: scopeName() }),
         ...(options.exposes ? { exposes: Object.keys(exposeKeys(options.exposes)) } : {}),
