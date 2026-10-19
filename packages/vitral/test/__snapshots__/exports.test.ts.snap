@@ -16,6 +16,8 @@ exports[`exports públicos > auto 1`] = `[]`;
 
 exports[`exports públicos > devtools 1`] = `
 [
+  "activeOverrides",
+  "clearOverrides",
   "devtools",
   "getOverrides",
   "setOverride",
@@ -28,6 +30,13 @@ exports[`exports públicos > element 1`] = `
   "VitralRemoteElement",
   "defineVitralElement",
   "elementRemote",
+]
+`;
+
+exports[`exports públicos > federation 1`] = `
+[
+  "federationRemote",
+  "shareScope",
 ]
 `;
 
@@ -111,6 +120,12 @@ exports[`exports públicos > routes 1`] = `
 exports[`exports públicos > sentry 1`] = `
 [
   "sentryOnError",
+]
+`;
+
+exports[`exports públicos > single-spa 1`] = `
+[
+  "singleSpaRemote",
 ]
 `;
 
