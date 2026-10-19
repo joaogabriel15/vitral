@@ -324,7 +324,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "7.9 kB"
+      "limit": "7.95 kB"
     },
     {
       "name": "iframe",

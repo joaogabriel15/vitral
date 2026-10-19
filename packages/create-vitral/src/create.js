@@ -15,7 +15,10 @@ export const DEFAULT_SRC = 'http://localhost:5174/vitral.json'
 
 const ANGULAR = ['@angular/core', '@angular/common', '@angular/compiler', '@angular/platform-browser'].map((d) => [d, '^22.0.0'])
 const ANGULAR_DEV = { '@analogjs/vite-plugin-angular': '^2.8.0', '@angular/build': '^22.0.0', '@angular/compiler-cli': '^22.0.0', typescript: '~6.0.0' }
-const ANGULAR_TS = "angular({ tsconfig: new URL('./tsconfig.json', import.meta.url).pathname })"
+// fileURLToPath e não `.pathname`: no Windows e em pastas com espaço ou acento
+// `.pathname` dá "/C:/..." ou "%20" e o plugin não acha o tsconfig.
+const ANGULAR_TS = "angular({ tsconfig: fileURLToPath(new URL('./tsconfig.json', import.meta.url)) })"
+const ANGULAR_IMPORT = "import { fileURLToPath } from 'node:url'\nimport angular from '@analogjs/vite-plugin-angular'"
 
 // framework → [dependências, devDependencies, import do plugin do Vite, chamada]
 const VITE = {
@@ -25,7 +28,7 @@ const VITE = {
   sveltekit: [{ svelte: '^5.0.0' }, { '@sveltejs/kit': '^3.0.0', '@sveltejs/vite-plugin-svelte': '^7.0.0' }, "import { sveltekit } from '@sveltejs/kit/vite'", 'sveltekit()'],
   solid: [{ 'solid-js': '^1.9.0' }, { 'vite-plugin-solid': '^2.11.0' }, "import solid from 'vite-plugin-solid'", 'solid()'],
   preact: [{ preact: '^10.0.0' }, { '@preact/preset-vite': '^2.10.0' }, "import preact from '@preact/preset-vite'", 'preact()'],
-  angular: [{ ...Object.fromEntries(ANGULAR), rxjs: '^7.8.0', tslib: '^2.8.0' }, ANGULAR_DEV, "import angular from '@analogjs/vite-plugin-angular'", ANGULAR_TS],
+  angular: [{ ...Object.fromEntries(ANGULAR), rxjs: '^7.8.0', tslib: '^2.8.0' }, ANGULAR_DEV, ANGULAR_IMPORT, ANGULAR_TS],
   lit: [{ lit: '^3.3.0' }, {}, '', ''],
   vanilla: [{}, {}, '', ''],
 }
