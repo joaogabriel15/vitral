@@ -4,7 +4,7 @@ import { act, createElement as h, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
-import { reactRemote, Remote, useVitral } from '../src/react'
+import { reactRemote, Remote, usePortalContainer, useVitral } from '../src/react'
 import { failingRemote, mockRemote } from '../src/testing'
 import { cleanup, flush, serveManifest } from './helpers'
 import { protocol } from '../src/core/state'
@@ -62,6 +62,34 @@ describe('React: host <Remote>', () => {
 })
 
 describe('React: reactRemote', () => {
+  it('usePortalContainer devolve o destino de portais do contexto (no Shadow DOM, dentro do shadow root)', async () => {
+    const seen: (HTMLElement | undefined)[] = []
+    function Card() {
+      seen.push(usePortalContainer())
+      return null
+    }
+    register('card', { module: reactRemote(Card as any), isolate: 'shadow' })
+    const { div } = await render(h(Remote, { name: 'card' }))
+    // O módulo de Shadow DOM é baixado à parte; o act de cada volta deixa o React renderizar.
+    await vi.waitFor(
+      async () => {
+        await act(flush)
+        expect(seen).not.toHaveLength(0)
+      },
+      { timeout: 5000 },
+    )
+    const root = div.querySelector('[data-vitral-slot]')!.shadowRoot!
+    expect(seen.at(-1)).toBe(root.querySelector('[data-vitral-portal]'))
+    expect(seen.at(-1)!.getRootNode()).toBe(root)
+    // Fora de um remote, a biblioteca usa o padrão dela.
+    function Fora() {
+      seen.push(usePortalContainer())
+      return null
+    }
+    await render(h(Fora))
+    expect(seen.at(-1)).toBeUndefined()
+  })
+
   it('renderiza o componente, atualiza props, dá acesso ao contexto e reporta erro de render', async () => {
     function Card({ msg, boom }: { msg: string; boom?: boolean }) {
       const vitral = useVitral()

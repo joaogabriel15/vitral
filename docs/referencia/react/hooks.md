@@ -4,6 +4,7 @@ Hooks para usar dentro de um remote ou de um host React. Também existem em `vit
 
 ```ts
 useVitral(): RemoteContext | null
+usePortalContainer(): HTMLElement | undefined
 useEvent<T>(type: string, handler: (payload: T) => void): void
 useEventValue<T>(type: string): T | undefined
 useShared<T, S>(key: string, select?: (value: T | undefined) => S): S
@@ -26,6 +27,10 @@ function Carrinho() {
 ## useVitral
 
 Devolve o [`ctx`](/referencia/vitral/define-remote#ctx) do remote, ou `null` fora de um remote.
+
+## usePortalContainer
+
+O [`ctx.portalContainer`](/aprender/estilos#portais-radix-headless-ui-mui), para o `container` do Radix e do MUI. Fora de um remote, `undefined`, e a biblioteca usa o `document.body`.
 
 ## useEvent
 

@@ -30,6 +30,13 @@ export interface RemoteContext {
   events: EventBus
   /** Shadow root quando o host pediu isolamento, senão `null`. */
   shadowRoot: ShadowRoot | null
+  /**
+   * Onde popovers, menus e dialogs devem ser renderizados (`container` do
+   * Radix e do MUI, `Teleport` do Vue). No Shadow DOM é um elemento dentro do
+   * shadow root, com os estilos e o tema do remote; senão, `document.body`.
+   * Hosts antigos não mandam este campo.
+   */
+  portalContainer?: HTMLElement
   /** Avisa o host de um erro em tempo de execução (os adaptadores já chamam). */
   reportError(error: unknown): void
   /** Navega a página inteira (host e todos os roteadores) para `url`. */
