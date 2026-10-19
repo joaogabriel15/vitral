@@ -5,10 +5,15 @@
  *
  * O tipo sai expandido (sem imports), para valer em outro repositório. Tipos
  * de bibliotecas (ReactNode, por exemplo) viram `unknown`.
+ *
+ * Com Oxc disponível (Vite 8 ou `oxc-transform`), lê da declaração isolada
+ * (`./oxc`), bem mais rápido. Se o Oxc reclamar (export sem tipo explícito),
+ * usa o checker do TypeScript.
  */
 import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import type * as TS from 'typescript'
+import { loadOxc, propsFromOxc } from './oxc'
 
 /** Cabeçalho e formato do `vitral.d.ts`. O `vitral types` lê a linha `export type Props`. */
 export function typesFile(name: string, props: string): string {
@@ -35,6 +40,10 @@ export async function extractProps(root: string, file: string): Promise<string |
   if (!/\.[cm]?[jt]sx?$/.test(file)) return null
   const ts = await loadTs(root)
   if (!ts) return null
+  // Caminho rápido: Oxc, quando há e os exports têm tipos explícitos.
+  const oxc = /\.[cm]?tsx?$/.test(file) ? await loadOxc(root) : null
+  const fast = oxc && propsFromOxc(ts, oxc, file)
+  if (fast) return fast
   const configPath = ts.findConfigFile(root, ts.sys.fileExists)
   const base: TS.CompilerOptions = configPath
     ? ts.parseJsonConfigFileContent(ts.readConfigFile(configPath, ts.sys.readFile).config, ts.sys, root).options
