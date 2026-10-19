@@ -1,0 +1,3 @@
+.clima { font-family: system-ui, sans-serif; padding: 16px; color: var(--color-text-primary, #1f2328); }
+.clima .temp { font-size: 2.5rem; margin: 8px 0; }
+.clima button { margin-right: 8px; }

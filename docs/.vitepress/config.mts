@@ -46,6 +46,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'SRI e origens', link: '/aprender/seguranca' },
       { text: 'Rotas', link: '/aprender/rotas' },
       { text: 'Iframe', link: '/aprender/iframe' },
+      { text: 'MCP App', link: '/aprender/mcp-app' },
       { text: 'Exposes e loadModule', link: '/aprender/exposes' },
       { text: 'Dedupe de dependências', link: '/aprender/dedupe' },
       { text: 'Atualização sem reload', link: '/aprender/atualizacoes' },

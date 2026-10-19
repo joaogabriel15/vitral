@@ -55,6 +55,7 @@ O mesmo objeto recebido.
 | `navigate(url, { replace? })` | Igual a [`navigate`](./navigate) |
 | `reportError(erro)` | Mostra o erro no host |
 | `onActivate(fn)`, `onDeactivate(fn)` | Com keep-alive: volta e saída da página |
+| `mcp` | Só no [MCP App](/aprender/mcp-app): `request`, `notify` e `hostContext()` do host MCP |
 
 ## Observações
 
