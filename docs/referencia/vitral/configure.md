@@ -31,6 +31,7 @@ Chame antes de renderizar o primeiro remote.
 | `onMetric` | nenhum | Recebe `{ name, stage, start, duration }` de cada etapa. Veja [Carregamento](/aprender/carregamento#metricas) |
 | `devOverrides` | `false` | Aceita `?vitral=` fora de `localhost`. Veja [Desenvolvimento](/aprender/desenvolvimento) |
 | `dedupe` | nenhum | Dependências que o host oferece aos remotes. Veja [Dedupe](/aprender/dedupe) |
+| `contract` | nenhum | Faixa do contrato aceita dos remotes, ex.: `'^2'`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
 
 ## Retorno
 
@@ -63,6 +64,7 @@ configure({
 | `css` | CSS extra |
 | `isolate` | Isolamento deste remote |
 | `manifest` | `vitral.json` embutido |
+| `contract` | Faixa do contrato aceita deste remote. Vence a de `configure` |
 
 Isolamento: o do componente vence o da entrada, que vence o de `configure`.
 

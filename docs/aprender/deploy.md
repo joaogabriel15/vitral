@@ -57,6 +57,46 @@ events.on('vitral:update-available', ({ name }) => refresh(name))
 
 Veja [Atualização sem reload](./atualizacoes).
 
+## Contrato entre host e remote
+
+Remote e host têm deploys separados. Um deploy do remote pode quebrar o host, por exemplo quando muda as props ou os eventos que usa. O contrato faz o host recusar um remote incompatível em vez de montá-lo.
+
+No remote, declare a versão do contrato. Suba o primeiro número quando a mudança quebra o host:
+
+```js
+// vite.config.js do remote
+vitral({ contract: { version: '2.1.0' } })
+```
+
+O `vitral.json` passa a ter:
+
+```json
+"contract": { "version": "2.1.0", "peers": { "react": "^19.0.0" } }
+```
+
+`peers` entra sozinho com `dedupe`: é a faixa de cada dependência que o remote espera receber do host.
+
+No host, declare a faixa aceita, para todos os remotes ou para um só:
+
+```ts
+configure({
+  contract: '^2',
+  remotes: {
+    carrinho: 'https://cdn.empresa.com/carrinho/vitral.json',
+    busca: { url: 'https://cdn.empresa.com/busca/vitral.json', contract: '^1' },
+  },
+})
+```
+
+Antes de executar o remote, o host confere:
+
+- se `contract.version` está na faixa;
+- se cada dependência em `peers` que o host oferece com `dedupe` está na faixa do remote.
+
+Se algo não serve, o remote não monta e o erro é [`CONTRACT_MISMATCH`](/erros/CONTRACT_MISMATCH). O `fallback` e o `error` do componente aparecem como em qualquer outro erro.
+
+Sem `contract` em um dos lados, nada é conferido: manifestos antigos continuam funcionando. Use `contract: '*'` no host para conferir só as dependências.
+
 ## Voltar uma versão
 
 Publique a versão anterior do `vitral.json`. O host baixa o JS antigo na próxima carga.

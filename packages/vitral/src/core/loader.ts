@@ -100,6 +100,8 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
       ? await fetchJson<RemoteManifest>(entry.url, protocol().settings().timeout, name, { cache: 'no-cache', priority })
       : { name, entry: entry.url })
   if (typeof m?.entry !== 'string') throw new RemoteError('INVALID_MODULE', name, `manifesto inválido em ${entry.url}`)
+  // Contrato: com os dois lados declarando, confere antes de executar o remote.
+  if (m.contract && (entry.contract || protocol().settings().contract)) (await import('./contract')).checkContract(name, m.contract, entry.contract)
   const abs = (u: string) => absolute(u, entry.url)
   const sri: Record<string, string> = {}
   for (const file in m.files ?? {}) sri[abs(file)] = m.files![file]

@@ -53,6 +53,8 @@ describe('build com dedupe', () => {
     // O loader baixa a entrada, o módulo de dependências e o remote juntos; a cópia própria, só se precisar.
     expect(m.split!.chunks).not.toContain(m.dedupe![0].file)
     expect(m.split!.chunks!.length).toBeGreaterThan(0)
+    // O contrato leva a faixa, para o host que declara `contract` conferir.
+    expect(m.contract).toEqual({ peers: { react: `^${RealReact.version}` } })
   })
 
   it('o React fica só na cópia própria; o remote e a entrada não o carregam', () => {

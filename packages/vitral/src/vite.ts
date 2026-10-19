@@ -14,7 +14,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
-import type { RemoteManifest } from './index'
+import type { RemoteContract, RemoteManifest } from './index'
 import { scopeCss } from './css-scope'
 import { EXPOSES_ENTRY, exposeKeys, loadExposes, resolveExposesId } from './vite-exposes'
 import { collect, isSplit, outputs, withSplit, type Split } from './vite/manifest'
@@ -73,6 +73,12 @@ export interface VitralViteOptions extends CssBuildOptions {
    * projeto e de entrada .ts/.tsx/.js/.jsx. Padrão: true.
    */
   types?: boolean
+  /**
+   * Contrato publicado no `vitral.json`. O host que declara
+   * `contract: '^2'` só monta o remote se `version` estiver na faixa. As
+   * faixas de `dedupe` entram sozinhas, em `peers`. Padrão: sem versão.
+   */
+  contract?: { version?: string }
 }
 
 export default function vitral(options: VitralViteOptions = {}): Plugin {
@@ -184,6 +190,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         integrity: 'sha384-' + createHash('sha384').update(code).digest('base64'),
         ...(options.scopeCss === false ? {} : { scope: scopeName() }),
         ...(options.exposes ? { exposes: Object.keys(exposeKeys(options.exposes)) } : {}),
+        ...contractOf(options.contract?.version, shared),
       }
     },
     async closeBundle() {
@@ -195,6 +202,15 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       if (props) writeFileSync(join(outDir, 'vitral.d.ts'), typesFile(done.name, props))
     },
   }
+}
+
+/** `contract` do manifesto: a versão da opção e a faixa de cada grupo de `dedupe`. Sem nenhum dos dois, nada. */
+function contractOf(version: string | undefined, groups: Group[]): Pick<RemoteManifest, 'contract'> {
+  const contract: RemoteContract = {
+    ...(version && { version }),
+    ...(groups.length && { peers: Object.fromEntries(groups.map((g) => [g.name, g.range])) }),
+  }
+  return Object.keys(contract).length ? { contract } : {}
 }
 
 export { vitral }

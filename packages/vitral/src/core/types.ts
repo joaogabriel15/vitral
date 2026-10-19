@@ -84,6 +84,11 @@ export interface RemoteEntry {
    * no host.
    */
   manifest?: RemoteManifest
+  /**
+   * Faixa de versão do contrato do remote que o host aceita (ex.: `'^2'`).
+   * Vence a de `configure`. Veja `VitralConfig.contract`.
+   */
+  contract?: string
 }
 
 /**
@@ -137,6 +142,14 @@ export interface VitralConfig {
    * a do host se a versão estiver na faixa dele; senão, a própria cópia.
    */
   dedupe?: Record<string, { version: string; modules: SharedModules }>
+  /**
+   * Faixa de versão do contrato que o host aceita dos remotes (ex.: `'^2'`).
+   * Antes de executar o remote, o host confere a versão do `contract` do
+   * manifesto e as dependências que ele espera do host; se não servir, o
+   * remote não monta (`CONTRACT_MISMATCH`). Sem contrato no manifesto, nada é
+   * conferido. `'*'` confere só as dependências.
+   */
+  contract?: string
 }
 
 /** Módulos de um grupo de `dedupe`, por especificador (`'react-dom/client'`). */
@@ -186,6 +199,16 @@ export interface RemoteManifest {
    * cópia própria e o arquivo dela, para o loader baixar junto com a entrada.
    */
   dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
+  /** O que o remote declara para o host conferir antes de montar. */
+  contract?: RemoteContract
+}
+
+/** Contrato do remote no `vitral.json`. */
+export interface RemoteContract {
+  /** Versão do contrato (opção `contract.version` do plugin). */
+  version?: string
+  /** Faixa aceita de cada dependência de `dedupe`, por grupo (`{ react: '^19.0.0' }`). */
+  peers?: Record<string, string>
 }
 
 export type Handler<T = unknown> = (payload: T) => void
