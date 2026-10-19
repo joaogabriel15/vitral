@@ -41,13 +41,21 @@ export function prefetchCss(r: RemoteCss, shadow: boolean, priority: RequestPrio
 
 /**
  * Põe o CSS do remote na página. Sem Shadow DOM, vira `<link>` no `<head>`.
- * Com Shadow DOM, o trabalho fica em `./shadow`, baixado só por quem usa.
- * Com hash em `sri`, o navegador confere os bytes antes de aplicar.
- * Devolve a função que desfaz o que precisa ser desfeito no unmount.
+ * Com Shadow DOM (`shadow` é o alvo), o trabalho fica em `./shadow`, baixado
+ * só por quem usa, que também cria o shadow root e o elemento raiz (`make`)
+ * com o registro de custom elements do remote. Com hash em `sri`, o navegador
+ * confere os bytes antes de aplicar. Devolve a função que desfaz o que
+ * precisa ser desfeito no unmount e, no Shadow DOM, o destino de portais, o
+ * shadow root, o registro e o elemento raiz.
  */
-export function injectStyles(r: RemoteCss, root: ShadowRoot | null, el: HTMLElement, styles?: StyleOptions): Promise<[release: () => void, portal?: HTMLElement]> {
-  return root
-    ? import('./shadow').then((m) => m.attachStyles(root, el, r, protocol().settings().styles, styles))
+export function injectStyles(
+  r: RemoteCss,
+  shadow: HTMLElement | false,
+  make: (options?: ElementCreationOptions) => HTMLElement,
+  styles?: StyleOptions,
+): Promise<[release: () => void, portal?: HTMLElement, root?: ShadowRoot, registry?: CustomElementRegistry, el?: HTMLElement]> {
+  return shadow
+    ? import('./shadow').then((m) => m.attachShadowRoot(shadow, make, r, protocol().settings().styles, styles))
     : injectCss(r.css, null, r.sri).then(() => [noop])
 }
 

@@ -38,6 +38,17 @@ export interface RemoteContext {
    * Hosts antigos não mandam este campo.
    */
   portalContainer?: HTMLElement
+  /**
+   * Registro de custom elements do remote. No Shadow DOM, onde o navegador
+   * tem Scoped Custom Element Registries (Chrome 146+, Safari 26+), é um
+   * registro só deste remote, usado pelo shadow root e pelo elemento `el`:
+   * dois remotes podem definir `<ds-button>` de versões diferentes. Sem
+   * suporte, e fora do Shadow DOM, é o `customElements` global. No Shadow
+   * DOM, `define` de uma tag já definida não lança: fica a definição que já
+   * existe, com um aviso em dev quando ela veio de outro remote. Hosts
+   * antigos não mandam este campo: use `ctx.customElements ?? customElements`.
+   */
+  customElements?: CustomElementRegistry
   /** Avisa o host de um erro em tempo de execução (os adaptadores já chamam). */
   reportError(error: unknown): void
   /** Navega a página inteira (host e todos os roteadores) para `url`. */
