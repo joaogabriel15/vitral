@@ -2,13 +2,16 @@
 import { createRequire } from 'node:module'
 import { serveMcp } from './cli/mcp'
 import { add, registry } from './cli/registry'
-import { types } from './cli/types'
+import { doctorCli } from './cli/doctor'
+import { flag, types } from './cli/types'
 
 const AJUDA = `Uso:
   vitral types [remotes.json | nome=url ...] [--base url] [--out arquivo] [--check]
   vitral registry [remotes.json | nome=url ...] [--base url] [--out arquivo] [--name nome]
   vitral add <remote ...> [--registry url|arquivo] [--to remotes.json] [--base url] [--out arquivo] [--force] [--no-types]
   vitral mcp [--registry url|arquivo]
+  vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url]
+                [--contract faixa] [--max-kb n] [--json]
 
   types     Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
             --check só confere se o hash de cada manifesto ainda é o
@@ -17,14 +20,14 @@ const AJUDA = `Uso:
   add       Copia remotes do registro para o remotes.json e roda types.
             Registro padrão: VITRAL_REGISTRY ou vitral-registry.json.
   mcp       Servidor MCP por stdio para agentes (list_remotes, get_remote,
-            add_remote).`
+            add_remote).
+  doctor    Confere cada remote como o host faria (manifesto, CORS, CSP, mount,
+            integrity, contrato, dedupe, tamanho) e explica o que fazer.
+            Sai com erro se alguma conferência falhar (útil no CI).`
 
-function flag(args: string[], name: string): string | undefined {
-  const i = args.indexOf(name)
-  if (i < 0) return undefined
-  const value = args[i + 1]
-  args.splice(i, 2)
-  return value
+const falhou = (err: Error) => {
+  console.error(err.message)
+  process.exitCode = 1
 }
 
 function bool(args: string[], name: string): boolean {
@@ -72,6 +75,8 @@ if (command === 'types') {
 } else if (command === 'mcp') {
   // stdout é do protocolo: nada de console.log aqui.
   serveMcp(process.stdin, process.stdout, { registry: flag(args, '--registry'), version: version() })
+} else if (command === 'doctor') {
+  doctorCli(args).then((code) => (process.exitCode = code), falhou)
 } else {
   console.log(AJUDA)
   process.exitCode = command && command !== '--help' ? 1 : 0
