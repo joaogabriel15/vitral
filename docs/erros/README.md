@@ -23,3 +23,4 @@ createSlot(el, {
 | [MOUNT_FAILED](MOUNT_FAILED.md) | `mount()` do remote lançou erro |
 | [RENDER_FAILED](RENDER_FAILED.md) | O remote quebrou depois de montado |
 | [SHARED_READONLY](SHARED_READONLY.md) | `set` numa chave com `writable: false` sem ser o dono |
+| [CONTRACT_MISMATCH](CONTRACT_MISMATCH.md) | O contrato do remote não atende o `contract` do host |

@@ -93,6 +93,7 @@ exports[`exports públicos > react 1`] = `
   "reactRemote",
   "useEvent",
   "useEventValue",
+  "usePortalContainer",
   "useShared",
   "useVitral",
 ]
@@ -153,6 +154,7 @@ exports[`exports públicos > vue 1`] = `
   "events",
   "useEvent",
   "useEventValue",
+  "usePortalContainer",
   "useShared",
   "useVitral",
   "vueRemote",

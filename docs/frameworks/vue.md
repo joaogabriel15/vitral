@@ -88,6 +88,7 @@ const nome = useShared('usuario', (u) => u?.nome) // só leitura
 | Função | O que faz |
 | --- | --- |
 | `useVitral()` | Devolve o `ctx` do remote |
+| `usePortalContainer()` | Destino para `<Teleport :to>`. Veja [Portais](/aprender/estilos#portais-radix-headless-ui-mui) |
 | `useEvent(tipo, fn)` | Assina um evento enquanto o componente existe |
 | `useEventValue(tipo)` | Último valor de um evento, como `ShallowRef` |
 | `useShared(chave, seletor?)` | Valor do [contexto compartilhado](/aprender/contexto). Sem seletor, aceita escrita |

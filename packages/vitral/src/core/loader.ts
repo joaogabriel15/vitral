@@ -64,7 +64,7 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
       resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority)
       metric(name, 'manifest', t)
       // O CSS baixa junto com o JS; a montagem espera os dois.
-      prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', resolved.sri, priority)
+      prefetchCss(resolved, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', priority)
       t = performance.now()
       const ns = await withRetry(p.settings().retries, () => importModule(name, resolved!))
       metric(name, 'js', t)
@@ -104,12 +104,18 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
       ? await fetchJson<RemoteManifest>(entry.url, protocol().settings().timeout, name, { cache: 'no-cache', priority })
       : { name, entry: entry.url })
   if (typeof m?.entry !== 'string') throw new RemoteError('INVALID_MODULE', name, `manifesto inválido em ${entry.url}`)
+  // Contrato: com os dois lados declarando, confere antes de executar o remote.
+  if (m.contract && (entry.contract || protocol().settings().contract)) {
+    const why = await (await import('./contract')).checkContract(m.contract, entry.contract)
+    if (why) throw new RemoteError('CONTRACT_MISMATCH', name, why)
+  }
   const abs = (u: string) => absolute(u, entry.url)
   const sri: Record<string, string> = {}
   for (const file in m.files ?? {}) sri[abs(file)] = m.files![file]
   const resolved: Resolved = {
     entry: abs(m.entry),
     css: [...(m.css ?? []), ...(entry.css ?? [])].map(abs),
+    shadow: m.shadow,
     // A integridade declarada pelo host vence a do manifesto, e aí só o
     // arquivo único (o que ela descreve) é usado.
     integrity: entry.integrity ?? m.integrity,

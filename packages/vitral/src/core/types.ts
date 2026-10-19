@@ -31,6 +31,13 @@ export interface RemoteContext {
   events: EventBus
   /** Shadow root quando o host pediu isolamento, senão `null`. */
   shadowRoot: ShadowRoot | null
+  /**
+   * Onde popovers, menus e dialogs devem ser renderizados (`container` do
+   * Radix e do MUI, `Teleport` do Vue). No Shadow DOM é um elemento dentro do
+   * shadow root, com os estilos e o tema do remote; senão, `document.body`.
+   * Hosts antigos não mandam este campo.
+   */
+  portalContainer?: HTMLElement
   /** Avisa o host de um erro em tempo de execução (os adaptadores já chamam). */
   reportError(error: unknown): void
   /** Navega a página inteira (host e todos os roteadores) para `url`. */
@@ -85,6 +92,11 @@ export interface RemoteEntry {
    * no host.
    */
   manifest?: RemoteManifest
+  /**
+   * Faixa de versão do contrato do remote que o host aceita (ex.: `'^2'`).
+   * Vence a de `configure`. Veja `VitralConfig.contract`.
+   */
+  contract?: string
 }
 
 /**
@@ -150,6 +162,14 @@ export interface VitralConfig {
    * a do host se a versão estiver na faixa dele; senão, a própria cópia.
    */
   dedupe?: Record<string, { version: string; modules: SharedModules }>
+  /**
+   * Faixa de versão do contrato que o host aceita dos remotes (ex.: `'^2'`).
+   * Antes de executar o remote, o host confere a versão do `contract` do
+   * manifesto e as dependências que ele espera do host; se não servir, o
+   * remote não monta (`CONTRACT_MISMATCH`). Sem contrato no manifesto, nada é
+   * conferido. `'*'` confere só as dependências.
+   */
+  contract?: string
 }
 
 /** Módulos de um grupo de `dedupe`, por especificador (`'react-dom/client'`). */
@@ -199,6 +219,36 @@ export interface RemoteManifest {
    * cópia própria e o arquivo dela, para o loader baixar junto com a entrada.
    */
   dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
+  /** O que o remote declara para o host conferir antes de montar. */
+  contract?: RemoteContract
+  /**
+   * CSS já preparado no build para o Shadow DOM. Sem este campo (manifestos
+   * antigos), o runtime faz esse trabalho em cada página.
+   */
+  shadow?: ShadowCss
+}
+
+/** Contrato do remote no `vitral.json`. */
+export interface RemoteContract {
+  /** Versão do contrato (opção `contract.version` do plugin). */
+  version?: string
+  /** Faixa aceita de cada dependência de `dedupe`, por grupo (`{ react: '^19.0.0' }`). */
+  peers?: Record<string, string>
+}
+
+/**
+ * CSS do remote preparado no build para `isolate: 'shadow'`. Os caminhos são
+ * relativos ao primeiro arquivo de `css` (o plugin grava tudo na mesma pasta).
+ */
+export interface ShadowCss {
+  /** Cada arquivo de `css`, na mesma ordem, sem `@import`, `@property` e `@font-face`. */
+  css: string[]
+  /** `@property` e `@font-face`, que só valem no documento (vão num `<link>`). */
+  global?: string[]
+  /** `@import` que o build não embutiu (outra origem), adotados antes de `css`. */
+  imports?: string[]
+  /** O CSS ainda tem `url()` relativa, que precisa apontar para o remote. */
+  rebase?: boolean
 }
 
 export type Handler<T = unknown> = (payload: T) => void

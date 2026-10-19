@@ -81,6 +81,15 @@ export function useVitral(): RemoteContext | null {
   return inject(VitralKey, null)
 }
 
+/**
+ * Dentro de um remote: onde renderizar portais. No Shadow DOM é um elemento
+ * dentro do shadow root (com os estilos do remote); senão, `'body'`. Use em
+ * `<Teleport :to="portal">`.
+ */
+export function usePortalContainer(): HTMLElement | 'body' {
+  return useVitral()?.portalContainer ?? 'body'
+}
+
 /** Assina um evento do barramento global enquanto o componente existir. */
 export function useEvent<T = unknown>(type: string, handler: (payload: T) => void): void {
   let off: (() => void) | undefined

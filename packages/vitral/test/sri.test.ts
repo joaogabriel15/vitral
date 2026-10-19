@@ -279,11 +279,11 @@ describe('CSS com SRI', () => {
     vi.stubGlobal('fetch', fetch)
     const { injectCss, injectStyles, prefetchCss } = await import('../src/core/css')
     const sri = { [css]: sha('css') }
-    prefetchCss([css], false, sri)
+    prefetchCss({ css: [css], sri }, false)
     expect(document.head.querySelector<HTMLLinkElement>(`link[rel="preload"][href="${css}"]`)!.integrity).toBe(sha('css'))
 
     const el = document.body.appendChild(document.createElement('div'))
-    await injectStyles([css], el.attachShadow({ mode: 'open' }), el, { mirrorTheme: false }, sri)
+    await injectStyles({ css: [css], sri }, el.attachShadow({ mode: 'open' }), el, { mirrorTheme: false })
     expect(fetch).toHaveBeenCalledWith(css, expect.objectContaining({ integrity: sha('css') }))
 
     const done = injectCss([css], null, sri)
