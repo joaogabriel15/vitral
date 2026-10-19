@@ -110,10 +110,19 @@ test('canary editada pela CLI chega no site; voltar a versão é editar o canal'
   expect(erros).toEqual([])
 })
 
+// Aviso de violação que o próprio navegador escreve no console. Chromium:
+// "...violates the following Content Security Policy directive...";
+// Firefox: "Content-Security-Policy: The page’s settings blocked...";
+// WebKit: "...does not appear in the script-src directive of the Content Security Policy."
+const AVISO_CSP = /Content[- ]Security[- ]Policy/i
+// Só os testes que a lib faz no navegador: o import map inline e os módulos `data:`.
+const ESPERADA = /^CSP: script-src(-elem)? (inline|data(:.*)?)?$/
+
 test('CSP só com a lista de origens: o widget monta (o hash é conferido pelo caminho do blob:)', async ({ page }) => {
-  const { erros } = await open(page, CSP.origens)
+  const { erros, csps } = await open(page, CSP.origens)
   await expect(widget(page)).toHaveText('v1.0.0 pt')
-  // Sem nonce, a CSP recusa os testes que a lib faz no navegador (import map
-  // e módulos data:); eles só geram aviso de violação, sem erro na página.
-  expect(erros.filter((e) => !e.startsWith('Refused to'))).toEqual([])
+  // Sem nonce, a CSP recusa os testes da lib; eles só geram aviso de
+  // violação. Qualquer outra violação ou erro na página falha o teste.
+  expect(csps.filter((c) => !ESPERADA.test(c))).toEqual([])
+  expect(erros.filter((e) => !AVISO_CSP.test(e))).toEqual([])
 })
