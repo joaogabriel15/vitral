@@ -2,7 +2,14 @@
   "name": "host-formas",
   "private": true,
   "type": "module",
-  "scripts": { "build": "vite build" },
-  "dependencies": { "vitral": "workspace:*" },
-  "devDependencies": { "vite": "^8.0.0", "typescript": "~5.9.0" }
+  "scripts": {
+    "build": "vite build"
+  },
+  "dependencies": {
+    "vitral": "workspace:*"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0",
+    "typescript": "~5.9.0"
+  }
 }

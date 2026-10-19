@@ -1,6 +1,6 @@
 {
   "name": "vitral",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Micro-frontends sem burocracia: um contrato mount/unmount, carregamento em runtime e adaptadores para React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS/TS puro.",
   "keywords": [
     "micro-frontend",
