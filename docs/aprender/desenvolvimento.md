@@ -59,6 +59,8 @@ export default function App(props: Props): JSX.Element { … }
 
 Sem tipo explícito, ou sem Oxc, o plugin usa o TypeScript do projeto, como antes. O resultado é o mesmo, só mais lento.
 
+O TypeScript 7 (nativo, que o `create-vite` instala) ainda não tem API em JavaScript. Com ele, o plugin procura outro TypeScript (5 ou 6) instalado; sem nenhum, o build segue sem `vitral.d.ts`. Para ter os tipos, instale `typescript@5` como dependência de desenvolvimento do remote.
+
 O `vitral-env.d.ts` registra o hash do manifesto de onde veio o tipo de cada remote:
 
 ```ts

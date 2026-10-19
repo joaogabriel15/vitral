@@ -5,8 +5,17 @@
   "keywords": [
     "vitral",
     "micro-frontend",
+    "micro-frontends",
+    "microfrontends",
     "create",
-    "vite"
+    "scaffold",
+    "template",
+    "cli",
+    "vite",
+    "react",
+    "vue",
+    "angular",
+    "svelte"
   ],
   "homepage": "https://github.com/joaogabriel15/vitral#readme",
   "bugs": {
