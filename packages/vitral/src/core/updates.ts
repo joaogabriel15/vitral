@@ -15,9 +15,18 @@ import type { MountedRemote, Props, RemoteEntry } from './types'
 
 /** URL do JS montado (ou já anunciado), por nome montado (`carrinho` ou `carrinho/Mini`). */
 const versions = new Map<string, string>()
+/** Montagens vivas por nome: só esses remotes são revalidados. */
+const live = new Map<string, number>()
 
-export function track(name: string, entry: string): void {
+/** Marca uma montagem de `name`. Devolve a função que desmarca; o unmount chama uma vez só. */
+export function track(name: string, entry: string): () => void {
   versions.set(name, entry)
+  live.set(name, (live.get(name) ?? 0) + 1)
+  return () => {
+    const n = live.get(name)! - 1
+    if (n) live.set(name, n)
+    else live.delete(name), versions.delete(name)
+  }
 }
 
 /** Trocas começadas pelo `refresh` em andamento (preenchido durante o emit). */
@@ -83,7 +92,8 @@ export function refreshable<P extends Props>(
 const noop = () => {}
 
 /**
- * Revalida os manifestos dos remotes montados e emite
+ * Revalida os manifestos dos remotes montados agora (os desmontados ficam de
+ * fora) e emite
  * `vitral:update-available` com `{ name, entry }` para cada deploy novo.
  * Devolve os nomes com versão nova. Falhas de rede são ignoradas.
  */
@@ -93,8 +103,11 @@ export async function checkUpdates(): Promise<string[]> {
   // Partes do mesmo remote (`carrinho/Mini`) contam como o remote.
   const { splitName } = await import('./expose')
   const remotes = new Map<string, string>()
-  for (const [name, entry] of versions) remotes.set(splitName(name)[0], entry)
-  versions.clear()
+  for (const name of live.keys()) {
+    const root = splitName(name)[0]
+    const entry = versions.get(root) ?? versions.get(name)
+    if (entry) remotes.set(root, entry)
+  }
   for (const [name, entry] of remotes) versions.set(name, entry)
   await Promise.all(
     [...remotes].map(([name, current]) =>
