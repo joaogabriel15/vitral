@@ -202,6 +202,24 @@ describe('checkUpdates e watchUpdates', () => {
     expect(await checkUpdates()).toEqual([])
   })
 
+  it('remote desmontado sai da revalidação; com outra montagem viva, continua', async () => {
+    configure({ allowedOrigins: ['*'] })
+    const url = 'https://cdn.empresa.com/u4/vitral.json'
+    register('u4', { url, module: { mount: () => ({ unmount() {} }) } })
+    const a = await mountRemote(box(), 'u4', {})
+    const b = await mountRemote(box(), 'u4', {})
+    register('u4', url)
+    const fetch = manifests({ [url]: 'remote-v2.js' })
+    vi.stubGlobal('fetch', fetch)
+    a.unmount()
+    a.unmount()
+    expect(await checkUpdates()).toEqual(['u4'])
+    b.unmount()
+    fetch.mockClear()
+    expect(await checkUpdates()).toEqual([])
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('watchUpdates revalida ao navegar e para quando desligado', async () => {
     configure({ allowedOrigins: ['*'] })
     const url = 'https://cdn.empresa.com/u3/vitral.json'
