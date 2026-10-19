@@ -387,6 +387,11 @@
       "ignore": [
         "./channel-*"
       ]
+    },
+    {
+      "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
+      "path": "dist/embed.js",
+      "limit": "10.85 kB"
     }
   ]
 }

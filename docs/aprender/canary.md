@@ -43,6 +43,13 @@ Uma versão como `"1.5.0"` vira `1.5.0/vitral.json`, ao lado do canal. Também v
 
 O canal muda a cada lançamento: sirva com `Cache-Control: no-cache`, como o `vitral.json` de sempre.
 
+A [CLI](/referencia/cli#vitral-canal) cria e edita o canal sem abrir o JSON:
+
+```bash
+npx vitral canal canal.json --stable 1.4.0
+npx vitral canal canal.json --canary 1.5.0 --percent 10
+```
+
 ## 3. Apontar o host para o canal
 
 Registre a URL do canal no lugar da URL do `vitral.json`:
@@ -129,6 +136,8 @@ Edite o canal:
 { "stable": "1.4.0" }
 ```
 
+Ou: `npx vitral canal canal.json --stable 1.4.0 --canary off`.
+
 A próxima carga de cada página já usa a `1.4.0`. Páginas abertas veem a mudança com [`watchUpdates()`](./atualizacoes), porque o canal é conferido como um `vitral.json`.
 
 Para promover a canary, troque `stable` para `"1.5.0"` e tire `canary`.
@@ -137,4 +146,4 @@ Para promover a canary, troque `stable` para `"1.5.0"` e tire `canary`.
 
 - O `integrity` e o `manifest` embutido da entrada do host não valem para canais: a integridade vem do `vitral.json` de cada versão.
 - O canal e as versões passam pela mesma regra de [origens](./seguranca). Versões numa origem diferente da do canal precisam estar em `allowedOrigins`.
-- O código do canal fica num arquivo à parte (cerca de 1 kB), baixado só quando o host encontra um canal.
+- O código do canal fica num arquivo à parte (cerca de 1 kB), baixado só quando o host encontra um canal. No [`embed.js`](./terceiros) ele já vem junto.
