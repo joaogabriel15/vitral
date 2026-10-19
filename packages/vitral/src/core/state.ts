@@ -8,7 +8,7 @@
  * que conhecem. Mudanças futuras só acrescentam métodos e sobem `protocol`.
  */
 import { createEventBus } from './bus'
-import type { EventBus, Isolation, RemoteEntry, RemoteMetric, RemoteModule, ShadowCss, SharedModules, StyleOptions } from './types'
+import type { EventBus, Isolation, RemoteEntry, RemoteMetric, RemoteModule, RollbackInfo, ShadowCss, SharedModules, StyleOptions } from './types'
 import type { SharedStore } from './store'
 import type { RemoteError } from './errors'
 
@@ -33,6 +33,10 @@ export interface Settings {
   contract?: string
   /** Versão de cada grupo que o host oferece com `dedupe`, para conferir o contrato. */
   offered?: Record<string, string>
+  /** Chave do sorteio da canary (`configure({ canaryKey })`). */
+  canaryKey?: string
+  /** Aviso de rollback automático de um canal. */
+  onRollback?: (info: RollbackInfo) => void
 }
 
 /** Remote baixado e pronto para montar. Faz parte do protocolo v1. */

@@ -100,3 +100,5 @@ Sem `contract` em um dos lados, nada é conferido: manifestos antigos continuam 
 ## Voltar uma versão
 
 Publique a versão anterior do `vitral.json`. O host baixa o JS antigo na próxima carga.
+
+Para não depender de republicar, use um canal: cada versão fica na própria pasta e um `canal.json` diz qual vale. O canal também libera a versão nova para uma parte dos usuários e volta sozinho para a estável quando a nova dá erro. Veja [Canary e rollback](./canary).

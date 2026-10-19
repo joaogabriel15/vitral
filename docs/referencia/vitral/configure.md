@@ -34,6 +34,8 @@ Chame antes de renderizar o primeiro remote.
 | `devOverrides` | `false` | `true` aceita `?vitral=` fora de `localhost`. `{ preview: 'https://{name}-{ref}.preview.empresa.com' }` faz o mesmo e resolve `?vitral=nome@pr-123`. Veja [Desenvolvimento](/aprender/desenvolvimento#link-para-o-preview-de-um-pr) |
 | `dedupe` | nenhum | Dependências que o host oferece aos remotes. Veja [Dedupe](/aprender/dedupe) |
 | `contract` | nenhum | Faixa do contrato aceita dos remotes, ex.: `'^2'`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
+| `canaryKey` | id aleatório no `localStorage` | Chave do usuário para sortear quem recebe a canary de um canal. Veja [Canary e rollback](/aprender/canary) |
+| `onRollback` | nenhum | Recebe `{ name, from, to, errors, mounts }` quando a canary de um canal volta para a estável |
 
 ## Retorno
 
@@ -60,13 +62,15 @@ configure({
 
 | Campo | O que faz |
 | --- | --- |
-| `url` | URL do `vitral.json` ou do JS |
+| `url` | URL do `vitral.json`, do JS ou de um canal (`canal.json`) |
 | `module` | Remote local, sem rede: o módulo ou uma função que o importa |
 | `integrity` | Hash do JS. Vence o do `vitral.json` |
 | `css` | CSS extra |
 | `isolate` | Isolamento deste remote |
 | `manifest` | `vitral.json` embutido |
 | `contract` | Faixa do contrato aceita deste remote. Vence a de `configure` |
+| `resolve` | Com canal: `(canal, { name, bucket }) => versão`. Veja [Canary e rollback](/aprender/canary) |
+| `rollback` | Com canal: `{ errors, mounts }` do rollback automático, ou `false`. Padrão `{ errors: 3, mounts: 20 }` |
 
 Isolamento: o do componente vence o da entrada, que vence o de `configure`.
 

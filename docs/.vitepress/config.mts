@@ -51,6 +51,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Exposes e loadModule', link: '/aprender/exposes' },
       { text: 'Dedupe de dependências', link: '/aprender/dedupe' },
       { text: 'Atualização sem reload', link: '/aprender/atualizacoes' },
+      { text: 'Canary e rollback', link: '/aprender/canary' },
       { text: 'SSR', link: '/aprender/ssr' },
       { text: 'Desenvolvimento e HMR', link: '/aprender/desenvolvimento' },
     ],

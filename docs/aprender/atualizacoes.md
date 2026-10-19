@@ -26,4 +26,4 @@ events.on('vitral:update-available', ({ name }) => {
 
 - `vitral:update-available` sai uma vez por deploy, com `{ name, entry }`.
 - Se a versão nova falhar, a antiga continua na tela.
-- Só remotes registrados pela URL do `vitral.json` são conferidos.
+- Só remotes registrados pela URL do `vitral.json` (ou de um [canal](./canary)) são conferidos.
