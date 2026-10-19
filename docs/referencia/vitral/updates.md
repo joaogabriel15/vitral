@@ -29,5 +29,7 @@ events.on('vitral:update-available', ({ name }) => refresh(name))
 ## Observações
 
 - `vitral:update-available` sai uma vez por deploy, com `{ name, entry }`.
-- Se a versão nova falhar, a antiga continua na tela.
+- `await refresh(nome)` resolve quando todas as montagens já mostram a versão nova.
+- Se a versão nova não carregar ou o `mount` dela falhar, a antiga continua na tela e `refresh` rejeita com o `RemoteError`.
+- Dois `refresh` seguidos do mesmo remote: fica a versão do último, mesmo que o primeiro termine depois.
 - Só remotes registrados pela URL do `vitral.json` são conferidos.
