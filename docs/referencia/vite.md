@@ -31,6 +31,7 @@ export default { plugins: [react(), vitral({ entry: 'src/remote.tsx', dedupe: ['
 | `exposes` | nenhum | Mapa `'./nome' → arquivo`. Veja [Exposes](/aprender/exposes) |
 | `dedupe` | nenhum | Veja [Dedupe](/aprender/dedupe) |
 | `types` | `true` | Gera `vitral.d.ts` |
+| `contract` | nenhum | `{ version }`: versão do contrato no `vitral.json`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
 | `shared` | nenhum | Obsoleta. Use `dedupe` |
 
 ## Saída

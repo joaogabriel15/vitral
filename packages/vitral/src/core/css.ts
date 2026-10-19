@@ -1,4 +1,4 @@
-import { protocol } from './state'
+import { protocol, type LoadedRemote } from './state'
 import type { StyleOptions } from './types'
 import { addLink, fetchBytes } from './util'
 
@@ -24,16 +24,19 @@ export function fetchCssText(href: string, integrity?: string, priority?: Reques
   return p
 }
 
+/** CSS de um remote resolvido: URLs absolutas e hashes por URL. */
+export type RemoteCss = Pick<LoadedRemote, 'css' | 'shadow' | 'sri'>
+
 /**
  * Começa a baixar o CSS junto com o JS, sem aplicar nada ainda. No Shadow DOM
- * o texto fica em cache para virar stylesheet; fora dele, um
- * `<link rel=preload>` deixa o `<link rel=stylesheet>` da montagem pronto.
+ * quem escolhe os arquivos é `./shadow` (o CSS pode vir preparado no build), e
+ * o texto fica em cache para virar stylesheet; o módulo, que a montagem usaria
+ * depois do JS, já vem junto. Fora dele, um `<link rel=preload>` deixa o
+ * `<link rel=stylesheet>` da montagem pronto.
  */
-export function prefetchCss(urls: string[], shadow: boolean, sri: Record<string, string> = {}, priority: RequestPriority = 'auto'): void {
-  for (const href of urls) {
-    if (shadow && adopts()) fetchCssText(href, sri[href], priority).catch(noop)
-    else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, { as: 'style', integrity: sri[href] ?? '', fetchPriority: priority })
-  }
+export function prefetchCss(r: RemoteCss, shadow: boolean, priority: RequestPriority = 'auto'): void {
+  if (shadow && adopts()) import('./shadow').then((m) => m.prefetch(r, priority), noop)
+  else for (const href of r.css) if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, { as: 'style', integrity: r.sri?.[href] ?? '', fetchPriority: priority })
 }
 
 /**
@@ -42,16 +45,10 @@ export function prefetchCss(urls: string[], shadow: boolean, sri: Record<string,
  * Com hash em `sri`, o navegador confere os bytes antes de aplicar.
  * Devolve a função que desfaz o que precisa ser desfeito no unmount.
  */
-export function injectStyles(
-  urls: string[],
-  root: ShadowRoot | null,
-  el: HTMLElement,
-  styles?: StyleOptions,
-  sri: Record<string, string> = {},
-): Promise<() => void> {
+export function injectStyles(r: RemoteCss, root: ShadowRoot | null, el: HTMLElement, styles?: StyleOptions): Promise<[release: () => void, portal?: HTMLElement]> {
   return root
-    ? import('./shadow').then((m) => m.attachStyles(root, el, urls, protocol().settings().styles, styles, sri))
-    : injectCss(urls, null, sri).then(() => noop)
+    ? import('./shadow').then((m) => m.attachStyles(root, el, r, protocol().settings().styles, styles))
+    : injectCss(r.css, null, r.sri).then(() => [noop])
 }
 
 /**

@@ -16,6 +16,7 @@ export type {
   Props,
   PropsOf,
   RemoteContext,
+  RemoteContract,
   RemoteEntry,
   RemoteManifest,
   RemoteMetric,

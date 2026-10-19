@@ -48,6 +48,7 @@ Para receber os erros de todos os remotes, use `configure({ onError })`. Veja [T
 | [`MOUNT_FAILED`](/erros/MOUNT_FAILED) | `mount` lançou erro |
 | [`RENDER_FAILED`](/erros/RENDER_FAILED) | Erro depois de montado |
 | [`SHARED_READONLY`](/erros/SHARED_READONLY) | `set` numa chave só leitura |
+| [`CONTRACT_MISMATCH`](/erros/CONTRACT_MISMATCH) | Contrato do remote fora da faixa do host |
 
 ## Observações
 

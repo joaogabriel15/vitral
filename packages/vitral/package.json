@@ -211,6 +211,7 @@
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
+        "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
@@ -224,10 +225,11 @@
         "./shadow-*",
         "./sri-*",
         "./dedupe-*",
+        "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "5.7 kB"
+      "limit": "5.73 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -237,7 +239,7 @@
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
       "path": "dist/dedupe-*.js",
-      "limit": "0.65 kB"
+      "limit": "0.67 kB"
     },
     {
       "name": "host mínimo + store",
@@ -248,10 +250,11 @@
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
+        "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "5.25 kB"
+      "limit": "5.29 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -262,10 +265,11 @@
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
+        "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "5.5 kB"
+      "limit": "5.51 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -273,7 +277,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1 kB"
+      "limit": "1.22 kB"
     },
     {
       "name": "react",
@@ -285,6 +289,7 @@
         "./shadow-*",
         "./sri-*",
         "./dedupe-*",
+        "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
@@ -299,10 +304,11 @@
         "./shadow-*",
         "./sri-*",
         "./dedupe-*",
+        "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.05 kB"
+      "limit": "6.08 kB"
     },
     {
       "name": "element",
@@ -312,10 +318,11 @@
         "./shadow-*",
         "./sri-*",
         "./dedupe-*",
+        "./contract-*",
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.3 kB"
+      "limit": "6.32 kB"
     },
     {
       "name": "devtools",
@@ -326,12 +333,13 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.05 kB",
+      "limit": "6.07 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
+        "./contract-*",
         "./expose-*",
         "./capture-*"
       ]
@@ -340,7 +348,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.2 kB"
+      "limit": "8.67 kB"
     },
     {
       "name": "iframe",

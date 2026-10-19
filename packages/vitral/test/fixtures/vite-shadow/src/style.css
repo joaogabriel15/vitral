@@ -1,0 +1,5 @@
+@import url("https://fontes.exemplo.com/familia.css");
+@import "./base.css";
+@property --giro { syntax: "<angle>"; inherits: false; initial-value: 0deg }
+@font-face { font-family: Remota; src: url("/fontes/remota.woff2") format("woff2") }
+.cartao { font-family: Remota; rotate: var(--giro) }
