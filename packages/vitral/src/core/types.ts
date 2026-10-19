@@ -103,7 +103,7 @@ export interface RemoteEntry {
   /** Isolamento padrão para este remote. */
   isolate?: Isolation
   /**
-   * O `vitral.json` já baixado (ex.: por `vitral registry`), para não buscá-lo
+   * O `vitral.json` já baixado (ex.: no build do host), para não buscá-lo
    * na hora. Os caminhos dele são relativos a `url`, e os hashes ficam fixos
    * no host.
    */
@@ -242,6 +242,11 @@ export interface RemoteManifest {
    * antigos), o runtime faz esse trabalho em cada página.
    */
   shadow?: ShadowCss
+  /**
+   * SBOM CycloneDX do remote (opção `sbom` do plugin): o arquivo, relativo
+   * ao manifesto, e o hash dele. O runtime não usa; é para auditoria.
+   */
+  sbom?: { file: string; integrity: string }
 }
 
 /** Contrato do remote no `vitral.json`. */

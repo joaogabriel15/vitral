@@ -32,6 +32,7 @@ export default { plugins: [react(), vitral({ entry: 'src/remote.tsx', dedupe: ['
 | `dedupe` | nenhum | Veja [Dedupe](/aprender/dedupe) |
 | `types` | `true` | Gera `vitral.d.ts` |
 | `contract` | nenhum | `{ version }`: versão do contrato no `vitral.json`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
+| `sbom` | `false` | Gera `sbom.cdx.json` (CycloneDX 1.6). Veja [SBOM](/aprender/seguranca#sbom) |
 | `target` | nenhum | `'mcp-app'`: gera só `mcp-app.html`, com JS e CSS inline. Veja [MCP App](/aprender/mcp-app) |
 | `shared` | nenhum | Obsoleta. Use `dedupe` |
 
@@ -43,6 +44,7 @@ dist/
   remote-[hash].css
   vitral.json
   vitral.d.ts
+  sbom.cdx.json   (com sbom: true)
 ```
 
 Com `target: 'mcp-app'`, só `dist/mcp-app.html`.
