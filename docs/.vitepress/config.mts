@@ -37,6 +37,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Testes', link: '/aprender/testes' },
       { text: 'Deploy', link: '/aprender/deploy' },
       { text: 'Vários repositórios', link: '/aprender/varios-repositorios' },
+      { text: 'Registro e agentes', link: '/aprender/registro' },
     ],
   },
   {
