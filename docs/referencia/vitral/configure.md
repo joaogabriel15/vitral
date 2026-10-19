@@ -31,7 +31,7 @@ Chame antes de renderizar o primeiro remote.
 | `onMetric` | nenhum | Recebe `{ name, stage, start, duration }` de cada etapa. Veja [Carregamento](/aprender/carregamento#metricas) |
 | `onError` | nenhum | Recebe cada `RemoteError` de qualquer remote, uma vez. Veja [Erros](/aprender/erros#atribuicao-e-onerror-global) |
 | `captureGlobalErrors` | `false` | Atribui a um remote os erros sem tratamento que saem do código dele |
-| `devOverrides` | `false` | Aceita `?vitral=` fora de `localhost`. Veja [Desenvolvimento](/aprender/desenvolvimento) |
+| `devOverrides` | `false` | `true` aceita `?vitral=` fora de `localhost`. `{ preview: 'https://{name}-{ref}.preview.empresa.com' }` faz o mesmo e resolve `?vitral=nome@pr-123`. Veja [Desenvolvimento](/aprender/desenvolvimento#link-para-o-preview-de-um-pr) |
 | `dedupe` | nenhum | Dependências que o host oferece aos remotes. Veja [Dedupe](/aprender/dedupe) |
 | `contract` | nenhum | Faixa do contrato aceita dos remotes, ex.: `'^2'`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
 

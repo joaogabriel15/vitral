@@ -18,11 +18,13 @@ import type { RemoteContract, RemoteManifest } from './index'
 import type { ShadowCss } from './core/types'
 import { scopeCss } from './css-scope'
 import { EXPOSES_ENTRY, EXPOSES_IDS, exposeKeys, loadExposes, resolveExposesId } from './vite-exposes'
-import { collect, isSplit, outputs, withSplit, type Split } from './vite/manifest'
+import { collect, isSplit, outputs, sri, withSplit, type Split } from './vite/manifest'
+import { bundledFiles, createSbom, SBOM_FILE } from './vite/sbom'
 import { BOOT, dedupeHooks, dedupeIds, groups, type Group } from './vite/dedupe'
 import { type CssBuildOptions, splitShadowCss, transformCss } from './css-build'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
 import { extractProps, typesFile } from './vite/types'
+import { MCP_APP_GLOBAL, mcpAppHtml } from './vite/mcp-app'
 import { DEV_CSS, DEV_IDS, devEntryCode, devManifest, devOptimizeDeps, loadPreamble, resolveDevId, scopeDevCss, serveDevManifest, VIRTUAL_DEV_ENTRY } from './vite/dev'
 
 export interface VitralViteOptions extends CssBuildOptions {
@@ -80,6 +82,18 @@ export interface VitralViteOptions extends CssBuildOptions {
    * faixas de `dedupe` entram sozinhas, em `peers`. Padrão: sem versão.
    */
   contract?: { version?: string }
+  /**
+   * Gera `sbom.cdx.json` (CycloneDX 1.6) com os pacotes npm que entraram no
+   * bundle, e o `vitral.json` aponta para ele em `sbom`. Padrão: false.
+   */
+  sbom?: boolean
+  /**
+   * `'mcp-app'`: o build gera só `mcp-app.html`, um HTML único com o JS e o
+   * CSS inline, para um servidor MCP servir como recurso `ui://` (MCP Apps).
+   * As notificações do host viram props e `ctx.events.emit` vira mensagem
+   * para o host. Não combina com `exposes`, `dedupe` nem `shared`.
+   */
+  target?: 'mcp-app'
 }
 
 export default function vitral(options: VitralViteOptions = {}): Plugin {
@@ -88,6 +102,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   let pkg: { name?: string; version?: string } = {}
   let manifest: RemoteManifest | undefined
   let split: Split | undefined
+  let modules = new Set<string>()
   let entry = options.entry
   let adapter: AdapterName = 'element'
   let framework: AdapterName = 'element'
@@ -96,8 +111,30 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   let shared: Group[] = []
   const dedupe = !!options.dedupe?.length
   const hooks = dedupeHooks(() => (options.exposes ? EXPOSES_ENTRY : options.adapter === false ? entryFile() : ENTRY_ID), () => shared)
+  const mcp = options.target === 'mcp-app'
+  if (mcp && (options.exposes || dedupe || options.shared?.length)) {
+    throw new Error("[vitral] target: 'mcp-app' gera um HTML único: não combina com exposes, dedupe nem shared.")
+  }
   const scopeName = () =>
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
+  // Junta o JS e o CSS do build em mcp-app.html e apaga os dois.
+  const mcpApp = (files: { type: string; fileName: string }[], js: string) => {
+    const css = files.filter((f) => f.type === 'asset' && f.fileName.endsWith('.css')).map((f) => f.fileName)
+    const read = (file: string) => {
+      const text = readFileSync(join(outDir, file), 'utf8')
+      rmSync(join(outDir, file))
+      return text
+    }
+    const scope = options.scopeCss === false ? undefined : scopeName()
+    const html = mcpAppHtml({
+      name: options.name ?? pkg.name ?? 'remote',
+      version: options.version ?? pkg.version,
+      scope,
+      code: read(js),
+      css: css.map((f) => transformCss(read(f), options, scopeName())),
+    })
+    writeFileSync(join(outDir, 'mcp-app.html'), html)
+  }
   return {
     name: 'vitral',
     config(user, { mode, command }) {
@@ -114,7 +151,12 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         // O remote não tem index.html: sem isso o Vite só descobre as
         // dependências no primeiro request e recarrega a página do host.
         optimizeDeps: user.optimizeDeps?.entries ? undefined : { entries: [entry] },
-        build: {
+        build: mcp ? {
+          // Um IIFE só, sem chunks: o HTML do MCP App não pode buscar arquivos.
+          lib: { entry: options.adapter === false ? entry : ENTRY_ID, formats: ['iife'], name: MCP_APP_GLOBAL, fileName: () => 'mcp-app.js', cssFileName: 'remote' },
+          rollupOptions: { output: rolldown ? { codeSplitting: false } : { inlineDynamicImports: true } } as any,
+          cssCodeSplit: false,
+        } : {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
           lib: { entry: dedupe ? BOOT : options.exposes ? EXPOSES_ENTRY : options.adapter === false ? entry : ENTRY_ID, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
           // Arquivo único (hosts antigos e caminho com blob:) e build dividido (manifesto v2).
@@ -175,10 +217,13 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       },
     },
     writeBundle(_, bundle) {
+      // As duas saídas têm os mesmos módulos; juntar cobre o que só uma tiver.
+      if (options.sbom) bundledFiles(bundle as any, modules)
       if (isSplit(bundle)) return void (split = collect(outDir, bundle))
       const files = Object.values(bundle)
       const entry = files.find((f) => f.type === 'chunk' && f.isEntry)
       if (!entry) return
+      if (mcp) return mcpApp(files as any, entry.fileName)
       // CSS: aplica o escopo e põe hash no nome (Vite não põe hash no CSS em modo lib).
       const emit = (file: string, text: string, kind = '') => {
         const hash = createHash('sha256').update(text).digest('base64url').slice(0, 8)
@@ -218,11 +263,26 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     async closeBundle() {
       if (!manifest) return
       const done = withSplit(manifest, outDir, split, shared)
+      if (options.sbom) {
+        const bom = createSbom({ root, name: done.name, version: done.version, files: modules, entry: readFileSync(join(outDir, done.entry)), tool: ownVersion() })
+        writeFileSync(join(outDir, SBOM_FILE), JSON.stringify(bom, null, 2) + '\n')
+        done.sbom = { file: SBOM_FILE, integrity: sri(join(outDir, SBOM_FILE)) }
+      }
       manifest = split = undefined
+      modules = new Set()
       writeFileSync(join(outDir, 'vitral.json'), JSON.stringify(done, null, 2) + '\n')
       const props = options.types === false ? null : await extractProps(root, entryFile())
       if (props) writeFileSync(join(outDir, 'vitral.d.ts'), typesFile(done.name, props))
     },
+  }
+}
+
+/** Versão do vitral (o package.json fica uma pasta acima de `dist/` e de `src/`). */
+function ownVersion(): string | undefined {
+  try {
+    return JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
+  } catch {
+    return undefined
   }
 }
 

@@ -9,9 +9,11 @@
  */
 export type {
   CheckedProps,
+  DevOverrides,
   EventBus,
   Handler,
   Isolation,
+  McpAppBridge,
   MountedRemote,
   Props,
   PropsOf,
