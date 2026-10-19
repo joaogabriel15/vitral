@@ -80,7 +80,7 @@ Se a página tem um `<script nonce>`, a lib usa o mesmo `nonce` no import map do
 
 ## Overrides de desenvolvimento
 
-`?vitral=nome@http://localhost:5174` troca a URL de um remote e descarta a `integrity` do host. Só funciona com a página em `localhost` ou com `configure({ devOverrides: true })`. Não ligue `devOverrides` em produção: qualquer link com `?vitral=` executaria código de outra origem.
+`?vitral=nome@http://localhost:5174` troca a URL de um remote e descarta a `integrity` do host. Só funciona com a página em `localhost` ou com `configure({ devOverrides })`. Não ligue `devOverrides` em produção, nem na forma `{ preview }`: qualquer link com `?vitral=` executaria código de outra origem. O modelo `preview` não restringe as URLs aceitas, só resolve apelidos.
 
 ## SBOM
 
