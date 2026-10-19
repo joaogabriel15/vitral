@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joaogabriel15.github.io/vitral/schema/vitral-registry.json",
+  "title": "Registro de remotes do vitral",
+  "description": "Lista de remotes (micro-frontends) que um host pode adicionar com `npx vitral add <remote>`. Gerado por `npx vitral registry`.",
+  "type": "object",
+  "required": ["remotes"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "name": { "type": "string", "description": "Nome do registro (a empresa ou o time)." },
+    "remotes": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/remote" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "remote": {
+      "type": "object",
+      "required": ["name", "url"],
+      "properties": {
+        "name": { "type": "string", "pattern": "^[^/\\s]+$", "description": "Nome usado no host (`<Remote name=\"carrinho\">`). Único no registro." },
+        "url": { "type": "string", "minLength": 1, "description": "URL do `vitral.json`. Relativa vale a partir do endereço do registro." },
+        "version": { "type": "string", "description": "Versão publicada (`version` do manifesto)." },
+        "props": { "type": "string", "description": "Tipo TypeScript das props, lido do `vitral.d.ts` (ex.: `{ userId: number }`)." },
+        "owner": { "type": "string", "description": "Time ou pessoa responsável." },
+        "integrity": { "type": "string", "description": "`integrity` do manifesto quando o registro foi gerado (`sha384-…`)." },
+        "framework": { "type": "string", "description": "Framework do remote.", "examples": ["react", "vue", "svelte", "solid", "preact", "angular", "element"] },
+        "description": { "type": "string", "description": "Uma frase sobre o que o remote mostra." }
+      },
+      "additionalProperties": false
+    }
+  }
+}

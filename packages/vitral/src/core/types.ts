@@ -87,7 +87,7 @@ export interface RemoteEntry {
   /** Isolamento padrão para este remote. */
   isolate?: Isolation
   /**
-   * O `vitral.json` já baixado (ex.: por `vitral registry`), para não buscá-lo
+   * O `vitral.json` já baixado (ex.: no build do host), para não buscá-lo
    * na hora. Os caminhos dele são relativos a `url`, e os hashes ficam fixos
    * no host.
    */
