@@ -1,5 +1,5 @@
 import { prefetchCss } from './css'
-import { isRemoteError, RemoteError } from './errors'
+import { fail, isRemoteError, RemoteError, report } from './errors'
 import { checkOrigin } from './registry'
 import type { SplitBuild, Verifiable } from './sri'
 import { protocol, type LoadedRemote } from './state'
@@ -20,7 +20,9 @@ export function loadRemote<P extends Props = Props>(name: string): Promise<Remot
  * Sem `/`, devolve os exports do arquivo principal do remote.
  */
 export function loadModule<T = Record<string, unknown>>(name: string): Promise<T> {
-  return import('./expose').then((m) => m.resolveModule<T>(name, (n) => loadFile(n)))
+  return import('./expose')
+    .then((m) => m.resolveModule<T>(name, (n) => loadFile(n)))
+    .catch(fail)
 }
 
 /** Começa a baixar um remote (JS e CSS) sem montar (ex.: no hover de um link). */
@@ -40,8 +42,9 @@ let paths: Promise<typeof import('./sri') | null> | undefined
 export function load(name: string, isolate?: Isolation, priority?: RequestPriority): Promise<LoadedRemote> {
   const file = (n: string) => loadFile(n, isolate, priority)
   // Partes (`carrinho/MiniCarrinho`) ficam num módulo à parte, fora do host mínimo.
-  if (protocol().entry(name) || !name.includes('/')) return file(name).then((r) => mountable(name, r))
-  return import('./expose').then((m) => m.resolveTarget(name, file))
+  return (
+    protocol().entry(name) || !name.includes('/') ? file(name).then((r) => mountable(name, r)) : import('./expose').then((m) => m.resolveTarget(name, file))
+  ).catch(fail)
 }
 
 /** Baixa o arquivo de um remote registrado, sem conferir o formato (base de `load` e `loadModule`). */
@@ -49,6 +52,7 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
   const p = protocol()
   return p.load(name, async () => {
     paths ??= import('./sri').catch(() => null)
+    let resolved: Resolved | undefined
     try {
       await p.pending()
       // Override troca a URL e descarta a integrity do host; o isolamento continua.
@@ -57,16 +61,16 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
       if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
       if (entry.module) return await loadLocal(name, entry)
       let t = performance.now()
-      const resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority)
+      resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority)
       metric(name, 'manifest', t)
       // O CSS baixa junto com o JS; a montagem espera os dois.
       prefetchCss(resolved.css, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', resolved.sri, priority)
       t = performance.now()
-      const ns = await withRetry(p.settings().retries, () => importModule(name, resolved))
+      const ns = await withRetry(p.settings().retries, () => importModule(name, resolved!))
       metric(name, 'js', t)
       return { ...resolved, module: ns?.default ?? ns, exports: ns }
     } catch (e: any) {
-      throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, String(e?.message ?? e), e)
+      throw report(isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, String(e?.message ?? e), e), resolved)
     }
   })
 }
@@ -111,6 +115,7 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
     integrity: entry.integrity ?? m.integrity,
     isolate: entry.isolate,
     scope: m.scope,
+    version: m.version,
     sri,
     priority,
     split:

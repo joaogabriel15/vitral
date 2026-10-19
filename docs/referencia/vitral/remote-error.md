@@ -8,6 +8,9 @@ class RemoteError extends Error {
   remote: string
   docs: string
   cause?: unknown
+  entry?: string
+  version?: string
+  route?: string
 }
 ```
 
@@ -25,6 +28,11 @@ class RemoteError extends Error {
 | `remote` | Nome do remote |
 | `docs` | Link da página do código, com causa e correção |
 | `cause` | Erro original, quando há |
+| `entry` | URL do JS do remote, ou a URL registrada se o erro veio antes do manifesto |
+| `version` | `version` do `vitral.json` |
+| `route` | `location.pathname` no momento do erro |
+
+Para receber os erros de todos os remotes, use `configure({ onError })`. Veja [Tratamento de erros](/aprender/erros#atribuicao-e-onerror-global).
 
 ## Códigos
 

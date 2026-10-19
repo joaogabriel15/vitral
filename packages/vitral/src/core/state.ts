@@ -10,6 +10,7 @@
 import { createEventBus } from './bus'
 import type { EventBus, Isolation, RemoteEntry, RemoteMetric, RemoteModule, SharedModules, StyleOptions } from './types'
 import type { SharedStore } from './store'
+import type { RemoteError } from './errors'
 
 export const PROTOCOL = 1
 
@@ -19,6 +20,10 @@ export interface Settings {
   isolate: Isolation
   allowedOrigins: string[] | null
   onMetric?: (metric: RemoteMetric) => void
+  /** Recebe cada `RemoteError` de qualquer remote, uma vez só. */
+  onError?: (error: RemoteError) => void
+  /** Atribui a um remote os erros sem tratamento que saem do código dele. */
+  captureGlobalErrors?: boolean
   /** Origens de URLs escritas no código do host (`src`). Valem mesmo com `allowedOrigins`. */
   trusted?: string[]
   /** Liga os overrides de desenvolvimento fora de localhost. */
@@ -40,6 +45,8 @@ export interface LoadedRemote {
   sri?: Record<string, string>
   /** Nome que o manifesto declara (usado quando o remote veio de `src`). */
   name?: string
+  /** `version` do manifesto. */
+  version?: string
 }
 
 export interface Protocol {

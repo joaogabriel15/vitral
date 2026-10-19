@@ -29,6 +29,8 @@ Chame antes de renderizar o primeiro remote.
 | `isolate` | `'none'` | `'shadow'` ou `'iframe'` para todos os remotes |
 | `styles` | nenhum | `{ inherit, mirrorTheme }`. Veja [Estilos](/aprender/estilos) |
 | `onMetric` | nenhum | Recebe `{ name, stage, start, duration }` de cada etapa. Veja [Carregamento](/aprender/carregamento#metricas) |
+| `onError` | nenhum | Recebe cada `RemoteError` de qualquer remote, uma vez. Veja [Erros](/aprender/erros#atribuicao-e-onerror-global) |
+| `captureGlobalErrors` | `false` | Atribui a um remote os erros sem tratamento que saem do código dele |
 | `devOverrides` | `false` | Aceita `?vitral=` fora de `localhost`. Veja [Desenvolvimento](/aprender/desenvolvimento) |
 | `dedupe` | nenhum | Dependências que o host oferece aos remotes. Veja [Dedupe](/aprender/dedupe) |
 
