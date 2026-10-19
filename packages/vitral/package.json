@@ -101,6 +101,14 @@
     "./testing": {
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.js"
+    },
+    "./sentry": {
+      "types": "./dist/sentry.d.ts",
+      "import": "./dist/sentry.js"
+    },
+    "./otel": {
+      "types": "./dist/otel.d.ts",
+      "import": "./dist/otel.js"
     }
   },
   "publishConfig": {
@@ -204,9 +212,10 @@
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "4.46 kB"
+      "limit": "4.6 kB"
     },
     {
       "name": "núcleo",
@@ -217,9 +226,10 @@
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "5.6 kB"
+      "limit": "5.73 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -241,9 +251,10 @@
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "5.15 kB"
+      "limit": "5.29 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -255,9 +266,10 @@
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "5.37 kB"
+      "limit": "5.51 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -265,7 +277,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.21 kB"
+      "limit": "1.22 kB"
     },
     {
       "name": "react",
@@ -278,7 +290,8 @@
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
       "limit": "6.2 kB"
     },
@@ -292,9 +305,10 @@
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "6 kB"
+      "limit": "6.08 kB"
     },
     {
       "name": "element",
@@ -305,9 +319,10 @@
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "6.22 kB"
+      "limit": "6.32 kB"
     },
     {
       "name": "devtools",
@@ -318,21 +333,22 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6 kB",
+      "limit": "6.07 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ]
     },
     {
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.5 kB"
+      "limit": "8.67 kB"
     },
     {
       "name": "iframe",

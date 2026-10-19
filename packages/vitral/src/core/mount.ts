@@ -1,5 +1,5 @@
 import { injectStyles } from './css'
-import { isRemoteError, RemoteError } from './errors'
+import { fail, isRemoteError, RemoteError, report } from './errors'
 import { scopedEvents } from './events'
 import { ctxHooks } from './hooks'
 import { load } from './loader'
@@ -50,11 +50,11 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
   await p.pending()
   // Decide antes de baixar: no modo iframe o JS do remote nunca roda na página.
   if ((options.isolate ?? registered(name)?.isolate ?? p.settings().isolate) === 'iframe') {
-    if (!frames) throw new RemoteError('MOUNT_FAILED', name, 'isolate="iframe" precisa de enableIframe(), de vitral/iframe')
-    return frames(target, name, props, options)
+    if (!frames) throw report(new RemoteError('MOUNT_FAILED', name, 'isolate="iframe" precisa de enableIframe(), de vitral/iframe'))
+    return frames(target, name, props, options).catch(fail)
   }
   const { module: mod, ...resolved } = await load(name, options.isolate, options.priority)
-  const untrack = track(name, resolved.entry)
+  const untrack = track(name, resolved)
   const isolate = options.isolate ?? resolved.isolate ?? protocol().settings().isolate
   const label = resolved.name ?? name
 
@@ -87,7 +87,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
     shadowRoot,
     portalContainer: portal,
     reportError(e) {
-      const err = isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e)
+      const err = report(isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e), resolved)
       if (options.onError) options.onError(err)
       else console.error(err)
     },
@@ -106,7 +106,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
     scoped.dispose()
     release()
     el.remove()
-    throw new RemoteError('MOUNT_FAILED', label, 'erro ao montar', e)
+    throw report(new RemoteError('MOUNT_FAILED', label, 'erro ao montar', e), resolved)
   }
   let alive = true
   return {

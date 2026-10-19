@@ -18,6 +18,8 @@ const entries = {
   angular: () => import('../src/angular'),
   testing: () => import('../src/testing'),
   vite: () => import('../src/vite'),
+  sentry: () => import('../src/sentry'),
+  otel: () => import('../src/otel'),
 }
 
 describe('exports públicos', () => {
