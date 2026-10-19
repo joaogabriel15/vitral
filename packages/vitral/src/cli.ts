@@ -1,18 +1,21 @@
 #!/usr/bin/env node
-import { types } from './cli/types'
+import { doctorCli } from './cli/doctor'
+import { flag, types } from './cli/types'
 
 const AJUDA = `Uso: vitral types [remotes.json | nome=url ...] [--base url] [--out arquivo] [--check]
+     vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url]
+                   [--contract faixa] [--max-kb n] [--json]
 
-  Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
-  --check  só confere se o hash de cada manifesto ainda é o registrado;
-           sai com erro se algum mudou (útil no CI).`
+  types   Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
+          --check  só confere se o hash de cada manifesto ainda é o registrado;
+                   sai com erro se algum mudou (útil no CI).
+  doctor  Confere cada remote como o host faria (manifesto, CORS, CSP, mount,
+          integrity, contrato, dedupe, tamanho) e explica o que fazer.
+          Sai com erro se alguma conferência falhar (útil no CI).`
 
-function flag(args: string[], name: string): string | undefined {
-  const i = args.indexOf(name)
-  if (i < 0) return undefined
-  const value = args[i + 1]
-  args.splice(i, 2)
-  return value
+const falhou = (err: Error) => {
+  console.error(err.message)
+  process.exitCode = 1
 }
 
 const [command, ...args] = process.argv.slice(2)
@@ -20,13 +23,9 @@ if (command === 'types') {
   const base = flag(args, '--base')
   const out = flag(args, '--out')
   const check = args.includes('--check')
-  types({ args: args.filter((a) => a !== '--check'), base, out, check }).then(
-    (falhas) => (process.exitCode = falhas ? 1 : 0),
-    (err: Error) => {
-      console.error(err.message)
-      process.exitCode = 1
-    },
-  )
+  types({ args: args.filter((a) => a !== '--check'), base, out, check }).then((falhas) => (process.exitCode = falhas ? 1 : 0), falhou)
+} else if (command === 'doctor') {
+  doctorCli(args).then((code) => (process.exitCode = code), falhou)
 } else {
   console.log(AJUDA)
   process.exitCode = command && command !== '--help' ? 1 : 0

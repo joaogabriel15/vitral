@@ -19,6 +19,15 @@ export interface TypesOptions {
   log?: (msg: string) => void
 }
 
+/** Tira `name valor` de `args` e devolve o valor. */
+export function flag(args: string[], name: string): string | undefined {
+  const i = args.indexOf(name)
+  if (i < 0) return undefined
+  const value = args[i + 1]
+  args.splice(i, 2)
+  return value
+}
+
 const PROPS = /export type Props =\s*([\s\S]*?)\s*$/
 
 /** Lê o `export type Props = …` de um `vitral.d.ts`. */
@@ -82,18 +91,33 @@ async function check(remotes: Record<string, string>, out: string, get: typeof f
   return stale
 }
 
-function readRemotes(cwd: string, args: string[], base?: string): Record<string, string> {
+/** Entrada do `remotes.json` com a URL já absoluta (quando há `base`). */
+export type RemoteJson = { url: string; integrity?: string; contract?: string }
+
+/**
+ * Remotes passados na linha de comando (`nome=url`) ou lidos do
+ * `remotes.json` (o caminho dado, `public/remotes.json` ou `remotes.json`).
+ */
+export function readEntries(cwd: string, args: string[], base?: string): Record<string, RemoteJson> {
   const pairs = args.filter((a) => a.includes('='))
-  if (pairs.length) return Object.fromEntries(pairs.map((p) => [p.slice(0, p.indexOf('=')), p.slice(p.indexOf('=') + 1)]))
+  if (pairs.length) return Object.fromEntries(pairs.map((p) => [p.slice(0, p.indexOf('=')), { url: p.slice(p.indexOf('=') + 1) }]))
   const file = [args[0], 'public/remotes.json', 'remotes.json'].find((f) => f && existsSync(resolve(cwd, f)))
   if (!file) throw new Error('[vitral] remotes.json não encontrado. Passe o caminho ou pares nome=url.')
-  const map = JSON.parse(readFileSync(resolve(cwd, file), 'utf8')) as Record<string, string | { url: string }>
-  return Object.fromEntries(
-    Object.entries(map).map(([name, v]) => {
-      const url = typeof v === 'string' ? v : v.url
-      return [name, base ? new URL(url, base).href : url]
-    }),
-  )
+  return entriesOf(JSON.parse(readFileSync(resolve(cwd, file), 'utf8')), base)
+}
+
+/** Entradas de um mapa `remotes.json` já lido. Valor sem `url` é ignorado. */
+export function entriesOf(map: Record<string, string | RemoteJson>, base?: string): Record<string, RemoteJson> {
+  const out: Record<string, RemoteJson> = {}
+  for (const [name, v] of Object.entries(map)) {
+    const entry = typeof v === 'string' ? { url: v } : v
+    if (typeof entry?.url === 'string') out[name] = { ...entry, url: base ? new URL(entry.url, base).href : entry.url }
+  }
+  return out
+}
+
+function readRemotes(cwd: string, args: string[], base?: string): Record<string, string> {
+  return Object.fromEntries(Object.entries(readEntries(cwd, args, base)).map(([name, e]) => [name, e.url]))
 }
 
 /**
