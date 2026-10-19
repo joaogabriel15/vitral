@@ -167,7 +167,9 @@ O código de host mínimo tem 3,4 kB com brotli. Sem build no host, uma tag de s
 | Frameworks | Combinar dependências em `shared` | Um adaptador por framework | Qualquer, com entrada HTML | Qualquer |
 | Isolamento de CSS | Nenhum | Nenhum | Shadow DOM ou prefixo | Escopo automático ou Shadow DOM |
 | Código de host (brotli) | 19,4 kB | 5,8 kB | 37,9 kB | 3,4 kB |
-| Confere o hash do JS (SRI) | Não | Não | Não | Sim |
+| Confere o hash do JS (SRI) | Não, por padrão | Não, por padrão | Não, por padrão | Sim, quando o manifesto tem hash |
+
+Comparação com a configuração padrão de cada ferramenta. Plugins e configuração extra podem mudar estes valores.
 
 Vindo de uma dessas ferramentas? Veja [Migração](/migracao/module-federation).
 
