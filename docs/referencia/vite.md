@@ -32,6 +32,7 @@ export default { plugins: [react(), vitral({ entry: 'src/remote.tsx', dedupe: ['
 | `dedupe` | nenhum | Veja [Dedupe](/aprender/dedupe) |
 | `types` | `true` | Gera `vitral.d.ts` |
 | `contract` | nenhum | `{ version }`: versão do contrato no `vitral.json`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
+| `versionDir` | `false` | Grava o build em `dist/<versão>/`. Veja [Canary e rollback](/aprender/canary) |
 | `shared` | nenhum | Obsoleta. Use `dedupe` |
 
 ## Saída

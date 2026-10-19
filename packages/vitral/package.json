@@ -223,9 +223,10 @@
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
-        "./capture-*"
+        "./capture-*",
+        "./channel-*"
       ],
-      "limit": "4.6 kB"
+      "limit": "4.65 kB"
     },
     {
       "name": "núcleo",
@@ -237,9 +238,10 @@
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
-        "./capture-*"
+        "./capture-*",
+        "./channel-*"
       ],
-      "limit": "5.73 kB"
+      "limit": "5.78 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -252,6 +254,14 @@
       "limit": "0.67 kB"
     },
     {
+      "name": "canal: canary e rollback (sob demanda)",
+      "path": "dist/channel-*.js",
+      "ignore": [
+        "./chunk-*"
+      ],
+      "limit": "1.02 kB"
+    },
+    {
       "name": "host mínimo + store",
       "path": "dist/index.js",
       "import": "{ configure, createSlot, provide, shared, batch }",
@@ -262,9 +272,10 @@
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
-        "./capture-*"
+        "./capture-*",
+        "./channel-*"
       ],
-      "limit": "5.29 kB"
+      "limit": "5.33 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -277,9 +288,10 @@
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
-        "./capture-*"
+        "./capture-*",
+        "./channel-*"
       ],
-      "limit": "5.51 kB"
+      "limit": "5.57 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -301,7 +313,8 @@
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
-        "./capture-*"
+        "./capture-*",
+        "./channel-*"
       ],
       "limit": "6.2 kB"
     },
@@ -316,9 +329,10 @@
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
-        "./capture-*"
+        "./capture-*",
+        "./channel-*"
       ],
-      "limit": "6.08 kB"
+      "limit": "6.12 kB"
     },
     {
       "name": "element",
@@ -330,9 +344,10 @@
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
-        "./capture-*"
+        "./capture-*",
+        "./channel-*"
       ],
-      "limit": "6.32 kB"
+      "limit": "6.38 kB"
     },
     {
       "name": "devtools",
@@ -343,7 +358,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.07 kB",
+      "limit": "6.12 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -351,20 +366,27 @@
         "./dedupe-*",
         "./contract-*",
         "./expose-*",
-        "./capture-*"
+        "./capture-*",
+        "./channel-*"
       ]
     },
     {
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.67 kB"
+      "limit": "8.81 kB",
+      "ignore": [
+        "./channel-*"
+      ]
     },
     {
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
-      "limit": "6 kB"
+      "limit": "6.04 kB",
+      "ignore": [
+        "./channel-*"
+      ]
     }
   ]
 }
