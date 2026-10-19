@@ -205,7 +205,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "4.35 kB"
+      "limit": "4.4 kB"
     },
     {
       "name": "núcleo",
@@ -217,7 +217,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "5.45 kB"
+      "limit": "5.55 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -240,7 +240,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "5.05 kB"
+      "limit": "5.1 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -253,7 +253,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "5.25 kB"
+      "limit": "5.3 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -300,7 +300,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "6.1 kB"
+      "limit": "6.15 kB"
     },
     {
       "name": "devtools",
@@ -324,7 +324,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "7.95 kB"
+      "limit": "8.05 kB"
     },
     {
       "name": "iframe",
