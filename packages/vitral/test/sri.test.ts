@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SplitBuild } from '../src/core/sri'
 
 // O navegador de verdade é testado no e2e (e2e/sri.spec.ts). Aqui o happy-dom
-// faz o papel do navegador: cada teste decide se o import map é aceito e se o
-// modulepreload confere o hash.
+// faz o papel do navegador: cada teste decide se o import map é aceito (e se
+// o hash dele vale) e se o modulepreload confere o hash.
 
 const CDN = 'https://cdn.empresa.com/carrinho/'
 const sha = (s: string) => 'sha384-' + createHash('sha384').update(s).digest('base64')
@@ -16,13 +16,37 @@ const build: SplitBuild = {
 }
 
 let observer: MutationObserver | null = null
+let blobs: ReturnType<typeof vi.spyOn>
+/** Chamadas a `createObjectURL` do caminho 3, sem as dos módulos de teste. */
+const remoteBlobs = () => blobs.mock.calls.filter(([b]: any) => b.size > 10)
+/** `integrity` do primeiro import map, sem os módulos de teste. */
+const mapped = () => {
+  const all = JSON.parse(document.head.querySelector('script[type="importmap"]')!.textContent!).integrity
+  return Object.fromEntries(Object.entries(all).filter(([, h]) => h !== PROBE_SRI))
+}
 
-/** Simula o navegador: `map` diz se o import map é aceito; `preload` decide o evento de cada modulepreload. */
-function browser({ map, preload }: { map: 'ok' | 'error' | 'csp'; preload?: (href: string, integrity: string) => boolean | null }) {
+/** Hash `sha256` dos módulos de teste do import map (o de `export{}`). */
+const PROBE_SRI = 'sha256-d3bjIZdvLjBurwdLwkSVOnEBPFFly+T1SR9r3VVHBGg='
+const data = (c: string) => `data:text/javascript,${encodeURIComponent(c)}`
+
+/**
+ * Simula o navegador. `map`: `ok` aceita o import map e confere o hash dele,
+ * `silent` aceita sem conferir (ou recusa sem `error`, como o Safari 18.0–18.3),
+ * `error` e `csp` recusam. `preload` decide o evento de cada modulepreload.
+ * Os módulos de teste do import map (`blob:` de 8 e 10 bytes) viram `data:`;
+ * o errado só falha com `ok`. Os outros `blob:` viram `blob` (caminho 3).
+ */
+function browser({ map, preload, blob }: { map: 'ok' | 'silent' | 'error' | 'csp'; preload?: (href: string, integrity: string) => boolean | null; blob?: string }) {
+  const createObjectURL = URL.createObjectURL
+  blobs = vi.spyOn(URL, 'createObjectURL').mockImplementation((b: any) => {
+    if (b.size === 8) return data('export{}')
+    if (b.size === 10) return map === 'ok' ? data('throw new Error("hash")') : data('export{}//')
+    return blob ?? createObjectURL(b)
+  })
   observer = new MutationObserver((records) => {
     for (const r of records) {
       for (const node of r.addedNodes) {
-        if (node instanceof HTMLScriptElement && node.type === 'importmap' && map !== 'ok') {
+        if (node instanceof HTMLScriptElement && node.type === 'importmap' && (map === 'error' || map === 'csp')) {
           node.dispatchEvent(new Event(map === 'error' ? 'error' : 'securitypolicyviolation'))
         }
         if (node instanceof HTMLLinkElement && node.rel === 'modulepreload') {
@@ -66,11 +90,49 @@ describe('caminho 1: import map com integrity', () => {
     browser({ map: 'ok' })
     const verified = await load()
     expect(await verified(build)).toBe(build.entry)
-    const map = document.head.querySelector('script[type="importmap"]')!
-    expect(JSON.parse(map.textContent!)).toEqual({ integrity: build.sri })
+    expect(mapped()).toEqual(build.sri)
     expect(fetch).toHaveBeenCalledWith(CDN + 'split/a.js', { priority: 'auto' })
     // Nunca modulepreload neste caminho: o WebKit ignoraria o hash.
     expect(document.head.querySelector('link[rel="modulepreload"]')).toBeNull()
+  })
+
+  it('o primeiro mapa leva dois módulos de teste com o mesmo hash; os próximos, não', async () => {
+    browser({ map: 'ok' })
+    const verified = await load()
+    await verified(build)
+    await verified(build)
+    const [first, second] = [...document.head.querySelectorAll('script[type="importmap"]')].map((s) => JSON.parse(s.textContent!).integrity)
+    expect(first).toEqual({ ...build.sri, [data('export{}')]: PROBE_SRI, [data('throw new Error("hash")')]: PROBE_SRI })
+    expect(second).toEqual(build.sri)
+  })
+
+  it('CSS fica fora do mapa (não passa por import map)', async () => {
+    browser({ map: 'ok' })
+    const css = CDN + 'remote.css'
+    await (await load())({ ...build, sri: { ...build.sri, [css]: sha('css'), [css + '?v=1']: sha('css') } })
+    expect(mapped()).toEqual(build.sri)
+  })
+
+  it('mapa aceito sem conferir o hash (ou recusado em silêncio) cai para o caminho 2', async () => {
+    browser({ map: 'silent', preload: checks })
+    const verified = await load()
+    expect(await verified(build)).toBe(build.entry)
+    expect(document.head.querySelector(`link[rel="modulepreload"][href="${build.entry}"]`)).not.toBeNull()
+    // E não tenta de novo nos próximos remotes.
+    await verified(build)
+    expect(document.head.querySelectorAll('script[type="importmap"]')).toHaveLength(1)
+  })
+
+  it('mapa aceito sem conferir, sem caminho 2: fica com o caminho 3', async () => {
+    browser({ map: 'silent', preload: ignores })
+    expect(await (await load())(build)).toBeUndefined()
+  })
+
+  it('navegador sem import map nem tenta o mapa', async () => {
+    browser({ map: 'ok', preload: checks })
+    vi.spyOn(HTMLScriptElement, 'supports').mockReturnValue(false)
+    expect(await (await load())(build)).toBe(build.entry)
+    expect(document.head.querySelector('script[type="importmap"]')).toBeNull()
   })
 
   it('copia o nonce da página, para passar pela CSP', async () => {
@@ -172,7 +234,6 @@ describe('hashes fora do formato estrito', () => {
 
 describe('loader com os três caminhos', () => {
   const code = 'export default { mount() { return { unmount() {} } } }'
-  const data = (c: string) => `data:text/javascript,${encodeURIComponent(c)}`
 
   async function lib() {
     const index = await import('../src/index')
@@ -181,7 +242,7 @@ describe('loader com os três caminhos', () => {
   }
   const fetchManifest = (m: object) =>
     vi.stubGlobal('fetch', vi.fn(async (url: string) => (url.endsWith('.json') ? new Response(JSON.stringify(m)) : new Response(code))))
-  const maps = () => [...document.head.querySelectorAll('script[type="importmap"]')].map((s) => JSON.parse(s.textContent!).integrity)
+  const maps = () => (document.head.querySelector('script[type="importmap"]') ? [mapped()] : [])
 
   afterEach(async () => (await import('../src/index')).__reset())
 
@@ -189,19 +250,17 @@ describe('loader com os três caminhos', () => {
     browser({ map: 'ok' })
     const entry = data(code)
     fetchManifest({ entry: 'remote.js', integrity: sha(code), files: { [entry]: sha(code), 'remote.css': sha('css') }, split: { entry } })
-    const createObjectURL = vi.spyOn(URL, 'createObjectURL')
     const { register, loadRemote } = await lib()
     register('x', CDN + 'vitral.json')
     expect(typeof (await loadRemote('x')).mount).toBe('function')
-    expect(maps()).toEqual([{ [entry]: sha(code), [CDN + 'remote.css']: sha('css') }])
-    expect(createObjectURL).not.toHaveBeenCalled()
+    expect(maps()).toEqual([{ [entry]: sha(code) }])
+    expect(remoteBlobs()).toEqual([])
   })
 
   it('integrity fixada pelo host: ignora o build dividido do manifesto', async () => {
-    browser({ map: 'ok' })
+    browser({ map: 'ok', blob: data(code) })
     const split = data('throw 1')
     fetchManifest({ entry: 'remote.js', integrity: sha('outro'), files: { [split]: sha('throw 1') }, split: { entry: split } })
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue(data(code))
     const { register, loadRemote } = await lib()
     register('x', { url: CDN + 'vitral.json', integrity: sha(code) })
     expect(typeof (await loadRemote('x')).mount).toBe('function')
@@ -209,24 +268,22 @@ describe('loader com os três caminhos', () => {
   })
 
   it('falha no caminho 1 cai para o blob:, e o remote nunca mais volta ao caminho 1', async () => {
-    browser({ map: 'ok' })
+    browser({ map: 'ok', blob: data(code) })
     fetchManifest({ entry: 'remote.js', integrity: sha(code) })
     // O Node não importa https:, então o caminho 1 falha como uma falha de rede.
-    const createObjectURL = vi.spyOn(URL, 'createObjectURL').mockReturnValue(data(code))
     const { register, loadRemote } = await lib()
     register('x', CDN + 'vitral.json')
     expect(typeof (await loadRemote('x')).mount).toBe('function')
     register('x', CDN + 'vitral.json')
     await loadRemote('x')
-    expect(maps()).toHaveLength(1)
-    expect(createObjectURL).toHaveBeenCalledTimes(2)
+    expect(document.head.querySelectorAll('script[type="importmap"]')).toHaveLength(1)
+    expect(remoteBlobs()).toHaveLength(2)
   })
 
   it('manifesto embutido no registro: nenhuma requisição para o vitral.json', async () => {
-    browser({ map: 'ok' })
+    browser({ map: 'ok', blob: data(code) })
     const fetch = vi.fn(async () => new Response(code))
     vi.stubGlobal('fetch', fetch)
-    vi.spyOn(URL, 'createObjectURL').mockReturnValue(data(code))
     const { register, loadRemote } = await lib()
     register('x', { url: CDN + 'vitral.json', manifest: { name: 'x', entry: 'remote.js', integrity: sha(code) } })
     await loadRemote('x')
@@ -282,8 +339,13 @@ describe('CSS com SRI', () => {
     prefetchCss({ css: [css], sri }, false)
     expect(document.head.querySelector<HTMLLinkElement>(`link[rel="preload"][href="${css}"]`)!.integrity).toBe(sha('css'))
 
-    const el = document.body.appendChild(document.createElement('div'))
-    await injectStyles({ css: [css], sri }, el.attachShadow({ mode: 'open' }), el, { mirrorTheme: false })
+    const host = document.body.appendChild(document.createElement('div'))
+    const make = () => {
+      const el = document.createElement('div')
+      el.setAttribute('data-vitral-root', 'sri-css')
+      return el
+    }
+    await injectStyles({ css: [css], sri }, host, make, { mirrorTheme: false })
     expect(fetch).toHaveBeenCalledWith(css, expect.objectContaining({ integrity: sha('css') }))
 
     const done = injectCss([css], null, sri)
@@ -316,7 +378,7 @@ describe('dedupe: cópia própria do remote', () => {
     expect(await verified(withOwn, run)).toBe(build.entry)
     expect(run).toHaveBeenCalledWith(own)
     // O mapa já tem o hash da cópia própria antes do import().
-    expect(JSON.parse(document.head.querySelector('script[type="importmap"]')!.textContent!).integrity[own]).toBe(sha('react'))
+    expect(mapped()[own]).toBe(sha('react'))
     expect(await p.dedupe('react', '^19.1.0')).toEqual({ react: 'próprio' })
   })
 

@@ -2,6 +2,15 @@
 
 O single-spa e o vitral usam o mesmo modelo: o remote exporta funções de ciclo de vida e o host monta. A diferença está em quem escolhe o remote: no single-spa é a root config, por rota; no vitral é o componente do host.
 
+## Com o comando
+
+```bash
+npx vitral migrate --dry-run
+npx vitral migrate
+```
+
+O comando acha o arquivo que exporta os lifecycles e gera `src/vitral-remote.js`, `vite.vitral.config.mjs` e o script `build:vitral`. Com `singleSpaReact` só com `rootComponent`, o remote usa `reactRemote(Root)`. Nos outros casos, usa [`singleSpaRemote`](/referencia/single-spa), que chama os lifecycles do app sem mudá-lo. O build atual continua igual, para os hosts single-spa. Veja o que o comando não converte em [CLI](/referencia/cli#o-que-nao-migra).
+
 ## Equivalências
 
 | single-spa | vitral |

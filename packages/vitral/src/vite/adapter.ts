@@ -54,10 +54,14 @@ import { component } from 'vitral'
 function wrap(c) {
   if (typeof c === 'function' && typeof HTMLElement !== 'undefined' && c.prototype instanceof HTMLElement) {
     const base = ${JSON.stringify(`${scope}-remote`.toLowerCase().replace(/^[^a-z]+/, 'x-'))}
-    let tag = customElements.getName?.(c) || base
-    // Uma tag não aceita outra classe: no HMR, a classe nova ganha tag nova.
-    for (let n = 2; customElements.get(tag) && customElements.get(tag) !== c; n++) tag = base + '-' + n
-    return elementRemote(tag, () => customElements.get(tag) || customElements.define(tag, c))
+    // No registro do remote (ctx.customElements). Uma tag não aceita outra
+    // classe: no HMR, a classe nova ganha tag nova.
+    return elementRemote(base, (r) => {
+      let tag = r.getName?.(c) || base
+      for (let n = 2; r.get(tag) && r.get(tag) !== c; n++) tag = base + '-' + n
+      r.get(tag) || r.define(tag, c)
+      return tag
+    })
   }
   if (typeof c === 'function') return component(c)
   throw new Error('[vitral] o export default não é um remote: exporte um componente, uma função ou um objeto com mount()')

@@ -38,6 +38,17 @@ export interface RemoteContext {
    * Hosts antigos não mandam este campo.
    */
   portalContainer?: HTMLElement
+  /**
+   * Registro de custom elements do remote. No Shadow DOM, onde o navegador
+   * tem Scoped Custom Element Registries (Chrome 146+, Safari 26+), é um
+   * registro só deste remote, usado pelo shadow root e pelo elemento `el`:
+   * dois remotes podem definir `<ds-button>` de versões diferentes. Sem
+   * suporte, e fora do Shadow DOM, é o `customElements` global. No Shadow
+   * DOM, `define` de uma tag já definida não lança: fica a definição que já
+   * existe, com um aviso em dev quando ela veio de outro remote. Hosts
+   * antigos não mandam este campo: use `ctx.customElements ?? customElements`.
+   */
+  customElements?: CustomElementRegistry
   /** Avisa o host de um erro em tempo de execução (os adaptadores já chamam). */
   reportError(error: unknown): void
   /** Navega a página inteira (host e todos os roteadores) para `url`. */
@@ -61,6 +72,22 @@ export interface RemoteContext {
    * (`provide`, `shared` ou um hook); senão, importe `shared` de 'vitral'.
    */
   shared?: SharedApi
+  /**
+   * Só quando o remote roda como MCP App (`vitral({ target: 'mcp-app' })`):
+   * fala JSON-RPC direto com o host MCP, para o que `events` não cobre
+   * (`tools/call`, `resources/read`, `ui/request-display-mode`…).
+   */
+  mcp?: McpAppBridge
+}
+
+/** `ctx.mcp` de um remote empacotado como MCP App. */
+export interface McpAppBridge {
+  /** Pedido ao host; resolve com `result` ou rejeita com `error.message`. */
+  request<T = unknown>(method: string, params?: Record<string, unknown>): Promise<T>
+  /** Notificação ao host (sem resposta). */
+  notify(method: string, params?: Record<string, unknown>): void
+  /** O `hostContext` atual (tema, idioma, tamanho do container…), já com as mudanças. */
+  hostContext(): Record<string, unknown> | undefined
 }
 
 export interface MountedRemote<P extends Props = Props> {
@@ -87,7 +114,7 @@ export interface RemoteEntry {
   /** Isolamento padrão para este remote. */
   isolate?: Isolation
   /**
-   * O `vitral.json` já baixado (ex.: por `vitral registry`), para não buscá-lo
+   * O `vitral.json` já baixado (ex.: no build do host), para não buscá-lo
    * na hora. Os caminhos dele são relativos a `url`, e os hashes ficam fixos
    * no host.
    */
@@ -170,6 +197,16 @@ export interface StyleOptions {
   mirrorTheme?: boolean
 }
 
+/** Opções de `configure({ devOverrides })`. */
+export interface DevOverrides {
+  /**
+   * Modelo da URL de um apelido: `?vitral=checkout@pr-123` com
+   * `'https://{name}-{ref}.preview.empresa.com'` vira
+   * `https://checkout-pr-123.preview.empresa.com/vitral.json`.
+   */
+  preview?: string
+}
+
 export interface VitralConfig {
   /** Mapa nome → URL (ou entrada completa), ou a URL de um JSON com esse mapa. */
   remotes?: Record<string, string | RemoteEntry> | string
@@ -188,9 +225,10 @@ export interface VitralConfig {
    * Liga os overrides de desenvolvimento (`?vitral=nome@url` e
    * `localStorage['vitral:overrides']`) fora de localhost. Em localhost já
    * valem. Nunca ligue em produção: um link com `?vitral=` executaria código
-   * de qualquer origem.
+   * de qualquer origem. O objeto também liga e aceita `preview`, o modelo de
+   * URL dos apelidos (`?vitral=checkout@pr-123`).
    */
-  devOverrides?: boolean
+  devOverrides?: boolean | DevOverrides
   /** Estilos do host no Shadow DOM: `{ inherit: ['/assets/base.css'] }`. */
   styles?: StyleOptions
   /** Recebe o tempo de cada etapa do carregamento (para RUM). */
@@ -287,6 +325,11 @@ export interface RemoteManifest {
    * antigos), o runtime faz esse trabalho em cada página.
    */
   shadow?: ShadowCss
+  /**
+   * SBOM CycloneDX do remote (opção `sbom` do plugin): o arquivo, relativo
+   * ao manifesto, e o hash dele. O runtime não usa; é para auditoria.
+   */
+  sbom?: { file: string; integrity: string }
 }
 
 /** Contrato do remote no `vitral.json`. */

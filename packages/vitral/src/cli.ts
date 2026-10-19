@@ -1,51 +1,114 @@
 #!/usr/bin/env node
+import { createRequire } from 'node:module'
 import { canal } from './cli/canal'
-import { types } from './cli/types'
+import { serveMcp } from './cli/mcp'
+import { add, registry } from './cli/registry'
+import { doctorCli } from './cli/doctor'
+import { migrate, type MigrateSource } from './cli/migrate'
+import { flag, types } from './cli/types'
 
-const AJUDA = `Uso: vitral types [remotes.json | nome=url ...] [--base url] [--out arquivo] [--check]
+const AJUDA = `Uso:
+  vitral types [remotes.json | nome=url ...] [--base url] [--out arquivo] [--check]
+  vitral registry [remotes.json | nome=url ...] [--base url] [--out arquivo] [--name nome]
+  vitral add <remote ...> [--registry url|arquivo] [--to remotes.json] [--base url] [--out arquivo] [--force] [--no-types]
+  vitral mcp [--registry url|arquivo]
+  vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url]
+                [--contract faixa] [--max-kb n] [--json]
+  vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
+  vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
 
-  Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
-  --check  só confere se o hash de cada manifesto ainda é o registrado;
-           sai com erro se algum mudou (útil no CI).
+  types     Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
+            --check só confere se o hash de cada manifesto ainda é o
+            registrado; sai com erro se algum mudou (útil no CI).
+  registry  Gera vitral-registry.json a partir dos manifestos.
+  add       Copia remotes do registro para o remotes.json e roda types.
+            Registro padrão: VITRAL_REGISTRY ou vitral-registry.json.
+  mcp       Servidor MCP por stdio para agentes (list_remotes, get_remote,
+            add_remote).
+  doctor    Confere cada remote como o host faria (manifesto, CORS, CSP, mount,
+            integrity, contrato, dedupe, tamanho) e explica o que fazer.
+            Sai com erro se alguma conferência falhar (útil no CI).
+  migrate   Converte um app do single-spa ou um remote do Module Federation num
+            remote vitral. Mostra o diff de cada arquivo.
+            --dry-run só mostra o que mudaria, sem escrever.
+  canal     Cria ou edita o canal de um remote (canary e rollback) e mostra
+            como ficou. --stable é obrigatória ao criar; --canary off tira a
+            canary; --percent vai de 0 a 100.`
 
-Uso: vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
-
-  Cria ou edita o canal de um remote (canary e rollback) e mostra como ficou.
-  --stable   versão de quem não está na canary (obrigatória ao criar)
-  --canary   versão nova para parte dos usuários; off tira a canary
-  --percent  parte dos usuários na canary, de 0 a 100`
-
-const fail = (err: Error) => {
+const falhou = (err: Error) => {
   console.error(err.message)
   process.exitCode = 1
 }
 
-function flag(args: string[], name: string): string | undefined {
+function bool(args: string[], name: string): boolean {
   const i = args.indexOf(name)
-  if (i < 0) return undefined
-  const value = args[i + 1]
-  args.splice(i, 2)
-  return value
+  if (i >= 0) args.splice(i, 1)
+  return i >= 0
 }
+
+function version(): string {
+  try {
+    return (createRequire(import.meta.url)('../package.json') as { version: string }).version
+  } catch {
+    return '0.0.0'
+  }
+}
+
+const finish = (run: Promise<number>) =>
+  run.then(
+    (falhas) => (process.exitCode = falhas ? 1 : 0),
+    (err: Error) => {
+      console.error(err.message)
+      process.exitCode = 1
+    },
+  )
 
 const [command, ...args] = process.argv.slice(2)
 if (command === 'types') {
   const base = flag(args, '--base')
   const out = flag(args, '--out')
-  const check = args.includes('--check')
-  types({ args: args.filter((a) => a !== '--check'), base, out, check }).then(
-    (falhas) => (process.exitCode = falhas ? 1 : 0),
-    fail,
-  )
+  const check = bool(args, '--check')
+  finish(types({ args, base, out, check }))
+} else if (command === 'registry') {
+  const base = flag(args, '--base')
+  const out = flag(args, '--out')
+  const name = flag(args, '--name')
+  finish(registry({ args, base, out, name }))
+} else if (command === 'add') {
+  const reg = flag(args, '--registry')
+  const to = flag(args, '--to')
+  const base = flag(args, '--base')
+  const out = flag(args, '--out')
+  const force = bool(args, '--force')
+  const noTypes = bool(args, '--no-types')
+  finish(add({ names: args, registry: reg, to, base, out, force, types: !noTypes }))
+} else if (command === 'mcp') {
+  // stdout é do protocolo: nada de console.log aqui.
+  serveMcp(process.stdin, process.stdout, { registry: flag(args, '--registry'), version: version() })
+} else if (command === 'doctor') {
+  doctorCli(args).then((code) => (process.exitCode = code), falhou)
+} else if (command === 'migrate') {
+  const from = flag(args, '--from')
+  if (from && from !== 'single-spa' && from !== 'module-federation') {
+    console.error(`[vitral] --from inválido: ${from}. Use single-spa ou module-federation.`)
+    process.exitCode = 1
+  } else {
+    try {
+      const plan = migrate({ cwd: args.find((a) => !a.startsWith('--')), from: from as MigrateSource | undefined, dryRun: args.includes('--dry-run') })
+      process.exitCode = plan.from ? 0 : 1
+    } catch (err) {
+      console.error((err as Error).message)
+      process.exitCode = 1
+    }
+  }
 } else if (command === 'canal' && args.length) {
   const stable = flag(args, '--stable')
   const canary = flag(args, '--canary')
   const percent = flag(args, '--percent')
   try {
-    if (!args[0]) throw new Error(AJUDA)
     canal({ file: args[0], stable, canary, percent: percent === undefined ? undefined : Number(percent) })
   } catch (err) {
-    fail(err as Error)
+    falhou(err as Error)
   }
 } else {
   console.log(AJUDA)
