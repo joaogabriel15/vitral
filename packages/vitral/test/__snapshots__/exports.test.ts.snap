@@ -82,6 +82,7 @@ exports[`exports públicos > index 1`] = `
 exports[`exports públicos > otel 1`] = `
 [
   "otelOnError",
+  "otelVitals",
 ]
 `;
 
@@ -153,6 +154,14 @@ exports[`exports públicos > testing 1`] = `
   "failingRemote",
   "mockRemote",
   "resetVitral",
+]
+`;
+
+exports[`exports públicos > vitals 1`] = `
+[
+  "owner",
+  "rating",
+  "vitals",
 ]
 `;
 
