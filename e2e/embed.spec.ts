@@ -74,7 +74,10 @@ async function open(page: Page, csp = CSP.nonce) {
   const erros: string[] = []
   const csps: string[] = []
   page.on('pageerror', (e) => erros.push(e.message))
-  page.on('console', (m) => m.type() === 'error' && (m.text().startsWith('CSP:') ? csps : erros).push(m.text()))
+  // A sonda do SRI (`core/sri.ts`) importa de propósito um `blob:` com hash
+  // errado para ver se o import map confere hashes; o Chromium registra a recusa.
+  const sonda = (t: string) => /integrity/.test(t) && /'blob:/.test(t)
+  page.on('console', (m) => m.type() === 'error' && !sonda(m.text()) && (m.text().startsWith('CSP:') ? csps : erros).push(m.text()))
   await page.addInitScript(() => document.addEventListener('securitypolicyviolation', (e) => console.error(`CSP: ${e.violatedDirective} ${e.blockedURI}`)))
   await page.goto(`${SITE}/`)
   return { erros, csps, requests, cli: cdn.cli }
