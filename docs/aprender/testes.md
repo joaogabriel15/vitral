@@ -52,3 +52,5 @@ test('mostra o nome', async () => {
   montado.unmount()
 })
 ```
+
+Para montar o remote sem host, com `ctx` simulado, use `harness`. Para o host gravar o que espera do remote e o remote conferir no CI, veja [Contratos entre host e remote](/aprender/contratos).

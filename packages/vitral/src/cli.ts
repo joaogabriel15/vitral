@@ -5,6 +5,7 @@ import { serveMcp } from './cli/mcp'
 import { add, registry } from './cli/registry'
 import { doctorCli } from './cli/doctor'
 import { migrate, type MigrateSource } from './cli/migrate'
+import { test } from './cli/test'
 import { flag, types } from './cli/types'
 
 const AJUDA = `Uso:
@@ -16,6 +17,8 @@ const AJUDA = `Uso:
                 [--contract faixa] [--max-kb n] [--json]
   vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
   vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
+  vitral test [--contract arquivo|pasta ...] [--since url|arquivo] [--dir dist] [--entry arquivo]
+              [--types vitral.d.ts]
 
   types     Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
             --check só confere se o hash de cada manifesto ainda é o
@@ -33,7 +36,13 @@ const AJUDA = `Uso:
             --dry-run só mostra o que mudaria, sem escrever.
   canal     Cria ou edita o canal de um remote (canary e rollback) e mostra
             como ficou. --stable é obrigatória ao criar; --canary off tira a
-            canary; --percent vai de 0 a 100.`
+            canary; --percent vai de 0 a 100.
+  test      No CI do remote. --contract monta o build em happy-dom com cada
+            caso gravado pelo host (record() de vitral/testing) e falha se o
+            mount quebrar, se um evento que o host escuta sumir ou se as props
+            gravadas não baterem com o Props local. --since compara o Props
+            do vitral.d.ts publicado com o local e falha nas mudanças que
+            quebram o host.`
 
 const falhou = (err: Error) => {
   console.error(err.message)
@@ -110,6 +119,10 @@ if (command === 'types') {
   } catch (err) {
     falhou(err as Error)
   }
+} else if (command === 'test') {
+  const contracts: string[] = []
+  for (let c = flag(args, '--contract'); c !== undefined; c = flag(args, '--contract')) contracts.push(c)
+  finish(test({ contracts, since: flag(args, '--since'), dir: flag(args, '--dir'), entry: flag(args, '--entry'), types: flag(args, '--types') }))
 } else {
   console.log(AJUDA)
   process.exitCode = command && command !== '--help' ? 1 : 0

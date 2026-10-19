@@ -35,6 +35,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Carregamento', link: '/aprender/carregamento' },
       { text: 'Erros', link: '/aprender/erros' },
       { text: 'Testes', link: '/aprender/testes' },
+      { text: 'Contratos entre host e remote', link: '/aprender/contratos' },
       { text: 'Deploy', link: '/aprender/deploy' },
       { text: 'Vários repositórios', link: '/aprender/varios-repositorios' },
       { text: 'Registro e agentes', link: '/aprender/registro' },
