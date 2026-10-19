@@ -54,7 +54,7 @@ export function readHashes(env: string): Record<string, string> {
 }
 
 /** `integrity` do manifesto do remote, ou `undefined` sem manifesto/hash (ex.: `vite dev`). */
-async function manifestHash(get: typeof fetch, url: string): Promise<string | undefined> {
+export async function manifestHash(get: typeof fetch, url: string): Promise<string | undefined> {
   try {
     const res = await get(url)
     if (!res.ok) return undefined
@@ -116,7 +116,8 @@ export function entriesOf(map: Record<string, string | RemoteJson>, base?: strin
   return out
 }
 
-function readRemotes(cwd: string, args: string[], base?: string): Record<string, string> {
+/** Remotes do `remotes.json` (ou dos pares `nome=url`): `{ nome: url }`. */
+export function readRemotes(cwd: string, args: string[], base?: string): Record<string, string> {
   return Object.fromEntries(Object.entries(readEntries(cwd, args, base)).map(([name, e]) => [name, e.url]))
 }
 
