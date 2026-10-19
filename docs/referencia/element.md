@@ -58,16 +58,18 @@ Registra o elemento. Padrão `'vitral-remote'`. Pode ser chamado mais de uma vez
 ## elementRemote
 
 ```ts
-elementRemote<P>(tag: string, setup?: () => void): RemoteModule<P>
+elementRemote<P>(tag: string, setup?: (registry: CustomElementRegistry) => string | void): RemoteModule<P>
 ```
 
 ```js
-export default elementRemote('meu-carrinho', () => {
-  if (!customElements.get('meu-carrinho')) customElements.define('meu-carrinho', Carrinho)
+export default elementRemote('meu-carrinho', (registry) => {
+  if (!registry.get('meu-carrinho')) registry.define('meu-carrinho', Carrinho)
 })
 ```
 
 Publica um Web Component como remote. As props viram propriedades do elemento. O `ctx` fica em `element.vitral`.
+
+`setup` roda em cada montagem e recebe o registro do remote ([`ctx.customElements`](/aprender/estilos#custom-elements-de-cada-remote), ou o global em hosts antigos). O elemento é criado com esse registro. Se `setup` devolver uma string, ela é a tag do elemento no lugar de `tag`.
 
 ## SharedController
 

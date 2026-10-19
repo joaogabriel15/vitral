@@ -52,11 +52,13 @@ O mesmo objeto recebido.
 | `shared` | O mesmo [`shared`](./shared). Assinaturas canceladas no unmount |
 | `shadowRoot` | Shadow root com `isolate: 'shadow'`, senão `null` |
 | `portalContainer` | Destino de [portais](/aprender/estilos#portais-radix-headless-ui-mui). No Shadow DOM, um elemento dentro do shadow root; senão, `document.body` |
+| `customElements` | Registro de custom elements do remote. No Shadow DOM, com suporte do navegador, um registro só dele. Veja [Custom elements de cada remote](/aprender/estilos#custom-elements-de-cada-remote) |
 | `navigate(url, { replace? })` | Igual a [`navigate`](./navigate) |
 | `reportError(erro)` | Mostra o erro no host |
 | `onActivate(fn)`, `onDeactivate(fn)` | Com keep-alive: volta e saída da página |
+| `mcp` | Só no [MCP App](/aprender/mcp-app): `request`, `notify` e `hostContext()` do host MCP |
 
 ## Observações
 
 - Sem `update`, o host remonta a cada mudança de props.
-- `onActivate`, `onDeactivate` e `shared` podem faltar em hosts antigos. Use `ctx.onActivate?.(fn)`.
+- `onActivate`, `onDeactivate`, `shared` e `customElements` podem faltar em hosts antigos. Use `ctx.onActivate?.(fn)` e `ctx.customElements ?? customElements`.

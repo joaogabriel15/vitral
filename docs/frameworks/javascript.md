@@ -154,6 +154,7 @@ Todo remote recebe o mesmo `ctx`:
 | `shared` | Contexto compartilhado. Veja [Contexto](/aprender/contexto) |
 | `shadowRoot` | O shadow root, com `isolate="shadow"`. Senão `null` |
 | `portalContainer` | Onde renderizar popovers e dialogs. Veja [Portais](/aprender/estilos#portais-radix-headless-ui-mui) |
+| `customElements` | Registro de custom elements do remote. Veja [Custom elements de cada remote](/aprender/estilos#custom-elements-de-cada-remote) |
 | `navigate(url, { replace? })` | Navega a página e avisa todos os roteadores |
 | `reportError(erro)` | Mostra o erro no host |
 | `onActivate(fn)`, `onDeactivate(fn)` | Com keep-alive. Veja [Carregamento](/aprender/carregamento#keep-alive) |

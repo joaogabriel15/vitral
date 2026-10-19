@@ -26,8 +26,8 @@ export interface Settings {
   captureGlobalErrors?: boolean
   /** Origens de URLs escritas no código do host (`src`). Valem mesmo com `allowedOrigins`. */
   trusted?: string[]
-  /** Liga os overrides de desenvolvimento fora de localhost. */
-  devOverrides?: boolean
+  /** Liga os overrides de desenvolvimento fora de localhost (objeto: com o modelo `preview`). */
+  devOverrides?: boolean | { preview?: string }
   styles?: StyleOptions
   /** Faixa do contrato aceita dos remotes (`configure({ contract })`). */
   contract?: string

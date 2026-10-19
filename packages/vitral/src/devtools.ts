@@ -1,27 +1,32 @@
 /**
  * Painel de desenvolvimento: troca a URL de um remote por um `vite dev`
- * local sem mexer no código do host.
+ * local (ou pelo preview de um PR) sem mexer no código do host.
  *
  *   import { devtools } from 'vitral/devtools'
  *   if (import.meta.env.DEV) devtools()
  *
- * Os overrides ficam em `localStorage['vitral:overrides']` e só valem com
- * `configure({ devOverrides: true })` ou com a página em localhost.
+ * O painel lista os overrides ativos: os de `?vitral=` desta aba e os
+ * salvos em `localStorage['vitral:overrides']`. Só valem com
+ * `configure({ devOverrides })` ou com a página em localhost.
  */
-import { manifestUrl, OVERRIDES_KEY, overridesEnabled, storedOverrides } from './core/overrides'
+import { activeOverrides, clearOverrides, dropOverride, overridesEnabled, storedOverrides, storeOverride } from './core/overrides'
+
+export type { ActiveOverride } from './core/overrides'
+export { activeOverrides, clearOverrides }
 
 /** Overrides salvos neste navegador: `{ nome: url }`. */
 export function getOverrides(): Record<string, string> {
   return storedOverrides()
 }
 
-/** Salva (ou remove, com `null`) o override de um remote. Vale a partir do próximo carregamento. */
+/**
+ * Salva no navegador o override de um remote: URL ou apelido (`pr-123`).
+ * `null` remove o override (da aba e do navegador). Vale a partir do próximo
+ * carregamento.
+ */
 export function setOverride(name: string, url: string | null): void {
-  const all = storedOverrides()
-  if (url) all[name] = manifestUrl(url)
-  else delete all[name]
-  if (Object.keys(all).length) localStorage.setItem(OVERRIDES_KEY, JSON.stringify(all))
-  else localStorage.removeItem(OVERRIDES_KEY)
+  if (url) storeOverride(name, url)
+  else dropOverride(name)
 }
 
 export interface DevtoolsOptions {
@@ -39,6 +44,8 @@ li { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; word-brea
 form { display: grid; gap: 4px }
 input { font: inherit; padding: 3px 6px }
 .aviso { color: #a40000; margin: 0 0 8px }
+.ativo { background: #fde68a; border-color: #b45309 }
+.limpar { margin-top: 8px }
 `
 
 /** Mostra o painel no canto da página. Devolve uma função que o remove. */
@@ -58,10 +65,18 @@ export function devtools(options: DevtoolsOptions = {}): () => void {
   toggle.onclick = () => (panel.hidden = !panel.hidden)
   root.append(style, panel, toggle)
 
-  const changed = () => (options.reload === false ? draw() : location.reload())
+  const changed = () => {
+    // Os de `?vitral=` já estão na aba; sem o parâmetro, a remoção não volta no reload.
+    const q = new URLSearchParams(location.search)
+    if (q.has('vitral')) q.delete('vitral'), history.replaceState(history.state, '', `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`)
+    options.reload === false ? draw() : location.reload()
+  }
 
   function draw() {
     panel.replaceChildren()
+    const active = activeOverrides()
+    toggle.textContent = active.length ? `vitral (${active.length})` : 'vitral'
+    toggle.classList.toggle('ativo', active.length > 0)
     if (!overridesEnabled()) {
       const p = document.createElement('p')
       p.className = 'aviso'
@@ -69,19 +84,19 @@ export function devtools(options: DevtoolsOptions = {}): () => void {
       panel.append(p)
     }
     const list = document.createElement('ul')
-    for (const [name, url] of Object.entries(storedOverrides())) {
+    for (const { name, value, url, source } of active) {
       const item = document.createElement('li')
       const remove = document.createElement('button')
       remove.type = 'button'
       remove.textContent = 'remover'
       remove.setAttribute('aria-label', `remover override de ${name}`)
       remove.onclick = () => (setOverride(name, null), changed())
-      item.append(`${name} → ${url}`, remove)
+      item.append(`${name} → ${url ?? `${value} (sem devOverrides.preview)`} [${source}]`, remove)
       list.append(item)
     }
     const form = document.createElement('form')
     const name = Object.assign(document.createElement('input'), { placeholder: 'nome (ex.: carrinho)', required: true, name: 'name' })
-    const url = Object.assign(document.createElement('input'), { placeholder: 'http://localhost:5174', required: true, name: 'url' })
+    const url = Object.assign(document.createElement('input'), { placeholder: 'http://localhost:5174 ou pr-123', required: true, name: 'url' })
     const save = Object.assign(document.createElement('button'), { type: 'submit', textContent: 'Salvar' })
     form.append(name, url, save)
     form.onsubmit = (e) => {
@@ -90,6 +105,11 @@ export function devtools(options: DevtoolsOptions = {}): () => void {
       changed()
     }
     panel.append(list, form)
+    if (active.length) {
+      const clear = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Limpar todos', className: 'limpar' })
+      clear.onclick = () => (clearOverrides(), changed())
+      panel.append(clear)
+    }
   }
 
   draw()
