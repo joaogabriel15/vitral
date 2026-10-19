@@ -127,6 +127,10 @@
     "./federation": {
       "types": "./dist/federation.d.ts",
       "import": "./dist/federation.js"
+    },
+    "./dict": {
+      "types": "./dist/dict.d.ts",
+      "import": "./dist/dict.js"
     }
   },
   "publishConfig": {
@@ -423,6 +427,12 @@
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
       "limit": "11.95 kB"
+    },
+    {
+      "name": "dict (middleware de servidor)",
+      "path": "dist/dict.js",
+      "import": "{ createDict }",
+      "limit": "1 kB"
     }
   ]
 }

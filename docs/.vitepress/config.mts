@@ -53,6 +53,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Dedupe de dependências', link: '/aprender/dedupe' },
       { text: 'Atualização sem reload', link: '/aprender/atualizacoes' },
       { text: 'Canary e rollback', link: '/aprender/canary' },
+      { text: 'Dicionários de compressão', link: '/aprender/dicionarios' },
       { text: 'SSR', link: '/aprender/ssr' },
       { text: 'Desenvolvimento e HMR', link: '/aprender/desenvolvimento' },
     ],
