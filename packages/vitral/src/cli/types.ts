@@ -45,7 +45,7 @@ export function readHashes(env: string): Record<string, string> {
 }
 
 /** `integrity` do manifesto do remote, ou `undefined` sem manifesto/hash (ex.: `vite dev`). */
-async function manifestHash(get: typeof fetch, url: string): Promise<string | undefined> {
+export async function manifestHash(get: typeof fetch, url: string): Promise<string | undefined> {
   try {
     const res = await get(url)
     if (!res.ok) return undefined
@@ -82,7 +82,8 @@ async function check(remotes: Record<string, string>, out: string, get: typeof f
   return stale
 }
 
-function readRemotes(cwd: string, args: string[], base?: string): Record<string, string> {
+/** Remotes do `remotes.json` (ou dos pares `nome=url`): `{ nome: url }`. */
+export function readRemotes(cwd: string, args: string[], base?: string): Record<string, string> {
   const pairs = args.filter((a) => a.includes('='))
   if (pairs.length) return Object.fromEntries(pairs.map((p) => [p.slice(0, p.indexOf('=')), p.slice(p.indexOf('=') + 1)]))
   const file = [args[0], 'public/remotes.json', 'remotes.json'].find((f) => f && existsSync(resolve(cwd, f)))
