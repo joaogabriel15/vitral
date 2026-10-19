@@ -9,6 +9,7 @@ export type RemoteErrorCode =
   | 'MOUNT_FAILED'
   | 'RENDER_FAILED'
   | 'SHARED_READONLY'
+  | 'CONTRACT_MISMATCH'
 
 /** Endereço das páginas de erro no site. A página de cada código é `ERROR_DOCS + code`. */
 export const ERROR_DOCS = 'https://joaogabriel15.github.io/vitral/erros/'

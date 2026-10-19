@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import vitral from '../src/vite'
+import vitral, { type VitralViteOptions } from '../src/vite'
 import { collect } from '../src/vite/manifest'
 import { splitShadowCss } from '../src/css-build'
 import type { RemoteManifest } from '../src/index'
@@ -16,14 +16,14 @@ let manifest: RemoteManifest
 let splitManifest: RemoteManifest
 let shadowManifest: RemoteManifest
 
-async function buildRemote(fixture: string, out: string): Promise<RemoteManifest> {
+async function buildRemote(fixture: string, out: string, options: VitralViteOptions = {}): Promise<RemoteManifest> {
   await build({
     root: resolve(__dirname, 'fixtures', fixture),
     configFile: false,
     logLevel: 'silent',
     // Sem adaptador: o embrulho traria o código da própria lib (que tem
     // import()) e o teste do build dividido deixaria de medir o remote.
-    plugins: [vitral({ entry: 'src/remote.js', adapter: false })],
+    plugins: [vitral({ entry: 'src/remote.js', adapter: false, ...options })],
     build: { outDir: out, emptyOutDir: true, assetsInlineLimit: 0 },
   })
   return JSON.parse(readFileSync(join(out, 'vitral.json'), 'utf8'))
@@ -31,7 +31,7 @@ async function buildRemote(fixture: string, out: string): Promise<RemoteManifest
 
 beforeAll(async () => {
   manifest = await buildRemote('vite-remote', outDir)
-  splitManifest = await buildRemote('vite-split', splitDir)
+  splitManifest = await buildRemote('vite-split', splitDir, { contract: { version: '2.1.0' } })
   shadowManifest = await buildRemote('vite-shadow', shadowDir)
 }, 60_000)
 
@@ -49,6 +49,11 @@ describe('plugin vite', () => {
     expect(manifest.version).toBe('1.2.3')
     expect(manifest.entry).toMatch(/^remote-[\w-]+\.js$/)
     expect(manifest.scope).toBe('-empresa-cartao')
+  })
+
+  it('contrato: só com a opção contract (ou com dedupe)', () => {
+    expect(manifest.contract).toBeUndefined()
+    expect(splitManifest.contract).toEqual({ version: '2.1.0' })
   })
 
   it('o integrity confere com os bytes do JS publicado', () => {

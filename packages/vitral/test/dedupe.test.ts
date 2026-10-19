@@ -25,6 +25,16 @@ describe('satisfies', () => {
     ['19.0.0-rc.1', '^19.0.0', false],
     ['19.0.0-rc.1', '19.0.0-rc.1', true],
     ['3.0.0', '*', true],
+    // Faixa parcial, como no contrato (`contract: '^2'`).
+    ['2.3.0', '^2', true],
+    ['3.0.0', '^2', false],
+    ['0.5.0', '^0', true],
+    ['0.1.0', '^0.0', false],
+    ['2.1.9', '~2.1', true],
+    ['2.2.0', '~2.1', false],
+    ['2.9.0', '~2', true],
+    ['2.0.0', '>=2', true],
+    ['2', '^2.0.0', true],
   ])('%s em %s: %s', (version, range, ok) => {
     expect(satisfies(version, range)).toBe(ok)
   })
