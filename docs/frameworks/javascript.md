@@ -151,8 +151,8 @@ Todo remote recebe o mesmo `ctx`:
 | `name` | Nome com que o host registrou o remote |
 | `baseUrl` | URL da pasta do JS. Use para montar URLs de imagens e arquivos |
 | `events` | Barramento de eventos. O que o remote assina por aqui é cancelado no unmount |
-| `shared` | Contexto compartilhado. Veja [Contexto](/funcionalidades/contexto) |
+| `shared` | Contexto compartilhado. Veja [Contexto](/aprender/contexto) |
 | `shadowRoot` | O shadow root, com `isolate="shadow"`. Senão `null` |
 | `navigate(url, { replace? })` | Navega a página e avisa todos os roteadores |
 | `reportError(erro)` | Mostra o erro no host |
-| `onActivate(fn)`, `onDeactivate(fn)` | Com keep-alive. Veja [Carregamento](/funcionalidades/carregamento#keep-alive) |
+| `onActivate(fn)`, `onDeactivate(fn)` | Com keep-alive. Veja [Carregamento](/aprender/carregamento#keep-alive) |

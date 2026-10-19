@@ -9,14 +9,14 @@ O qiankun carrega o HTML de um sub-app e roda o JS dele numa sandbox de `Proxy`.
 | `registerMicroApps([{ name, entry }])` | `configure({ remotes: { nome: url } })` |
 | `entry` com HTML | `vitral.json` ou URL de um ES module |
 | `container` | O elemento onde o componente do host renderiza |
-| `activeRule` | O roteador do host renderiza `<Remote>` na rota. Veja [Rotas](/funcionalidades/rotas) |
+| `activeRule` | O roteador do host renderiza `<Remote>` na rota. Veja [Rotas](/aprender/rotas) |
 | `loadMicroApp({ name, entry, container, props })` | `createSlot(el, { name, props })` |
 | `bootstrap`, `mount`, `unmount`, `update` | `mount(el, props, ctx)` devolvendo `{ update, unmount }` |
 | `props` | `props` |
 | `strictStyleIsolation` (Shadow DOM) | `isolate="shadow"` |
 | `experimentalStyleIsolation` (prefixo) | Escopo do plugin, ligado por padrão |
-| `initGlobalState` | [`provide` e `shared`](/funcionalidades/contexto) |
-| Sandbox de JS (`Proxy`) | `isolate="iframe"`. Veja [Iframe](/funcionalidades/iframe) |
+| `initGlobalState` | [`provide` e `shared`](/aprender/contexto) |
+| Sandbox de JS (`Proxy`) | `isolate="iframe"`. Veja [Iframe](/aprender/iframe) |
 | `window.__POWERED_BY_QIANKUN__` | Não precisa: o remote só roda pelo `mount` |
 | `public-path.js` | `ctx.baseUrl` para montar URLs de arquivos |
 
@@ -96,4 +96,4 @@ Renderize o componente na rota `/catalogo` do roteador do host.
 
 - O JS do remote roda direto na página, sem `Proxy`. Código que altera `window` (globais, polyfills, listeners) continua alterado depois do unmount. Limpe no `unmount` ou use `isolate="iframe"`.
 - O remote precisa ser um ES module. Builds UMD não funcionam.
-- A integridade (SRI) e a lista de origens permitidas valem para todos os remotes. Veja [Segurança](/funcionalidades/seguranca).
+- A integridade (SRI) e a lista de origens permitidas valem para todos os remotes. Veja [Segurança](/aprender/seguranca).

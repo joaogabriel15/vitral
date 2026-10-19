@@ -173,7 +173,7 @@ shared('tema').subscribe((tema) => console.log(tema))
 const nome = useShared('usuario', (u) => u?.nome) // React, Preact, Vue e Solid
 ```
 
-Angular usa `injectShared`, Svelte usa `$tema` e Lit usa `SharedController`. Detalhes em [Contexto compartilhado](https://github.com/joaogabriel15/vitral/blob/main/docs/funcionalidades/contexto.md).
+Angular usa `injectShared`, Svelte usa `$tema` e Lit usa `SharedController`. Detalhes em [Contexto compartilhado](https://joaogabriel15.github.io/vitral/aprender/contexto).
 
 Para mudar de página de dentro de um remote, use `navigate('/pedidos/42')`. Todos os roteadores da página recebem a mudança.
 
@@ -196,7 +196,7 @@ vitral({ theme: 'host' })                                  // var(--x) usa o val
 configure({ styles: { inherit: ['/assets/base.css'] } })   // CSS base do host dentro do Shadow DOM
 ```
 
-Tema com Tailwind v4, dark mode, CSS legado e Tailwind v3 no host: [Estilos](https://github.com/joaogabriel15/vitral/blob/main/docs/funcionalidades/estilos.md).
+Tema com Tailwind v4, dark mode, CSS legado e Tailwind v3 no host: [Estilos](https://joaogabriel15.github.io/vitral/aprender/estilos).
 
 ## Configuração
 
@@ -317,7 +317,7 @@ Vários componentes por remote (`<Remote name="carrinho/MiniCarrinho" />`),
 módulos sem UI (`loadModule('carrinho/api')`), deploy novo sem recarregar a
 página (`watchUpdates()` e `refresh('carrinho')`) e app shell por rota
 (`routes()` e `<vitral-outlet>`, em `vitral/routes`). Veja
-[Exposes](docs/funcionalidades/exposes.md), [Atualização sem reload](docs/funcionalidades/atualizacoes.md) e [Rotas](docs/funcionalidades/rotas.md).
+[Exposes](https://joaogabriel15.github.io/vitral/aprender/exposes), [Atualização sem reload](https://joaogabriel15.github.io/vitral/aprender/atualizacoes) e [Rotas](https://joaogabriel15.github.io/vitral/aprender/rotas).
 
 ## Segurança
 

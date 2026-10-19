@@ -74,4 +74,4 @@ O `ctx` chega na prop `vitral`.
 <button onclick={() => tema.set('escuro')}>Escuro</button>
 ```
 
-Veja [Contexto compartilhado](/funcionalidades/contexto).
+Veja [Contexto compartilhado](/aprender/contexto).

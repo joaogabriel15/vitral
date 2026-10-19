@@ -8,12 +8,12 @@ O Module Federation compartilha módulos entre builds: host e remote combinam `r
 | --- | --- |
 | `remotes` no plugin do host | `configure({ remotes })` em runtime, sem plugin no host |
 | `remoteEntry.js` | `vitral.json` |
-| `exposes: { './Carrinho': … }` | `export default reactRemote(Carrinho)` e `exposes` no plugin. Veja [Exposes](/funcionalidades/exposes) |
+| `exposes: { './Carrinho': … }` | `export default reactRemote(Carrinho)` e `exposes` no plugin. Veja [Exposes](/aprender/exposes) |
 | `React.lazy(() => import('carrinho/Carrinho'))` | `<Remote name="carrinho" />` |
-| `shared` com `singleton` | Cada remote leva o próprio framework. Opcional: [`dedupe`](/funcionalidades/dedupe) |
+| `shared` com `singleton` | Cada remote leva o próprio framework. Opcional: [`dedupe`](/aprender/dedupe) |
 | Props do componente React | `props`, iguais em qualquer framework |
 | `ErrorBoundary` em volta do lazy | `error` do `<Remote>`, com `retry` |
-| `dts-plugin` (tipos) | `npx vitral types`. Veja [Desenvolvimento](/funcionalidades/desenvolvimento#tipos-das-props) |
+| `dts-plugin` (tipos) | `npx vitral types`. Veja [Desenvolvimento](/aprender/desenvolvimento#tipos-das-props) |
 | Módulos sem UI (funções, stores) | `loadModule('carrinho/api')` |
 
 ## Passo a passo: um carrinho em React
@@ -32,7 +32,7 @@ new ModuleFederationPlugin({
 
 ### Depois, no remote
 
-Troque o bundler do remote por Vite, ou mantenha o bundler atual e gere um ES module (veja [Outros bundlers](/funcionalidades/configuracao#outros-bundlers)).
+Troque o bundler do remote por Vite, ou mantenha o bundler atual e gere um ES module (veja [Outros bundlers](/referencia/vitral/configure#outros-bundlers)).
 
 ```jsx
 // src/remote.jsx
@@ -97,5 +97,5 @@ Migre um remote por vez. O host mantém o plugin de federação para os remotes 
 ## O que muda no comportamento
 
 - Cada remote monta na própria root React. Contexto React do host (`useContext`) não atravessa para o remote; passe o valor por props.
-- Sem `shared`, cada remote baixa o próprio React. Veja [Dedupe](/funcionalidades/dedupe).
+- Sem `shared`, cada remote baixa o próprio React. Veja [Dedupe](/aprender/dedupe).
 - O host não precisa de build novo quando um remote muda de versão: o `vitral.json` é revalidado a cada carga.
