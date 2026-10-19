@@ -225,7 +225,7 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "4.6 kB"
+      "limit": "4.61 kB"
     },
     {
       "name": "núcleo",
@@ -279,7 +279,7 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "5.51 kB"
+      "limit": "5.52 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -287,7 +287,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.22 kB"
+      "limit": "1.64 kB"
     },
     {
       "name": "react",
@@ -332,7 +332,7 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.32 kB"
+      "limit": "6.33 kB"
     },
     {
       "name": "devtools",
@@ -358,7 +358,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.67 kB"
+      "limit": "9.09 kB"
     },
     {
       "name": "iframe",

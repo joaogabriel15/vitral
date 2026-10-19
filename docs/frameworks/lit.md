@@ -50,15 +50,18 @@ import vitral from 'vitral/vite'
 export default { plugins: [vitral({ entry: 'src/remote.js' })] }
 ```
 
-Ou registre a tag você mesmo e use `elementRemote`:
+Ou registre a tag você mesmo e use `elementRemote`. O `setup` recebe o registro de custom elements do remote:
 
 ```js
 import { elementRemote } from 'vitral/element'
 
-export default elementRemote('meu-carrinho', () => {
-  if (!customElements.get('meu-carrinho')) customElements.define('meu-carrinho', Carrinho)
+export default elementRemote('meu-carrinho', (registry) => {
+  if (!registry.get('meu-carrinho')) registry.define('meu-carrinho', Carrinho)
+  if (!registry.get('ds-button')) registry.define('ds-button', DsButton)
 })
 ```
+
+No Shadow DOM, com suporte do navegador, esse registro é só do remote: outro remote pode ter um `<ds-button>` de outra versão. O plugin também define a classe exportada nele. Uma classe com `@customElement` já foi para o registro global quando o módulo carregou. Veja [Custom elements de cada remote](/aprender/estilos#custom-elements-de-cada-remote).
 
 As props viram propriedades do elemento. O `ctx` fica em `this.vitral`.
 

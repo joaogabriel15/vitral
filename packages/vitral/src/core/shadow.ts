@@ -10,6 +10,9 @@
  *   adotada antes da que importa.
  * - `class` e `data-theme` do `<html>` são copiados para a raiz do remote e
  *   para o destino de portais, para `.dark` e `[data-theme]` funcionarem lá.
+ * - Cada remote ganha um `CustomElementRegistry` próprio, usado pelo shadow
+ *   root, onde o navegador tem Scoped Custom Element Registries. Sem isso, o
+ *   global, com um aviso em dev quando dois remotes definem a mesma tag.
  *
  * Com manifesto novo (`shadow`), o plugin já separou tudo isso no build: o
  * CSS pronto é adotado como está e `@property`/`@font-face` entram num
@@ -47,7 +50,75 @@ export function prefetch(r: RemoteCss, priority?: RequestPriority): void {
   injectCss(global, null, r.sri)
 }
 
-export async function attachStyles(
+/**
+ * Cria (ou reusa) o shadow root de `target` e o elemento raiz do remote
+ * (`make`), os dois com o registro de custom elements do remote, e aplica os
+ * estilos. Devolve também o shadow root, o registro e o elemento, para o `ctx`.
+ */
+export async function attachShadowRoot(
+  target: HTMLElement,
+  make: (options?: ElementCreationOptions) => HTMLElement,
+  r: RemoteCss,
+  global: StyleOptions = {},
+  local: StyleOptions = {},
+): Promise<[release: () => void, portal: HTMLElement, root: ShadowRoot, registry: CustomElementRegistry, el: HTMLElement]> {
+  // O nome do remote vem de um elemento descartável: um argumento a menos no host.
+  const registry = registryFor(make().getAttribute('data-vitral-root')!)
+  // Sem suporte, o navegador ignora a opção. Um shadow root reusado fica com
+  // o registro com que foi criado.
+  const root = target.shadowRoot ?? target.attachShadow({ mode: 'open', customElementRegistry: registry })
+  const own = (root as { customElementRegistry?: CustomElementRegistry }).customElementRegistry ?? registry
+  // O que o remote criar com `innerHTML` dentro de `el` usa o registro de `el`.
+  const el = root.appendChild(make({ customElementRegistry: own }))
+  return [...(await attachStyles(root, el, r, global, local)), root, own, el]
+}
+
+declare const process: { env: Record<string, string | undefined> }
+
+const registries = new Map<string, CustomElementRegistry>()
+// Remote que definiu cada tag pelo `ctx.customElements` global (para o aviso).
+const owners = new Map<string, string>()
+
+/**
+ * Registro de custom elements do remote `name`, um por remote e reusado nas
+ * remontagens (uma definição não pode ser desfeita). Com suporte, um
+ * `CustomElementRegistry` novo; sem, o global. Nos dois, `define` de uma tag
+ * já definida não lança: o remote fica com a definição que já existe. No
+ * global, se a tag veio de outro remote, avisa em dev.
+ */
+export function registryFor(name: string): CustomElementRegistry {
+  let registry = registries.get(name)
+  if (registry) return registry
+  // Detecção recomendada: no Chromium antes do 146 o construtor existe, mas lança.
+  const real = 'initialize' in CustomElementRegistry.prototype ? new CustomElementRegistry() : customElements
+  const shared = real === customElements
+  // No global, um objeto com o registro de protótipo: `instanceof` continua
+  // valendo e o `define` trocado não afeta quem usa `customElements` direto.
+  const own: any = (registry = shared ? Object.create(real) : real)
+  if (shared) for (const k of ['get', 'getName', 'upgrade', 'whenDefined'] as const) if (k in real) own[k] = (real[k] as Function).bind(real)
+  const define = real.define
+  own.define = (tag: string, ctor: CustomElementConstructor, options?: ElementDefinitionOptions) => {
+    const had = real.get(tag)
+    const owner = owners.get(tag)
+    if (!had) return shared && owners.set(tag, name), define.call(real, tag, ctor, options)
+    if (shared && had !== ctor && owner !== name && dev())
+      console.warn(`[vitral] ${name}: <${tag}> já foi definido por ${owner ?? 'outro código'}; fica essa definição. Sem Scoped Custom Element Registries, os remotes dividem o registro global.`)
+  }
+  registries.set(name, registry!)
+  return registry!
+}
+
+// O mesmo teste de `isDev` (./shared), copiado: importar de lá separaria
+// `shared` num chunk próprio, um download a mais para o host.
+function dev(): boolean {
+  try {
+    return process.env.NODE_ENV !== 'production'
+  } catch {
+    return false
+  }
+}
+
+async function attachStyles(
   root: ShadowRoot,
   el: HTMLElement,
   r: RemoteCss,
