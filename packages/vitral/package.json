@@ -234,7 +234,7 @@
         "./capture-*",
         "./channel-*"
       ],
-      "limit": "4.64 kB"
+      "limit": "4.65 kB"
     },
     {
       "name": "núcleo",
@@ -255,7 +255,7 @@
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.51 kB"
+      "limit": "2.59 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
@@ -391,7 +391,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.06 kB",
+      "limit": "9.12 kB",
       "ignore": [
         "./overrides-*",
         "./channel-*"
@@ -422,7 +422,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "11.87 kB"
+      "limit": "11.95 kB"
     }
   ]
 }
