@@ -4,6 +4,7 @@ packages:
   - examples/remotes/*
   - examples/hosts/*
   - examples/estilos
+  - examples/mcp-app
   - e2e
   - bench
   - docs
