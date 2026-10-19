@@ -1,6 +1,6 @@
 import { protocol } from './state'
 import type { StyleOptions } from './types'
-import { addLink } from './util'
+import { addLink, fetchBytes } from './util'
 
 const loadedCss = new WeakMap<Document | ShadowRoot, Map<string, Promise<void>>>()
 const cssText = new Map<string, Promise<string>>()
@@ -9,16 +9,17 @@ const noop = () => {}
 const adopts = () => typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype
 
 /**
- * Texto do CSS, baixado uma vez só. CSS quebrado vira texto vazio. Com
- * integrity, um CSS trocado faz o fetch falhar e não é aplicado.
+ * Texto do CSS, baixado uma vez só por URL e hash. Falha (HTTP de erro, rede,
+ * hash diferente ou `timeout`) rejeita e sai do cache: a próxima montagem
+ * tenta de novo. Com integrity, um CSS trocado faz o fetch falhar.
  */
 export function fetchCssText(href: string, integrity?: string, priority?: RequestPriority): Promise<string> {
-  let p = cssText.get(href)
+  const key = `${href} ${integrity ?? ''}`
+  let p = cssText.get(key)
   if (!p) {
-    p = fetch(href, { credentials: 'omit', integrity, priority })
-      .then((r) => (r.ok ? r.text() : ''))
-      .catch(() => '')
-    cssText.set(href, p)
+    p = fetchBytes(href, protocol().settings().timeout, href, { integrity, priority }).then((b) => new TextDecoder().decode(b))
+    p.catch(() => cssText.delete(key))
+    cssText.set(key, p)
   }
   return p
 }
@@ -30,7 +31,7 @@ export function fetchCssText(href: string, integrity?: string, priority?: Reques
  */
 export function prefetchCss(urls: string[], shadow: boolean, sri: Record<string, string> = {}, priority: RequestPriority = 'auto'): void {
   for (const href of urls) {
-    if (shadow && adopts()) void fetchCssText(href, sri[href], priority)
+    if (shadow && adopts()) fetchCssText(href, sri[href], priority).catch(noop)
     else if (!document.querySelector(`link[href="${href}"]`)) addLink('preload', href, { as: 'style', integrity: sri[href] ?? '', fetchPriority: priority })
   }
 }
@@ -53,20 +54,30 @@ export function injectStyles(
     : injectCss(urls, null, sri).then(() => noop)
 }
 
-/** `<link>` para cada URL, uma vez só por documento ou shadow root. */
+/**
+ * `<link>` para cada URL, uma vez só por documento ou shadow root. CSS quebrado
+ * não impede o remote de aparecer: a promessa resolve no erro e, no máximo,
+ * depois de `timeout`. No erro o `<link>` sai e a próxima montagem tenta de novo.
+ */
 export function injectCss(urls: string[], root: ShadowRoot | null, sri: Record<string, string> = {}): Promise<unknown> {
   const owner = root ?? document
   let seen = loadedCss.get(owner)
   if (!seen) loadedCss.set(owner, (seen = new Map()))
   const parent = root ?? document.head
+  const timeout = protocol().settings().timeout
   return Promise.all(
     urls.map((href) => {
       let p = seen!.get(href)
       if (!p) {
         p = new Promise<void>((resolve) => {
-          // CSS quebrado não deve impedir o remote de aparecer.
           const link = addLink('stylesheet', href, { integrity: sri[href] ?? '' }, parent)
-          link.onload = link.onerror = () => resolve()
+          setTimeout(resolve, timeout)
+          link.onload = () => resolve()
+          link.onerror = () => {
+            link.remove()
+            seen!.delete(href)
+            resolve()
+          }
         })
         seen!.set(href, p)
       }
