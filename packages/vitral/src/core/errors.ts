@@ -1,3 +1,4 @@
+import { ctxHooks } from './hooks'
 import { protocol, type LoadedRemote } from './state'
 
 export type RemoteErrorCode =
@@ -61,6 +62,7 @@ export function report<E>(e: E, from?: { entry?: string; version?: string }): E 
     try {
       protocol().settings().onError?.(e)
     } catch {}
+    ctxHooks.watch?.(e.remote, e)
   }
   return e
 }

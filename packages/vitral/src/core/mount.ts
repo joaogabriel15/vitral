@@ -55,6 +55,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
   }
   const { module: mod, ...resolved } = await load(name, options.isolate, options.priority)
   const untrack = track(name, resolved)
+  ctxHooks.watch?.(name)
   const isolate = options.isolate ?? resolved.isolate ?? protocol().settings().isolate
   const label = resolved.name ?? name
 

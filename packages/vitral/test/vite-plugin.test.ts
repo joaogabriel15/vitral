@@ -16,7 +16,7 @@ let manifest: RemoteManifest
 let splitManifest: RemoteManifest
 let shadowManifest: RemoteManifest
 
-async function buildRemote(fixture: string, out: string, options: VitralViteOptions = {}): Promise<RemoteManifest> {
+async function buildRemote(fixture: string, out: string, options: VitralViteOptions = {}, manifestDir = out): Promise<RemoteManifest> {
   await build({
     root: resolve(__dirname, 'fixtures', fixture),
     configFile: false,
@@ -26,7 +26,7 @@ async function buildRemote(fixture: string, out: string, options: VitralViteOpti
     plugins: [vitral({ entry: 'src/remote.js', adapter: false, ...options })],
     build: { outDir: out, emptyOutDir: true, assetsInlineLimit: 0 },
   })
-  return JSON.parse(readFileSync(join(out, 'vitral.json'), 'utf8'))
+  return JSON.parse(readFileSync(join(manifestDir, 'vitral.json'), 'utf8'))
 }
 
 beforeAll(async () => {
@@ -190,4 +190,22 @@ describe('manifesto v2', () => {
       rmSync(dir, { recursive: true, force: true })
     }
   })
+})
+
+describe('versionDir', () => {
+  it('grava o build em <outDir>/<versão> e mantém as versões anteriores', async () => {
+    const base = mkdtempSync(join(tmpdir(), 'vitral-versao-'))
+    try {
+      mkdirSync(join(base, '1.0.0'))
+      writeFileSync(join(base, '1.0.0/vitral.json'), '{}')
+      const m = await buildRemote('vite-remote', base, { versionDir: true }, join(base, '1.2.3'))
+      expect(m.version).toBe('1.2.3')
+      expect(readdirSync(join(base, '1.2.3'))).toContain(m.entry)
+      expect(readdirSync(base).sort()).toEqual(['1.0.0', '1.2.3'])
+      await buildRemote('vite-remote', base, { versionDir: true, version: '2.0.0' }, join(base, '2.0.0'))
+      expect(readdirSync(base).sort()).toEqual(['1.0.0', '1.2.3', '2.0.0'])
+    } finally {
+      rmSync(base, { recursive: true, force: true })
+    }
+  }, 30_000)
 })

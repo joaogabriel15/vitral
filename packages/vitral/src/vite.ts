@@ -94,6 +94,12 @@ export interface VitralViteOptions extends CssBuildOptions {
    * para o host. Não combina com `exposes`, `dedupe` nem `shared`.
    */
   target?: 'mcp-app'
+  /**
+   * Grava o build em uma pasta por versão (`dist/1.5.0/`), para publicar
+   * cada versão sem apagar as anteriores e escolher qual vale num canal
+   * (`canal.json`). Usa `version` (ou a do package.json). Padrão: false.
+   */
+  versionDir?: boolean
 }
 
 export default function vitral(options: VitralViteOptions = {}): Plugin {
@@ -142,6 +148,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       if (!entry) throw new Error('[vitral] não achei a entrada do remote (src/remote.* ou src/App.*). Use vitral({ entry }).')
       // Vite 8+ (rolldown) usa codeSplitting; Vite 5-7 (rollup) usa inlineDynamicImports.
       const rolldown = 'rolldownVersion' in (this as any).meta
+      const dir = options.versionDir ? versionDir(user.root ?? process.cwd(), user.build?.outDir, options.version) : undefined
       return {
         // Código de biblioteca não tem process.env; React e Vue precisam disso.
         define: { 'process.env.NODE_ENV': JSON.stringify(mode === 'development' ? 'development' : 'production') },
@@ -162,6 +169,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
           // Arquivo único (hosts antigos e caminho com blob:) e build dividido (manifesto v2).
           rollupOptions: { external: options.shared ?? [], output: outputs(rolldown) as any },
           cssCodeSplit: false,
+          ...(dir && { outDir: dir }),
         },
       }
     },
@@ -284,6 +292,15 @@ function ownVersion(): string | undefined {
   } catch {
     return undefined
   }
+}
+
+/** `dist/<versão>`: a pasta do build com `versionDir`. */
+function versionDir(root: string, outDir = 'dist', version?: string): string {
+  try {
+    version ??= JSON.parse(readFileSync(join(resolve(root), 'package.json'), 'utf8')).version
+  } catch {}
+  if (!version) throw new Error('[vitral] versionDir precisa de uma versão: use vitral({ version }) ou "version" no package.json.')
+  return join(outDir, version)
 }
 
 /** `contract` do manifesto: a versão da opção e a faixa de cada grupo de `dedupe`. Sem nenhum dos dois, nada. */

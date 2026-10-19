@@ -8,6 +8,8 @@
  * Cada parte mora em `src/core/`; este arquivo só reexporta a API pública.
  */
 export type {
+  Channel,
+  ChannelContext,
   CheckedProps,
   DevOverrides,
   EventBus,
@@ -26,6 +28,7 @@ export type {
   SharedModules,
   StyleOptions,
   Remotes,
+  RollbackInfo,
   VitralConfig,
 } from './core/types'
 export { RemoteError, type RemoteErrorCode } from './core/errors'
