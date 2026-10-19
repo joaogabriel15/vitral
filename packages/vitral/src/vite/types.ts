@@ -21,14 +21,19 @@ export function typesFile(name: string, props: string): string {
 }
 
 async function loadTs(root: string): Promise<typeof TS | null> {
+  // O TypeScript 7 (nativo, o padrão do create-vite) não tem API em JS: sem
+  // `createProgram`, tenta o próximo e, sem nenhum, não gera os tipos.
+  const api = (ts: typeof TS | undefined) => (typeof ts?.createProgram === 'function' ? ts : null)
   try {
-    return createRequire(join(root, 'package.json'))('typescript')
+    const ts = api(createRequire(join(root, 'package.json'))('typescript'))
+    if (ts) return ts
   } catch {
-    try {
-      return (await import('typescript')).default
-    } catch {
-      return null
-    }
+    // sem TypeScript no projeto
+  }
+  try {
+    return api((await import('typescript')).default)
+  } catch {
+    return null
   }
 }
 
