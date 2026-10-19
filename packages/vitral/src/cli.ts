@@ -3,6 +3,7 @@ import { createRequire } from 'node:module'
 import { serveMcp } from './cli/mcp'
 import { add, registry } from './cli/registry'
 import { doctorCli } from './cli/doctor'
+import { migrate, type MigrateSource } from './cli/migrate'
 import { flag, types } from './cli/types'
 
 const AJUDA = `Uso:
@@ -12,6 +13,7 @@ const AJUDA = `Uso:
   vitral mcp [--registry url|arquivo]
   vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url]
                 [--contract faixa] [--max-kb n] [--json]
+  vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
 
   types     Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
             --check só confere se o hash de cada manifesto ainda é o
@@ -23,7 +25,10 @@ const AJUDA = `Uso:
             add_remote).
   doctor    Confere cada remote como o host faria (manifesto, CORS, CSP, mount,
             integrity, contrato, dedupe, tamanho) e explica o que fazer.
-            Sai com erro se alguma conferência falhar (útil no CI).`
+            Sai com erro se alguma conferência falhar (útil no CI).
+  migrate   Converte um app do single-spa ou um remote do Module Federation num
+            remote vitral. Mostra o diff de cada arquivo.
+            --dry-run só mostra o que mudaria, sem escrever.`
 
 const falhou = (err: Error) => {
   console.error(err.message)
@@ -77,6 +82,20 @@ if (command === 'types') {
   serveMcp(process.stdin, process.stdout, { registry: flag(args, '--registry'), version: version() })
 } else if (command === 'doctor') {
   doctorCli(args).then((code) => (process.exitCode = code), falhou)
+} else if (command === 'migrate') {
+  const from = flag(args, '--from')
+  if (from && from !== 'single-spa' && from !== 'module-federation') {
+    console.error(`[vitral] --from inválido: ${from}. Use single-spa ou module-federation.`)
+    process.exitCode = 1
+  } else {
+    try {
+      const plan = migrate({ cwd: args.find((a) => !a.startsWith('--')), from: from as MigrateSource | undefined, dryRun: args.includes('--dry-run') })
+      process.exitCode = plan.from ? 0 : 1
+    } catch (err) {
+      console.error((err as Error).message)
+      process.exitCode = 1
+    }
+  }
 } else {
   console.log(AJUDA)
   process.exitCode = command && command !== '--help' ? 1 : 0

@@ -119,6 +119,14 @@
     "./otel": {
       "types": "./dist/otel.d.ts",
       "import": "./dist/otel.js"
+    },
+    "./single-spa": {
+      "types": "./dist/single-spa.d.ts",
+      "import": "./dist/single-spa.js"
+    },
+    "./federation": {
+      "types": "./dist/federation.d.ts",
+      "import": "./dist/federation.js"
     }
   },
   "publishConfig": {
@@ -371,6 +379,18 @@
       "ignore": [
         "./overrides-*"
       ]
+    },
+    {
+      "name": "single-spa",
+      "path": "dist/single-spa.js",
+      "import": "{ singleSpaRemote }",
+      "limit": "0.5 kB"
+    },
+    {
+      "name": "federation",
+      "path": "dist/federation.js",
+      "import": "{ federationRemote }",
+      "limit": "1.25 kB"
     },
     {
       "name": "iframe",

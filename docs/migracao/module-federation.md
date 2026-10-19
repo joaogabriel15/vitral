@@ -2,6 +2,15 @@
 
 O Module Federation compartilha módulos entre builds: host e remote combinam `remotes`, `exposes` e `shared` no build. No vitral, o remote publica um componente com `mount`, e o host só conhece a URL do `vitral.json`.
 
+## Com o comando
+
+```bash
+npx vitral migrate --dry-run
+npx vitral migrate
+```
+
+O comando lê `name` e `exposes` do `ModuleFederationPlugin` (webpack, Rspack, Rsbuild) ou do `federation()` (Vite). Ele gera um arquivo em `src/vitral/` por componente exposto, com o adaptador do framework, e um `vite.vitral.config.mjs` com os mesmos `exposes`. O host pede `carrinho/Carrinho`, como no Module Federation. O build atual continua gerando o `remoteEntry.js`. Veja o que o comando não converte em [CLI](/referencia/cli#o-que-nao-migra).
+
 ## Equivalências
 
 | Module Federation | vitral |
@@ -92,7 +101,26 @@ configure({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' 
 
 ### Migrar aos poucos
 
-Migre um remote por vez. O host mantém o plugin de federação para os remotes que ainda não migraram e usa `<Remote>` para os que já migraram. Quando o último sair, remova o plugin.
+Migre um remote por vez. Há dois caminhos:
+
+- O host mantém o plugin de federação para os remotes que ainda não migraram e usa `<Remote>` para os que já migraram. Quando o último sair, remova o plugin.
+- O host tira o plugin de federação logo e monta os remotes que ainda não migraram com [`federationRemote`](/referencia/federation), que lê o `mf-manifest.json` deles:
+
+```jsx
+import { federationRemote } from 'vitral/federation'
+
+configure({
+  remotes: {
+    carrinho: 'https://cdn.empresa.com/carrinho/vitral.json', // já migrou
+    catalogo: federationRemote('https://cdn.empresa.com/catalogo/mf-manifest.json', {
+      adapt: (m) => reactRemote(m.default),
+      shared: { react: { version: React.version, modules: { react: React, 'react-dom': ReactDOM } } },
+    }),
+  },
+})
+
+<Remote name="catalogo/Vitrine" />
+```
 
 ## O que muda no comportamento
 
