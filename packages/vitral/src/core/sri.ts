@@ -3,10 +3,13 @@
  * da própria URL (cache de código, code splitting, source maps, CSP sem
  * `blob:`). Há três caminhos, escolhidos pelo comportamento do navegador:
  *
- * 1. Import map com `integrity`, adicionado na hora. Só onde import maps
- *    tardios são aceitos: se o navegador recusa (evento `error`) ou a CSP
- *    bloqueia o mapa, o caminho fica desligado. Os chunks são aquecidos com
- *    `fetch`, nunca com modulepreload (o WebKit ignora `integrity` nele).
+ * 1. Import map com `integrity`, adicionado na hora, com o hash de todo JS do
+ *    build (entrada, chunks, `import()` e cópias de dedupe). Só onde import
+ *    maps tardios são aceitos (Chrome 133+, Safari 18.4+): no primeiro mapa,
+ *    dois módulos de teste mostram que o hash é conferido. Se o navegador
+ *    recusa o mapa (evento `error`, ou em silêncio), ou a CSP o bloqueia, o
+ *    caminho fica desligado. Os chunks são aquecidos com `fetch`, nunca com
+ *    modulepreload (o WebKit ignora `integrity` nele).
  * 2. `<link rel="modulepreload" integrity>`, onde um teste com dois módulos
  *    `data:` mostra que o hash do preload é conferido. Os chunks entram antes
  *    da entrada, na mesma tarefa, e o `import()` só vem depois de todos.
@@ -119,7 +122,7 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
         },
       })
   }
-  if (maps !== false && (maps = await addMap(sri))) {
+  if (maps !== false && (maps = await addMap(sri, maps === undefined))) {
     await share()
     for (const u of chunks) fetch(u, { priority }).catch(() => {})
     return entry
@@ -133,8 +136,20 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
   }
 }
 
-/** Mapa `{ integrity }` novo. Resolve `false` se o navegador ou a CSP o recusar. */
-async function addMap(integrity: Record<string, string>): Promise<boolean> {
+/**
+ * Mapa `{ integrity }` novo, só com o JS (CSS não passa por import map).
+ * Resolve `false` se o navegador ou a CSP o recusar. Com `probe`, confere
+ * também que o hash do mapa vale: um navegador que recusa em silêncio, ou
+ * aceita sem conferir, rodaria o remote sem conferência.
+ */
+async function addMap(sri: Record<string, string>, probe: boolean): Promise<boolean> {
+  if (!HTMLScriptElement.supports?.('importmap')) return false
+  const integrity: Record<string, string> = {}
+  for (const u in sri) if (!/\.css([?#]|$)/.test(u)) integrity[u] = sri[u]
+  // Dois módulos `blob:` (URLs novas, fora do mapa de módulos), os dois com o
+  // hash do primeiro: o certo carrega e o errado tem de falhar.
+  const urls = probe ? ['export{}', 'export{}//'].map((c) => URL.createObjectURL(new Blob([c], { type: 'text/javascript' }))) : []
+  for (const u of urls) integrity[u] = PROBE_SRI
   let ok = true
   try {
     const s = document.createElement('script')
@@ -144,12 +159,14 @@ async function addMap(integrity: Record<string, string>): Promise<boolean> {
     s.addEventListener('securitypolicyviolation', () => (ok = false))
     s.textContent = JSON.stringify({ integrity })
     document.head.append(s)
+    // O erro de um mapa recusado chega numa tarefa.
+    await tick()
+    await tick()
+    if (ok && probe) ok = await check((u) => import(/* @vite-ignore */ /* webpackIgnore: true */ u), urls[0], urls[1])
   } catch {
-    return false
+    ok = false
   }
-  // O erro de um mapa recusado chega numa tarefa.
-  await tick()
-  await tick()
+  for (const u of urls) URL.revokeObjectURL(u)
   return ok
 }
 
@@ -161,13 +178,16 @@ function preload(href: string, integrity: string, fetchPriority: RequestPriority
   })
 }
 
-/** O navegador confere o hash do modulepreload? Um módulo certo carrega e um errado falha. */
+/** O navegador confere o hash do modulepreload? */
 function checkPreloads(): Promise<boolean> {
   if (!document.createElement('link').relList.supports('modulepreload')) return Promise.resolve(false)
-  const run = (href: string, good: boolean) => preload(href, PROBE_SRI).then(() => good, () => !good)
-  // Sem resposta em 3s, na dúvida, fica com o caminho 3.
+  return check((href) => preload(href, PROBE_SRI), PROBE, PROBE + '//')
+}
+
+/** O módulo certo carrega e o errado falha? Sem resposta em 3s, na dúvida, não. */
+function check(load: (url: string) => Promise<unknown>, good: string, bad: string): Promise<boolean> {
   return Promise.race([
-    Promise.all([run(PROBE, true), run(PROBE + '//', false)]).then(([a, b]) => a && b),
+    Promise.all([load(good).then(() => true, () => false), load(bad).then(() => false, () => true)]).then(([a, b]) => a && b),
     new Promise<boolean>((resolve) => setTimeout(resolve, 3000, false)),
   ])
 }
