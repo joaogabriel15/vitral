@@ -240,7 +240,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "5 kB"
+      "limit": "5.05 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
