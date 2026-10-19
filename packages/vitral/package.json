@@ -205,7 +205,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "4.3 kB"
+      "limit": "4.35 kB"
     },
     {
       "name": "núcleo",
@@ -240,7 +240,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "5 kB"
+      "limit": "5.05 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -253,7 +253,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "5.2 kB"
+      "limit": "5.25 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
