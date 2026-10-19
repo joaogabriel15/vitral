@@ -135,6 +135,16 @@ export interface StyleOptions {
   mirrorTheme?: boolean
 }
 
+/** Opções de `configure({ devOverrides })`. */
+export interface DevOverrides {
+  /**
+   * Modelo da URL de um apelido: `?vitral=checkout@pr-123` com
+   * `'https://{name}-{ref}.preview.empresa.com'` vira
+   * `https://checkout-pr-123.preview.empresa.com/vitral.json`.
+   */
+  preview?: string
+}
+
 export interface VitralConfig {
   /** Mapa nome → URL (ou entrada completa), ou a URL de um JSON com esse mapa. */
   remotes?: Record<string, string | RemoteEntry> | string
@@ -153,9 +163,10 @@ export interface VitralConfig {
    * Liga os overrides de desenvolvimento (`?vitral=nome@url` e
    * `localStorage['vitral:overrides']`) fora de localhost. Em localhost já
    * valem. Nunca ligue em produção: um link com `?vitral=` executaria código
-   * de qualquer origem.
+   * de qualquer origem. O objeto também liga e aceita `preview`, o modelo de
+   * URL dos apelidos (`?vitral=checkout@pr-123`).
    */
-  devOverrides?: boolean
+  devOverrides?: boolean | DevOverrides
   /** Estilos do host no Shadow DOM: `{ inherit: ['/assets/base.css'] }`. */
   styles?: StyleOptions
   /** Recebe o tempo de cada etapa do carregamento (para RUM). */

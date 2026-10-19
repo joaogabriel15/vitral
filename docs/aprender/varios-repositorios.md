@@ -159,7 +159,23 @@ Abra o portal trocando só o remote local:
 http://localhost:5173/produtos?vitral=produtos@http://localhost:5174
 ```
 
-`colaboradores` continua vindo de homologação. Editar `produtos` atualiza o portal sem recarregar. Para quem trabalha só num remote e não quer rodar o portal, a homologação pode ligar `configure({ devOverrides: true })` e aceitar o mesmo `?vitral=`. Não ligue em produção. Mais em [Desenvolvimento e HMR](./desenvolvimento).
+`colaboradores` continua vindo de homologação. Editar `produtos` atualiza o portal sem recarregar. A troca fica na aba: navegar pelo portal ou recarregar não a desfaz. `?vitral=off` desfaz.
+
+Para quem trabalha só num remote e não quer rodar o portal, a homologação pode ligar `devOverrides` e aceitar o mesmo `?vitral=`. Com um modelo de URL de preview, um link com o número do PR troca o remote pelo deploy de preview:
+
+```jsx
+// portal/src/main.jsx (só no build de homologação)
+configure({
+  remotes: '/remotes.json',
+  devOverrides: { preview: 'https://{name}-{ref}.preview.empresa.com' },
+})
+```
+
+```
+https://homolog.empresa.com/produtos?vitral=produtos@pr-123
+```
+
+Não ligue em produção. Mais em [Desenvolvimento e HMR](./desenvolvimento#link-para-o-preview-de-um-pr).
 
 ## 7. Deploy
 
