@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { __reset, configure, createSlot, mountRemote, register, type RemoteContext } from '../src/index'
+import { __reset, configure, createSlot, mountRemote, register, type RemoteContext, type RemoteManifest } from '../src/index'
+import { FIXTURE_REMOTE } from './helpers'
 
 afterEach(() => {
   __reset()
@@ -227,5 +228,69 @@ describe('portalContainer', () => {
     document.documentElement.className = 'claro'
     await tick()
     expect(portal.className).toBe('claro')
+  })
+})
+
+describe('CSS preparado no build (manifesto com shadow)', () => {
+  // Remote vindo de um vitral.json embutido: o JS é o fixture em disco.
+  async function mountManifest(name: string, manifest: Omit<RemoteManifest, 'name' | 'entry'>, css?: string[]) {
+    configure({ allowedOrigins: ['*'] })
+    register(name, { url: cdn('vitral.json'), manifest: { name, entry: FIXTURE_REMOTE, ...manifest }, css, isolate: 'shadow' })
+    const host = document.body.appendChild(document.createElement('div'))
+    const mounting = mountRemote(host, name, {})
+    // O global vai num <link> do documento; a montagem espera ele carregar.
+    await vi.waitFor(() => expect(document.head.querySelector('link[rel="stylesheet"]')).not.toBeNull())
+    const links = [...document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')]
+    links.forEach((l) => l.dispatchEvent(new Event('load')))
+    await mounting
+    return { root: host.shadowRoot!, links: links.map((l) => l.href) }
+  }
+
+  afterEach(() => document.head.querySelectorAll('link').forEach((l) => l.remove()))
+
+  it('adota o CSS pronto como está, sem baixar o original nem reescrever', async () => {
+    const fetch = files({
+      'remote.css': '@property --x { syntax: "*"; inherits: false } .a { color: red }',
+      'remote-shadow.css': '.a { color: red; background: url(img/a.png) }',
+      'remote-global.css': '@property --x { syntax: "*"; inherits: false }',
+    })
+    const { root, links } = await mountManifest('pronto', { css: ['remote.css'], shadow: { css: ['remote-shadow.css'], global: ['remote-global.css'] } })
+    expect(root.adoptedStyleSheets.map(text)).toEqual([expect.stringContaining('url("img/a.png")')])
+    expect(links).toEqual([cdn('remote-global.css')])
+    expect(hoisted()).not.toContain('--x')
+    expect(fetch.mock.calls.map(([u]) => u)).toEqual([cdn('remote-shadow.css')])
+  })
+
+  it('@import que sobrou e url() relativa (rebase) continuam funcionando; o CSS extra do registro vem depois', async () => {
+    files({
+      'remote-shadow.css': '.a { background: url(img/a.png) }',
+      'fontes.css': '@font-face { font-family: F; src: url(f.woff2) } .f { color: blue }',
+      'extra.css': '@font-face { font-family: E; src: url(e.woff2) } .e { color: green }',
+      'remote-global.css': '@font-face { font-family: R; src: url(r.woff2) }',
+    })
+    const { root } = await mountManifest(
+      'imports',
+      { css: ['remote.css'], shadow: { css: ['remote-shadow.css'], global: ['remote-global.css'], imports: [cdn('fontes.css')], rebase: true } },
+      ['extra.css'],
+    )
+    expect(root.adoptedStyleSheets.map(text)).toEqual([
+      expect.stringContaining('.f'),
+      expect.stringContaining(`url("${cdn('img/a.png')}")`),
+      expect.stringContaining('.e'),
+    ])
+    // O que não veio pronto passa pelo caminho completo.
+    expect(hoisted()).toContain(`url(${cdn('f.woff2')})`)
+    expect(hoisted()).toContain(`url(${cdn('e.woff2')})`)
+  })
+
+  it('manifesto antigo (sem shadow) continua no caminho completo', async () => {
+    files({ 'remote.css': '@property --antigo { syntax: "*"; inherits: false } .a { background: url(img/a.png) }' })
+    configure({ allowedOrigins: ['*'] })
+    register('antigo', { url: cdn('vitral.json'), manifest: { name: 'antigo', entry: FIXTURE_REMOTE, css: ['remote.css'] }, isolate: 'shadow' })
+    const host = document.body.appendChild(document.createElement('div'))
+    await mountRemote(host, 'antigo', {})
+    expect(text(host.shadowRoot!.adoptedStyleSheets[0])).toContain(`url("${cdn('img/a.png')}")`)
+    expect(hoisted()).toContain('@property --antigo')
+    expect(document.head.querySelector('link[rel="stylesheet"]')).toBeNull()
   })
 })
