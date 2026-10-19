@@ -41,6 +41,18 @@ link.addEventListener('pointerenter', () => preload('checkout'), { once: true })
 
 Cada remote é baixado uma vez por página, mesmo com várias instâncias.
 
+## Prefetch preditivo
+
+Pré-carrega o remote da rota que o usuário costuma abrir em seguida:
+
+```ts
+import { prefetch } from 'vitral/prefetch'
+
+prefetch()
+```
+
+Conta as navegações no navegador do usuário e, no tempo ocioso, baixa o manifesto e o JS da rota mais provável, sem executar e com o SRI conferido. Veja [vitral/prefetch](/referencia/prefetch).
+
 ## Keep-alive
 
 Com keep-alive, pause timers quando o remote sai da tela:

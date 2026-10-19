@@ -87,6 +87,8 @@ const PROBE = 'data:text/javascript,export{}'
 const PROBE_SRI = 'sha256-d3bjIZdvLjBurwdLwkSVOnEBPFFly+T1SR9r3VVHBGg='
 
 let maps: boolean | undefined
+/** URLs que já estão num import map: repetir a URL em outro mapa gera aviso no console. */
+const mapped = new Set<string>()
 /** O primeiro mapa, com os módulos de teste: os remotes que chegam junto esperam por ele. */
 let probing: Promise<boolean> | undefined
 let preloads: Promise<boolean> | undefined
@@ -167,7 +169,8 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
 async function addMap(sri: Record<string, string>, probe: boolean): Promise<boolean> {
   if (!HTMLScriptElement.supports?.('importmap')) return false
   const integrity: Record<string, string> = {}
-  for (const u in sri) if (!/\.css([?#]|$)/.test(u)) integrity[u] = sri[u]
+  // Um mapa recusado desliga o caminho 1 de vez, então já marca aqui.
+  for (const u in sri) if (!/\.css([?#]|$)/.test(u) && !mapped.has(u)) mapped.add(u), (integrity[u] = sri[u])
   // Dois módulos `blob:` (URLs novas, fora do mapa de módulos), os dois com o
   // hash do primeiro: o certo carrega e o errado tem de falhar.
   const urls = probe ? ['export{}', 'export{}//'].map((c) => URL.createObjectURL(new Blob([c], { type: 'text/javascript' }))) : []

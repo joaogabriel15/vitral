@@ -127,6 +127,10 @@
     "./federation": {
       "types": "./dist/federation.d.ts",
       "import": "./dist/federation.js"
+    },
+    "./prefetch": {
+      "types": "./dist/prefetch.d.ts",
+      "import": "./dist/prefetch.js"
     }
   },
   "publishConfig": {
@@ -255,7 +259,7 @@
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.59 kB"
+      "limit": "2.61 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
@@ -289,7 +293,7 @@
         "./capture-*",
         "./channel-*"
       ],
-      "limit": "5.34 kB"
+      "limit": "5.35 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -391,7 +395,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.12 kB",
+      "limit": "9.15 kB",
       "ignore": [
         "./overrides-*",
         "./channel-*"
@@ -410,6 +414,22 @@
       "limit": "1.25 kB"
     },
     {
+      "name": "prefetch",
+      "path": "dist/prefetch.js",
+      "import": "{ prefetch }",
+      "limit": "3.25 kB",
+      "ignore": [
+        "./shadow-*",
+        "./overrides-*",
+        "./sri-*",
+        "./dedupe-*",
+        "./contract-*",
+        "./expose-*",
+        "./capture-*",
+        "./channel-*"
+      ]
+    },
+    {
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
@@ -422,7 +442,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "11.95 kB"
+      "limit": "11.97 kB"
     }
   ]
 }
