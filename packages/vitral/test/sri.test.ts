@@ -106,6 +106,33 @@ describe('caminho 1: import map com integrity', () => {
     expect(second).toEqual(build.sri)
   })
 
+  it('remotes que chegam juntos esperam o mesmo teste: só o primeiro mapa leva os módulos de teste', async () => {
+    browser({ map: 'ok' })
+    const verified = await load()
+    expect(await Promise.all([verified(build), verified(build), verified(build)])).toEqual([build.entry, build.entry, build.entry])
+    const all = [...document.head.querySelectorAll('script[type="importmap"]')].map((s) => JSON.parse(s.textContent!).integrity)
+    expect(all.filter((m) => Object.values(m).includes(PROBE_SRI))).toHaveLength(1)
+    expect(all).toHaveLength(3)
+  })
+
+  it('o resultado do teste fica guardado por navegador: na próxima página, sem módulos de teste', async () => {
+    browser({ map: 'ok' })
+    await (await load())(build)
+    expect(localStorage.getItem('vitral:sri-map')).toBe(navigator.userAgent)
+    observer?.disconnect()
+    document.head.replaceChildren()
+    vi.resetModules()
+    browser({ map: 'ok' })
+    expect(await (await load())(build)).toBe(build.entry)
+    expect(JSON.parse(document.head.querySelector('script[type="importmap"]')!.textContent!).integrity).toEqual(build.sri)
+  })
+
+  it('mapa que não confere o hash não fica guardado', async () => {
+    browser({ map: 'silent', preload: ignores })
+    await (await load())(build)
+    expect(localStorage.getItem('vitral:sri-map')).toBeNull()
+  })
+
   it('CSS fica fora do mapa (não passa por import map)', async () => {
     browser({ map: 'ok' })
     const css = CDN + 'remote.css'

@@ -66,7 +66,7 @@ Quando o remote tem `import()`, o plugin publica também um build dividido, e o 
 | `modulepreload` com `integrity` | Firefox, Chrome 127 a 132 | Cada arquivo entra por um `<link rel="modulepreload" integrity>` antes do `import()` |
 | `blob:` | Os outros, e depois de uma falha | A lib baixa o arquivo único, confere os bytes e executa por `blob:` |
 
-Antes de usar o import map, a lib confere que o hash dele vale: no primeiro mapa vão dois módulos `blob:` de teste com o mesmo hash, e o errado tem de falhar. Um navegador que recusa o mapa sem avisar, ou que aceita sem conferir, cai para o caminho seguinte. O CSS fica fora do mapa: o hash dele vai no `<link integrity>` ou no `fetch` do Shadow DOM.
+Antes de usar o import map, a lib confere que o hash dele vale: no primeiro mapa vão dois módulos `blob:` de teste com o mesmo hash, e o errado tem de falhar. Um navegador que recusa o mapa sem avisar, ou que aceita sem conferir, cai para o caminho seguinte. A recusa do módulo errado deixa uma linha de erro no console (`Failed to find a valid digest` no Chromium). O resultado fica guardado no `localStorage` (chave `vitral:sri-map`, com o user agent), então essa linha aparece uma vez por navegador, não a cada página. Se a página monta vários remotes juntos, o teste roda uma vez só. O CSS fica fora do mapa: o hash dele vai no `<link integrity>` ou no `fetch` do Shadow DOM.
 
 ## CSP
 
