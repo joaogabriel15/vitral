@@ -8,8 +8,8 @@
  *   sobem para o documento, sem duplicar.
  * - Folhas construídas não aceitam `@import`: cada import vira outra folha
  *   adotada antes da que importa.
- * - `class` e `data-theme` do `<html>` são copiados para a raiz do remote,
- *   para `.dark` e `[data-theme]` funcionarem lá dentro.
+ * - `class` e `data-theme` do `<html>` são copiados para a raiz do remote e
+ *   para o destino de portais, para `.dark` e `[data-theme]` funcionarem lá.
  *
  * Com manifesto novo (`shadow`), o plugin já separou tudo isso no build: o
  * CSS pronto é adotado como está e `@property`/`@font-face` entram num
@@ -47,9 +47,20 @@ export function prefetch(r: RemoteCss, priority?: RequestPriority): void {
   injectCss(global, null, r.sri)
 }
 
-export async function attachStyles(root: ShadowRoot, el: HTMLElement, r: RemoteCss, global: StyleOptions = {}, local: StyleOptions = {}): Promise<() => void> {
+export async function attachStyles(
+  root: ShadowRoot,
+  el: HTMLElement,
+  r: RemoteCss,
+  global: StyleOptions = {},
+  local: StyleOptions = {},
+): Promise<[release: () => void, portal: HTMLElement]> {
   const sri = r.sri ?? {}
   const [css, ready, up] = plan(r)
+  // Destino de portais (popovers, menus, dialogs): irmão da raiz, com os
+  // mesmos atributos, para o CSS adotado e o escopo valerem lá também.
+  const portal = el.cloneNode() as HTMLElement
+  portal.setAttribute('data-vitral-portal', '')
+  el.after(portal)
   // CSS base do host primeiro: o do remote vence quando os dois definem algo.
   const urls = [...(global.inherit ?? []), ...(local.inherit ?? [])].map((u) => new URL(u, document.baseURI).href).concat(css)
   const props = injectCss(up, null, sri)
@@ -60,7 +71,8 @@ export async function attachStyles(root: ShadowRoot, el: HTMLElement, r: RemoteC
     await injectCss(urls, root, sri)
   }
   await props
-  return (local.mirrorTheme ?? global.mirrorTheme) === false ? () => {} : mirrorTheme(el)
+  const stop = (local.mirrorTheme ?? global.mirrorTheme) === false ? [] : [mirrorTheme(el), mirrorTheme(portal)]
+  return [() => (stop.forEach((fn) => fn()), portal.remove()), portal]
 }
 
 /** `ready`: CSS preparado no build; `true` se ainda tem `url()` relativa. */

@@ -45,10 +45,10 @@ export function prefetchCss(r: RemoteCss, shadow: boolean, priority: RequestPrio
  * Com hash em `sri`, o navegador confere os bytes antes de aplicar.
  * Devolve a função que desfaz o que precisa ser desfeito no unmount.
  */
-export function injectStyles(r: RemoteCss, root: ShadowRoot | null, el: HTMLElement, styles?: StyleOptions): Promise<() => void> {
+export function injectStyles(r: RemoteCss, root: ShadowRoot | null, el: HTMLElement, styles?: StyleOptions): Promise<[release: () => void, portal?: HTMLElement]> {
   return root
     ? import('./shadow').then((m) => m.attachStyles(root, el, r, protocol().settings().styles, styles))
-    : injectCss(r.css, null, r.sri).then(() => noop)
+    : injectCss(r.css, null, r.sri).then(() => [noop])
 }
 
 /**
