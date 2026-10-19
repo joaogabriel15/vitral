@@ -34,7 +34,7 @@ export const FRAME_RUNTIME = `function (w, load) {
     // Ponto de extensão: uma ponte nova registra handlers em channel[tipo] e
     // acrescenta campos aqui (a Fase 2 acrescenta ctx.shared).
     var ctx = {
-      name: d.name, baseUrl: d.baseUrl, events: events, shadowRoot: null, protocol: 1,
+      name: d.name, baseUrl: d.baseUrl, events: events, shadowRoot: null, portalContainer: doc.body, protocol: 1,
       reportError: function (e) { post('report', { message: String((e && e.message) || e) }) },
       navigate: function (url, o) { post('navigate', { url: String(url), replace: !!(o && o.replace) }) }
     }

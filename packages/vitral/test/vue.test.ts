@@ -2,7 +2,7 @@
 import { createApp, defineComponent, h, nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
-import { VitralRemote, useVitral, vueRemote } from '../src/vue'
+import { VitralRemote, usePortalContainer, useVitral, vueRemote } from '../src/vue'
 import { failingRemote, mockRemote } from '../src/testing'
 import { cleanup, flush, serveManifest } from './helpers'
 
@@ -46,6 +46,25 @@ describe('Vue: host <VitralRemote>', () => {
 })
 
 describe('Vue: vueRemote', () => {
+  it('usePortalContainer devolve o destino de portais (no Shadow DOM, dentro do shadow root)', async () => {
+    let seen: HTMLElement | 'body' | undefined
+    const Card = defineComponent({
+      setup() {
+        seen = usePortalContainer()
+        return () => null
+      },
+    })
+    register('card', { module: vueRemote(Card), isolate: 'shadow' })
+    const { div } = mount({ render: () => h(VitralRemote, { name: 'card' }) })
+    // O módulo de Shadow DOM é baixado à parte.
+    await vi.waitFor(() => expect(seen).toBeDefined(), { timeout: 5000 })
+    const root = div.querySelector('[data-vitral-slot]')!.shadowRoot!
+    expect(seen).toBe(root.querySelector('[data-vitral-portal]'))
+    // Fora de um remote, Teleport vai para o body.
+    mount({ setup: () => ((seen = usePortalContainer()), () => null) })
+    expect(seen).toBe('body')
+  })
+
   it('renderiza, atualiza props, injeta o contexto e reporta erros', async () => {
     const Card = defineComponent({
       props: { msg: String, boom: Boolean },
