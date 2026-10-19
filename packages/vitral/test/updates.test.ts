@@ -90,18 +90,65 @@ describe('refresh', () => {
     expect(el.textContent).toBe('v1:')
   })
 
-  it('se mount() da versão nova falha, a antiga fica e o erro vai para o console', async () => {
-    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+  it('se mount() da versão nova falha, refresh rejeita e a antiga fica', async () => {
     let n = 0
     register('r5', {
       module: async () => ({ mount: (el: HTMLElement) => (++n > 1 ? Promise.reject(new Error('boom')) : ((el.textContent = 'v1'), { unmount() {} })) }),
     })
     const el = box()
     await mountRemote(el, 'r5', {})
-    await refresh('r5')
-    await flush()
+    expect((await fail(refresh('r5'))).code).toBe('MOUNT_FAILED')
     expect(el.textContent).toBe('v1')
-    expect(err).toHaveBeenCalled()
+  })
+
+  it('await refresh() só resolve com a versão nova já na tela', async () => {
+    const { unmounts } = versioned('r7', ['v1', 'v2'])
+    const el = box()
+    await mountRemote(el, 'r7', { msg: 'a' })
+    await refresh('r7')
+    expect(el.textContent).toBe('v2:a')
+    expect(unmounts).toEqual(['v1'])
+  })
+
+  it('refreshes seguidos: a versão do último fica, mesmo se o primeiro terminar depois', async () => {
+    const gates: Array<() => void> = []
+    const unmounts: string[] = []
+    let i = 0
+    register('r8', {
+      module: async () => {
+        const v = `v${++i}`
+        return {
+          mount: async (el: HTMLElement) => {
+            // A troca para v2 demora mais que a troca para v3.
+            if (v === 'v2') await new Promise<void>((r) => gates.push(r))
+            el.textContent = v
+            return { unmount: () => unmounts.push(v) }
+          },
+        }
+      },
+    })
+    const el = box()
+    await mountRemote(el, 'r8', {})
+    const first = refresh('r8')
+    await flush()
+    await refresh('r8')
+    expect(el.textContent).toBe('v3')
+    gates.forEach((go) => go())
+    await first
+    await flush()
+    expect(el.querySelectorAll('[data-vitral-root]')).toHaveLength(1)
+    expect(el.textContent).toBe('v3')
+    expect(unmounts).toEqual(['v1', 'v2'])
+  })
+
+  it('props atualizadas durante a troca chegam na versão nova', async () => {
+    versioned('r9', ['v1', 'v2'])
+    const el = box()
+    const h = await mountRemote(el, 'r9', { msg: 'a' })
+    const p = refresh('r9')
+    h.update({ msg: 'b' })
+    await p
+    expect(el.textContent).toBe('v2:b')
   })
 
   it('desmontado durante o refresh: a versão nova é descartada', async () => {
