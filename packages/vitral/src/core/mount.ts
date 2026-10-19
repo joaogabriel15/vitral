@@ -72,7 +72,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
     target.appendChild(el)
   }
   let t = performance.now()
-  const release = await injectStyles(resolved.css, shadowRoot, el, options.styles, resolved.sri)
+  const release = await injectStyles(resolved, shadowRoot, el, options.styles)
   metric(name, 'css', t)
   t = performance.now()
 
