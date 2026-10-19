@@ -79,6 +79,14 @@ export async function groups(list: string[], root: string, entry: string, resolv
   return out
 }
 
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\0/g, '\\x00')
+
+/** Ids que o `resolveId` de `dedupeHooks` trata, para o filtro do hook (os grupos só saem no buildStart). */
+export function dedupeIds(list: string[]): RegExp {
+  const specs = new Set(list.flatMap((s) => (groupOf(s) === 'react' ? REACT : [s])))
+  return new RegExp(`${escape(BOOT)}$|^(${[DEPS, ...specs].map(escape).join('|')})$|^(${escape(OWN)}|${escape(SHIM)})`)
+}
+
 /** Hooks de resolução e carregamento. `getGroups` só tem valor depois do buildStart. */
 export function dedupeHooks(entry: () => string, getGroups: () => Group[]) {
   const keyOf = (id: string) => getGroups().find((g) => g.keys.includes(id))

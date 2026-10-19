@@ -30,6 +30,13 @@ export interface RemoteContext {
   events: EventBus
   /** Shadow root quando o host pediu isolamento, senão `null`. */
   shadowRoot: ShadowRoot | null
+  /**
+   * Onde popovers, menus e dialogs devem ser renderizados (`container` do
+   * Radix e do MUI, `Teleport` do Vue). No Shadow DOM é um elemento dentro do
+   * shadow root, com os estilos e o tema do remote; senão, `document.body`.
+   * Hosts antigos não mandam este campo.
+   */
+  portalContainer?: HTMLElement
   /** Avisa o host de um erro em tempo de execução (os adaptadores já chamam). */
   reportError(error: unknown): void
   /** Navega a página inteira (host e todos os roteadores) para `url`. */
@@ -201,6 +208,11 @@ export interface RemoteManifest {
   dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
   /** O que o remote declara para o host conferir antes de montar. */
   contract?: RemoteContract
+  /**
+   * CSS já preparado no build para o Shadow DOM. Sem este campo (manifestos
+   * antigos), o runtime faz esse trabalho em cada página.
+   */
+  shadow?: ShadowCss
 }
 
 /** Contrato do remote no `vitral.json`. */
@@ -209,6 +221,21 @@ export interface RemoteContract {
   version?: string
   /** Faixa aceita de cada dependência de `dedupe`, por grupo (`{ react: '^19.0.0' }`). */
   peers?: Record<string, string>
+}
+
+/**
+ * CSS do remote preparado no build para `isolate: 'shadow'`. Os caminhos são
+ * relativos ao primeiro arquivo de `css` (o plugin grava tudo na mesma pasta).
+ */
+export interface ShadowCss {
+  /** Cada arquivo de `css`, na mesma ordem, sem `@import`, `@property` e `@font-face`. */
+  css: string[]
+  /** `@property` e `@font-face`, que só valem no documento (vão num `<link>`). */
+  global?: string[]
+  /** `@import` que o build não embutiu (outra origem), adotados antes de `css`. */
+  imports?: string[]
+  /** O CSS ainda tem `url()` relativa, que precisa apontar para o remote. */
+  rebase?: boolean
 }
 
 export type Handler<T = unknown> = (payload: T) => void

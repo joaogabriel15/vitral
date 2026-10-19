@@ -3,7 +3,7 @@
 Host e remote em Vue 3.3 ou mais novo.
 
 ```ts
-import { VitralRemote, vueRemote, useVitral, useEvent, useEventValue, useShared } from 'vitral/vue'
+import { VitralRemote, vueRemote, useVitral, usePortalContainer, useEvent, useEventValue, useShared } from 'vitral/vue'
 ```
 
 ## &lt;VitralRemote&gt;
@@ -71,6 +71,7 @@ export default vueRemote(Catalogo, {
 | Função | Retorno |
 | --- | --- |
 | `useVitral()` | O `ctx` do remote, ou `null` |
+| `usePortalContainer()` | Destino para `<Teleport :to>`: o [`ctx.portalContainer`](/aprender/estilos#portais-radix-headless-ui-mui), ou `'body'` |
 | `useEvent(tipo, fn)` | Nada. Assina enquanto o componente existe |
 | `useEventValue(tipo)` | `ShallowRef` com o último valor |
 | `useShared(chave)` | Ref gravável: `tema.value = 'escuro'` |

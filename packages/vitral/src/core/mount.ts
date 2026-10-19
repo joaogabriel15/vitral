@@ -72,7 +72,8 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
     target.appendChild(el)
   }
   let t = performance.now()
-  const release = await injectStyles(resolved.css, shadowRoot, el, options.styles, resolved.sri)
+  // No Shadow DOM, `portal` é o destino de portais dentro do shadow root.
+  const [release, portal = document.body] = await injectStyles(resolved, shadowRoot, el, options.styles)
   metric(name, 'css', t)
   t = performance.now()
 
@@ -84,6 +85,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
     baseUrl: new URL('.', resolved.entry).href,
     events: scoped.bus,
     shadowRoot,
+    portalContainer: portal,
     reportError(e) {
       const err = isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e)
       if (options.onError) options.onError(err)
