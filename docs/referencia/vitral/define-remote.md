@@ -51,6 +51,7 @@ O mesmo objeto recebido.
 | `events` | O [barramento de eventos](./events). Assinaturas canceladas no unmount |
 | `shared` | O mesmo [`shared`](./shared). Assinaturas canceladas no unmount |
 | `shadowRoot` | Shadow root com `isolate: 'shadow'`, senão `null` |
+| `portalContainer` | Destino de [portais](/aprender/estilos#portais-radix-headless-ui-mui). No Shadow DOM, um elemento dentro do shadow root; senão, `document.body` |
 | `navigate(url, { replace? })` | Igual a [`navigate`](./navigate) |
 | `reportError(erro)` | Mostra o erro no host |
 | `onActivate(fn)`, `onDeactivate(fn)` | Com keep-alive: volta e saída da página |

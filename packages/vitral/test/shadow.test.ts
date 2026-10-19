@@ -182,3 +182,50 @@ describe('mirrorTheme', () => {
     expect(target.querySelector('[data-vitral-slot]')!.shadowRoot!.adoptedStyleSheets.map(text)).toEqual(['.base { color: red; }'])
   })
 })
+
+describe('portalContainer', () => {
+  const tick = () => new Promise((r) => setTimeout(r, 0))
+  const capture = (name: string, isolate?: 'shadow') => {
+    const ctxs: RemoteContext[] = []
+    register(name, { module: { mount: (_el: HTMLElement, _p: unknown, ctx: RemoteContext) => (ctxs.push(ctx), { unmount() {} }) }, css: [], isolate })
+    return ctxs
+  }
+
+  it('no Shadow DOM fica dentro do shadow root, depois da raiz, e sai no unmount', async () => {
+    files({})
+    const ctxs = capture('x', 'shadow')
+    const host = document.body.appendChild(document.createElement('div'))
+    const handle = await mountRemote(host, 'x', {})
+    const portal = ctxs[0]!.portalContainer!
+    expect(portal.getRootNode()).toBe(host.shadowRoot)
+    expect(portal.previousElementSibling).toBe(host.shadowRoot!.querySelector('[data-vitral-root]'))
+    expect(portal.getAttribute('data-vitral-root')).toBe('x')
+    expect(portal.hasAttribute('data-vitral-portal')).toBe(true)
+    handle.unmount()
+    expect(portal.isConnected).toBe(false)
+    expect(host.shadowRoot!.childElementCount).toBe(0)
+  })
+
+  it('sem Shadow DOM é o document.body, que fica no lugar depois do unmount', async () => {
+    const ctxs = capture('x')
+    const host = document.body.appendChild(document.createElement('div'))
+    const handle = await mountRemote(host, 'x', {})
+    expect(ctxs[0]!.portalContainer).toBe(document.body)
+    handle.unmount()
+    expect(document.body.isConnected).toBe(true)
+  })
+
+  it('recebe class e data-theme do <html>, como a raiz', async () => {
+    files({})
+    document.documentElement.className = 'dark'
+    document.documentElement.setAttribute('data-theme', 'roxo')
+    const ctxs = capture('x', 'shadow')
+    await mountRemote(document.body.appendChild(document.createElement('div')), 'x', {})
+    const portal = ctxs[0]!.portalContainer!
+    expect(portal.className).toBe('dark')
+    expect(portal.getAttribute('data-theme')).toBe('roxo')
+    document.documentElement.className = 'claro'
+    await tick()
+    expect(portal.className).toBe('claro')
+  })
+})

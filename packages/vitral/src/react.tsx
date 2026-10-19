@@ -87,6 +87,16 @@ export function useVitral(): RemoteContext | null {
   return useContext(VitralContext)
 }
 
+/**
+ * Dentro de um remote: onde renderizar portais. No Shadow DOM é um elemento
+ * dentro do shadow root (com os estilos do remote); fora de um remote,
+ * `undefined`, e a biblioteca usa o padrão dela (`document.body`). Use em
+ * `<Popover.Portal container={usePortalContainer()}>`.
+ */
+export function usePortalContainer(): HTMLElement | undefined {
+  return useVitral()?.portalContainer
+}
+
 /** Assina um evento do barramento global enquanto o componente estiver montado. */
 export function useEvent<T = unknown>(type: string, handler: (payload: T) => void): void {
   const ref = useRef(handler)

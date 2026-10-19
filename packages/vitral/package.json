@@ -205,7 +205,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "4.4 kB"
+      "limit": "4.42 kB"
     },
     {
       "name": "núcleo",
@@ -253,7 +253,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "5.3 kB"
+      "limit": "5.32 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -261,7 +261,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1 kB"
+      "limit": "1.01 kB"
     },
     {
       "name": "react",
@@ -300,7 +300,7 @@
         "./dedupe-*",
         "./expose-*"
       ],
-      "limit": "6.15 kB"
+      "limit": "6.18 kB"
     },
     {
       "name": "devtools",
@@ -324,7 +324,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.05 kB"
+      "limit": "8.09 kB"
     },
     {
       "name": "iframe",

@@ -48,10 +48,10 @@ export function injectStyles(
   el: HTMLElement,
   styles?: StyleOptions,
   sri: Record<string, string> = {},
-): Promise<() => void> {
+): Promise<[release: () => void, portal?: HTMLElement]> {
   return root
     ? import('./shadow').then((m) => m.attachStyles(root, el, urls, protocol().settings().styles, styles, sri))
-    : injectCss(urls, null, sri).then(() => noop)
+    : injectCss(urls, null, sri).then(() => [noop])
 }
 
 /**

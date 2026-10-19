@@ -8,8 +8,8 @@
  *   sobem para o documento, sem duplicar.
  * - Folhas construídas não aceitam `@import`: cada import vira outra folha
  *   adotada antes da que importa.
- * - `class` e `data-theme` do `<html>` são copiados para a raiz do remote,
- *   para `.dark` e `[data-theme]` funcionarem lá dentro.
+ * - `class` e `data-theme` do `<html>` são copiados para a raiz do remote e
+ *   para o destino de portais, para `.dark` e `[data-theme]` funcionarem lá.
  */
 import { fetchCssText, injectCss } from './css'
 import type { StyleOptions } from './types'
@@ -29,7 +29,12 @@ export async function attachStyles(
   global: StyleOptions = {},
   local: StyleOptions = {},
   sri: Record<string, string> = {},
-): Promise<() => void> {
+): Promise<[release: () => void, portal: HTMLElement]> {
+  // Destino de portais (popovers, menus, dialogs): irmão da raiz, com os
+  // mesmos atributos, para o CSS adotado e o escopo valerem lá também.
+  const portal = el.cloneNode() as HTMLElement
+  portal.setAttribute('data-vitral-portal', '')
+  el.after(portal)
   // CSS base do host primeiro: o do remote vence quando os dois definem algo.
   const urls = [...(global.inherit ?? []), ...(local.inherit ?? [])].map((u) => new URL(u, document.baseURI).href).concat(css)
   if (typeof CSSStyleSheet !== 'undefined' && 'replaceSync' in CSSStyleSheet.prototype) {
@@ -38,7 +43,8 @@ export async function attachStyles(
   } else {
     await injectCss(urls, root, sri)
   }
-  return (local.mirrorTheme ?? global.mirrorTheme) === false ? () => {} : mirrorTheme(el)
+  const stop = (local.mirrorTheme ?? global.mirrorTheme) === false ? [] : [mirrorTheme(el), mirrorTheme(portal)]
+  return [() => (stop.forEach((fn) => fn()), portal.remove()), portal]
 }
 
 function loadSheet(href: string, chain: string[], integrity?: string): Promise<CSSStyleSheet[]> {
