@@ -5,7 +5,8 @@
  *   events.on('vitral:update-available', ({ name }) => refresh(name))
  *
  * `refresh` baixa a versão nova e troca cada montagem daquele remote pela nova,
- * com as props atuais. Se a versão nova falhar, a antiga continua na tela.
+ * com as props atuais. Resolve depois que todas as trocas terminam. Se a versão
+ * nova falhar, a antiga continua na tela e `refresh` rejeita.
  */
 import { events } from './events'
 import { loadFile, resolveEntry } from './loader'
@@ -19,10 +20,14 @@ export function track(name: string, entry: string): void {
   versions.set(name, entry)
 }
 
+/** Trocas começadas pelo `refresh` em andamento (preenchido durante o emit). */
+let swaps: Promise<unknown>[] | null = null
+
 /**
  * Troca as montagens de `name` (e das partes, `name/…`) pela versão que o
- * manifesto aponta agora, sem recarregar a página. Rejeita se a versão nova
- * não carregar; nesse caso nada muda na tela.
+ * manifesto aponta agora, sem recarregar a página. Resolve quando todas as
+ * montagens já mostram a versão nova. Rejeita se a versão nova não carregar
+ * ou se o `mount` dela falhar; nesse caso a montagem antiga fica na tela.
  */
 export async function refresh(name: string): Promise<void> {
   const p = protocol()
@@ -31,7 +36,11 @@ export async function refresh(name: string): Promise<void> {
   // Registrar de novo descarta o módulo em cache em todas as cópias da lib.
   if (entry) p.register(name, entry)
   await loadFile(name)
+  // O barramento já isola erros dos handlers: o emit não lança.
+  const started: Promise<unknown>[] = (swaps = [])
   events.emit('vitral:refresh', name)
+  swaps = null
+  await Promise.all(started)
 }
 
 /** Handle que troca o remote montado quando chega `vitral:refresh` daquele nome. */
@@ -41,16 +50,22 @@ export function refreshable<P extends Props>(
   props: P,
   remount: (props: P) => Promise<MountedRemote<P>>,
 ): MountedRemote<P> {
+  // Cada troca ganha um número; só a mais recente pode entrar na tela.
+  let gen = 0
   const off = events.on<string>('vitral:refresh', (n) => {
-    if (n === name || name.startsWith(n + '/')) {
-      remount(props).then((next) => {
-        const old = current
-        // Desmontado enquanto a versão nova baixava: descarta a nova.
-        if (old.unmount === noop) return next.unmount()
-        current = next
-        old.unmount()
-      }, console.error)
-    }
+    if (n !== name && !name.startsWith(n + '/')) return
+    const mine = ++gen
+    const used = props
+    const swap = remount(used).then((next) => {
+      // Desmontado ou trocado de novo enquanto esta versão baixava: descarta.
+      if (current.unmount === noop || mine !== gen) return next.unmount()
+      const old = current
+      current = next
+      old.unmount()
+      if (props !== used) next.update?.(props)
+    })
+    if (swaps) swaps.push(swap)
+    else swap.catch(console.error)
   })
   return {
     update(next) {
