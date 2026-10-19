@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { after, test } from 'node:test'
 import { create, DEFAULT_SRC, HOSTS, REMOTES } from '../src/create.js'
 import { parseArgs, run } from '../src/cli.js'
@@ -86,6 +87,20 @@ test('parseArgs e perguntas', async () => {
 
 test('o bin roda', async () => {
   const { execFileSync } = await import('node:child_process')
-  const out = execFileSync(process.execPath, [new URL('../index.js', import.meta.url).pathname, '--help'], { encoding: 'utf8' })
+  const out = execFileSync(process.execPath, [fileURLToPath(new URL('../index.js', import.meta.url)), '--help'], { encoding: 'utf8' })
   assert.match(out, /--framework/)
+})
+
+test('angular acha o tsconfig em pasta com espaço e acento', async () => {
+  for (const kind of ['host', 'remote']) {
+    const dir = join(tmp, `pasta com espaço ${kind}`, 'ângular')
+    create({ dir, kind, framework: 'angular' })
+    const config = read(dir, 'vite.config.js')
+    const expr = config.match(/tsconfig: (.+) \}\)/)[1]
+    const probe = join(dir, 'probe.mjs')
+    writeFileSync(probe, `import { fileURLToPath } from 'node:url'\nexport default ${expr}\n`)
+    const { default: path } = await import(pathToFileURL(probe).href)
+    assert.equal(path, join(dir, 'tsconfig.json'))
+    assert.ok(existsSync(path), path)
+  }
 })

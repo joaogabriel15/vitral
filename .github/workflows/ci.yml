@@ -31,6 +31,16 @@ jobs:
         if: matrix.node == 22
         run: node scripts/cobertura.mjs packages/vitral/coverage/coverage-summary.json >> "$GITHUB_STEP_SUMMARY"
 
+  # O gerador no Windows: caminhos com letra de unidade, espaço e acento.
+  create-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node --test packages/create-vitral/test/create.test.js
+
   # Site: o build falha com link quebrado, e check-erros.mjs confere que
   # cada código de erro tem a página para onde RemoteError.docs aponta.
   docs:
