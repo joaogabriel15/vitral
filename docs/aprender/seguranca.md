@@ -56,6 +56,18 @@ Ou embuta o manifesto inteiro com `{ url, manifest }`.
 
 Aceita `sha256`, `sha384` e `sha512`.
 
+### Como o navegador confere
+
+Quando o remote tem `import()`, o plugin publica também um build dividido, e o `vitral.json` traz o hash de cada arquivo em `files`. A lib usa o primeiro caminho que funciona no navegador:
+
+| Caminho | Onde | Como |
+| --- | --- | --- |
+| Import map com `integrity` | Chrome 133+, Safari 18.4+ | Um import map com o hash de todo o JS do remote: entrada, chunks, `import()` e cópias de `dedupe`. O navegador confere cada arquivo, inclusive os `import()` feitos depois |
+| `modulepreload` com `integrity` | Firefox, Chrome 127 a 132 | Cada arquivo entra por um `<link rel="modulepreload" integrity>` antes do `import()` |
+| `blob:` | Os outros, e depois de uma falha | A lib baixa o arquivo único, confere os bytes e executa por `blob:` |
+
+Antes de usar o import map, a lib confere que o hash dele vale: no primeiro mapa vão dois módulos `blob:` de teste com o mesmo hash, e o errado tem de falhar. Um navegador que recusa o mapa sem avisar, ou que aceita sem conferir, cai para o caminho seguinte. O CSS fica fora do mapa: o hash dele vai no `<link integrity>` ou no `fetch` do Shadow DOM.
+
 ## CSP
 
 Inclua a origem dos remotes em `script-src` e `connect-src`, e `blob:` em `script-src`:
@@ -64,7 +76,7 @@ Inclua a origem dos remotes em `script-src` e `connect-src`, e `blob:` em `scrip
 Content-Security-Policy: script-src 'self' https://cdn.empresa.com blob:; connect-src 'self' https://cdn.empresa.com
 ```
 
-Se a página tem um `<script nonce>`, a lib usa o mesmo `nonce`.
+Se a página tem um `<script nonce>`, a lib usa o mesmo `nonce` no import map do SRI. Sem `nonce`, a CSP bloqueia esse mapa e a lib usa os outros caminhos.
 
 ## Overrides de desenvolvimento
 
