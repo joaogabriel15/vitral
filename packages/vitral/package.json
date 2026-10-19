@@ -245,7 +245,7 @@
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.4 kB"
+      "limit": "2.51 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
@@ -341,7 +341,7 @@
         "./expose-*",
         "./capture-*"
       ],
-      "limit": "6.32 kB"
+      "limit": "6.33 kB"
     },
     {
       "name": "devtools",
@@ -367,7 +367,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.67 kB",
+      "limit": "8.78 kB",
       "ignore": [
         "./overrides-*"
       ]

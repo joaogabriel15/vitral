@@ -13,6 +13,7 @@ export type {
   EventBus,
   Handler,
   Isolation,
+  McpAppBridge,
   MountedRemote,
   Props,
   PropsOf,
