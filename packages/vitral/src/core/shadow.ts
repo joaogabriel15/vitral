@@ -71,7 +71,11 @@ function loadSheet(href: string, chain: string[], integrity?: string): Promise<C
         const next = [...chain, href]
         return Promise.all(imports.filter((u) => !next.includes(u)).map((u) => loadSheet(u, next))).then((found) => [...found.flat(), sheet])
       })
-      .catch(() => [])
+      .catch(() => {
+        // Sem folha nesta montagem; a próxima baixa de novo.
+        sheets.delete(href)
+        return []
+      })
     sheets.set(href, p)
   }
   return p
