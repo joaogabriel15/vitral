@@ -170,12 +170,29 @@ export function defineVitralElement(tag = 'vitral-remote'): void {
  * elemento; o contexto fica em `element.vitral`.
  *
  *   export default elementRemote('meu-widget')
+ *
+ * `setup` recebe o registro de custom elements do remote (`ctx.customElements`,
+ * próprio dele no Shadow DOM quando o navegador suporta) e pode devolver outra
+ * tag para o elemento. O elemento é criado com esse registro:
+ *
+ *   export default elementRemote('meu-widget', (registry) => {
+ *     registry.get('meu-widget') || registry.define('meu-widget', MeuWidget)
+ *     registry.get('ds-button') || registry.define('ds-button', DsButton)
+ *   })
  */
-export function elementRemote<P extends Props = Props>(tag: string, setup?: () => void): RemoteModule<P> {
+export function elementRemote<P extends Props = Props>(tag: string, setup?: (registry: CustomElementRegistry) => string | void): RemoteModule<P> {
   return defineRemote<P>({
     mount(el, props, ctx) {
-      setup?.()
-      const node = document.createElement(tag) as HTMLElement & Record<string, unknown>
+      // Hosts antigos não mandam o registro.
+      const registry = ctx.customElements ?? customElements
+      const name = setup?.(registry) || tag
+      let node: HTMLElement & Record<string, unknown>
+      try {
+        node = document.createElement(name, { customElementRegistry: registry }) as typeof node
+      } catch {
+        // Navegador que conhece a opção e recusa o registro do caminho sem suporte.
+        node = document.createElement(name) as typeof node
+      }
       node.vitral = ctx
       Object.assign(node, props)
       el.appendChild(node)

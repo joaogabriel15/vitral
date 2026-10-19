@@ -16,6 +16,8 @@ exports[`exports públicos > auto 1`] = `[]`;
 
 exports[`exports públicos > devtools 1`] = `
 [
+  "activeOverrides",
+  "clearOverrides",
   "devtools",
   "getOverrides",
   "setOverride",

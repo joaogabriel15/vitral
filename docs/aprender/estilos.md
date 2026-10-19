@@ -164,6 +164,35 @@ const portal = usePortalContainer()
 
 Em outros frameworks, use `ctx.portalContainer` direto.
 
+## Custom elements de cada remote
+
+Dois remotes podem usar versões diferentes do mesmo design system, cada uma com o seu `<ds-button>`. No registro global (`customElements`), a segunda definição lança erro e o remote não monta.
+
+No Shadow DOM, cada remote recebe `ctx.customElements`. Em navegadores com Scoped Custom Element Registries (Chrome e Edge 146+, Safari 26+), é um `CustomElementRegistry` só do remote, e o shadow root e o elemento `el` do mount são criados com ele. Defina as tags nele:
+
+```js
+export default {
+  mount(el, props, ctx) {
+    const registry = ctx.customElements ?? customElements // hosts antigos não mandam
+    registry.define('ds-button', DsButton)
+    el.innerHTML = '<ds-button>Comprar</ds-button>'
+    return { unmount: () => el.replaceChildren() }
+  },
+}
+```
+
+O que for criado com `innerHTML` dentro de `el` usa o registro do remote. `document.createElement(tag)` usa o global; passe o registro: `document.createElement('ds-button', { customElementRegistry: ctx.customElements })`.
+
+O registro é um por remote e vale para todas as montagens dele. Uma definição não pode ser desfeita, então `define` de uma tag que já existe não lança: fica a definição que já existe.
+
+Sem suporte (Firefox até a 158, navegadores antigos) e fora do Shadow DOM, `ctx.customElements` é o registro global. Quando um remote define uma tag que outro remote já definiu, fica a primeira definição, o remote monta mesmo assim e, em dev, o console mostra:
+
+```
+[vitral] v2: <ds-button> já foi definido por v1; fica essa definição. Sem Scoped Custom Element Registries, os remotes dividem o registro global.
+```
+
+Quem chama `customElements.define` direto, sem passar por `ctx.customElements`, continua no registro global, como antes.
+
 ## CSS extra num remote
 
 ```ts
