@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { createRequire } from 'node:module'
+import { canal } from './cli/canal'
 import { serveMcp } from './cli/mcp'
 import { add, registry } from './cli/registry'
 import { doctorCli } from './cli/doctor'
@@ -14,6 +15,7 @@ const AJUDA = `Uso:
   vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url]
                 [--contract faixa] [--max-kb n] [--json]
   vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
+  vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
 
   types     Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
             --check só confere se o hash de cada manifesto ainda é o
@@ -28,7 +30,10 @@ const AJUDA = `Uso:
             Sai com erro se alguma conferência falhar (útil no CI).
   migrate   Converte um app do single-spa ou um remote do Module Federation num
             remote vitral. Mostra o diff de cada arquivo.
-            --dry-run só mostra o que mudaria, sem escrever.`
+            --dry-run só mostra o que mudaria, sem escrever.
+  canal     Cria ou edita o canal de um remote (canary e rollback) e mostra
+            como ficou. --stable é obrigatória ao criar; --canary off tira a
+            canary; --percent vai de 0 a 100.`
 
 const falhou = (err: Error) => {
   console.error(err.message)
@@ -95,6 +100,15 @@ if (command === 'types') {
       console.error((err as Error).message)
       process.exitCode = 1
     }
+  }
+} else if (command === 'canal' && args.length) {
+  const stable = flag(args, '--stable')
+  const canary = flag(args, '--canary')
+  const percent = flag(args, '--percent')
+  try {
+    canal({ file: args[0], stable, canary, percent: percent === undefined ? undefined : Number(percent) })
+  } catch (err) {
+    falhou(err as Error)
   }
 } else {
   console.log(AJUDA)

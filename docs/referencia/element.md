@@ -23,7 +23,7 @@ import { defineVitralElement, elementRemote, SharedController } from 'vitral/ele
 </vitral-remote>
 ```
 
-`import 'vitral/auto'` registra o elemento sem chamar nada.
+`import 'vitral/auto'` registra o elemento sem chamar nada. Para um widget em site de terceiros, com uma tag `<script>` só, veja [embed.js](/aprender/terceiros).
 
 | Atributo | O que faz |
 | --- | --- |

@@ -7,6 +7,7 @@ npx vitral add <remote ...> [--registry url|arquivo] [--to remotes.json] [--base
 npx vitral mcp [--registry url|arquivo]
 npx vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url] [--contract faixa] [--max-kb n] [--json]
 npx vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
+npx vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
 ```
 
 ## vitral types
@@ -195,3 +196,24 @@ No fim, o comando lista o que fazer à mão: dependências para instalar e o que
 Uma parte de `exposes` é tratada como componente quando o arquivo é `.jsx`, `.tsx`, `.vue` ou `.svelte`, ou quando o nome começa com maiúscula. As outras são módulos sem UI, para `loadModule`.
 
 Termina com código `1` se não achar single-spa nem Module Federation.
+
+## vitral canal
+
+Cria ou edita o canal de um remote (o `canal.json` de [Canary e rollback](/aprender/canary)) e mostra como ficou. Sem opções, só mostra.
+
+```bash
+npx vitral canal canal.json --stable 1.4.0                  # cria: { "stable": "1.4.0" }
+npx vitral canal canal.json --canary 1.5.0 --percent 10     # canary para 10%
+npx vitral canal canal.json --percent 50                    # muda só o percent
+npx vitral canal canal.json --stable 1.5.0 --canary off     # promove
+npx vitral canal canal.json --stable 1.4.0                  # volta uma versão
+```
+
+| Opção | O que faz |
+| --- | --- |
+| `--stable x.y.z` | Versão de quem não está na canary. Obrigatória para criar o canal |
+| `--canary x.y.z` | Versão nova. Trocar a versão mantém o `percent` |
+| `--canary off` | Tira a canary |
+| `--percent n` | Parte dos usuários na canary, de 0 a 100. Obrigatório na primeira canary |
+
+Campos próprios do canal (lidos por um `resolve`) ficam como estão. Termina com código `1` se a mudança deixaria o canal inválido, e aí não grava nada.
