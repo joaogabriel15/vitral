@@ -1,5 +1,48 @@
 # vitral
 
+## 0.4.0
+
+### Minor Changes
+
+- [#66](https://github.com/joaogabriel15/vitral/pull/66) [`d0e6f7d`](https://github.com/joaogabriel15/vitral/commit/d0e6f7d14ddca578306e624b82627200985ed4cb) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Canary e rollback por um arquivo-ponteiro, sem serviço externo. Registre a URL de um `canal.json` (`{ "stable": "1.4.0", "canary": { "version": "1.5.0", "percent": 10 } }`) no lugar do `vitral.json`: o host escolhe a versão de cada usuário por um número estável (`canaryKey` ou um id do navegador), aceita uma regra própria em `resolve` (cookie, grupo de teste) e, quando a canary passa de `rollback.errors` erros numa janela de `rollback.mounts` montagens, volta para a estável naquela sessão, troca as montagens na tela e chama `onRollback`. O plugin ganhou `versionDir: true`, que grava o build em `dist/<versão>/`. O código do canal é baixado só quando o host encontra um canal.
+
+- [#71](https://github.com/joaogabriel15/vitral/pull/71) [`a7116ed`](https://github.com/joaogabriel15/vitral/commit/a7116edd8be24716f9feb7b6e88d42cae12de757) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Novo `dist/embed.js`: loader de uma linha para widget em site de terceiros, sem bundler. `<script src=".../vitral@x/dist/embed.js" data-remote="https://cdn/chat/canal.json" data-target="#chat" data-props='{"lang":"pt"}' async>` monta o widget com Shadow DOM por padrão (o CSS não vaza no site) e libera só a origem do widget, para HTML injetado no site não carregar JS de outra origem. É um arquivo só (IIFE, cerca de 11 kB com brotli) e já lê o `canal.json`: voltar uma versão em todos os sites é editar o canal.
+
+  Novo comando `npx vitral canal <canal.json>`: cria e edita o canal sem abrir o JSON (`--stable 1.4.0`, `--canary 1.5.0 --percent 10`, `--percent 50`, `--canary off`).
+
+  Doc nova: "Widget em site de terceiros", com receitas de CSP (com nonce e com lista de origens) e de cache.
+
+- [#65](https://github.com/joaogabriel15/vitral/pull/65) [`9044839`](https://github.com/joaogabriel15/vitral/commit/9044839b2eee2545a576faa847b4b015d8937dcd) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral({ target: 'mcp-app' })` empacota o remote como MCP App: o build gera `dist/mcp-app.html`, um HTML único com JS e CSS inline, para um servidor MCP registrar como recurso `ui://` (`text/html;profile=mcp-app`). Dentro do host MCP, a entrada e o resultado da tool e o `hostContext` chegam como props, e `ctx.events.emit` vira mensagem para o host (`ui/message`, `ui/open-link` ou `ui/update-model-context`). `ctx.mcp` fala JSON-RPC direto com o host para o resto do protocolo.
+
+- [#68](https://github.com/joaogabriel15/vitral/pull/68) [`6496c48`](https://github.com/joaogabriel15/vitral/commit/6496c483e8b48d1afbf0cb289faa67ee5f822a51) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Overrides de desenvolvimento para polyrepo:
+
+  - `configure({ devOverrides: { preview: 'https://{name}-{ref}.preview.empresa.com' } })` resolve apelidos: `?vitral=checkout@pr-123` carrega `https://checkout-pr-123.preview.empresa.com/vitral.json`. Dá para mandar o link do preview de um PR com o resto da página vindo de homologação.
+  - A troca feita por `?vitral=` fica guardada na aba (`sessionStorage`) e continua valendo depois de recarregar ou navegar sem o parâmetro.
+  - `?vitral=off` remove todas as trocas e `?vitral=nome@off` remove uma. O aviso no console diz a origem da troca e como limpar.
+  - `vitral/devtools`: o botão mostra quantas trocas estão ativas, o painel lista as da aba e as do navegador e tem "Limpar todos". Novas funções `activeOverrides()` e `clearOverrides()`. `setOverride` aceita apelido.
+  - Correção: um override salvo à mão no `localStorage` com URL base (`{"carrinho":"http://localhost:5174"}`) era ignorado quando a página não tinha `?vitral=`.
+
+- [#69](https://github.com/joaogabriel15/vitral/pull/69) [`bf9350c`](https://github.com/joaogabriel15/vitral/commit/bf9350c25139d38877da6ad855c8757b82c24cdc) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `ctx.customElements`: no Shadow DOM, cada remote recebe um `CustomElementRegistry` próprio quando o navegador tem Scoped Custom Element Registries (Chrome e Edge 146+, Safari 26+). O shadow root e o elemento do mount são criados com ele, então dois remotes podem definir `<ds-button>` de versões diferentes. Sem suporte, e fora do Shadow DOM, é o registro global: um `define` de tag que outro remote já definiu não lança mais, fica a primeira definição, com aviso em dev. `elementRemote(tag, setup)` passa o registro para `setup`, cria o elemento com ele e aceita uma tag devolvida por `setup`; o plugin define a classe exportada no registro do remote.
+
+- [#63](https://github.com/joaogabriel15/vitral/pull/63) [`ac04933`](https://github.com/joaogabriel15/vitral/commit/ac04933b2c2d5dd70be0786009061a4f0a4c6fda) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Registro de remotes para hosts e agentes. `npx vitral registry` gera um `vitral-registry.json` (nome, URL do manifesto, versão, tipo das props, dono, hash e framework de cada remote) a partir dos manifestos, com JSON Schema publicado em `https://joaogabriel15.github.io/vitral/schema/vitral-registry.json`. `npx vitral add <remote>` copia um remote do registro (URL ou arquivo) para o `remotes.json` do host e roda `vitral types`. `npx vitral mcp` abre um servidor MCP por stdio, sem dependências, com as ferramentas `list_remotes`, `get_remote` e `add_remote`. O repositório ganha uma skill para agentes em `skills/vitral/SKILL.md`.
+
+- [#62](https://github.com/joaogabriel15/vitral/pull/62) [`eccd4ea`](https://github.com/joaogabriel15/vitral/commit/eccd4ea74db3ffa62853d64ce6ec0eb4b736375c) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Plugin Vite: opção `sbom`. Com `vitral({ sbom: true })`, o build grava `sbom.cdx.json` (CycloneDX 1.6, JSON) com os pacotes npm que entraram no bundle do remote: nome, versão, licença, purl e quem depende de quem, com o remote como componente principal e o hash do JS publicado. O `vitral.json` ganha `sbom: { file, integrity }`. Pacotes removidos pelo tree-shaking não aparecem. Desligado por padrão; sem a opção, o build não muda. Ajuda a cumprir o Cyber Resilience Act da UE, que exige SBOM a partir de dezembro de 2027.
+
+- [#64](https://github.com/joaogabriel15/vitral/pull/64) [`e8bb70b`](https://github.com/joaogabriel15/vitral/commit/e8bb70b1093b594d5ee7376bd55892651754a3cc) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Novo comando `npx vitral doctor`: baixa o manifesto e o JS de cada remote, como o host faria, e explica em pt-BR a causa e o que fazer quando algo impede o carregamento: CORS do manifesto e do JS, CSP do host (header ou `<meta>`), `Content-Type` do JS, falta do export `mount`, manifesto inválido (HTML no lugar do JSON, sem `entry`), `integrity` que não confere, contrato fora da faixa, React ou Vue duplicado, versões divergentes de `dedupe` e tamanho do bundle. Sai com código 1 se houver erro (para o CI) e aceita `--json`.
+
+- [#70](https://github.com/joaogabriel15/vitral/pull/70) [`0912775`](https://github.com/joaogabriel15/vitral/commit/0912775cf628f0942ad2de445808eaa79bfc26ef) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `npx vitral migrate` converte um app do single-spa ou um remote do Module Federation num remote vitral, sem mexer no build atual. Gera o embrulho do app (ou um arquivo por componente de `exposes`), um `vite.vitral.config.mjs` e o script `build:vitral`, mostra o diff de cada arquivo e lista o que fazer à mão. Com `--dry-run`, não escreve nada.
+
+  Duas entradas novas, fora do host mínimo:
+
+  - `vitral/single-spa`: `singleSpaRemote(lifecycles)` monta um app do single-spa (`bootstrap`, `mount`, `unmount`, `update`) pelo contrato `mount(el, props, ctx)`.
+  - `vitral/federation`: `federationRemote(url, options)` deixa o host vitral montar um remote do Module Federation a partir do `mf-manifest.json` (ou do `remoteEntry.js`), com `adapt` para embrulhar componentes e `shared` para oferecer as dependências do host. Serve para migrar um remote por vez.
+
+### Patch Changes
+
+- [#67](https://github.com/joaogabriel15/vitral/pull/67) [`35815ff`](https://github.com/joaogabriel15/vitral/commit/35815ffd40ca7a799d149d97dfb0b5cb8e32bcd1) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - SRI pelo import map: antes de usar o mapa com `integrity`, a lib confere que o hash dele vale, carregando dois módulos de teste (o errado tem de falhar). Um navegador que recusa o mapa sem disparar `error` (Safari 18.0 a 18.3) ou que aceita sem conferir passa a usar o `modulepreload` com `integrity` ou o `blob:`, em vez de rodar o remote sem conferência. O CSS saiu do import map (o hash dele continua no `<link integrity>`), e navegadores sem import map nem tentam o mapa.
+
+- [#73](https://github.com/joaogabriel15/vitral/pull/73) [`94c5738`](https://github.com/joaogabriel15/vitral/commit/94c5738c4507b034c98092dc1a8b85e760c802ec) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - O teste do import map com integrity roda uma vez por navegador. Antes, cada remote montado ao mesmo tempo fazia o próprio teste, e cada um deixava uma linha de erro no console. Agora os remotes que chegam juntos esperam o mesmo teste, e o resultado fica guardado no `localStorage` (chave `vitral:sri-map`).
+
 ## 0.3.0
 
 ### Minor Changes
