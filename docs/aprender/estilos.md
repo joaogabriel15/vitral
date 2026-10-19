@@ -104,6 +104,66 @@ configure({ styles: { inherit: ['/assets/base.css'] } })
 <vitral-remote name="carrinho" isolate="shadow" inherit-styles="/assets/base.css"></vitral-remote>
 ```
 
+## Portais (Radix, Headless UI, MUI)
+
+Popovers, menus e dialogs costumam ir para o `document.body`. No Shadow DOM, isso os tira do shadow root e eles perdem o CSS do remote. Use `ctx.portalContainer`: um elemento dentro do shadow root, com o CSS, as variáveis e o tema (`class` e `data-theme`) do remote. Sem Shadow DOM, ele é o próprio `document.body`.
+
+Radix:
+
+```jsx
+import * as Popover from '@radix-ui/react-popover'
+import { usePortalContainer } from 'vitral/react'
+
+function Ajuda() {
+  const container = usePortalContainer()
+  return (
+    <Popover.Root>
+      <Popover.Trigger>Ajuda</Popover.Trigger>
+      <Popover.Portal container={container}>
+        <Popover.Content>Texto da ajuda</Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  )
+}
+```
+
+O mesmo vale para `Dialog.Portal` e `DropdownMenu.Portal`.
+
+Headless UI (v2) não tem prop de destino. `MenuItems`, `PopoverPanel`, `ListboxOptions` e `ComboboxOptions` vão para o `body` com `portal` ou `anchor` (`anchor` liga `portal`). Sem as duas, ficam no lugar, dentro do shadow root, e você posiciona com CSS:
+
+```jsx
+<Menu as="div" className="relative">
+  <MenuButton>Opções</MenuButton>
+  <MenuItems className="absolute right-0 mt-2">…</MenuItems>
+</Menu>
+```
+
+O `Dialog` do Headless UI sempre vai para o `document.body` e não dá para mudar. No Shadow DOM, use outro dialog (o do Radix com `container`, por exemplo).
+
+MUI: `Popover`, `Popper`, `Modal` e os que usam esses (`Menu`, `Dialog`, `Tooltip`) aceitam `container`. Com `disablePortal`, ficam no lugar:
+
+```jsx
+<Menu container={usePortalContainer()} open={aberto} anchorEl={botao}>…</Menu>
+<Popper disablePortal open={aberto} anchorEl={botao}>…</Popper>
+```
+
+Para todos de uma vez, no tema: `components: { MuiPopover: { defaultProps: { container } }, MuiPopper: { … }, MuiModal: { … } }`. O CSS do MUI (Emotion) também precisa ir para o shadow root: `createCache({ key: 'css', container: ctx.shadowRoot })` num `CacheProvider`.
+
+Vue:
+
+```vue
+<script setup>
+import { usePortalContainer } from 'vitral/vue'
+const portal = usePortalContainer()
+</script>
+
+<template>
+  <Teleport :to="portal"><div class="menu">…</div></Teleport>
+</template>
+```
+
+Em outros frameworks, use `ctx.portalContainer` direto.
+
 ## CSS extra num remote
 
 ```ts

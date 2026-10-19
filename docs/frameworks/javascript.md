@@ -153,6 +153,7 @@ Todo remote recebe o mesmo `ctx`:
 | `events` | Barramento de eventos. O que o remote assina por aqui é cancelado no unmount |
 | `shared` | Contexto compartilhado. Veja [Contexto](/aprender/contexto) |
 | `shadowRoot` | O shadow root, com `isolate="shadow"`. Senão `null` |
+| `portalContainer` | Onde renderizar popovers e dialogs. Veja [Portais](/aprender/estilos#portais-radix-headless-ui-mui) |
 | `navigate(url, { replace? })` | Navega a página e avisa todos os roteadores |
 | `reportError(erro)` | Mostra o erro no host |
 | `onActivate(fn)`, `onDeactivate(fn)` | Com keep-alive. Veja [Carregamento](/aprender/carregamento#keep-alive) |
