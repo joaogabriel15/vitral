@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { build } from 'vite'
 import { createRequire } from 'node:module'
@@ -39,6 +39,24 @@ describe('tipos das props', () => {
   it('expande o tipo das props de um componente-função, sem imports', async () => {
     vi.mocked(loadOxc).mockResolvedValueOnce(null)
     expect(await extractProps(root, join(root, 'src/App.tsx'))).toBe(APP)
+  }, 30_000)
+
+  it('TypeScript 7 no projeto (sem API em JS) não quebra o build: usa outro TypeScript ou não gera tipos', async () => {
+    // O create-vite instala o TypeScript 7, que exporta só a versão.
+    const ts7 = mkdtempSync(join(cache, 'ts7-'))
+    cpSync(join(root, 'src'), join(ts7, 'src'), { recursive: true })
+    writeFileSync(join(ts7, 'package.json'), '{"name":"ts7","type":"module"}')
+    mkdirSync(join(ts7, 'node_modules/typescript'), { recursive: true })
+    writeFileSync(join(ts7, 'node_modules/typescript/package.json'), '{"name":"typescript","version":"7.0.2","main":"index.js"}')
+    writeFileSync(join(ts7, 'node_modules/typescript/index.js'), 'module.exports = { version: "7.0.2" }')
+    vi.mocked(loadOxc).mockResolvedValueOnce(null)
+    try {
+      // Aqui o fallback acha o TypeScript 5 do repositório; numa instalação
+      // só com o 7, devolve null e o build segue sem vitral.d.ts.
+      expect(await extractProps(ts7, join(ts7, 'src/App.tsx'))).toEqual(expect.any(String))
+    } finally {
+      rmSync(ts7, { recursive: true, force: true })
+    }
   }, 30_000)
 
   it('com Oxc, lê da declaração isolada (inclusive de imports relativos) e chega no mesmo tipo', async () => {
