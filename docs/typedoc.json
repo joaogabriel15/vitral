@@ -12,7 +12,9 @@
     "../packages/vitral/src/testing.ts",
     "../packages/vitral/src/vite.ts",
     "../packages/vitral/src/sentry.ts",
-    "../packages/vitral/src/otel.ts"
+    "../packages/vitral/src/otel.ts",
+    "../packages/vitral/src/single-spa.ts",
+    "../packages/vitral/src/federation.ts"
   ],
   "tsconfig": "../packages/vitral/tsconfig.json",
   "out": "api",

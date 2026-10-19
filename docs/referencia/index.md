@@ -44,6 +44,8 @@ Cada página mostra a assinatura, os parâmetros, o retorno e um exemplo.
 | [`vitral/devtools`](./devtools) | Trocar URLs em desenvolvimento |
 | [`vitral/sentry`](./monitoramento#vitral-sentry) | Erros no Sentry |
 | [`vitral/otel`](./monitoramento#vitral-otel) | Erros no OpenTelemetry |
-| [CLI](./cli) | Tipos das props |
+| [`vitral/single-spa`](./single-spa) | App do single-spa como remote |
+| [`vitral/federation`](./federation) | Remote do Module Federation no host |
+| [CLI](./cli) | Tipos das props e migração |
 
 A referência gerada pelo TypeDoc, com todos os tipos, está em [/api/](/api/).
