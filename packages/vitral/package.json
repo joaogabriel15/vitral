@@ -101,6 +101,14 @@
     "./testing": {
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.js"
+    },
+    "./sentry": {
+      "types": "./dist/sentry.d.ts",
+      "import": "./dist/sentry.js"
+    },
+    "./otel": {
+      "types": "./dist/otel.d.ts",
+      "import": "./dist/otel.js"
     }
   },
   "publishConfig": {
@@ -203,9 +211,10 @@
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "4.4 kB"
+      "limit": "4.6 kB"
     },
     {
       "name": "núcleo",
@@ -215,9 +224,10 @@
         "./shadow-*",
         "./sri-*",
         "./dedupe-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "5.55 kB"
+      "limit": "5.7 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -238,9 +248,10 @@
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "5.1 kB"
+      "limit": "5.25 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -251,9 +262,10 @@
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "5.3 kB"
+      "limit": "5.5 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -273,7 +285,8 @@
         "./shadow-*",
         "./sri-*",
         "./dedupe-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
       "limit": "6.2 kB"
     },
@@ -286,9 +299,10 @@
         "./shadow-*",
         "./sri-*",
         "./dedupe-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "6 kB"
+      "limit": "6.05 kB"
     },
     {
       "name": "element",
@@ -298,9 +312,10 @@
         "./shadow-*",
         "./sri-*",
         "./dedupe-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ],
-      "limit": "6.15 kB"
+      "limit": "6.3 kB"
     },
     {
       "name": "devtools",
@@ -311,20 +326,21 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6 kB",
+      "limit": "6.05 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
-        "./expose-*"
+        "./expose-*",
+        "./capture-*"
       ]
     },
     {
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.05 kB"
+      "limit": "8.2 kB"
     },
     {
       "name": "iframe",

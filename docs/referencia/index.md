@@ -42,6 +42,8 @@ Cada página mostra a assinatura, os parâmetros, o retorno e um exemplo.
 | [`vitral/iframe`](./iframe) | Isolamento em iframe |
 | [`vitral/testing`](./testing) | Remotes falsos em testes |
 | [`vitral/devtools`](./devtools) | Trocar URLs em desenvolvimento |
+| [`vitral/sentry`](./monitoramento#vitral-sentry) | Erros no Sentry |
+| [`vitral/otel`](./monitoramento#vitral-otel) | Erros no OpenTelemetry |
 | [CLI](./cli) | Tipos das props |
 
 A referência gerada pelo TypeDoc, com todos os tipos, está em [/api/](/api/).

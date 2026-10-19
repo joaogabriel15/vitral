@@ -8,9 +8,10 @@
  * com as props atuais. Resolve depois que todas as trocas terminam. Se a versão
  * nova falhar, a antiga continua na tela e `refresh` rejeita.
  */
+import { mounted } from './errors'
 import { events } from './events'
 import { loadFile, resolveEntry } from './loader'
-import { protocol } from './state'
+import { protocol, type LoadedRemote } from './state'
 import type { MountedRemote, Props, RemoteEntry } from './types'
 
 /** URL do JS montado (ou já anunciado), por nome montado (`carrinho` ou `carrinho/Mini`). */
@@ -19,13 +20,14 @@ const versions = new Map<string, string>()
 const live = new Map<string, number>()
 
 /** Marca uma montagem de `name`. Devolve a função que desmarca; o unmount chama uma vez só. */
-export function track(name: string, entry: string): () => void {
-  versions.set(name, entry)
+export function track(name: string, loaded: Pick<LoadedRemote, 'entry' | 'version'>): () => void {
+  versions.set(name, loaded.entry)
+  mounted.set(name, loaded)
   live.set(name, (live.get(name) ?? 0) + 1)
   return () => {
     const n = live.get(name)! - 1
     if (n) live.set(name, n)
-    else live.delete(name), versions.delete(name)
+    else live.delete(name), versions.delete(name), mounted.delete(name)
   }
 }
 

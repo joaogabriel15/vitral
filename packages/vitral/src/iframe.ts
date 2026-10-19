@@ -13,6 +13,7 @@
  * (`ctx.events`) e `ctx.navigate` passam por `postMessage` (só dados
  * serializáveis), e a altura do iframe acompanha o conteúdo.
  */
+import { report } from './core/errors'
 import { splitName } from './core/expose'
 import { verifyIntegrity } from './core/integrity'
 import { resolveEntry } from './core/loader'
@@ -157,7 +158,7 @@ async function mountFrame<P extends Props>(
         break
       }
       case 'report': {
-        const err = new RemoteError('RENDER_FAILED', name, String(d?.message))
+        const err = report(new RemoteError('RENDER_FAILED', name, String(d?.message)), resolved)
         if (options.onError) options.onError(err)
         else console.error(err)
         break
@@ -187,7 +188,7 @@ async function mountFrame<P extends Props>(
     cleanup()
     throw e
   }
-  disposers.push(track(name, resolved.entry))
+  disposers.push(track(name, resolved))
 
   let alive = true
   return {
