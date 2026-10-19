@@ -8,6 +8,7 @@ npx vitral mcp [--registry url|arquivo]
 npx vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url] [--contract faixa] [--max-kb n] [--json]
 npx vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
 npx vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
+npx vitral dict <dist> --from <dist-anterior> [--from ...] [--level n] [--no-dcb]
 ```
 
 ## vitral types
@@ -217,3 +218,20 @@ npx vitral canal canal.json --stable 1.4.0                  # volta uma versão
 | `--percent n` | Parte dos usuários na canary, de 0 a 100. Obrigatório na primeira canary |
 
 Campos próprios do canal (lidos por um `resolve`) ficam como estão. Termina com código `1` se a mudança deixaria o canal inválido, e aí não grava nada.
+
+## vitral dict
+
+Pré-comprime cada `.js` e `.css` do dist com a versão anterior dele como dicionário e grava `vitral-dict.json` para o middleware `vitral/dict`. Receita completa e números em [Dicionários de compressão](/aprender/dicionarios).
+
+```bash
+npx vitral dict dist --from ../dist-anterior
+```
+
+| Opção | O que faz |
+| --- | --- |
+| `--from pasta` | Dist de uma versão anterior. Obrigatória, pode repetir |
+| `--level n` | Nível do zstd. Padrão: 19 |
+| `--no-dcb` | Não gera `.dcb` mesmo com o binário `brotli` no PATH |
+
+Grava `<arquivo>.<hash>.dcz` (zstd do Node, 22.19+ ou 24.6+) e, com o binário `brotli`, `<arquivo>.<hash>.dcb`. Termina com código `1` se faltar `--from`, uma pasta não existir ou o Node não tiver zstd com dicionário.
+
