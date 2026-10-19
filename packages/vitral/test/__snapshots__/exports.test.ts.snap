@@ -70,6 +70,12 @@ exports[`exports públicos > index 1`] = `
 ]
 `;
 
+exports[`exports públicos > otel 1`] = `
+[
+  "otelOnError",
+]
+`;
+
 exports[`exports públicos > preact 1`] = `
 [
   "Remote",
@@ -99,6 +105,12 @@ exports[`exports públicos > routes 1`] = `
   "defineVitralOutlet",
   "matchRoute",
   "routes",
+]
+`;
+
+exports[`exports públicos > sentry 1`] = `
+[
+  "sentryOnError",
 ]
 `;
 

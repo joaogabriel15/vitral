@@ -1,3 +1,4 @@
+import type { RemoteError } from './errors'
 import type { SharedApi } from './shared'
 
 // Tipos públicos do contrato entre host e remote.
@@ -143,6 +144,18 @@ export interface VitralConfig {
   styles?: StyleOptions
   /** Recebe o tempo de cada etapa do carregamento (para RUM). */
   onMetric?: (metric: RemoteMetric) => void
+  /**
+   * Recebe cada `RemoteError` de qualquer remote (falha de download, de
+   * `mount`, erro de render), uma vez só por erro, além do `onError` de cada
+   * montagem. Use para mandar os erros ao seu monitoramento.
+   */
+  onError?: (error: RemoteError) => void
+  /**
+   * Atribui a um remote os erros sem tratamento (`error` e
+   * `unhandledrejection` da janela) cujo topo da pilha é um arquivo dele, e
+   * entrega como `RENDER_FAILED` ao `onError`. Padrão `false`.
+   */
+  captureGlobalErrors?: boolean
   /**
    * Dependências que o host oferece aos remotes com `dedupe`, por grupo:
    * `{ vue: { version: Vue.version, modules: { vue: Vue } } }`. O remote usa

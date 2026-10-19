@@ -9,6 +9,8 @@ export function configure(config: VitralConfig): void {
   const p = protocol()
   const { remotes, dedupe, ...rest } = config
   p.configure(rest)
+  // A escuta de erros globais fica num módulo à parte, fora do host mínimo.
+  if (rest.captureGlobalErrors) import('./capture').then((m) => m.capture())
   // Os downloads esperam as ofertas (pending), então ficam prontas antes.
   if (dedupe) p.pending(import('./dedupe').then((m) => m.offer(p, dedupe)).catch(() => {}))
   if (typeof remotes === 'string') {
