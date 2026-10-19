@@ -365,6 +365,11 @@
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
       "limit": "6 kB"
+    },
+    {
+      "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM e SRI)",
+      "path": "dist/embed.js",
+      "limit": "10.15 kB"
     }
   ]
 }

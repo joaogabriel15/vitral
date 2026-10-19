@@ -97,6 +97,10 @@ Se algo não serve, o remote não monta e o erro é [`CONTRACT_MISMATCH`](/erros
 
 Sem `contract` em um dos lados, nada é conferido: manifestos antigos continuam funcionando. Use `contract: '*'` no host para conferir só as dependências.
 
+## Canais e widget em site de terceiros
+
+Para pastas por versão com canais `stable` e `beta`, e para o loader `embed.js`, veja [Widget em site de terceiros](./terceiros).
+
 ## Voltar uma versão
 
 Publique a versão anterior do `vitral.json`. O host baixa o JS antigo na próxima carga.
