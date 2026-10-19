@@ -97,6 +97,57 @@ export interface RemoteEntry {
    * Vence a de `configure`. Veja `VitralConfig.contract`.
    */
   contract?: string
+  /**
+   * Com `url` apontando para um canal (`canal.json`): escolhe a versão deste
+   * usuário. Devolve a versão (`'1.5.0'`) ou a URL de um `vitral.json`;
+   * `undefined` usa a regra padrão (`canary.percent`). Veja `Channel`.
+   */
+  resolve?: (channel: Channel, ctx: ChannelContext) => string | undefined | Promise<string | undefined>
+  /**
+   * Volta para a estável, até o fim da sessão, quando a versão que não é a
+   * estável gera `errors` erros numa janela de `mounts` montagens. Padrão
+   * `{ errors: 3, mounts: 20 }`. `false` desliga.
+   */
+  rollback?: { errors?: number; mounts?: number } | false
+}
+
+/**
+ * Arquivo-ponteiro de um remote (o canal, ex.: `canal.json`): diz que versão
+ * cada usuário recebe. Cada versão fica na própria pasta, ao lado do canal
+ * (`'1.4.0'` → `1.4.0/vitral.json`), ou é a URL de um `vitral.json`.
+ *
+ *   { "stable": "1.4.0", "canary": { "version": "1.5.0", "percent": 10 } }
+ */
+export interface Channel {
+  /** Versão de todos os usuários fora da canary. */
+  stable: string
+  /** Versão nova para `percent`% dos usuários (0 a 100). */
+  canary?: { version: string; percent: number }
+  /** Campos próprios, para o `resolve` do host ler (ex.: `"beta": "1.6.0"`). */
+  [key: string]: unknown
+}
+
+/** O que o `resolve` de um canal recebe além do canal. */
+export interface ChannelContext {
+  /** Nome do remote. */
+  name: string
+  /**
+   * Número de 0 a 99, sempre o mesmo para este navegador (ou para
+   * `canaryKey`) e este remote. A regra padrão dá a canary a quem tem
+   * `bucket < percent`.
+   */
+  bucket: number
+}
+
+/** Aviso de rollback automático, para `configure({ onRollback })`. */
+export interface RollbackInfo {
+  name: string
+  /** Versão abandonada (como o canal ou o `resolve` a escreveram). */
+  from: string
+  /** Versão estável, usada daqui até o fim da sessão. */
+  to: string
+  errors: number
+  mounts: number
 }
 
 /**
@@ -170,6 +221,16 @@ export interface VitralConfig {
    * conferido. `'*'` confere só as dependências.
    */
   contract?: string
+  /**
+   * Chave estável do usuário (ex.: o id dele) para sortear quem recebe a
+   * canary de um canal. Padrão: um id aleatório guardado no `localStorage`.
+   */
+  canaryKey?: string
+  /**
+   * Chamado quando a versão canary de um canal passa do limite de erros e o
+   * host volta para a estável (veja `RemoteEntry.rollback`).
+   */
+  onRollback?: (info: RollbackInfo) => void
 }
 
 /** Módulos de um grupo de `dedupe`, por especificador (`'react-dom/client'`). */

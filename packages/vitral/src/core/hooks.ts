@@ -1,3 +1,4 @@
+import type { RemoteError } from './errors'
 import type { SharedApi } from './shared'
 
 /**
@@ -7,4 +8,9 @@ import type { SharedApi } from './shared'
  */
 export const ctxHooks: {
   shared?: (name: string, track: (off: () => void) => () => void) => SharedApi
+  /**
+   * Canal (`core/channel.ts`): recebe cada montagem (sem `error`) e cada
+   * erro entregue ao `onError`, para contar os erros da versão canary.
+   */
+  watch?: (name: string, error?: RemoteError) => void
 } = {}

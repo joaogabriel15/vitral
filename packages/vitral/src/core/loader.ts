@@ -103,6 +103,8 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
     (new URL(entry.url).pathname.endsWith('.json')
       ? await fetchJson<RemoteManifest>(entry.url, protocol().settings().timeout, name, { cache: 'no-cache', priority })
       : { name, entry: entry.url })
+  // Canal (`{ stable, canary }`): escolhe a versão e segue pelo manifesto dela.
+  if ((m as any)?.stable) return resolveEntry(name, await (await import('./channel')).pick(name, entry, m as any), priority)
   if (typeof m?.entry !== 'string') throw new RemoteError('INVALID_MODULE', name, `manifesto inválido em ${entry.url}`)
   // Contrato: com os dois lados declarando, confere antes de executar o remote.
   if (m.contract && (entry.contract || protocol().settings().contract)) {
