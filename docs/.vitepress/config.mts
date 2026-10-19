@@ -55,6 +55,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Canary e rollback', link: '/aprender/canary' },
       { text: 'SSR', link: '/aprender/ssr' },
       { text: 'Desenvolvimento e HMR', link: '/aprender/desenvolvimento' },
+      { text: 'Benchmark contra o MF', link: '/aprender/benchmark' },
     ],
   },
   {

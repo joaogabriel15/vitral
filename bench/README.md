@@ -19,3 +19,18 @@ node bench/compare.mjs bench/baseline.json head.json
 Cada número é a mediana de 5 execuções. Em cada PR o CI mede a main e o PR na
 mesma máquina e falha se alguma métrica ficar mais de 10% pior.
 `baseline.json` guarda a medição de referência da fase 0.
+
+## Benchmark público (manual)
+
+`publico/` compara o host do vitral com o runtime do Module Federation, com
+os mesmos N remotes. Não roda no CI e não muda `baseline.json`.
+
+```bash
+pnpm bench:publico                       # build + 4 cenários x N=1,4,8 x 7 repetições
+node bench/publico/run.mjs --n 4 --runs 3 --only vitral-dedupe,mf-shared
+node bench/publico/run.mjs --sem-build --servir   # só o servidor, porta 4301
+```
+
+Grava `publico/resultado.json` e imprime a tabela da página
+[Benchmark](../docs/aprender/benchmark.md). Cenário novo (dicionário,
+prefetch): um item em `publico/cenarios.mjs`, com os ganchos descritos lá.
