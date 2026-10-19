@@ -31,6 +31,13 @@ exports[`exports públicos > element 1`] = `
 ]
 `;
 
+exports[`exports públicos > federation 1`] = `
+[
+  "federationRemote",
+  "shareScope",
+]
+`;
+
 exports[`exports públicos > iframe 1`] = `
 [
   "FRAME_SCRIPT",
@@ -111,6 +118,12 @@ exports[`exports públicos > routes 1`] = `
 exports[`exports públicos > sentry 1`] = `
 [
   "sentryOnError",
+]
+`;
+
+exports[`exports públicos > single-spa 1`] = `
+[
+  "singleSpaRemote",
 ]
 `;
 

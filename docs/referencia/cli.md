@@ -2,6 +2,7 @@
 
 ```bash
 npx vitral types [remotes.json | nome=url ...] [--base url] [--out arquivo] [--check]
+npx vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
 ```
 
 ## vitral types
@@ -42,3 +43,43 @@ Conta como desatualizado o remote cujo manifesto mudou, o que não tem hash regi
 ## Saída
 
 Termina com código `1` se algum remote falhar. Com `--check`, também se algum tipo estiver desatualizado ou se o arquivo gerado não existir.
+
+## vitral migrate
+
+Converte um app do single-spa ou um remote do Module Federation num remote vitral. Rode na pasta do projeto:
+
+```bash
+npx vitral migrate --dry-run   # mostra o diff, não escreve nada
+npx vitral migrate
+```
+
+O comando descobre a origem pelo `package.json` (`single-spa`, `single-spa-*`) e pelos arquivos de build (`webpack.config.*`, `rspack.config.*`, `rsbuild.config.*`, `vite.config.*`, `module-federation.config.*`). Use `--from` quando ele não descobrir.
+
+Ele não altera o build atual. Os arquivos novos são:
+
+| Arquivo | Conteúdo |
+| --- | --- |
+| `src/vitral-remote.js` (single-spa) | `reactRemote(Root)`, quando o app usa `singleSpaReact` só com `rootComponent`. Senão, `singleSpaRemote(lifecycles)` de [`vitral/single-spa`](./single-spa) |
+| `src/vitral/<Parte>.js` (Module Federation) | Um arquivo por componente de `exposes`, com o adaptador do framework (`reactRemote`, `vueRemote`…) |
+| `vite.vitral.config.mjs` | Plugin do framework e `vitral()`, com saída em `dist-vitral/` |
+| `package.json` | Script `build:vitral` |
+
+Projeto com `tsconfig.json` ganha `.ts` e `vite.vitral.config.mts`. Arquivo que já existe não é sobrescrito: rodar de novo não muda nada.
+
+No fim, o comando lista o que fazer à mão: dependências para instalar e o que ele não converte.
+
+### O que não migra
+
+| Origem | Não convertido | O que fazer |
+| --- | --- | --- |
+| single-spa | Root config (`registerApplication`, `activeWhen`) | `configure({ remotes })` e uma rota do host ou [`routes()`](./routes) |
+| single-spa | `navigateToUrl`, `mountParcel` | `ctx.navigate`, `<Remote>` ou `createSlot` |
+| single-spa | Opções de `singleSpaReact` além de `rootComponent` (`errorBoundary`, `wrapWith`…) | O app fica embrulhado com `singleSpaRemote` |
+| Module Federation | `shared` | Opção [`dedupe`](/aprender/dedupe) do plugin |
+| Module Federation | `exposes` que não é objeto literal (variável, função) | `exposes` do plugin à mão |
+| Module Federation | Componentes Angular | `angularRemote(Componente)` à mão |
+| Module Federation | `remotes` do host | O comando sugere `federationRemote` de [`vitral/federation`](./federation) |
+
+Uma parte de `exposes` é tratada como componente quando o arquivo é `.jsx`, `.tsx`, `.vue` ou `.svelte`, ou quando o nome começa com maiúscula. As outras são módulos sem UI, para `loadModule`.
+
+Termina com código `1` se não achar single-spa nem Module Federation.
