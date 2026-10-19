@@ -60,20 +60,22 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
 
   // Cada montagem ganha seu próprio elemento. Assim duas montagens no mesmo
   // alvo (ex.: StrictMode do React) nunca disputam o mesmo DOM.
-  let shadowRoot: ShadowRoot | null = null
-  const el = document.createElement('div')
-  el.setAttribute('data-vitral-root', label)
-  if (resolved.scope) el.setAttribute('data-vitral-scope', resolved.scope)
-  el.style.display = 'contents'
-  if (isolate === 'shadow') {
-    shadowRoot = target.shadowRoot ?? target.attachShadow({ mode: 'open' })
-    shadowRoot.appendChild(el)
-  } else {
-    target.appendChild(el)
+  const make = (options?: ElementCreationOptions) => {
+    const el = document.createElement('div', options)
+    el.setAttribute('data-vitral-root', label)
+    if (resolved.scope) el.setAttribute('data-vitral-scope', resolved.scope)
+    el.style.display = 'contents'
+    return el
   }
   let t = performance.now()
-  // No Shadow DOM, `portal` é o destino de portais dentro do shadow root.
-  const [release, portal = document.body] = await injectStyles(resolved, shadowRoot, el, options.styles)
+  // No Shadow DOM, `./shadow` cria o shadow root e o elemento com o registro
+  // de custom elements do remote; `portal` fica dentro do shadow root.
+  const [release, portal = document.body, shadowRoot = null, registry = customElements, el = target.appendChild(make())] = await injectStyles(
+    resolved,
+    isolate === 'shadow' && target,
+    make,
+    options.styles,
+  )
   metric(name, 'css', t)
   t = performance.now()
 
@@ -86,6 +88,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
     events: scoped.bus,
     shadowRoot,
     portalContainer: portal,
+    customElements: registry,
     reportError(e) {
       const err = report(isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e), resolved)
       if (options.onError) options.onError(err)

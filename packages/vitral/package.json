@@ -293,7 +293,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.22 kB"
+      "limit": "1.72 kB"
     },
     {
       "name": "react",
@@ -367,7 +367,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "8.78 kB",
+      "limit": "9.01 kB",
       "ignore": [
         "./overrides-*"
       ]

@@ -339,8 +339,13 @@ describe('CSS com SRI', () => {
     prefetchCss({ css: [css], sri }, false)
     expect(document.head.querySelector<HTMLLinkElement>(`link[rel="preload"][href="${css}"]`)!.integrity).toBe(sha('css'))
 
-    const el = document.body.appendChild(document.createElement('div'))
-    await injectStyles({ css: [css], sri }, el.attachShadow({ mode: 'open' }), el, { mirrorTheme: false })
+    const host = document.body.appendChild(document.createElement('div'))
+    const make = () => {
+      const el = document.createElement('div')
+      el.setAttribute('data-vitral-root', 'sri-css')
+      return el
+    }
+    await injectStyles({ css: [css], sri }, host, make, { mirrorTheme: false })
     expect(fetch).toHaveBeenCalledWith(css, expect.objectContaining({ integrity: sha('css') }))
 
     const done = injectCss([css], null, sri)
