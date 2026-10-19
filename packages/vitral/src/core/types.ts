@@ -61,6 +61,22 @@ export interface RemoteContext {
    * (`provide`, `shared` ou um hook); senão, importe `shared` de 'vitral'.
    */
   shared?: SharedApi
+  /**
+   * Só quando o remote roda como MCP App (`vitral({ target: 'mcp-app' })`):
+   * fala JSON-RPC direto com o host MCP, para o que `events` não cobre
+   * (`tools/call`, `resources/read`, `ui/request-display-mode`…).
+   */
+  mcp?: McpAppBridge
+}
+
+/** `ctx.mcp` de um remote empacotado como MCP App. */
+export interface McpAppBridge {
+  /** Pedido ao host; resolve com `result` ou rejeita com `error.message`. */
+  request<T = unknown>(method: string, params?: Record<string, unknown>): Promise<T>
+  /** Notificação ao host (sem resposta). */
+  notify(method: string, params?: Record<string, unknown>): void
+  /** O `hostContext` atual (tema, idioma, tamanho do container…), já com as mudanças. */
+  hostContext(): Record<string, unknown> | undefined
 }
 
 export interface MountedRemote<P extends Props = Props> {

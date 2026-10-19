@@ -23,6 +23,7 @@ import { BOOT, dedupeHooks, dedupeIds, groups, type Group } from './vite/dedupe'
 import { type CssBuildOptions, splitShadowCss, transformCss } from './css-build'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
 import { extractProps, typesFile } from './vite/types'
+import { MCP_APP_GLOBAL, mcpAppHtml } from './vite/mcp-app'
 import { DEV_CSS, DEV_IDS, devEntryCode, devManifest, devOptimizeDeps, loadPreamble, resolveDevId, scopeDevCss, serveDevManifest, VIRTUAL_DEV_ENTRY } from './vite/dev'
 
 export interface VitralViteOptions extends CssBuildOptions {
@@ -80,6 +81,13 @@ export interface VitralViteOptions extends CssBuildOptions {
    * faixas de `dedupe` entram sozinhas, em `peers`. Padrão: sem versão.
    */
   contract?: { version?: string }
+  /**
+   * `'mcp-app'`: o build gera só `mcp-app.html`, um HTML único com o JS e o
+   * CSS inline, para um servidor MCP servir como recurso `ui://` (MCP Apps).
+   * As notificações do host viram props e `ctx.events.emit` vira mensagem
+   * para o host. Não combina com `exposes`, `dedupe` nem `shared`.
+   */
+  target?: 'mcp-app'
 }
 
 export default function vitral(options: VitralViteOptions = {}): Plugin {
@@ -96,8 +104,30 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   let shared: Group[] = []
   const dedupe = !!options.dedupe?.length
   const hooks = dedupeHooks(() => (options.exposes ? EXPOSES_ENTRY : options.adapter === false ? entryFile() : ENTRY_ID), () => shared)
+  const mcp = options.target === 'mcp-app'
+  if (mcp && (options.exposes || dedupe || options.shared?.length)) {
+    throw new Error("[vitral] target: 'mcp-app' gera um HTML único: não combina com exposes, dedupe nem shared.")
+  }
   const scopeName = () =>
     (options.name ?? pkg.name ?? 'remote').replace(/[^a-zA-Z0-9_-]/g, '-')
+  // Junta o JS e o CSS do build em mcp-app.html e apaga os dois.
+  const mcpApp = (files: { type: string; fileName: string }[], js: string) => {
+    const css = files.filter((f) => f.type === 'asset' && f.fileName.endsWith('.css')).map((f) => f.fileName)
+    const read = (file: string) => {
+      const text = readFileSync(join(outDir, file), 'utf8')
+      rmSync(join(outDir, file))
+      return text
+    }
+    const scope = options.scopeCss === false ? undefined : scopeName()
+    const html = mcpAppHtml({
+      name: options.name ?? pkg.name ?? 'remote',
+      version: options.version ?? pkg.version,
+      scope,
+      code: read(js),
+      css: css.map((f) => transformCss(read(f), options, scopeName())),
+    })
+    writeFileSync(join(outDir, 'mcp-app.html'), html)
+  }
   return {
     name: 'vitral',
     config(user, { mode, command }) {
@@ -114,7 +144,12 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         // O remote não tem index.html: sem isso o Vite só descobre as
         // dependências no primeiro request e recarrega a página do host.
         optimizeDeps: user.optimizeDeps?.entries ? undefined : { entries: [entry] },
-        build: {
+        build: mcp ? {
+          // Um IIFE só, sem chunks: o HTML do MCP App não pode buscar arquivos.
+          lib: { entry: options.adapter === false ? entry : ENTRY_ID, formats: ['iife'], name: MCP_APP_GLOBAL, fileName: () => 'mcp-app.js', cssFileName: 'remote' },
+          rollupOptions: { output: rolldown ? { codeSplitting: false } : { inlineDynamicImports: true } } as any,
+          cssCodeSplit: false,
+        } : {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
           lib: { entry: dedupe ? BOOT : options.exposes ? EXPOSES_ENTRY : options.adapter === false ? entry : ENTRY_ID, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
           // Arquivo único (hosts antigos e caminho com blob:) e build dividido (manifesto v2).
@@ -179,6 +214,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       const files = Object.values(bundle)
       const entry = files.find((f) => f.type === 'chunk' && f.isEntry)
       if (!entry) return
+      if (mcp) return mcpApp(files as any, entry.fileName)
       // CSS: aplica o escopo e põe hash no nome (Vite não põe hash no CSS em modo lib).
       const emit = (file: string, text: string, kind = '') => {
         const hash = createHash('sha256').update(text).digest('base64url').slice(0, 8)
