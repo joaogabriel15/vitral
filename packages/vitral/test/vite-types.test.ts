@@ -1,9 +1,17 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { build } from 'vite'
-import { afterAll, describe, expect, it } from 'vitest'
+import { createRequire } from 'node:module'
+import type * as TS from 'typescript'
+import { afterAll, describe, expect, it, vi } from 'vitest'
 import vitral from '../src/vite'
+import { loadOxc, propsFromOxc, type Oxc } from '../src/vite/oxc'
 import { extractProps, typesFile } from '../src/vite/types'
+
+vi.mock('../src/vite/oxc', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../src/vite/oxc')>()
+  return { ...real, loadOxc: vi.fn(real.loadOxc) }
+})
 
 const root = resolve(__dirname, 'fixtures/vite-types')
 const cache = resolve(__dirname, '../node_modules/.cache/vitral-test')
@@ -11,18 +19,61 @@ mkdirSync(cache, { recursive: true })
 const outDir = mkdtempSync(join(cache, 'types-'))
 afterAll(() => rmSync(outDir, { recursive: true, force: true }))
 
+const ts = createRequire(import.meta.url)('typescript') as typeof TS
+// O caminho do TypeScript monta um programa inteiro: com a suíte em paralelo, passa de 5 s.
+const realOxc = async () => (await vi.importActual<typeof import('../src/vite/oxc')>('../src/vite/oxc')).loadOxc(root)
+
+/** Oxc de verdade (o do Vite 8), com um espião para saber se foi usado. */
+async function spyOxc() {
+  const oxc = (await realOxc())!
+  const spy = vi.fn(oxc.isolatedDeclarationSync)
+  vi.mocked(loadOxc).mockResolvedValueOnce({ isolatedDeclarationSync: spy })
+  return spy
+}
+
+const APP =
+  '{ userId: number; itens?: Array<{ id: number; nome: string; relacionados?: Array<unknown> }>; modo: "compacto" | "completo"; ' +
+  'ativo: boolean; criado: Date; par: [string, number]; extras: Record<string, number>; onSair?: (motivo: string) => void; "data-x"?: string }'
+
 describe('tipos das props', () => {
   it('expande o tipo das props de um componente-função, sem imports', async () => {
-    const props = await extractProps(root, join(root, 'src/App.tsx'))
-    expect(props).toBe(
-      '{ userId: number; itens?: Array<{ id: number; nome: string; relacionados?: Array<unknown> }>; modo: "compacto" | "completo"; ' +
-        'ativo: boolean; criado: Date; par: [string, number]; extras: Record<string, number>; onSair?: (motivo: string) => void; "data-x"?: string }',
+    vi.mocked(loadOxc).mockResolvedValueOnce(null)
+    expect(await extractProps(root, join(root, 'src/App.tsx'))).toBe(APP)
+  }, 30_000)
+
+  it('com Oxc, lê da declaração isolada (inclusive de imports relativos) e chega no mesmo tipo', async () => {
+    const spy = await spyOxc()
+    expect(await extractProps(root, join(root, 'src/App.tsx'))).toBe(APP)
+    expect(spy.mock.calls.map((c) => c[0])).toEqual([join(root, 'src/App.tsx'), join(root, 'src/tipos.ts')])
+  })
+
+  it('Oxc reclamando (export sem tipo explícito), cai no TypeScript', async () => {
+    const spy = await spyOxc()
+    expect(await extractProps(root, join(root, 'src/mount.ts'))).toBe('{ n: number; rotulo?: string }')
+    expect(spy).toHaveBeenCalledOnce()
+    expect(spy.mock.results[0].value.errors.length).toBeGreaterThan(0)
+  }, 30_000)
+
+  it('Oxc e TypeScript dão o mesmo texto com tipos explícitos', async () => {
+    const file = join(root, 'src/explicito.ts')
+    const oxc = (await realOxc()) as Oxc
+    const rapido = propsFromOxc(ts, oxc, file)
+    expect(rapido).toBe(
+      '{ opcoes: { tema?: "claro" | "escuro"; limite: number; [key: string]: unknown }; produto: Readonly<{ id: number; nome: string; relacionados?: Array<unknown> }>; ' +
+        'on: (id: number) => void; tags: Array<string> }',
     )
+    vi.mocked(loadOxc).mockResolvedValueOnce(null)
+    expect(await extractProps(root, file)).toBe(rapido)
+  }, 30_000)
+
+  it('forma que o leitor do Oxc não conhece devolve null', async () => {
+    const oxc = { isolatedDeclarationSync: () => ({ code: 'declare const x: { mount(el: HTMLElement, p: typeof y): void };\nexport default x;\n', errors: [] }) }
+    expect(propsFromOxc(ts, oxc, join(root, 'src/explicito.ts'))).toBeNull()
   })
 
   it('lê o segundo parâmetro de mount()', async () => {
     expect(await extractProps(root, join(root, 'src/mount.ts'))).toBe('{ n: number; rotulo?: string }')
-  })
+  }, 30_000)
 
   it('entrada .vue ou .svelte fica sem tipos', async () => {
     expect(await extractProps(root, join(root, 'src/App.vue'))).toBeNull()

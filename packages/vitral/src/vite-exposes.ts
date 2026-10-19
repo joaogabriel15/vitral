@@ -24,6 +24,9 @@ export function exposeKeys(exposes: Record<string, string>): Record<string, stri
   return out
 }
 
+/** Ids que `resolveExposesId` trata, para o filtro do hook. */
+export const EXPOSES_IDS = /(^|[\\/])__vitral_exposes__\.js$/
+
 export function resolveExposesId(id: string): string | null {
   return id === EXPOSES_ENTRY || id.endsWith('/' + EXPOSES_ENTRY) || id.endsWith('\\' + EXPOSES_ENTRY) ? ID : null
 }
