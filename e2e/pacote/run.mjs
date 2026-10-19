@@ -161,7 +161,16 @@ try {
       // e o sprite do create-vite (<use href="/icons.svg#...">), que o navegador bloqueia
       // quando o remote está em outra origem ("Unsafe attempt to load URL .../icons.svg").
       const doTemplate = (t) => t.startsWith('Failed to load resource') || /^Unsafe attempt to load URL \S+\/icons\.svg /.test(t)
-      page.on('console', (m) => m.type() === 'error' && !doTemplate(m.text()) && erros.push(`console: ${m.text()}`))
+      // A sonda do SRI (core/sri.ts) importa de propósito um blob: com hash errado, uma vez
+      // por navegador, para ver se o import map confere hashes; o navegador registra a recusa.
+      // Mais de uma linha por página é erro.
+      const sonda = (t) => /integrity/.test(t) && /blob:/.test(t)
+      let sondas = 0
+      page.on('console', (m) => {
+        if (m.type() !== 'error' || doTemplate(m.text())) return
+        if (sonda(m.text()) && ++sondas === 1) return
+        erros.push(`console: ${m.text()}`)
+      })
       await page.goto(url)
       // Confere todos os remotes, mesmo depois de uma falha, para o relatório dizer quais quebram.
       const quebrados = []
