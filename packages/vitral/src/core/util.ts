@@ -64,7 +64,11 @@ export function addLink(rel: string, href: string, props: Partial<HTMLLinkElemen
 /** Marca o fim de uma etapa que começou em `start` (performance.now()). */
 export function metric(name: string, stage: RemoteMetric['stage'], start: number): void {
   try {
-    performance.measure(`vitral:${name}:${stage}`, { start })
+    // Uma entrada por remote e etapa: sem isso, cada montagem soma uma na
+    // timeline da página, para sempre.
+    const label = `vitral:${name}:${stage}`
+    performance.clearMeasures(label)
+    performance.measure(label, { start })
     protocol().settings().onMetric?.({ name, stage, start, duration: performance.now() - start })
   } catch {}
 }

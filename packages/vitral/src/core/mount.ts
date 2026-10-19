@@ -54,7 +54,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
     return frames(target, name, props, options)
   }
   const { module: mod, ...resolved } = await load(name, options.isolate, options.priority)
-  track(name, resolved.entry)
+  const untrack = track(name, resolved.entry)
   const isolate = options.isolate ?? resolved.isolate ?? protocol().settings().isolate
   const label = resolved.name ?? name
 
@@ -100,6 +100,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
     mounted = await mod.mount(el, props, ctx)
     metric(name, 'mount', t)
   } catch (e) {
+    untrack()
     scoped.dispose()
     release()
     el.remove()
@@ -116,6 +117,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
       try {
         mounted.unmount()
       } finally {
+        untrack()
         scoped.dispose()
         release()
         el.remove()

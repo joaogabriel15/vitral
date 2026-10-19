@@ -37,6 +37,12 @@ describe('métricas', () => {
     expect(got).toEqual(['css', 'mount'])
   })
 
+  it('montar várias vezes não acumula entradas na timeline', async () => {
+    register('repetido', { module: { mount: () => ({ unmount() {} }) } })
+    for (let i = 0; i < 3; i++) (await mountRemote(document.body.appendChild(document.createElement('div')), 'repetido', {})).unmount()
+    expect(performance.getEntriesByName('vitral:repetido:mount', 'measure')).toHaveLength(1)
+  })
+
   it('erro no onMetric ou navegador sem performance.measure não quebra o carregamento', () => {
     configure({ onMetric: () => { throw new Error('rum fora do ar') } })
     expect(() => metric('x', 'js', performance.now())).not.toThrow()
