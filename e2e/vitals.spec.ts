@@ -25,7 +25,7 @@ export default {
 }
 `
 
-const PAGE = `<!doctype html><body style="margin:0">
+const PAGE = `<!doctype html><meta charset="utf-8"><body style="margin:0">
 <div id="menu" style="height:60px"></div>
 <button id="ir" style="height:30px">busca</button>
 <h1 id="titulo" style="margin:0;height:40px">loja</h1>
@@ -53,7 +53,7 @@ let origin = ''
 test.beforeAll(async () => {
   server = createServer(async (req, res) => {
     const path = new URL(req.url!, 'http://x').pathname
-    if (path === '/' || path === '/busca') return void res.writeHead(200, { 'content-type': 'text/html' }).end(PAGE)
+    if (path === '/' || path === '/busca') return void res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(PAGE)
     if (path.startsWith('/vitral/')) {
       try {
         return void res.writeHead(200, { 'content-type': 'text/javascript' }).end(await readFile(join(dist, path.slice(8))))
