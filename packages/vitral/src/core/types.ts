@@ -189,8 +189,10 @@ export interface RollbackInfo {
 /**
  * `none`: CSS com escopo. `shadow`: Shadow DOM. `iframe`: iframe com
  * `sandbox`, para código de terceiros (precisa de `enableIframe()`).
+ * `reframe`: JS num iframe oculto de mesma origem (globals próprios) e DOM
+ * no Shadow DOM da página. Não é fronteira de segurança.
  */
-export type Isolation = 'shadow' | 'none' | 'iframe'
+export type Isolation = 'shadow' | 'none' | 'iframe' | 'reframe'
 
 /** Estilos do host dentro do Shadow DOM. Sem efeito no modo escopo. */
 export interface StyleOptions {

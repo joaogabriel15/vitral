@@ -30,7 +30,7 @@ import { defineVitralElement, elementRemote, SharedController } from 'vitral/ele
 | `name` | Nome registrado em `configure` |
 | `src` | URL do `vitral.json`. Dispensa `configure` |
 | `props` | Props em JSON |
-| `isolate` | `none`, `shadow` ou `iframe` |
+| `isolate` | `none`, `shadow`, `iframe` ou `reframe` |
 | `loading` | `lazy` ou `idle` |
 | `prefetch` | `hover`, `visible` ou `idle` |
 | `priority` | `high` |

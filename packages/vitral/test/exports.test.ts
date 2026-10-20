@@ -20,8 +20,11 @@ const entries = {
   vite: () => import('../src/vite'),
   sentry: () => import('../src/sentry'),
   otel: () => import('../src/otel'),
+  vitals: () => import('../src/vitals'),
   'single-spa': () => import('../src/single-spa'),
   federation: () => import('../src/federation'),
+  dict: () => import('../src/dict'),
+  prefetch: () => import('../src/prefetch'),
   edge: () => import('../src/edge'),
 }
 
