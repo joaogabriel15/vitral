@@ -436,4 +436,4 @@ failingRemote('recomendacoes') // testa a tela de erro
 
 - [Exemplos](https://github.com/joaogabriel15/vitral/tree/main/examples): o mesmo remote em 8 frameworks e 9 hosts.
 - [Como contribuir](https://github.com/joaogabriel15/vitral/blob/main/CONTRIBUTING.md)
-- Licença [MIT](https://github.com/joaogabriel15/vitral/blob/main/LICENSE)
+- Licença [MIT](https://github.com/joaogabriel15/vitral/blob/main/LICENSE). Feito por [Pacheco Codes](https://pacheco.dev.br/).

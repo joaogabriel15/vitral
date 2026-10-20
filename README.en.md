@@ -84,4 +84,4 @@ Locally, each remote runs its own `vite dev` on a port and the host points at th
 
 The full documentation is in Portuguese: https://joaogabriel15.github.io/vitral/. Code samples read the same in any language, and the [API reference](https://joaogabriel15.github.io/vitral/referencia/) is generated from the types.
 
-MIT license.
+MIT license. Made by [Pacheco Codes](https://pacheco.dev.br/).
