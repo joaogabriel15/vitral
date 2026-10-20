@@ -1,5 +1,11 @@
 # vitral
 
+## 0.7.0
+
+### Minor Changes
+
+- [#84](https://github.com/joaogabriel15/vitral/pull/84) [`c06dbd3`](https://github.com/joaogabriel15/vitral/commit/c06dbd3662dd69dead5be7a8d44b4c595d59bc48) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Carregamento mais rápido. O código de dedupe baixa junto com o primeiro manifesto, e não depois dele: a cópia do framework começa uma ida e volta antes. Uma query com a palavra `vitral` (ex.: `?utm_source=vitral`) não baixa mais o módulo de overrides antes do manifesto: só `?vitral=` liga os overrides. Opção nova `configure({ maxStale })`: na visita de volta, usa o `vitral.json` salvo há até N segundos sem esperar a rede e baixa o novo por trás. Opção nova `vitral({ compileHints: true })` no plugin: o compile hint do V8 nos arquivos que rodam ao montar, para CPU lenta.
+
 ## 0.6.0
 
 ### Minor Changes
