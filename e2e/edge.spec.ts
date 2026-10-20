@@ -75,9 +75,11 @@ test.afterAll(() => {
 function watch(page: Page) {
   const erros: string[] = []
   const urls: string[] = []
-  // A sonda do SRI (`core/sri.ts`) importa de propósito um `blob:` com hash
-  // errado para ver se o import map confere hashes; o Chromium registra a recusa.
-  const sonda = (t: string) => /integrity/.test(t) && /blob:/.test(t)
+  // Os testes do SRI (`core/sri.ts`) carregam de propósito um módulo com hash
+  // errado (`blob:` ou `data:`, conforme o caminho) e, onde import maps
+  // tardios são recusados, um mapa recusado; cada navegador registra isso do
+  // seu jeito. Nada mais pode ir para o console.
+  const sonda = (t: string) => /integrity|import ?map/i.test(t)
   page.on('console', (m) => m.type() === 'error' && !sonda(m.text()) && erros.push(m.text()))
   page.on('pageerror', (e) => erros.push(e.message))
   page.on('request', (r) => urls.push(r.url()))
