@@ -150,4 +150,4 @@ O que acontece:
 - **Troca de rota:** o outlet monta o remote da rota nova no cliente, sem recarregar a página e sem baixar o framework de novo. Com [`vitral/prefetch`](../referencia/prefetch), o remote da rota seguinte já está baixado.
 - HTML de outra rota (um cache velho, por exemplo) é descartado, e o outlet monta o remote certo.
 
-No benchmark contra o Multi-Zones, isso abre a primeira página 32% mais rápido que o Next e troca de rota 4,7 vezes mais rápido. Veja [Benchmark](./benchmark#contra-o-next-js-multi-zones).
+No benchmark contra o Multi-Zones, isso abre a primeira página 32% mais rápido que o Next e troca de rota 4,6 vezes mais rápido. Veja [Benchmark](./benchmark#contra-o-next-js-multi-zones).

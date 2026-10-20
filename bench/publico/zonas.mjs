@@ -96,9 +96,12 @@ function instalar() {
   const npm = ['install', '--no-audit', '--no-fund', '--no-package-lock']
   if (atual !== JSON.stringify(pkg, null, 2) || !existsSync(join(work, 'node_modules'))) execFileSync('npm', npm, { cwd: work, stdio: 'inherit' })
   else {
-    // Mesma versão no tarball novo: sem apagar, o npm acha que está atualizado.
-    rmSync(join(work, 'node_modules/vitral'), { recursive: true, force: true })
-    execFileSync('npm', [...npm, `vitral@file:${tgz}`], { cwd: work, stdio: 'inherit' })
+    // Mesma versão no tarball novo: o npm reaproveita a cópia do cache dele.
+    // Extrai o tarball direto (as dependências do vitral já estão instaladas).
+    const dir = join(work, 'node_modules/vitral')
+    rmSync(dir, { recursive: true, force: true })
+    mkdirSync(dir)
+    execFileSync('tar', ['xzf', tgz, '-C', dir, '--strip-components=1'])
   }
 }
 

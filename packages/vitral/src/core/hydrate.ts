@@ -36,10 +36,6 @@ import { protocol } from './state'
 import type { MountedRemote, Props, RemoteContext, RemoteManifest } from './types'
 import { refreshable, track } from './updates'
 import { absolute, metric } from './util'
-// Estáticos de propósito: o bundler do host baixa os dois junto com este
-// módulo, e não depois do manifesto, uma ida e volta a menos por página com SSR.
-import './sri'
-import './dedupe'
 
 /**
  * `hostSlot` que começa hidratando `holder` (o `[data-vitral-ssr]` dentro de

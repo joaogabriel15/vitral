@@ -35,6 +35,16 @@ export function preload(name: string): void {
 let paths: Promise<typeof import('./sri') | null> | undefined
 
 /**
+ * Página com SSR do gateway (`holder` é o `[data-vitral-ssr]`): o código de SRI
+ * e, se o manifesto no HTML usa dedupe, o de dedupe começam a baixar junto com
+ * o da hidratação, e não um depois do outro.
+ */
+export function warmSsr(holder: Element): void {
+  paths ??= import('./sri').catch(() => null)
+  if (holder.querySelector('script[data-vitral-manifest]')?.textContent?.includes('"dedupe"')) import('./dedupe').catch(() => {})
+}
+
+/**
  * `isolate` diz como o CSS vai ser aplicado, para baixá-lo do jeito certo.
  * `priority: 'high'` vira `fetchpriority` nos downloads (remote que aparece
  * logo ao abrir a página).

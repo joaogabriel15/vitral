@@ -1,0 +1,119 @@
+{
+  "data": "2026-10-20",
+  "metodo": {
+    "rede": "Slow 4G do Lighthouse via CDP Network.emulateNetworkConditions: 150 ms RTT, 1,6 Mbps down, 750 kbps up",
+    "protocolo": "HTTP/2 com TLS (certificado local aceito pela chave), brotli 11",
+    "cpu": "Emulation.setCPUThrottlingRate 4x",
+    "repeticoes": 7,
+    "estatistica": "mediana, com mínimo e máximo",
+    "pronto": "vitral: evento vitral-ready do remote da rota. Next: useEffect depois da hidratação",
+    "troca": "de clicar em A até B pronto, no mesmo contexto (cache da visita em A)"
+  },
+  "versoes": {
+    "vitral": "0.5.0 (commit 52a4a2d)",
+    "next": "16.4.2",
+    "vite": "8.3.4",
+    "@vitejs/plugin-react": "6.1.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "node": "v22.22.0"
+  },
+  "maquina": {
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "nucleos": 4,
+    "memoriaGB": 16,
+    "so": "linux 6.18.44-fc-v139"
+  },
+  "resultados": [
+    {
+      "cenario": "vitral-gateway-prefetch",
+      "rotulo": "vitral, gateway e prefetch",
+      "frioMs": {
+        "mediana": 792.1,
+        "min": 746.1,
+        "max": 803.6
+      },
+      "frioFcpMs": {
+        "mediana": 224,
+        "min": 220,
+        "max": 260
+      },
+      "frioKB": {
+        "mediana": 81.8,
+        "min": 81.8,
+        "max": 81.8
+      },
+      "frioRede": {
+        "mediana": 22,
+        "min": 22,
+        "max": 22
+      },
+      "trocaMs": {
+        "mediana": 225.3,
+        "min": 215.4,
+        "max": 232.8
+      },
+      "trocaKB": {
+        "mediana": 0.6,
+        "min": 0.6,
+        "max": 0.6
+      },
+      "trocaRede": {
+        "mediana": 2,
+        "min": 2,
+        "max": 2
+      },
+      "totalKB": {
+        "mediana": 85.1,
+        "min": 85.1,
+        "max": 85.1
+      }
+    },
+    {
+      "cenario": "zonas-prefetch",
+      "rotulo": "Multi-Zones, prefetch",
+      "frioMs": {
+        "mediana": 1251.1,
+        "min": 1233.8,
+        "max": 1471.9
+      },
+      "frioFcpMs": {
+        "mediana": 228,
+        "min": 220,
+        "max": 236
+      },
+      "frioKB": {
+        "mediana": 115.9,
+        "min": 115.9,
+        "max": 115.9
+      },
+      "frioRede": {
+        "mediana": 8,
+        "min": 8,
+        "max": 8
+      },
+      "trocaMs": {
+        "mediana": 1238.9,
+        "min": 1121.2,
+        "max": 1356.4
+      },
+      "trocaKB": {
+        "mediana": 112.9,
+        "min": 112.9,
+        "max": 112.9
+      },
+      "trocaRede": {
+        "mediana": 6,
+        "min": 6,
+        "max": 6
+      },
+      "totalKB": {
+        "mediana": 228.8,
+        "min": 228.8,
+        "max": 228.8
+      }
+    }
+  ]
+}
