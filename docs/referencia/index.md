@@ -47,6 +47,7 @@ Cada página mostra a assinatura, os parâmetros, o retorno e um exemplo.
 | [`vitral/vitals`](./vitals) | Web Vitals por remote e por rota |
 | [`vitral/single-spa`](./single-spa) | App do single-spa como remote |
 | [`vitral/federation`](./federation) | Remote do Module Federation no host |
+| [`vitral/dict`](/aprender/dicionarios) | Servidor com dicionários de compressão (delta entre deploys) |
 | [CLI](./cli) | Tipos das props e migração |
 
 A referência gerada pelo TypeDoc, com todos os tipos, está em [/api/](/api/).

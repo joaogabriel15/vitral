@@ -24,6 +24,13 @@ exports[`exports públicos > devtools 1`] = `
 ]
 `;
 
+exports[`exports públicos > dict 1`] = `
+[
+  "createDict",
+  "dictMatch",
+]
+`;
+
 exports[`exports públicos > element 1`] = `
 [
   "SharedController",
