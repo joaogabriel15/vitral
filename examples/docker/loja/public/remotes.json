@@ -1,0 +1,4 @@
+{
+  "carrinho": "http://localhost:5174/vitral.json",
+  "busca": "http://localhost:5175/vitral.json"
+}

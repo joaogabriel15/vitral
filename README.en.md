@@ -15,6 +15,15 @@
 
 Each team ships its own part of the page (a remote) with `vite build`. The host gets the URL of each remote and mounts them in the browser. No plugin on the host, no React version to agree on between teams, and a remote that is down does not take the page down.
 
+**Why use it:**
+
+- **Any framework, both ways:** React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit and plain JS. Host and remote do not need to match.
+- **Scoped CSS:** a remote's CSS (Tailwind included) only applies inside that remote. Shadow DOM is one prop away.
+- **Isolated errors:** each remote shows its own error and can be retried alone.
+- **Integrity:** with a SHA-384 hash, the remote's JS only runs if the hash matches.
+- **Typed props:** the build publishes `vitral.d.ts`; `npx vitral types` makes a wrong prop fail to compile on the host.
+- **Shared state and events** across remotes, keep-alive, lazy loading, prefetch, canary and rollback.
+
 ```bash
 npm install vitral
 ```
@@ -57,15 +66,6 @@ No build at all, in any HTML page:
 <vitral-remote src="https://cdn.example.com/cart/vitral.json"></vitral-remote>
 ```
 
-## What you get
-
-- **Any framework, both ways:** React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit and plain JS. Host and remote do not need to match.
-- **Scoped CSS:** a remote's CSS (Tailwind included) only applies inside that remote. Shadow DOM is one prop away.
-- **Isolated errors:** each remote shows its own error and can be retried alone.
-- **Integrity:** with a SHA-384 hash, the remote's JS only runs if the hash matches.
-- **Typed props:** the build publishes `vitral.d.ts`; `npx vitral types` makes a wrong prop fail to compile on the host.
-- **Shared state and events** across remotes, keep-alive, lazy loading, prefetch, canary and rollback.
-
 ## Numbers
 
 From the [public benchmark](https://joaogabriel15.github.io/vitral/aprender/benchmark) (Chromium, Slow 4G, median of 7 visits):
@@ -74,10 +74,14 @@ From the [public benchmark](https://joaogabriel15.github.io/vitral/aprender/benc
 - **57% faster** first visit than Module Federation with shared React (1157 ms vs 2673 ms, 1 remote).
 - **4.6× faster** switching areas than Next.js Multi-Zones (184 ms vs 850 ms).
 
-The benchmark page also lists where vitral loses.
+The benchmark page has the method and the versions used.
+
+## Local and Docker
+
+Locally, each remote runs its own `vite dev` on a port and the host points at those ports. With Docker, each remote is an nginx image and the host reads its remote list from an environment variable, so one image works in every environment. Full example: [`examples/docker`](https://github.com/joaogabriel15/vitral/tree/main/examples/docker).
 
 ## Docs
 
 The full documentation is in Portuguese: https://joaogabriel15.github.io/vitral/. Code samples read the same in any language, and the [API reference](https://joaogabriel15.github.io/vitral/referencia/) is generated from the types.
 
-MIT license.
+MIT license. Made by [Pacheco Codes](https://pacheco.dev.br/).

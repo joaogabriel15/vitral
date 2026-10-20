@@ -30,7 +30,7 @@ import { withBase } from 'vitepress'
   <div><b>10</b><span>frameworks, como host e como remote</span></div>
 </div>
 
-<p class="vt-fonte">Medido no Chromium com rede Slow 4G, mediana de 7 visitas. <a :href="withBase('/aprender/benchmark')">Método e onde o vitral perde</a>.</p>
+<p class="vt-fonte">Medido no Chromium com rede Slow 4G, mediana de 7 visitas. <a :href="withBase('/aprender/benchmark')">Método</a>.</p>
 
 </div>
 
@@ -187,13 +187,14 @@ O código de host mínimo tem 3,4 kB com brotli. Sem build no host, uma tag de s
 
 ## Comparação
 
-| | Module Federation | single-spa | qiankun | vitral |
-| --- | --- | --- | --- | --- |
-| Configuração no host | Plugin no build | Root config e import map | `registerMicroApps` e `start` | `configure({ remotes })` |
-| Frameworks | Combinar dependências em `shared` | Um adaptador por framework | Qualquer, com entrada HTML | Qualquer |
-| Isolamento de CSS | Nenhum | Nenhum | Shadow DOM ou prefixo | Escopo automático ou Shadow DOM |
-| Código de host (brotli) | 19,4 kB | 5,8 kB | 37,9 kB | 3,4 kB |
-| Confere o hash do JS (SRI) | Não, por padrão | Não, por padrão | Não, por padrão | Sim, quando o manifesto tem hash |
+| | Module Federation | single-spa | qiankun | Next.js Multi-Zones | vitral |
+| --- | --- | --- | --- | --- | --- |
+| Configuração no host | Plugin no build | Root config e import map | `registerMicroApps` e `start` | Um app Next por zona e rewrites | `configure({ remotes })` |
+| Frameworks | Combinar dependências em `shared` | Um adaptador por framework | Qualquer, com entrada HTML | Só Next | Qualquer |
+| Isolamento de CSS | Nenhum | Nenhum | Shadow DOM ou prefixo | Por página | Escopo automático ou Shadow DOM |
+| Código de host (brotli) | 19,4 kB | 5,8 kB | 37,9 kB | Runtime do Next em cada zona | 3,4 kB |
+| Trocar de área | Sem recarregar | Sem recarregar | Sem recarregar | Recarrega a página | Sem recarregar |
+| Confere o hash do JS (SRI) | Não, por padrão | Não, por padrão | Não, por padrão | Não, por padrão | Sim, quando o manifesto tem hash |
 
 Comparação com a configuração padrão de cada ferramenta. Plugins e configuração extra podem mudar estes valores.
 
