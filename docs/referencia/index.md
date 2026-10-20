@@ -49,6 +49,7 @@ Cada página mostra a assinatura, os parâmetros, o retorno e um exemplo.
 | [`vitral/single-spa`](./single-spa) | App do single-spa como remote |
 | [`vitral/federation`](./federation) | Remote do Module Federation no host |
 | [`vitral/dict`](/aprender/dicionarios) | Servidor com dicionários de compressão (delta entre deploys) |
+| [`vitral/edge`](./edge) | Gateway de edge: uma origem só, Early Hints e SSR dos remotes |
 | [CLI](./cli) | Tipos das props e migração |
 
 A referência gerada pelo TypeDoc, com todos os tipos, está em [/api/](/api/).

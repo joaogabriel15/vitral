@@ -25,6 +25,7 @@ const entries = {
   federation: () => import('../src/federation'),
   dict: () => import('../src/dict'),
   prefetch: () => import('../src/prefetch'),
+  edge: () => import('../src/edge'),
 }
 
 describe('exports públicos', () => {

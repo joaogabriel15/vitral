@@ -85,7 +85,8 @@ export async function attachShadowRoot(
     try {
       el = make({ customElementRegistry: own })
     } catch {}
-  root.appendChild(el)
+  // A raiz que veio do servidor (hidratação) já está no shadow root.
+  if (!el.isConnected) root.appendChild(el)
   return [...(await attachStyles(root, el, r, global, local)), root, own, el]
 }
 

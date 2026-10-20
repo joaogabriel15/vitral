@@ -17,7 +17,8 @@
     "../packages/vitral/src/single-spa.ts",
     "../packages/vitral/src/federation.ts",
     "../packages/vitral/src/dict.ts",
-    "../packages/vitral/src/prefetch.ts"
+    "../packages/vitral/src/prefetch.ts",
+    "../packages/vitral/src/edge.ts"
   ],
   "tsconfig": "../packages/vitral/tsconfig.json",
   "out": "api",
