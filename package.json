@@ -15,6 +15,7 @@
     "size": "pnpm -r --filter './packages/**' size",
     "check": "pnpm build && pnpm typecheck && pnpm lint:pkg && pnpm size && pnpm test",
     "bench:publico": "pnpm build && node bench/publico/run.mjs",
+    "bench:zonas": "pnpm build && node bench/publico/zonas.mjs",
     "changeset": "changeset",
     "version-packages": "changeset version && pnpm install --lockfile-only",
     "release": "pnpm build && changeset publish"

@@ -1,0 +1,339 @@
+{
+  "data": "2026-10-20",
+  "metodo": {
+    "rede": "Slow 4G do Lighthouse via CDP Network.emulateNetworkConditions: 150 ms RTT, 1,6 Mbps down, 750 kbps up",
+    "protocolo": "HTTP/2 com TLS (certificado local aceito pela chave), brotli 11",
+    "cpu": "sem throttling de CPU",
+    "repeticoes": 7,
+    "estatistica": "mediana, com mínimo e máximo",
+    "pronto": "vitral: evento vitral-ready do remote da rota. Next: useEffect depois da hidratação",
+    "troca": "de clicar em A até B pronto, no mesmo contexto (cache da visita em A)"
+  },
+  "versoes": {
+    "vitral": "0.5.0 (commit d03cc4b, o código deste PR)",
+    "next": "16.4.2",
+    "vite": "8.3.4",
+    "@vitejs/plugin-react": "6.1.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "node": "v22.22.0"
+  },
+  "maquina": {
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "nucleos": 4,
+    "memoriaGB": 16,
+    "so": "linux 6.18.44-fc-v139"
+  },
+  "resultados": [
+    {
+      "cenario": "vitral",
+      "rotulo": "vitral, sem dedupe",
+      "frioMs": {
+        "mediana": 1236.1,
+        "min": 1234,
+        "max": 1242.4
+      },
+      "frioFcpMs": {
+        "mediana": 1256,
+        "min": 1248,
+        "max": 1260
+      },
+      "frioKB": {
+        "mediana": 75.2,
+        "min": 75.2,
+        "max": 75.2
+      },
+      "frioRede": {
+        "mediana": 14,
+        "min": 14,
+        "max": 14
+      },
+      "trocaMs": {
+        "mediana": 652.1,
+        "min": 645.3,
+        "max": 659.6
+      },
+      "trocaKB": {
+        "mediana": 63.3,
+        "min": 63.3,
+        "max": 63.3
+      },
+      "trocaRede": {
+        "mediana": 2,
+        "min": 2,
+        "max": 2
+      },
+      "totalKB": {
+        "mediana": 138.5,
+        "min": 138.5,
+        "max": 138.5
+      }
+    },
+    {
+      "cenario": "vitral-dedupe",
+      "rotulo": "vitral, com dedupe",
+      "frioMs": {
+        "mediana": 1434.6,
+        "min": 1425.6,
+        "max": 1541.6
+      },
+      "frioFcpMs": {
+        "mediana": 1456,
+        "min": 1444,
+        "max": 1552
+      },
+      "frioKB": {
+        "mediana": 78.3,
+        "min": 78.3,
+        "max": 78.3
+      },
+      "frioRede": {
+        "mediana": 20,
+        "min": 20,
+        "max": 20
+      },
+      "trocaMs": {
+        "mediana": 362.6,
+        "min": 356.8,
+        "max": 374.7
+      },
+      "trocaKB": {
+        "mediana": 3.3,
+        "min": 3.3,
+        "max": 3.3
+      },
+      "trocaRede": {
+        "mediana": 6,
+        "min": 6,
+        "max": 6
+      },
+      "totalKB": {
+        "mediana": 81.6,
+        "min": 81.6,
+        "max": 81.6
+      }
+    },
+    {
+      "cenario": "vitral-prefetch",
+      "rotulo": "vitral, dedupe e prefetch",
+      "frioMs": {
+        "mediana": 1430,
+        "min": 1421,
+        "max": 1444.3
+      },
+      "frioFcpMs": {
+        "mediana": 1452,
+        "min": 1436,
+        "max": 1464
+      },
+      "frioKB": {
+        "mediana": 83.3,
+        "min": 83.3,
+        "max": 83.3
+      },
+      "frioRede": {
+        "mediana": 27,
+        "min": 27,
+        "max": 27
+      },
+      "trocaMs": {
+        "mediana": 178.1,
+        "min": 174.5,
+        "max": 188.4
+      },
+      "trocaKB": {
+        "mediana": 0,
+        "min": 0,
+        "max": 0
+      },
+      "trocaRede": {
+        "mediana": 1,
+        "min": 1,
+        "max": 1
+      },
+      "totalKB": {
+        "mediana": 83.3,
+        "min": 83.3,
+        "max": 83.3
+      }
+    },
+    {
+      "cenario": "vitral-gateway",
+      "rotulo": "vitral, gateway com SSR",
+      "frioMs": {
+        "mediana": 651.1,
+        "min": 633.2,
+        "max": 739.9
+      },
+      "frioFcpMs": {
+        "mediana": 184,
+        "min": 180,
+        "max": 196
+      },
+      "frioKB": {
+        "mediana": 79.4,
+        "min": 79.4,
+        "max": 79.4
+      },
+      "frioRede": {
+        "mediana": 20,
+        "min": 20,
+        "max": 20
+      },
+      "trocaMs": {
+        "mediana": 365.6,
+        "min": 363.2,
+        "max": 379.9
+      },
+      "trocaKB": {
+        "mediana": 3.3,
+        "min": 3.3,
+        "max": 3.3
+      },
+      "trocaRede": {
+        "mediana": 7,
+        "min": 7,
+        "max": 7
+      },
+      "totalKB": {
+        "mediana": 82.7,
+        "min": 82.7,
+        "max": 82.7
+      }
+    },
+    {
+      "cenario": "vitral-gateway-prefetch",
+      "rotulo": "vitral, gateway e prefetch",
+      "frioMs": {
+        "mediana": 652.4,
+        "min": 650.5,
+        "max": 666.3
+      },
+      "frioFcpMs": {
+        "mediana": 180,
+        "min": 176,
+        "max": 196
+      },
+      "frioKB": {
+        "mediana": 81.8,
+        "min": 81.8,
+        "max": 81.8
+      },
+      "frioRede": {
+        "mediana": 22,
+        "min": 22,
+        "max": 22
+      },
+      "trocaMs": {
+        "mediana": 183.7,
+        "min": 178,
+        "max": 191.1
+      },
+      "trocaKB": {
+        "mediana": 0.6,
+        "min": 0.6,
+        "max": 0.6
+      },
+      "trocaRede": {
+        "mediana": 2,
+        "min": 2,
+        "max": 2
+      },
+      "totalKB": {
+        "mediana": 85.1,
+        "min": 85.1,
+        "max": 85.1
+      }
+    },
+    {
+      "cenario": "zonas",
+      "rotulo": "Multi-Zones",
+      "frioMs": {
+        "mediana": 969.1,
+        "min": 945.4,
+        "max": 1147.5
+      },
+      "frioFcpMs": {
+        "mediana": 184,
+        "min": 180,
+        "max": 196
+      },
+      "frioKB": {
+        "mediana": 114.4,
+        "min": 114.4,
+        "max": 114.4
+      },
+      "frioRede": {
+        "mediana": 7,
+        "min": 7,
+        "max": 7
+      },
+      "trocaMs": {
+        "mediana": 994.7,
+        "min": 988.6,
+        "max": 1011.6
+      },
+      "trocaKB": {
+        "mediana": 114.4,
+        "min": 114.4,
+        "max": 114.4
+      },
+      "trocaRede": {
+        "mediana": 7,
+        "min": 7,
+        "max": 7
+      },
+      "totalKB": {
+        "mediana": 228.8,
+        "min": 228.8,
+        "max": 228.8
+      }
+    },
+    {
+      "cenario": "zonas-prefetch",
+      "rotulo": "Multi-Zones, prefetch",
+      "frioMs": {
+        "mediana": 954.5,
+        "min": 942.3,
+        "max": 1112.5
+      },
+      "frioFcpMs": {
+        "mediana": 180,
+        "min": 176,
+        "max": 200
+      },
+      "frioKB": {
+        "mediana": 115.9,
+        "min": 115.9,
+        "max": 115.9
+      },
+      "frioRede": {
+        "mediana": 8,
+        "min": 8,
+        "max": 8
+      },
+      "trocaMs": {
+        "mediana": 849.9,
+        "min": 830.1,
+        "max": 1022.2
+      },
+      "trocaKB": {
+        "mediana": 112.9,
+        "min": 112.9,
+        "max": 112.9
+      },
+      "trocaRede": {
+        "mediana": 6,
+        "min": 6,
+        "max": 6
+      },
+      "totalKB": {
+        "mediana": 228.8,
+        "min": 228.8,
+        "max": 228.8
+      }
+    }
+  ]
+}

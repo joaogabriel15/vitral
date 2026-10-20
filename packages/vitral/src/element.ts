@@ -33,6 +33,7 @@ import { defineRemote, shared, type Isolation, type Props, type RemoteModule, ty
 import { hostSlot, timings, type HostSlotOptions, type Loading, type Prefetch } from './core/host-slot'
 import { memoSelect, same } from './core/shared'
 import { registerSrc } from './core/registry'
+import { warmSsr } from './core/loader'
 
 /** Definido só no build do `embed.js`, que não hidrata. */
 declare const __VITRAL_EMBED__: true | undefined
@@ -97,7 +98,7 @@ export class VitralRemoteElement extends Base {
     // HTML renderizado pelo gateway (`vitral/edge`): hidrata, sob demanda.
     // `typeof` duas vezes: o build do embed apaga o ramo inteiro.
     const ssr = typeof __VITRAL_EMBED__ === 'undefined' ? this.querySelector<HTMLElement>(':scope>[data-vitral-ssr]') : null
-    if (typeof __VITRAL_EMBED__ === 'undefined' && ssr) import('./core/hydrate').then((m) => this.isConnected && !this.#slot && (this.#slot = m.hydrateSlot(this, ssr, { ...options, props: this.#props })))
+    if (typeof __VITRAL_EMBED__ === 'undefined' && ssr) warmSsr(ssr), import('./core/hydrate').then((m) => this.isConnected && !this.#slot && (this.#slot = m.hydrateSlot(this, ssr, { ...options, props: this.#props })))
     else this.#slot = hostSlot(this, options)
   }
 

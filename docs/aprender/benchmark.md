@@ -1,6 +1,8 @@
-# Benchmark contra o Module Federation
+# Benchmark contra o Module Federation e o Multi-Zones
 
 Host do vitral e host do runtime oficial do Module Federation (MF) carregando os mesmos N remotes, no Chromium, com rede lenta fixa. Todos os números abaixo saíram de `bench/publico/run.mjs`, na máquina listada em [Versões](#versoes-e-maquina).
+
+A comparação com o Next.js Multi-Zones, que divide o app por rota e não por pedaço de página, está em [Contra o Next.js Multi-Zones](#contra-o-next-js-multi-zones).
 
 ## Resultado
 
@@ -136,7 +138,7 @@ Este benchmark não roda no CI. O bench do CI (`bench/run.mjs`) continua medindo
 
 ## Cenários novos
 
-Dicionário de compressão e prefetch preditivo ainda não têm cenário. Cada um entra como um item em `bench/publico/cenarios.mjs`, sem mudar o `run.mjs`:
+Dicionário de compressão ainda não tem cenário. O prefetch preditivo está medido na comparação com o [Multi-Zones](#contra-o-next-js-multi-zones). Um cenário novo entra como um item em `bench/publico/cenarios.mjs`, sem mudar o `run.mjs`:
 
 ```js
 {
@@ -151,3 +153,98 @@ Dicionário de compressão e prefetch preditivo ainda não têm cenário. Cada u
   query: {},                                      // parâmetros a mais na URL do host
 }
 ```
+
+## Contra o Next.js Multi-Zones
+
+O Multi-Zones divide o app por rota: cada equipe tem um app Next (uma zona) com algumas URLs, e trocar de zona recarrega a página. O cenário justo é o mesmo app dividido em duas áreas, A e B, uma por equipe, abrindo A e indo para B. Todos os números saíram de `bench/publico/zonas.mjs`.
+
+### Resultado
+
+Mediana de 7 repetições. Rede "Slow 4G" (150 ms de RTT, 1,6 Mbps). HTTP/2. Sem throttling de CPU. kB = 1024 bytes do corpo, com brotli.
+
+| Cenário | Abrir A, interativo (ms) | Abrir A, 1ª pintura (ms) | Abrir A (kB) | Trocar A → B (ms) | Trocar (kB) | Baixado A + B (kB) |
+| --- | --: | --: | --: | --: | --: | --: |
+| vitral, sem dedupe | 1236 | 1256 | 75,2 | 652 | 63,3 | 138,5 |
+| vitral, com dedupe | 1435 | 1456 | 78,3 | 363 | 3,3 | 81,6 |
+| vitral, dedupe e prefetch | 1430 | 1452 | 83,3 | 178 | 0 | 83,3 |
+| vitral, gateway com SSR | 651 | 184 | 79,4 | 366 | 3,3 | 82,7 |
+| vitral, gateway e prefetch | 652 | 180 | 81,8 | 184 | 0,6 | 85,1 |
+| Multi-Zones | 969 | 184 | 114,4 | 995 | 114,4 | 228,8 |
+| Multi-Zones, prefetch | 955 | 180 | 115,9 | 850 | 112,9 | 228,8 |
+
+Mínimo e máximo de cada célula estão em `bench/publico/resultado-zonas.json`.
+
+### O que os números dizem
+
+Melhor configuração de cada um (vitral com gateway e prefetch, Multi-Zones com prefetch):
+
+| | vitral | Multi-Zones | Diferença |
+| --- | --: | --: | --- |
+| Abrir A, interativo | 652 ms | 955 ms | 32% mais rápido |
+| Abrir A, 1ª pintura | 180 ms | 180 ms | Empate |
+| Trocar A → B | 184 ms | 850 ms | 4,6 vezes mais rápido |
+| Baixado em A + B | 85,1 kB | 228,8 kB | 63% menos |
+
+De onde vem a diferença:
+
+- **Troca de área:** no Multi-Zones, ir para outra zona recarrega a página e baixa React e Next de novo (113 kB), mesmo com arquivos iguais, porque cada zona serve os seus em outro caminho (`/a/_next/…`, `/b/_next/…`). No vitral, o app shell fica, o React fica (dedupe) e só o remote de B vem (3 kB). Com o prefetch, nem isso: B já está baixado.
+- **Primeira visita:** sem gateway, o vitral perde (1435 contra 969 ms). O HTML do app shell chega vazio, e o host descobre um arquivo depois do outro: o JS do host, o `vitral.json`, o código de SRI e de dedupe e, por último, o React. Com o gateway (`routes`), a página já sai com o HTML da rota, o manifesto e o `Link` (Early Hints) de todos os arquivos, o React inclusive. O navegador baixa tudo em paralelo e o outlet só hidrata. Veja [Rotas com SSR](./ssr#rotas-com-ssr).
+- **Bytes:** o Next manda o runtime dele (roteador, RSC) além do React. O host do vitral é o app shell e a lib.
+
+### Com CPU 4x mais lenta
+
+Melhor configuração de cada um, mesma rede, `Emulation.setCPUThrottlingRate` 4x, 7 repetições (`bench/publico/resultado-zonas-cpu4.json`). Bytes não mudam.
+
+| | vitral | Multi-Zones | Diferença |
+| --- | --: | --: | --- |
+| Abrir A, interativo | 792 ms | 1251 ms | 37% mais rápido |
+| Abrir A, 1ª pintura | 224 ms | 228 ms | Empate |
+| Trocar A → B | 225 ms | 1239 ms | 5,5 vezes mais rápido |
+
+Com CPU lenta, a diferença cresce: o Next roda o runtime dele de novo a cada troca de zona.
+
+### Onde o vitral perde
+
+- **Sem gateway, primeira visita:** 1435 ms contra 969 ms, e a primeira pintura só sai com o JS (1456 contra 184 ms). Quem não pode pôr um servidor na frente do app shell fica com esse custo na primeira visita.
+- **Dedupe com uma área só:** sem dedupe, a primeira visita é 199 ms mais rápida (1236 contra 1435 ms), mas a troca baixa o React de novo (63,3 kB). O dedupe compensa a partir da segunda área visitada.
+- **Prerender do Chromium:** com Speculation Rules `prerender`, a zona B poderia abrir já pronta. Não foi medido: com o DevTools ligado (Playwright, CDP), o Chromium desliga o prerender (`PrerenderingDisabledByDevTools`). Só o `prefetch` entrou. O prerender só existe no Chromium e roda a página inteira de B em segundo plano.
+
+### Método
+
+| Item | Como |
+| --- | --- |
+| App | Duas áreas, A e B. Cada uma mostra o mesmo `Cartao.jsx` do benchmark contra o MF, com um botão |
+| Multi-Zones | Dois apps Next 16 (App Router, Turbopack), cada um com `basePath` próprio (`/a`, `/b`) e `output: 'export'`: o HTML sai pronto do build, o melhor caso do Next para a primeira pintura. Link entre zonas com `<a>`, como manda a documentação |
+| Rewrites | O servidor manda `/a/*` e `/b/*` para cada zona, sem passar por um terceiro app |
+| Prefetch do Multi-Zones | `<script type="speculationrules">` com `prefetch` de `/b/` e `eagerness: "immediate"`, para terminar antes do clique |
+| vitral | App shell com `routes({ '/v/a': 'a', '/v/b': 'b' })` e `<vitral-outlet>`. Dois remotes React buildados com o plugin, com e sem `dedupe: ['react']` |
+| Gateway | `gateway({ routes })` de `vitral/edge` na frente do app shell, com `render` de `reactRender`. Compressão brotli 11 na saída |
+| Prefetch do vitral | `vitral/prefetch`, treinado com A → B três vezes antes, e o prefetch de B terminado em A |
+| Servidor | Node, HTTP/2 com TLS (certificado local aceito pela chave, para o cache HTTP funcionar). Brotli 11. Arquivo com hash: `immutable`; HTML e `vitral.json`: `no-cache` |
+| Abrir A | Contexto novo, cache vazio |
+| Interativo | Next: `useEffect` depois da hidratação. vitral: `vitral-ready` do outlet. Nos dois, o botão já responde |
+| 1ª pintura | `first-contentful-paint` |
+| Trocar A → B | Do clique (ou `navigate`) até B interativo, com o cache que a visita em A deixou. Antes, 500 ms de leitura em A (5 s com Speculation Rules) |
+| Bytes | Corpo das respostas, contado no servidor. O CDP não dá o tamanho dos arquivos que chegam por Early Hints |
+| Repetições | Uma de aquecimento fora da conta, depois 7. Mediana |
+
+Versões: vitral 0.5.0 com este PR, Next 16.4.2, React 19.3.0, Vite 8.3.4, Chromium 141.0.7390.37 (Playwright 1.56.1, headless), Node 22.22.0, na mesma máquina da tabela do MF. Data: 20/10/2026.
+
+### Limites
+
+- Uma máquina, um navegador, servidor em localhost com rede emulada.
+- Zonas com export estático. Com SSR por requisição, o Next ainda gasta o tempo de render no servidor a cada página.
+- Duas áreas e um componente pequeno. Com áreas maiores, o código de cada uma pesa mais que o runtime.
+- Sem throttling de CPU na tabela principal. Com CPU 4x, só a melhor configuração de cada um.
+
+### Reproduzir
+
+```bash
+pnpm install
+pnpm bench:zonas
+node bench/publico/zonas.mjs --runs 3 --only vitral-gateway-prefetch,zonas-prefetch
+node bench/publico/zonas.mjs --cpu 4                    # CPU 4x mais lenta
+node bench/publico/zonas.mjs --sem-build --servir       # estático na 4302, gateway na 4303
+```
+
+Para trocar as zonas por remotes, veja [Migrar do Next.js Multi-Zones](/migracao/multi-zones).
