@@ -74,6 +74,7 @@ O gateway põe dentro do `<vitral-remote>`:
 
 ```html
 <div data-vitral-ssr data-vitral-slot="carrinho">
+  <script type="application/json" data-vitral-manifest="/_vitral/carrinho/vitral.json">{…}</script>
   <template shadowrootmode="open">
     <style data-vitral-ssr>/* CSS do remote */</style>
     <div data-vitral-root="carrinho" style="display:contents"><button>itens: 3</button></div>
@@ -88,6 +89,17 @@ No navegador:
 - Com `hydrate`, o `<vitral-remote>` chama `hydrate(el, props, ctx)` com a raiz que veio do servidor. Nada é recriado. O `ctx` é o mesmo do `mount`.
 - Sem `hydrate`, monta do jeito normal ao lado e tira o HTML do servidor quando a montagem termina.
 - O código de hidratação é baixado sob demanda, só quando há `[data-vitral-ssr]`.
+- O manifesto que o gateway usou vem no HTML: a hidratação não busca o `vitral.json` de novo. Veja [Manifesto no HTML](../referencia/edge#manifesto-no-html).
+
+Em React, `reactRender` de `vitral/react-server` faz o `render`, e `reactRemote` (ou o plugin) já exporta o `hydrate`:
+
+```ts
+// carrinho/src/server.ts
+import { reactRender } from 'vitral/react-server'
+import Carrinho from './Carrinho'
+
+export const render = reactRender(Carrinho)
+```
 
 | Caso | O que acontece |
 | --- | --- |
@@ -97,3 +109,45 @@ No navegador:
 | `refresh(nome)` | Troca a versão hidratada por uma montada do jeito normal |
 
 O CSS vai inline no `<style>`: o gateway confere o hash dele antes, porque o navegador não confere.
+
+## Rotas com SSR
+
+Para um app dividido por rota entre equipes (o caso do Next.js Multi-Zones), passe ao gateway o mesmo mapa de rotas do cliente:
+
+```ts
+// gateway
+import { gateway } from 'vitral/edge'
+import { render as conta } from 'conta/server'
+import { render as checkout } from 'checkout/server'
+
+export default {
+  fetch: gateway({
+    origin: 'https://shell.empresa.com',
+    remotes: {
+      conta: { url: 'https://cdn.empresa.com/conta/vitral.json', render: conta },
+      checkout: { url: 'https://cdn.empresa.com/checkout/vitral.json', render: checkout },
+    },
+    routes: { '/conta/*': 'conta', '/checkout/*': 'checkout' },
+  }),
+}
+```
+
+```html
+<!-- app shell, servido por https://shell.empresa.com -->
+<vitral-outlet props='{"loja":"centro"}'><p slot="fallback">Carregando…</p></vitral-outlet>
+<script type="module">
+  import { configure } from 'vitral'
+  import { routes } from 'vitral/routes'
+
+  configure({ remotes: { conta: '/_vitral/conta/vitral.json', checkout: '/_vitral/checkout/vitral.json' } })
+  routes({ '/conta/*': 'conta', '/checkout/*': 'checkout' })
+</script>
+```
+
+O que acontece:
+
+- **Primeira visita:** o gateway renderiza o remote da URL dentro do `<vitral-outlet>` e manda `Link` (Early Hints) com os arquivos dele, a cópia do React do dedupe inclusive. O navegador baixa host e remote em paralelo e pinta o HTML antes de qualquer JS. O outlet hidrata esse HTML.
+- **Troca de rota:** o outlet monta o remote da rota nova no cliente, sem recarregar a página e sem baixar o framework de novo. Com [`vitral/prefetch`](../referencia/prefetch), o remote da rota seguinte já está baixado.
+- HTML de outra rota (um cache velho, por exemplo) é descartado, e o outlet monta o remote certo.
+
+No benchmark contra o Multi-Zones, isso abre a primeira página 32% mais rápido que o Next e troca de rota 4,7 vezes mais rápido. Veja [Benchmark](./benchmark#contra-o-next-js-multi-zones).

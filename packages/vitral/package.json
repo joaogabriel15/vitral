@@ -84,6 +84,10 @@
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
     },
+    "./react-server": {
+      "types": "./dist/react-server.d.ts",
+      "import": "./dist/react-server.js"
+    },
     "./vue": {
       "types": "./dist/vue.d.ts",
       "import": "./dist/vue.js"
@@ -444,7 +448,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.15 kB",
+      "limit": "9.25 kB",
       "ignore": [
         "./overrides-*",
         "./channel-*",

@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { navigate } from '../src/index'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { configure, navigate, register, type RemoteModule } from '../src/index'
 import { defineVitralOutlet, matchRoute, routes } from '../src/routes'
 import { failingRemote, mockRemote } from '../src/testing'
-import { cleanup, flush } from './helpers'
+import { cleanup, FIXTURE_REMOTE, flush, serveManifest } from './helpers'
 
 let stop: (() => void) | null = null
 afterEach(() => {
@@ -212,5 +212,100 @@ describe('links', () => {
     a.addEventListener('click', (e) => e.preventDefault(), { once: true })
     click(a)
     expect(location.pathname).toBe('/')
+  })
+})
+
+describe('<vitral-outlet> com o HTML do gateway', () => {
+  // O primeiro import() do módulo passa pelo transform do Vitest, mais lento que os flush().
+  beforeAll(() => import('../src/core/hydrate'))
+
+  /** O que `vitral/edge` com `routes` escreve dentro do outlet. */
+  const ssr = (slot: string, extra = '') =>
+    `<vitral-outlet props='{"n":1}'><div data-vitral-ssr data-vitral-slot="${slot}">${extra}<div data-vitral-root="${slot}" style="display:contents"><button>ssr</button></div></div><p slot="fallback" hidden>carregando</p></vitral-outlet>`
+
+  function remote() {
+    const calls: string[] = []
+    const mod: RemoteModule = {
+      mount: (el) => (calls.push('mount'), (el.textContent = 'montado'), { unmount: () => calls.push('unmount') }),
+      hydrate: (el, props) => (calls.push(`hydrate:${props.n}:${el.textContent}`), { unmount: () => calls.push('unmount') }),
+    }
+    return { mod, calls }
+  }
+
+  it('hidrata o HTML da rota em vez de montar; trocar de rota monta o outro remote', async () => {
+    const conta = remote()
+    const checkout = remote()
+    register('conta', { module: conta.mod })
+    register('checkout', { module: checkout.mod })
+    history.replaceState(null, '', '/conta')
+    document.body.innerHTML = ssr('conta')
+    const outlet = document.querySelector('vitral-outlet')!
+    const button = outlet.querySelector('button')
+    const ready: string[] = []
+    outlet.addEventListener('vitral-ready', (e) => ready.push((e as CustomEvent).detail.route))
+    stop = routes(TABLE)
+    expect(outlet.getAttribute('data-vitral-status')).toBe('loading')
+    await flush(10)
+    expect(conta.calls).toEqual(['hydrate:1:ssr'])
+    expect(outlet.querySelector('button')).toBe(button)
+    expect(outlet.getAttribute('data-vitral-status')).toBe('ready')
+    expect(ready).toEqual(['conta'])
+
+    navigate('/checkout')
+    await flush(10)
+    expect(conta.calls).toEqual(['hydrate:1:ssr', 'unmount'])
+    expect(checkout.calls).toEqual(['mount'])
+    expect(outlet.querySelector('[data-vitral-ssr]')).toBeNull()
+    expect(outlet.textContent).toContain('montado')
+  })
+
+  it('HTML de outra rota (deploy velho, cache): descarta e monta o remote certo', async () => {
+    const conta = remote()
+    register('conta', { module: conta.mod })
+    history.replaceState(null, '', '/conta')
+    document.body.innerHTML = ssr('checkout')
+    stop = routes(TABLE)
+    await flush(10)
+    expect(conta.calls).toEqual(['mount'])
+    expect(document.querySelector('[data-vitral-ssr]')).toBeNull()
+  })
+
+  it('rota troca antes de o código da hidratação chegar: descarta o HTML', async () => {
+    const conta = remote()
+    const checkout = remote()
+    register('conta', { module: conta.mod })
+    register('checkout', { module: checkout.mod })
+    history.replaceState(null, '', '/conta')
+    document.body.innerHTML = ssr('conta')
+    stop = routes(TABLE)
+    navigate('/checkout')
+    await flush(10)
+    expect(conta.calls).toEqual([])
+    expect(checkout.calls).toEqual(['mount'])
+    expect(document.querySelector('[data-vitral-ssr]')).toBeNull()
+  })
+
+  it('usa o manifesto que veio no HTML no primeiro load, sem buscar de novo', async () => {
+    const fetch = serveManifest('conta')
+    configure({ remotes: { conta: 'https://cdn.exemplo.com/conta/vitral.json' } })
+    history.replaceState(null, '', '/conta')
+    const seed = `<script type="application/json" data-vitral-manifest="https://cdn.exemplo.com/conta/vitral.json">${JSON.stringify({ name: 'conta', entry: FIXTURE_REMOTE })}</script>`
+    document.body.innerHTML = ssr('conta', seed)
+    stop = routes(TABLE)
+    await flush(30)
+    // O fixture não tem `hydrate`: monta ao lado e tira o HTML do servidor.
+    expect(document.querySelector('vitral-outlet')!.textContent).toContain('conta:1')
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('manifesto inválido no HTML: busca o manifesto como sempre', async () => {
+    const fetch = serveManifest('conta')
+    configure({ remotes: { conta: 'https://cdn.exemplo.com/conta/vitral.json' } })
+    history.replaceState(null, '', '/conta')
+    const seed = `<script type="application/json" data-vitral-manifest="https://cdn.exemplo.com/conta/vitral.json">{nao é json</script>`
+    document.body.innerHTML = ssr('conta', seed)
+    stop = routes(TABLE)
+    await flush(30)
+    expect(fetch.mock.calls.map((c) => String(c[0]))).toEqual(['https://cdn.exemplo.com/conta/vitral.json'])
   })
 })

@@ -15,6 +15,10 @@
  * Se o remote exporta `hydrate`, ele recebe esse `[data-vitral-root]`. Se não
  * exporta (ou o DOM não bate com o isolamento), o caminho de sempre monta ao
  * lado e o HTML do servidor sai quando a montagem termina.
+ *
+ * O gateway põe também o manifesto que usou, num
+ * `<script type="application/json" data-vitral-manifest="url">`: a hidratação
+ * usa essa versão (a mesma do HTML) sem buscar o manifesto de novo.
  */
 // `RemoteError` e `navigate` vêm de '../index' para este módulo alcançar
 // tudo o que o host já carregou: sem isso, o build separaria em outro chunk a
@@ -29,9 +33,13 @@ import { load } from './loader'
 import { mountOnce, registered, type MountOptions } from './mount'
 import type { RemoteSlot, SlotStatus } from './slot'
 import { protocol } from './state'
-import type { MountedRemote, Props, RemoteContext } from './types'
+import type { MountedRemote, Props, RemoteContext, RemoteManifest } from './types'
 import { refreshable, track } from './updates'
-import { metric } from './util'
+import { absolute, metric } from './util'
+// Estáticos de propósito: o bundler do host baixa os dois junto com este
+// módulo, e não depois do manifesto, uma ida e volta a menos por página com SSR.
+import './sri'
+import './dedupe'
 
 /**
  * `hostSlot` que começa hidratando `holder` (o `[data-vitral-ssr]` dentro de
@@ -114,7 +122,11 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
   await p.pending()
   const isolate = options.isolate ?? registered(name)?.isolate ?? p.settings().isolate
   if (isolate === 'iframe') return null
-  const { module: mod, ...resolved } = await load(name, isolate, options.priority)
+  // Manifesto do HTML: vale só para este load (o registro volta como estava).
+  const entry = p.entry(name)
+  const seed = entry?.url && !entry.manifest ? manifestFrom(holder, entry.url) : undefined
+  if (seed) entry!.manifest = seed
+  const { module: mod, ...resolved } = await load(name, isolate, options.priority).finally(() => seed && entry!.manifest === seed && delete entry!.manifest)
   const shadow = isolate === 'shadow'
   // Filho direto (`:scope` não vale num shadow root em todo navegador).
   const el = [...((shadow ? holder.shadowRoot : holder)?.children ?? [])].find((c) => c.hasAttribute('data-vitral-root')) as HTMLElement | undefined
@@ -181,4 +193,17 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
   }
   // `refresh(nome)` troca pela versão nova montada do jeito normal, no mesmo lugar.
   return refreshable(current, name, props, (latest) => mountOnce(holder, name, latest, options))
+}
+
+/** Manifesto que o gateway pôs em `holder` para `url`, ou `undefined`. */
+function manifestFrom(holder: HTMLElement, url: string): RemoteManifest | undefined {
+  for (const s of holder.querySelectorAll(':scope>script[data-vitral-manifest]')) {
+    if (absolute(s.getAttribute('data-vitral-manifest') ?? '') !== url) continue
+    try {
+      const m = JSON.parse(s.textContent ?? '')
+      if (typeof m?.entry === 'string') return m
+    } catch {
+      // JSON inválido: busca o manifesto como sempre.
+    }
+  }
 }

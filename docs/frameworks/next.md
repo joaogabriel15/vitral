@@ -56,3 +56,7 @@ Veja [SSR](/aprender/ssr).
 ## Remote
 
 Um remote não é um app Next. Crie o remote como um projeto [React](./react#remote) com Vite e use-o no host Next.
+
+## Vindo do Multi-Zones
+
+Para trocar as zonas por remotes, com SSR por rota e troca de rota sem recarregar, veja [Migrar do Next.js Multi-Zones](/migracao/multi-zones).

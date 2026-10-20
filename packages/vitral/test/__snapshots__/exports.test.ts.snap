@@ -130,6 +130,12 @@ exports[`exports públicos > react 1`] = `
 ]
 `;
 
+exports[`exports públicos > react-server 1`] = `
+[
+  "reactRender",
+]
+`;
+
 exports[`exports públicos > routes 1`] = `
 [
   "VitralOutletElement",
