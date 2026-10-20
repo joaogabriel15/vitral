@@ -1,0 +1,18 @@
+server {
+  listen 80;
+  root /usr/share/nginx/html;
+  gzip on;
+  gzip_types application/javascript text/css application/json;
+
+  # vitral.json muda a cada deploy: o navegador sempre revalida.
+  location ~ \.json$ {
+    add_header Access-Control-Allow-Origin "${ALLOWED_ORIGIN}" always;
+    add_header Cache-Control "no-cache" always;
+  }
+
+  # JS e CSS têm hash no nome e nunca mudam.
+  location / {
+    add_header Access-Control-Allow-Origin "${ALLOWED_ORIGIN}" always;
+    add_header Cache-Control "public, max-age=31536000, immutable" always;
+  }
+}

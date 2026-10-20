@@ -22,7 +22,16 @@
 
 Junte micro-frontends de qualquer framework numa página só, sem configuração de build no host.
 
-Cada equipe publica o próprio pedaço da página (um remote) com `vite build`. O host recebe a URL de cada remote e monta tudo no navegador. Não há plugin no host, não há versão de React para combinar entre equipes e um remote fora do ar não derruba a página.
+Cada equipe publica o próprio pedaço da página (um remote) com `vite build`. O host recebe a URL de cada remote e monta tudo no navegador.
+
+**Por que usar:**
+
+- **Zero configuração no host.** Sem plugin de build: só `configure({ remotes })` com a URL de cada remote.
+- **Qualquer framework.** React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS puro na mesma página. Sem combinar versão de React entre equipes.
+- **Deploy independente.** Cada equipe publica quando quiser. O host vê a versão nova sem novo build.
+- **CSS e erros isolados.** O CSS de um remote não muda o resto da página. Um remote fora do ar mostra o próprio erro, e o resto continua funcionando.
+- **Seguro.** O JS só roda se vier de uma origem permitida e se o hash SHA-384 bater.
+- **Leve e rápido.** 3,4 kB de host. Primeira visita 57% mais rápida que o Module Federation e troca de área 4,6 vezes mais rápida que o Next.js Multi-Zones.
 
 ```bash
 npm install vitral
@@ -35,25 +44,25 @@ npm install vitral
   </picture>
 </p>
 
-## Por que o vitral
+## Comparação
 
-| | Module Federation / single-spa | vitral |
-|---|---|---|
-| Build do host | Config combinada com cada remote | Nenhuma. Só `configure()` |
-| Versões de React/Vue | `shared` e singletons, conflitos de versão | Cada remote leva a sua. Compartilhar é opcional |
-| Remote fora do ar | Pode derrubar a página | Só aquele remote mostra erro |
-| CSS | Vaza entre apps | Escopo automático ou Shadow DOM |
-| Deploy novo | `ChunkLoadError` com cache velho | Arquivos com hash; só o `vitral.json` revalida |
-| Conceitos | Containers, exposes, lifecycles, root config | `mount(el, props, ctx)` → `{ update, unmount }` |
+| | Module Federation | single-spa | Next.js Multi-Zones | vitral |
+|---|---|---|---|---|
+| Configuração no host | Plugin no build, combinado com cada remote | Root config e import map | Um app Next por zona e rewrites | Nenhuma. Só `configure()` |
+| Frameworks | Combinar versões em `shared` | Um adaptador e um ciclo de vida por framework | Só Next | Qualquer um, sem combinar versão |
+| Divide a página em | Pedaços | Apps por rota | Rotas (cada zona é uma página) | Pedaços ou rotas |
+| Trocar de área | Sem recarregar | Sem recarregar | Recarrega a página e baixa Next e React de novo | Sem recarregar |
+| Isolamento de CSS | Nenhum | Nenhum | Por página | Escopo automático ou Shadow DOM |
+| Remote fora do ar | Erro sem tratamento derruba a página | A tela de erro é com você | A zona inteira fica fora | Só aquele remote mostra erro, com `retry` |
+| Código de host (brotli) | 19,4 kB | 5,8 kB | Runtime do Next em cada zona | 3,4 kB |
 
 Medido no [benchmark público](https://joaogabriel15.github.io/vitral/aprender/benchmark) (Chromium, rede Slow 4G, mediana de 7 visitas):
 
-- **3,4 kB** de código de host mínimo, com brotli. O host do Module Federation tem 19,4 kB.
 - **57% menos tempo** na primeira visita que o Module Federation com React compartilhado (1157 ms contra 2673 ms, 1 remote).
-- **4,6 vezes mais rápido** para trocar de área que o Next.js Multi-Zones (184 ms contra 850 ms).
+- **4,6 vezes mais rápido** para trocar de área que o Next.js Multi-Zones (184 ms contra 850 ms), com 63% menos bytes para abrir duas áreas.
 - **10 frameworks** cobertos por testes de ponta a ponta no CI, com host e remote de frameworks diferentes, em Chromium, Firefox, WebKit e mobile.
 
-A página do benchmark também lista onde o vitral perde.
+O método e as versões usadas estão na página do benchmark.
 
 ## Começo rápido
 
@@ -110,6 +119,55 @@ Sem build no host, numa página HTML qualquer:
 ```
 
 Todos os componentes de host aceitam `src` no lugar de `name`.
+
+## Rodar local
+
+Cada remote roda no próprio `vite dev`, numa porta. O host aponta para essas portas:
+
+```bash
+cd carrinho && npm run dev   # vite --port 5174
+cd busca && npm run dev      # vite --port 5175
+cd loja && npm run dev       # vite --port 3000
+```
+
+```json
+// loja/public/remotes.json
+{
+  "carrinho": "http://localhost:5174/vitral.json",
+  "busca": "http://localhost:5175/vitral.json"
+}
+```
+
+```js
+// loja/src/main.jsx
+configure({ remotes: '/remotes.json' })
+```
+
+Editar o remote atualiza o host sem recarregar a página (HMR). Para rodar só um remote local e pegar os outros de homologação, abra o host com `?vitral=carrinho@http://localhost:5174`.
+
+## Docker e Kubernetes
+
+Cada remote vira uma imagem nginx com o `dist`. O host lê a lista de remotes de uma variável de ambiente quando o contêiner sobe, então a mesma imagem serve em qualquer ambiente.
+
+```yaml
+# compose.yaml
+services:
+  loja:                # host: http://localhost:8080
+    build: ./loja
+    ports: ["8080:80"]
+    environment:
+      VITRAL_REMOTES: '{"carrinho":"/mf/carrinho/vitral.json","busca":"/mf/busca/vitral.json"}'
+  carrinho:            # remote React
+    build: ./carrinho
+  busca:               # remote Vue
+    build: ./busca
+```
+
+O nginx do host repassa `/mf/carrinho/` para o contêiner `carrinho`. Tudo fica na mesma origem: sem CORS e com uma porta só. Parar o contêiner `carrinho` mostra o erro só no lugar do carrinho.
+
+No Kubernetes, as mesmas imagens funcionam com um Service por remote; o Ingress pode fazer o papel do nginx do host. Se os remotes ficam num CDN, troque `VITRAL_REMOTES` pelas URLs do CDN.
+
+Exemplo completo, com Dockerfiles e configuração do nginx: [`examples/docker`](https://github.com/joaogabriel15/vitral/tree/main/examples/docker).
 
 ## Frameworks
 
@@ -378,4 +436,4 @@ failingRemote('recomendacoes') // testa a tela de erro
 
 - [Exemplos](https://github.com/joaogabriel15/vitral/tree/main/examples): o mesmo remote em 8 frameworks e 9 hosts.
 - [Como contribuir](https://github.com/joaogabriel15/vitral/blob/main/CONTRIBUTING.md)
-- Licença [MIT](https://github.com/joaogabriel15/vitral/blob/main/LICENSE)
+- Licença [MIT](https://github.com/joaogabriel15/vitral/blob/main/LICENSE). Feito por [Pacheco Codes](https://pacheco.dev.br/).
