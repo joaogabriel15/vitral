@@ -45,7 +45,7 @@ export function setFrameMounter(mounter: Mounter): void {
   frames = mounter
 }
 
-async function mountOnce<P extends Props>(target: HTMLElement, name: string, props: P, options: MountOptions): Promise<MountedRemote<P>> {
+export async function mountOnce<P extends Props>(target: HTMLElement, name: string, props: P, options: MountOptions): Promise<MountedRemote<P>> {
   const p = protocol()
   await p.pending()
   // Decide antes de baixar: nos modos iframe e reframe o JS do remote nunca roda na página.
@@ -132,7 +132,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
 }
 
 /** Registro de `name` ou do remote de que ele é parte (`carrinho/Mini` → `carrinho`). */
-function registered(name: string) {
+export function registered(name: string) {
   const p = protocol()
   let n = name
   while (n && !p.entry(n)) n = n.slice(0, Math.max(0, n.lastIndexOf('/')))

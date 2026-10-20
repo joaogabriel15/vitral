@@ -139,6 +139,10 @@
     "./prefetch": {
       "types": "./dist/prefetch.d.ts",
       "import": "./dist/prefetch.js"
+    },
+    "./edge": {
+      "types": "./dist/edge.d.ts",
+      "import": "./dist/edge.js"
     }
   },
   "publishConfig": {
@@ -249,7 +253,8 @@
         "./contract-*",
         "./expose-*",
         "./capture-*",
-        "./channel-*"
+        "./channel-*",
+        "./hydrate-*"
       ],
       "limit": "4.65 kB"
     },
@@ -266,7 +271,8 @@
         "./contract-*",
         "./expose-*",
         "./capture-*",
-        "./channel-*"
+        "./channel-*",
+        "./hydrate-*"
       ],
       "limit": "5.78 kB"
     },
@@ -306,7 +312,8 @@
         "./contract-*",
         "./expose-*",
         "./capture-*",
-        "./channel-*"
+        "./channel-*",
+        "./hydrate-*"
       ],
       "limit": "5.35 kB"
     },
@@ -323,7 +330,8 @@
         "./contract-*",
         "./expose-*",
         "./capture-*",
-        "./channel-*"
+        "./channel-*",
+        "./hydrate-*"
       ],
       "limit": "5.57 kB"
     },
@@ -345,6 +353,14 @@
       "limit": "1.72 kB"
     },
     {
+      "name": "hidratação do SSR do gateway (sob demanda)",
+      "path": "dist/hydrate-*.js",
+      "ignore": [
+        "./chunk-*"
+      ],
+      "limit": "1.5 kB"
+    },
+    {
       "name": "react",
       "path": "dist/react.js",
       "import": "{ Remote, reactRemote }",
@@ -359,7 +375,8 @@
         "./contract-*",
         "./expose-*",
         "./capture-*",
-        "./channel-*"
+        "./channel-*",
+        "./hydrate-*"
       ],
       "limit": "6.2 kB"
     },
@@ -377,7 +394,8 @@
         "./contract-*",
         "./expose-*",
         "./capture-*",
-        "./channel-*"
+        "./channel-*",
+        "./hydrate-*"
       ],
       "limit": "6.12 kB"
     },
@@ -394,7 +412,8 @@
         "./contract-*",
         "./expose-*",
         "./capture-*",
-        "./channel-*"
+        "./channel-*",
+        "./hydrate-*"
       ],
       "limit": "6.33 kB"
     },
@@ -407,7 +426,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.12 kB",
+      "limit": "6.2 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -417,7 +436,8 @@
         "./contract-*",
         "./expose-*",
         "./capture-*",
-        "./channel-*"
+        "./channel-*",
+        "./hydrate-*"
       ]
     },
     {
@@ -428,7 +448,8 @@
       "ignore": [
         "./overrides-*",
         "./channel-*",
-        "./reframe-*"
+        "./reframe-*",
+        "./hydrate-*"
       ]
     },
     {
@@ -467,7 +488,8 @@
       "ignore": [
         "./overrides-*",
         "./channel-*",
-        "./reframe-*"
+        "./reframe-*",
+        "./hydrate-*"
       ]
     },
     {
@@ -486,6 +508,12 @@
       "path": "dist/dict.js",
       "import": "{ createDict }",
       "limit": "1 kB"
+    },
+    {
+      "name": "edge (gateway, no servidor)",
+      "path": "dist/edge.js",
+      "import": "{ gateway, toNodeListener }",
+      "limit": "5 kB"
     }
   ]
 }

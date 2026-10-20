@@ -30,9 +30,12 @@
  * Stencil, vanilla) como remote.
  */
 import { defineRemote, shared, type Isolation, type Props, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus } from './index'
-import { hostSlot, timings, type Loading, type Prefetch } from './core/host-slot'
+import { hostSlot, timings, type HostSlotOptions, type Loading, type Prefetch } from './core/host-slot'
 import { memoSelect, same } from './core/shared'
 import { registerSrc } from './core/registry'
+
+/** Definido só no build do `embed.js`, que não hidrata. */
+declare const __VITRAL_EMBED__: true | undefined
 
 const Base: typeof HTMLElement = typeof HTMLElement === 'undefined' ? (class {} as typeof HTMLElement) : HTMLElement
 
@@ -63,7 +66,7 @@ export class VitralRemoteElement extends Base {
     if (!name) return
     if (this.hasAttribute('props') && !Object.keys(this.#props).length) this.#props = parseProps(this.getAttribute('props'))
     const keep = this.getAttribute('keep-alive')
-    this.#slot = hostSlot(this, {
+    const options: HostSlotOptions = {
       name,
       props: this.#props,
       isolate: (this.getAttribute('isolate') as Isolation) || undefined,
@@ -90,7 +93,12 @@ export class VitralRemoteElement extends Base {
         if (status === 'ready') this.dispatchEvent(new CustomEvent('vitral-ready', { bubbles: true, detail: { timings: timings(name) } }))
         if (status === 'error') this.dispatchEvent(new CustomEvent('vitral-error', { bubbles: true, detail: { error } }))
       },
-    })
+    }
+    // HTML renderizado pelo gateway (`vitral/edge`): hidrata, sob demanda.
+    // `typeof` duas vezes: o build do embed apaga o ramo inteiro.
+    const ssr = typeof __VITRAL_EMBED__ === 'undefined' ? this.querySelector<HTMLElement>(':scope>[data-vitral-ssr]') : null
+    if (typeof __VITRAL_EMBED__ === 'undefined' && ssr) import('./core/hydrate').then((m) => this.isConnected && !this.#slot && (this.#slot = m.hydrateSlot(this, ssr, { ...options, props: this.#props })))
+    else this.#slot = hostSlot(this, options)
   }
 
   /**
