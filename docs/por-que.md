@@ -59,7 +59,7 @@ Do [benchmark público](/aprender/benchmark), no Chromium, com rede Slow 4G, med
   <div><b>63%</b><span>menos bytes para abrir duas áreas que o Next.js Multi-Zones.</span></div>
 </div>
 
-A página do benchmark mostra o método, as versões e [onde o vitral perde](/aprender/benchmark#onde-o-vitral-perde).
+A página do [benchmark](/aprender/benchmark) mostra o método e as versões.
 
 ## Quando usar
 

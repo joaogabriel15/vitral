@@ -1,0 +1,16 @@
+# docker compose up --build
+# Abra http://localhost:8080
+services:
+  loja:
+    build: ./loja
+    ports:
+      - "8080:80"
+    environment:
+      # Lista de remotes do host. Outro ambiente, outra lista: sem novo build.
+      VITRAL_REMOTES: '{"carrinho":"/mf/carrinho/vitral.json","busca":"/mf/busca/vitral.json"}'
+
+  carrinho:
+    build: ./carrinho
+
+  busca:
+    build: ./busca

@@ -38,6 +38,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Testes', link: '/aprender/testes' },
       { text: 'Contratos entre host e remote', link: '/aprender/contratos' },
       { text: 'Deploy', link: '/aprender/deploy' },
+      { text: 'Local e Docker', link: '/aprender/local-e-docker' },
       { text: 'Vários repositórios', link: '/aprender/varios-repositorios' },
       { text: 'Registro e agentes', link: '/aprender/registro' },
     ],
