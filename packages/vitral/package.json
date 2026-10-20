@@ -127,6 +127,10 @@
     "./federation": {
       "types": "./dist/federation.d.ts",
       "import": "./dist/federation.js"
+    },
+    "./vitals": {
+      "types": "./dist/vitals.d.ts",
+      "import": "./dist/vitals.js"
     }
   },
   "publishConfig": {
@@ -427,6 +431,12 @@
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
       "limit": "11.95 kB"
+    },
+    {
+      "name": "vitals (Web Vitals por remote)",
+      "path": "dist/vitals.js",
+      "import": "{ vitals }",
+      "limit": "1.4 kB"
     }
   ]
 }
