@@ -131,6 +131,10 @@
     "./vitals": {
       "types": "./dist/vitals.d.ts",
       "import": "./dist/vitals.js"
+    },
+    "./dict": {
+      "types": "./dist/dict.d.ts",
+      "import": "./dist/dict.js"
     }
   },
   "publishConfig": {
@@ -437,6 +441,12 @@
       "path": "dist/vitals.js",
       "import": "{ vitals }",
       "limit": "1.4 kB"
+    },
+    {
+      "name": "dict (middleware de servidor)",
+      "path": "dist/dict.js",
+      "import": "{ createDict }",
+      "limit": "1 kB"
     }
   ]
 }

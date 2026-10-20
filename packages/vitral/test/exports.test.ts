@@ -23,6 +23,7 @@ const entries = {
   vitals: () => import('../src/vitals'),
   'single-spa': () => import('../src/single-spa'),
   federation: () => import('../src/federation'),
+  dict: () => import('../src/dict'),
 }
 
 describe('exports públicos', () => {
