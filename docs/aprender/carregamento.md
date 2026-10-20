@@ -75,6 +75,8 @@ configure({
 
 `stage` é `manifest`, `js`, `css` ou `mount`. As etapas também aparecem na aba Performance do DevTools como `vitral:<remote>:<etapa>`.
 
+LCP, CLS e INP de cada remote, por rota: [vitral/vitals](/referencia/vitals).
+
 ## Cache no CDN
 
 | Arquivo | `Cache-Control` |

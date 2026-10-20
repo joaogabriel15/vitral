@@ -20,6 +20,19 @@ Cada número é a mediana de 5 execuções. Em cada PR o CI mede a main e o PR n
 mesma máquina e falha se alguma métrica ficar mais de 10% pior.
 `baseline.json` guarda a medição de referência da fase 0.
 
+## Dicionários de compressão
+
+```bash
+pnpm build:all
+node bench/dicionarios.mjs [--antes 0.3.0=/outro/checkout/examples/remotes]
+```
+
+Compara, no arquivo de entrada de cada remote de `examples/remotes`, brotli 11,
+zstd 19, zstd com dicionário treinado nos outros remotes, brotli/zstd com os
+outros remotes como dicionário e brotli/zstd com a versão anterior do mesmo
+arquivo (delta). Usa os binários `brotli` e `zstd`. Grava `dicionarios.json`.
+Resultado e conclusão em `docs/aprender/dicionarios.md`.
+
 ## Benchmark público (manual)
 
 `publico/` compara o host do vitral com o runtime do Module Federation, com

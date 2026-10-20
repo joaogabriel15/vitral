@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joaogabriel15.github.io/vitral/schema/vitral-contract.json",
+  "title": "Contrato do consumidor do vitral",
+  "description": "O que um host passou para um remote e o que espera dele. Gravado por `record()` de `vitral/testing` e reproduzido no CI do remote com `npx vitral test --contract`.",
+  "type": "object",
+  "required": ["remote", "cases"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "remote": { "type": "string", "minLength": 1, "description": "Nome com que o host monta o remote." },
+    "host": { "type": "string", "description": "Quem gravou (o host)." },
+    "version": { "type": "string", "description": "`version` do manifesto do remote na gravação." },
+    "cases": { "type": "array", "items": { "$ref": "#/$defs/case" }, "description": "Uma montagem por caso, sem repetições." }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": ["props"],
+      "properties": {
+        "props": { "type": "object", "description": "Props do mount. Funções viram `{ \"$fn\": true }`, datas `{ \"$date\": \"…\" }` e instâncias `{ \"$unknown\": \"Classe\" }`." },
+        "updates": { "type": "array", "items": { "type": "object" }, "description": "Props de cada `update`, em ordem." },
+        "inputs": {
+          "type": "array",
+          "description": "Eventos que o host emitiu e o remote escutava, em ordem.",
+          "items": {
+            "type": "object",
+            "required": ["type"],
+            "properties": { "type": { "type": "string" }, "payload": {} },
+            "additionalProperties": false
+          }
+        },
+        "last": { "type": "object", "description": "Valores que o remote leu com `ctx.events.last`, por tipo de evento." },
+        "shared": { "type": "object", "description": "Chaves de `ctx.shared` que o remote leu, com o primeiro valor lido." },
+        "emits": {
+          "type": "array",
+          "description": "Eventos que o remote emitiu e o host escuta.",
+          "items": {
+            "type": "object",
+            "required": ["type", "phase"],
+            "properties": {
+              "type": { "type": "string" },
+              "phase": {
+                "enum": ["mount", "update", "input", "later"],
+                "description": "Quando saiu: no mount, num update, ao receber um evento do host (o teste exige de novo), ou depois, num clique ou timer (o teste procura o nome no código)."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "listens": { "type": "array", "items": { "type": "string" }, "description": "Eventos que o remote assinou." }
+      },
+      "additionalProperties": false
+    }
+  }
+}

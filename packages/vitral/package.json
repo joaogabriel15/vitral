@@ -127,6 +127,14 @@
     "./federation": {
       "types": "./dist/federation.d.ts",
       "import": "./dist/federation.js"
+    },
+    "./vitals": {
+      "types": "./dist/vitals.d.ts",
+      "import": "./dist/vitals.js"
+    },
+    "./dict": {
+      "types": "./dist/dict.d.ts",
+      "import": "./dist/dict.js"
     }
   },
   "publishConfig": {
@@ -148,6 +156,7 @@
   "peerDependencies": {
     "@angular/core": ">=17",
     "@angular/platform-browser": ">=17",
+    "happy-dom": ">=15",
     "preact": ">=10",
     "react": ">=18",
     "react-dom": ">=18",
@@ -186,6 +195,9 @@
       "optional": true
     },
     "typescript": {
+      "optional": true
+    },
+    "happy-dom": {
       "optional": true
     }
   },
@@ -423,6 +435,18 @@
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
       "limit": "11.95 kB"
+    },
+    {
+      "name": "vitals (Web Vitals por remote)",
+      "path": "dist/vitals.js",
+      "import": "{ vitals }",
+      "limit": "1.4 kB"
+    },
+    {
+      "name": "dict (middleware de servidor)",
+      "path": "dist/dict.js",
+      "import": "{ createDict }",
+      "limit": "1 kB"
     }
   ]
 }
