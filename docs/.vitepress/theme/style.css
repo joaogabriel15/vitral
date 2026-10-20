@@ -262,3 +262,119 @@
 .vt-split div[class*='language-'] code {
   font-size: 12.5px;
 }
+
+/* Diagrama com versão clara e escura */
+.vt-diagrama {
+  display: block;
+  margin: 24px 0;
+}
+.vt-diagrama img {
+  width: 100%;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 12px;
+}
+.dark .so-claro,
+html:not(.dark) .so-escuro {
+  display: none;
+}
+
+/* Números do benchmark */
+.vt-numeros {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 24px 0;
+}
+.vt-numeros > div {
+  border-top: 4px solid var(--vt-cobalto);
+  padding-top: 12px;
+}
+.vt-numeros > div:nth-child(2) {
+  border-top-color: var(--vt-esmeralda);
+}
+.vt-numeros > div:nth-child(3) {
+  border-top-color: var(--vt-ambar);
+}
+.vt-numeros > div:nth-child(4) {
+  border-top-color: var(--vt-rubi);
+}
+.vt-numeros b {
+  display: block;
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+.vt-numeros span {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--vp-c-text-2);
+}
+@media (max-width: 768px) {
+  .vt-numeros {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Página da marca */
+.vt-marca-logos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+.vt-marca-logos > div {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-divider);
+}
+.vt-marca-logos .claro {
+  background: #fff;
+}
+.vt-marca-logos .escuro {
+  background: var(--vt-chumbo);
+}
+.vt-marca-cores {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+.vt-marca-cores > div {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 10px;
+  overflow: hidden;
+  font-size: 14px;
+}
+.vt-marca-cores > div::before {
+  content: '';
+  display: block;
+  height: 64px;
+  background: var(--c);
+}
+.vt-marca-cores b,
+.vt-marca-cores code {
+  display: block;
+  padding: 0 10px;
+}
+.vt-marca-cores b {
+  padding-top: 8px;
+}
+.vp-doc .vt-marca-cores code {
+  background: none;
+  padding-bottom: 8px;
+}
+@media (max-width: 640px) {
+  .vt-marca-cores {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.vp-doc .vt-fonte {
+  font-size: 13px;
+  color: var(--vp-c-text-2);
+  margin-top: 0;
+}
