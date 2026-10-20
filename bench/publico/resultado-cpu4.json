@@ -1,0 +1,225 @@
+{
+  "data": "2026-10-19",
+  "metodo": {
+    "rede": "Slow 4G do Lighthouse via CDP Network.emulateNetworkConditions: 150 ms RTT, 1,6 Mbps down, 750 kbps up",
+    "cpu": "Emulation.setCPUThrottlingRate 4x",
+    "repeticoes": 7,
+    "estatistica": "mediana, com mínimo e máximo",
+    "compressao": "brotli nível 11 no servidor; bytes = encodedDataLength do CDP (corpo + cabeçalhos)",
+    "pronto": "performance.now() quando os N .cartao estão no DOM (MutationObserver no host)",
+    "memoria": "Runtime.getHeapUsage().usedSize depois de HeapProfiler.collectGarbage, na visita fria",
+    "remotes": "3 React para cada Vue; cada remote é um build separado com nome próprio"
+  },
+  "versoes": {
+    "vitral": "0.4.0 (commit b77fcce)",
+    "vite": "8.3.4",
+    "@vitejs/plugin-react": "6.1.2",
+    "@vitejs/plugin-vue": "6.0.10",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "vue": "3.5.44",
+    "@module-federation/vite": "1.23.5",
+    "@module-federation/runtime": "2.9.2",
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "node": "v22.22.0"
+  },
+  "maquina": {
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "nucleos": 4,
+    "memoriaGB": 16,
+    "so": "linux 6.18.44-fc-v139"
+  },
+  "host": {
+    "vitral": {
+      "jsKB": 7.9,
+      "requisicoes": 6
+    },
+    "mf": {
+      "jsKB": 19.3,
+      "requisicoes": 2
+    }
+  },
+  "resultados": [
+    {
+      "cenario": "vitral",
+      "rotulo": "vitral, sem dedupe",
+      "n": 4,
+      "frioMs": {
+        "mediana": 2300.4,
+        "min": 2196,
+        "max": 2363.1
+      },
+      "quenteMs": {
+        "mediana": 788.7,
+        "min": 681.9,
+        "max": 940.8
+      },
+      "frioKB": {
+        "mediana": 234,
+        "min": 234,
+        "max": 234
+      },
+      "frioJsKB": {
+        "mediana": 231,
+        "min": 231,
+        "max": 231
+      },
+      "quenteKB": {
+        "mediana": 0.7,
+        "min": 0.7,
+        "max": 0.7
+      },
+      "frioRede": {
+        "mediana": 22,
+        "min": 22,
+        "max": 22
+      },
+      "quenteRede": {
+        "mediana": 5,
+        "min": 5,
+        "max": 5
+      },
+      "heapMB": {
+        "mediana": 2.4,
+        "min": 2.4,
+        "max": 2.4
+      }
+    },
+    {
+      "cenario": "vitral-dedupe",
+      "rotulo": "vitral, com dedupe",
+      "n": 4,
+      "frioMs": {
+        "mediana": 2050.6,
+        "min": 1946.5,
+        "max": 2507.5
+      },
+      "quenteMs": {
+        "mediana": 879.1,
+        "min": 660.9,
+        "max": 1182.8
+      },
+      "frioKB": {
+        "mediana": 146.3,
+        "min": 146.3,
+        "max": 146.3
+      },
+      "frioJsKB": {
+        "mediana": 141.4,
+        "min": 141.4,
+        "max": 141.4
+      },
+      "quenteKB": {
+        "mediana": 0.7,
+        "min": 0.7,
+        "max": 0.7
+      },
+      "frioRede": {
+        "mediana": 41,
+        "min": 41,
+        "max": 41
+      },
+      "quenteRede": {
+        "mediana": 5,
+        "min": 5,
+        "max": 5
+      },
+      "heapMB": {
+        "mediana": 2.18,
+        "min": 2.18,
+        "max": 2.18
+      }
+    },
+    {
+      "cenario": "mf",
+      "rotulo": "MF, sem shared",
+      "n": 4,
+      "frioMs": {
+        "mediana": 2642.4,
+        "min": 2531.7,
+        "max": 3402
+      },
+      "quenteMs": {
+        "mediana": 830.1,
+        "min": 763.2,
+        "max": 2363.6
+      },
+      "frioKB": {
+        "mediana": 308.9,
+        "min": 308.9,
+        "max": 308.9
+      },
+      "frioJsKB": {
+        "mediana": 308.5,
+        "min": 308.5,
+        "max": 308.5
+      },
+      "quenteKB": {
+        "mediana": 0.7,
+        "min": 0.7,
+        "max": 0.7
+      },
+      "frioRede": {
+        "mediana": 22,
+        "min": 22,
+        "max": 22
+      },
+      "quenteRede": {
+        "mediana": 5,
+        "min": 5,
+        "max": 5
+      },
+      "heapMB": {
+        "mediana": 2.8,
+        "min": 2.8,
+        "max": 2.8
+      }
+    },
+    {
+      "cenario": "mf-shared",
+      "rotulo": "MF, shared singleton",
+      "n": 4,
+      "frioMs": {
+        "mediana": 3767,
+        "min": 3644,
+        "max": 5037.2
+      },
+      "quenteMs": {
+        "mediana": 1919.8,
+        "min": 833.5,
+        "max": 3017
+      },
+      "frioKB": {
+        "mediana": 247.1,
+        "min": 242.1,
+        "max": 247.1
+      },
+      "frioJsKB": {
+        "mediana": 246.7,
+        "min": 241.8,
+        "max": 246.7
+      },
+      "quenteKB": {
+        "mediana": 56.7,
+        "min": 0.7,
+        "max": 66.7
+      },
+      "frioRede": {
+        "mediana": 47,
+        "min": 44,
+        "max": 47
+      },
+      "quenteRede": {
+        "mediana": 8,
+        "min": 5,
+        "max": 14
+      },
+      "heapMB": {
+        "mediana": 3.18,
+        "min": 3.12,
+        "max": 3.18
+      }
+    }
+  ]
+}

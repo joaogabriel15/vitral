@@ -1,0 +1,905 @@
+{
+  "ferramentas": {
+    "node": "v22.22.0",
+    "brotli": "brotli 1.1.0",
+    "zstd": "*** Zstandard CLI (64-bit) v1.5.5, by Yann Collet ***"
+  },
+  "dicionarios": {
+    "angular": {
+      "brutoBytes": 677861,
+      "brutoBr": 133139
+    },
+    "intruso": {
+      "brutoBytes": 774505,
+      "brutoBr": 163425
+    },
+    "lit": {
+      "brutoBytes": 755961,
+      "brutoBr": 157341
+    },
+    "loja": {
+      "brutoBytes": 774016,
+      "brutoBr": 162157
+    },
+    "preact": {
+      "brutoBytes": 798175,
+      "brutoBr": 159081
+    },
+    "react": {
+      "brutoBytes": 512273,
+      "brutoBr": 100608
+    },
+    "solid": {
+      "brutoBytes": 792716,
+      "brutoBr": 158174
+    },
+    "svelte": {
+      "brutoBytes": 765408,
+      "brutoBr": 152430
+    },
+    "vanilla": {
+      "brutoBytes": 774967,
+      "brutoBr": 163596
+    },
+    "vue": {
+      "brutoBytes": 723482,
+      "brutoBr": 140604
+    }
+  },
+  "grupos": {
+    "sem framework": [
+      "intruso",
+      "loja",
+      "vanilla"
+    ],
+    "com framework": [
+      "angular",
+      "lit",
+      "preact",
+      "react",
+      "solid",
+      "svelte",
+      "vue"
+    ]
+  },
+  "resumo": {
+    "atual": {
+      "arquivos": 10,
+      "iguais": 0,
+      "raw": 816596,
+      "br": 211013,
+      "zstd": {
+        "media": -5.2,
+        "total": -4.7
+      },
+      "treinado": {
+        "media": 26.4,
+        "total": 17.1
+      },
+      "dcbCompartilhado": {
+        "media": 40.9,
+        "total": 28.3
+      },
+      "dczCompartilhado": {
+        "media": 40.3,
+        "total": 27.2
+      }
+    },
+    "atual (com framework)": {
+      "arquivos": 7,
+      "iguais": 0,
+      "raw": 690296,
+      "br": 171489,
+      "zstd": {
+        "media": -4.9,
+        "total": -4.4
+      },
+      "treinado": {
+        "media": 11.8,
+        "total": 7.1
+      },
+      "dcbCompartilhado": {
+        "media": 18.1,
+        "total": 13.1
+      },
+      "dczCompartilhado": {
+        "media": 17.7,
+        "total": 11.9
+      }
+    },
+    "atual (sem framework)": {
+      "arquivos": 3,
+      "iguais": 0,
+      "raw": 126300,
+      "br": 39524,
+      "zstd": {
+        "media": -5.9,
+        "total": -5.9
+      },
+      "treinado": {
+        "media": 60.5,
+        "total": 60.5
+      },
+      "dcbCompartilhado": {
+        "media": 94,
+        "total": 94
+      },
+      "dczCompartilhado": {
+        "media": 93.3,
+        "total": 93.2
+      }
+    },
+    "patch": {
+      "arquivos": 10,
+      "iguais": 0,
+      "raw": 816793,
+      "br": 211345,
+      "zstd": {
+        "media": -5.2,
+        "total": -4.7
+      },
+      "treinado": {
+        "media": 26.2,
+        "total": 17
+      },
+      "dcbCompartilhado": {
+        "media": 40.7,
+        "total": 28.2
+      },
+      "dczCompartilhado": {
+        "media": 40.1,
+        "total": 27.1
+      },
+      "dcbDelta": {
+        "media": 98.8,
+        "total": 99.2
+      },
+      "dczDelta": {
+        "media": 98.7,
+        "total": 99.2
+      }
+    },
+    "patch (com framework)": {
+      "arquivos": 7,
+      "iguais": 0,
+      "raw": 690310,
+      "br": 171750,
+      "zstd": {
+        "media": -4.9,
+        "total": -4.4
+      },
+      "treinado": {
+        "media": 11.7,
+        "total": 7.1
+      },
+      "dcbCompartilhado": {
+        "media": 18.1,
+        "total": 13.2
+      },
+      "dczCompartilhado": {
+        "media": 17.5,
+        "total": 11.9
+      },
+      "dcbDelta": {
+        "media": 98.7,
+        "total": 99.3
+      },
+      "dczDelta": {
+        "media": 98.7,
+        "total": 99.3
+      }
+    },
+    "patch (sem framework)": {
+      "arquivos": 3,
+      "iguais": 0,
+      "raw": 126483,
+      "br": 39595,
+      "zstd": {
+        "media": -5.9,
+        "total": -5.9
+      },
+      "treinado": {
+        "media": 60.2,
+        "total": 60.2
+      },
+      "dcbCompartilhado": {
+        "media": 93.4,
+        "total": 93.3
+      },
+      "dczCompartilhado": {
+        "media": 92.8,
+        "total": 92.7
+      },
+      "dcbDelta": {
+        "media": 98.8,
+        "total": 98.8
+      },
+      "dczDelta": {
+        "media": 98.7,
+        "total": 98.7
+      }
+    },
+    "0.2.0→0.3.0": {
+      "arquivos": 10,
+      "iguais": 0,
+      "raw": 791158,
+      "br": 203341,
+      "zstd": {
+        "media": -5.2,
+        "total": -4.7
+      },
+      "treinado": {
+        "media": 25.1,
+        "total": 14.9
+      },
+      "dcbCompartilhado": {
+        "media": 37.2,
+        "total": 23.9
+      },
+      "dczCompartilhado": {
+        "media": 36.6,
+        "total": 22.8
+      },
+      "dcbDelta": {
+        "media": 91.4,
+        "total": 94.7
+      },
+      "dczDelta": {
+        "media": 90.7,
+        "total": 94.2
+      }
+    },
+    "0.2.0→0.3.0 (com framework)": {
+      "arquivos": 7,
+      "iguais": 0,
+      "raw": 683928,
+      "br": 169577,
+      "zstd": {
+        "media": -4.9,
+        "total": -4.4
+      },
+      "treinado": {
+        "media": 11.4,
+        "total": 6.5
+      },
+      "dcbCompartilhado": {
+        "media": 17.3,
+        "total": 12.1
+      },
+      "dczCompartilhado": {
+        "media": 17,
+        "total": 10.9
+      },
+      "dcbDelta": {
+        "media": 96.9,
+        "total": 97.9
+      },
+      "dczDelta": {
+        "media": 96.5,
+        "total": 97.7
+      }
+    },
+    "0.2.0→0.3.0 (sem framework)": {
+      "arquivos": 3,
+      "iguais": 0,
+      "raw": 107230,
+      "br": 33764,
+      "zstd": {
+        "media": -6,
+        "total": -6
+      },
+      "treinado": {
+        "media": 56.8,
+        "total": 56.9
+      },
+      "dcbCompartilhado": {
+        "media": 83.5,
+        "total": 83.4
+      },
+      "dczCompartilhado": {
+        "media": 82.3,
+        "total": 82.3
+      },
+      "dcbDelta": {
+        "media": 78.6,
+        "total": 78.6
+      },
+      "dczDelta": {
+        "media": 77,
+        "total": 77
+      }
+    },
+    "0.3.0→atual": {
+      "arquivos": 10,
+      "iguais": 0,
+      "raw": 816596,
+      "br": 211013,
+      "zstd": {
+        "media": -5.2,
+        "total": -4.7
+      },
+      "treinado": {
+        "media": 26.4,
+        "total": 17.1
+      },
+      "dcbCompartilhado": {
+        "media": 40.9,
+        "total": 28.3
+      },
+      "dczCompartilhado": {
+        "media": 40.3,
+        "total": 27.2
+      },
+      "dcbDelta": {
+        "media": 89.2,
+        "total": 92.7
+      },
+      "dczDelta": {
+        "media": 88.4,
+        "total": 92.1
+      }
+    },
+    "0.3.0→atual (com framework)": {
+      "arquivos": 7,
+      "iguais": 0,
+      "raw": 690296,
+      "br": 171489,
+      "zstd": {
+        "media": -4.9,
+        "total": -4.4
+      },
+      "treinado": {
+        "media": 11.8,
+        "total": 7.1
+      },
+      "dcbCompartilhado": {
+        "media": 18.1,
+        "total": 13.1
+      },
+      "dczCompartilhado": {
+        "media": 17.7,
+        "total": 11.9
+      },
+      "dcbDelta": {
+        "media": 96.3,
+        "total": 97.4
+      },
+      "dczDelta": {
+        "media": 95.9,
+        "total": 97
+      }
+    },
+    "0.3.0→atual (sem framework)": {
+      "arquivos": 3,
+      "iguais": 0,
+      "raw": 126300,
+      "br": 39524,
+      "zstd": {
+        "media": -5.9,
+        "total": -5.9
+      },
+      "treinado": {
+        "media": 60.5,
+        "total": 60.5
+      },
+      "dcbCompartilhado": {
+        "media": 94,
+        "total": 94
+      },
+      "dczCompartilhado": {
+        "media": 93.3,
+        "total": 93.2
+      },
+      "dcbDelta": {
+        "media": 72.7,
+        "total": 72.7
+      },
+      "dczDelta": {
+        "media": 70.7,
+        "total": 70.7
+      }
+    }
+  },
+  "linhas": [
+    {
+      "remote": "angular",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 138735,
+      "br": 34220,
+      "zstd": 35613,
+      "treinado": 32742,
+      "dcbCompartilhado": 31379,
+      "dczCompartilhado": 31519
+    },
+    {
+      "remote": "angular",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 138648,
+      "br": 34300,
+      "zstd": 35642,
+      "treinado": 32783,
+      "dcbCompartilhado": 31440,
+      "dczCompartilhado": 31550,
+      "dcbDelta": 265,
+      "dczDelta": 250
+    },
+    {
+      "remote": "intruso",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 42091,
+      "br": 13152,
+      "zstd": 13920,
+      "treinado": 5107,
+      "dcbCompartilhado": 400,
+      "dczCompartilhado": 397
+    },
+    {
+      "remote": "intruso",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 42088,
+      "br": 13178,
+      "zstd": 13948,
+      "treinado": 5165,
+      "dcbCompartilhado": 491,
+      "dczCompartilhado": 486,
+      "dcbDelta": 153,
+      "dczDelta": 164
+    },
+    {
+      "remote": "lit",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 60635,
+      "br": 18179,
+      "zstd": 19096,
+      "treinado": 10732,
+      "dcbCompartilhado": 6724,
+      "dczCompartilhado": 7148
+    },
+    {
+      "remote": "lit",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 60619,
+      "br": 18167,
+      "zstd": 19120,
+      "treinado": 10768,
+      "dcbCompartilhado": 6771,
+      "dczCompartilhado": 7219,
+      "dcbDelta": 156,
+      "dczDelta": 162
+    },
+    {
+      "remote": "loja",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 42580,
+      "br": 13310,
+      "zstd": 14080,
+      "treinado": 5389,
+      "dcbCompartilhado": 1691,
+      "dczCompartilhado": 2021
+    },
+    {
+      "remote": "loja",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 42769,
+      "br": 13325,
+      "zstd": 14121,
+      "treinado": 5440,
+      "dcbCompartilhado": 1767,
+      "dczCompartilhado": 2032,
+      "dcbDelta": 173,
+      "dczDelta": 185
+    },
+    {
+      "remote": "preact",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 18421,
+      "br": 5865,
+      "zstd": 6216,
+      "treinado": 5284,
+      "dcbCompartilhado": 5046,
+      "dczCompartilhado": 4963
+    },
+    {
+      "remote": "preact",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 18513,
+      "br": 5909,
+      "zstd": 6259,
+      "treinado": 5330,
+      "dcbCompartilhado": 5066,
+      "dczCompartilhado": 5007,
+      "dcbDelta": 160,
+      "dczDelta": 157
+    },
+    {
+      "remote": "react",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 304323,
+      "br": 65643,
+      "zstd": 68396,
+      "treinado": 67141,
+      "dcbCompartilhado": 64048,
+      "dczCompartilhado": 65501
+    },
+    {
+      "remote": "react",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 304367,
+      "br": 65715,
+      "zstd": 68411,
+      "treinado": 67166,
+      "dcbCompartilhado": 64004,
+      "dczCompartilhado": 65521,
+      "dcbDelta": 107,
+      "dczDelta": 136
+    },
+    {
+      "remote": "solid",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 23880,
+      "br": 6876,
+      "zstd": 7248,
+      "treinado": 6141,
+      "dcbCompartilhado": 5978,
+      "dczCompartilhado": 5902
+    },
+    {
+      "remote": "solid",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 23929,
+      "br": 6894,
+      "zstd": 7286,
+      "treinado": 6174,
+      "dcbCompartilhado": 6014,
+      "dczCompartilhado": 5942,
+      "dcbDelta": 140,
+      "dczDelta": 147
+    },
+    {
+      "remote": "svelte",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 51188,
+      "br": 14282,
+      "zstd": 15048,
+      "treinado": 12506,
+      "dcbCompartilhado": 11963,
+      "dczCompartilhado": 11968
+    },
+    {
+      "remote": "svelte",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 51031,
+      "br": 14296,
+      "zstd": 15068,
+      "treinado": 12537,
+      "dcbCompartilhado": 11997,
+      "dczCompartilhado": 12008,
+      "dcbDelta": 246,
+      "dczDelta": 229
+    },
+    {
+      "remote": "vanilla",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 41629,
+      "br": 13062,
+      "zstd": 13840,
+      "treinado": 5103,
+      "dcbCompartilhado": 280,
+      "dczCompartilhado": 266
+    },
+    {
+      "remote": "vanilla",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 41626,
+      "br": 13092,
+      "zstd": 13867,
+      "treinado": 5154,
+      "dcbCompartilhado": 376,
+      "dczCompartilhado": 362,
+      "dcbDelta": 153,
+      "dczDelta": 163
+    },
+    {
+      "remote": "vue",
+      "papel": "entry",
+      "cenario": "atual",
+      "raw": 93114,
+      "br": 26424,
+      "zstd": 27475,
+      "treinado": 24781,
+      "dcbCompartilhado": 23808,
+      "dczCompartilhado": 23997
+    },
+    {
+      "remote": "vue",
+      "papel": "entry",
+      "cenario": "patch",
+      "raw": 93203,
+      "br": 26469,
+      "zstd": 27511,
+      "treinado": 24824,
+      "dcbCompartilhado": 23846,
+      "dczCompartilhado": 24043,
+      "dcbDelta": 159,
+      "dczDelta": 158
+    },
+    {
+      "remote": "angular",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 138735,
+      "br": 34267,
+      "zstd": 35608,
+      "treinado": 32743,
+      "dcbCompartilhado": 31368,
+      "dczCompartilhado": 31523,
+      "dcbDelta": 96,
+      "dczDelta": 112
+    },
+    {
+      "remote": "intruso",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 35734,
+      "br": 11215,
+      "zstd": 11904,
+      "treinado": 4863,
+      "dcbCompartilhado": 1783,
+      "dczCompartilhado": 1892,
+      "dcbDelta": 2331,
+      "dczDelta": 2506
+    },
+    {
+      "remote": "lit",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 54267,
+      "br": 16269,
+      "zstd": 17121,
+      "treinado": 9974,
+      "dcbCompartilhado": 6889,
+      "dczCompartilhado": 7150,
+      "dcbDelta": 2856,
+      "dczDelta": 3198
+    },
+    {
+      "remote": "loja",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 36223,
+      "br": 11388,
+      "zstd": 12067,
+      "treinado": 4837,
+      "dcbCompartilhado": 2036,
+      "dczCompartilhado": 2242,
+      "dcbDelta": 2527,
+      "dczDelta": 2744
+    },
+    {
+      "remote": "preact",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 18421,
+      "br": 5875,
+      "zstd": 6217,
+      "treinado": 5284,
+      "dcbCompartilhado": 5048,
+      "dczCompartilhado": 4974,
+      "dcbDelta": 68,
+      "dczDelta": 75
+    },
+    {
+      "remote": "react",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 304323,
+      "br": 65604,
+      "zstd": 68396,
+      "treinado": 67142,
+      "dcbCompartilhado": 64004,
+      "dczCompartilhado": 65510,
+      "dcbDelta": 70,
+      "dczDelta": 102
+    },
+    {
+      "remote": "solid",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 23880,
+      "br": 6864,
+      "zstd": 7249,
+      "treinado": 6139,
+      "dcbCompartilhado": 5985,
+      "dczCompartilhado": 5914,
+      "dcbDelta": 70,
+      "dczDelta": 75
+    },
+    {
+      "remote": "svelte",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 51188,
+      "br": 14275,
+      "zstd": 15047,
+      "treinado": 12507,
+      "dcbCompartilhado": 11981,
+      "dczCompartilhado": 11966,
+      "dcbDelta": 101,
+      "dczDelta": 101
+    },
+    {
+      "remote": "vanilla",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 35273,
+      "br": 11161,
+      "zstd": 11831,
+      "treinado": 4869,
+      "dcbCompartilhado": 1770,
+      "dczCompartilhado": 1857,
+      "dcbDelta": 2356,
+      "dczDelta": 2518
+    },
+    {
+      "remote": "vue",
+      "papel": "entry",
+      "cenario": "0.2.0→0.3.0",
+      "raw": 93114,
+      "br": 26423,
+      "zstd": 27470,
+      "treinado": 24774,
+      "dcbCompartilhado": 23821,
+      "dczCompartilhado": 23989,
+      "dcbDelta": 253,
+      "dczDelta": 275
+    },
+    {
+      "remote": "angular",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 138735,
+      "br": 34220,
+      "zstd": 35613,
+      "treinado": 32742,
+      "dcbCompartilhado": 31379,
+      "dczCompartilhado": 31519,
+      "dcbDelta": 92,
+      "dczDelta": 118
+    },
+    {
+      "remote": "intruso",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 42091,
+      "br": 13152,
+      "zstd": 13920,
+      "treinado": 5107,
+      "dcbCompartilhado": 400,
+      "dczCompartilhado": 397,
+      "dcbDelta": 3583,
+      "dczDelta": 3838
+    },
+    {
+      "remote": "lit",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 60635,
+      "br": 18179,
+      "zstd": 19096,
+      "treinado": 10732,
+      "dcbCompartilhado": 6724,
+      "dczCompartilhado": 7148,
+      "dcbDelta": 4026,
+      "dczDelta": 4466
+    },
+    {
+      "remote": "loja",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 42580,
+      "br": 13310,
+      "zstd": 14080,
+      "treinado": 5389,
+      "dcbCompartilhado": 1691,
+      "dczCompartilhado": 2021,
+      "dcbDelta": 3633,
+      "dczDelta": 3906
+    },
+    {
+      "remote": "preact",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 18421,
+      "br": 5865,
+      "zstd": 6216,
+      "treinado": 5284,
+      "dcbCompartilhado": 5046,
+      "dczCompartilhado": 4963,
+      "dcbDelta": 65,
+      "dczDelta": 74
+    },
+    {
+      "remote": "react",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 304323,
+      "br": 65643,
+      "zstd": 68396,
+      "treinado": 67141,
+      "dcbCompartilhado": 64048,
+      "dczCompartilhado": 65501,
+      "dcbDelta": 67,
+      "dczDelta": 101
+    },
+    {
+      "remote": "solid",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 23880,
+      "br": 6876,
+      "zstd": 7248,
+      "treinado": 6141,
+      "dcbCompartilhado": 5978,
+      "dczCompartilhado": 5902,
+      "dcbDelta": 67,
+      "dczDelta": 74
+    },
+    {
+      "remote": "svelte",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 51188,
+      "br": 14282,
+      "zstd": 15048,
+      "treinado": 12506,
+      "dcbCompartilhado": 11963,
+      "dczCompartilhado": 11968,
+      "dcbDelta": 90,
+      "dczDelta": 103
+    },
+    {
+      "remote": "vanilla",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 41629,
+      "br": 13062,
+      "zstd": 13840,
+      "treinado": 5103,
+      "dcbCompartilhado": 280,
+      "dczCompartilhado": 266,
+      "dcbDelta": 3583,
+      "dczDelta": 3834
+    },
+    {
+      "remote": "vue",
+      "papel": "entry",
+      "cenario": "0.3.0→atual",
+      "raw": 93114,
+      "br": 26424,
+      "zstd": 27475,
+      "treinado": 24781,
+      "dcbCompartilhado": 23808,
+      "dczCompartilhado": 23997,
+      "dcbDelta": 119,
+      "dczDelta": 128
+    }
+  ]
+}

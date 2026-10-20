@@ -1,0 +1,585 @@
+{
+  "data": "2026-10-19",
+  "metodo": {
+    "rede": "Slow 4G do Lighthouse via CDP Network.emulateNetworkConditions: 150 ms RTT, 1,6 Mbps down, 750 kbps up",
+    "cpu": "sem throttling de CPU",
+    "repeticoes": 7,
+    "estatistica": "mediana, com mínimo e máximo",
+    "compressao": "brotli nível 11 no servidor; bytes = encodedDataLength do CDP (corpo + cabeçalhos)",
+    "pronto": "performance.now() quando os N .cartao estão no DOM (MutationObserver no host)",
+    "memoria": "Runtime.getHeapUsage().usedSize depois de HeapProfiler.collectGarbage, na visita fria",
+    "remotes": "3 React para cada Vue; cada remote é um build separado com nome próprio"
+  },
+  "versoes": {
+    "vitral": "0.4.0 (commit b77fcce)",
+    "vite": "8.3.4",
+    "@vitejs/plugin-react": "6.1.2",
+    "@vitejs/plugin-vue": "6.0.10",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "vue": "3.5.44",
+    "@module-federation/vite": "1.23.5",
+    "@module-federation/runtime": "2.9.2",
+    "chromium": "141.0.7390.37",
+    "playwright": "1.56.1",
+    "node": "v22.22.0"
+  },
+  "maquina": {
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "nucleos": 4,
+    "memoriaGB": 16,
+    "so": "linux 6.18.44-fc-v139"
+  },
+  "host": {
+    "vitral": {
+      "jsKB": 7.9,
+      "requisicoes": 6
+    },
+    "mf": {
+      "jsKB": 19.3,
+      "requisicoes": 2
+    }
+  },
+  "resultados": [
+    {
+      "cenario": "vitral",
+      "rotulo": "vitral, sem dedupe",
+      "n": 1,
+      "frioMs": {
+        "mediana": 1222.3,
+        "min": 1193.9,
+        "max": 1345.6
+      },
+      "quenteMs": {
+        "mediana": 383.6,
+        "min": 373.2,
+        "max": 395
+      },
+      "frioKB": {
+        "mediana": 75,
+        "min": 75,
+        "max": 75
+      },
+      "frioJsKB": {
+        "mediana": 74.2,
+        "min": 74.2,
+        "max": 74.2
+      },
+      "quenteKB": {
+        "mediana": 0.3,
+        "min": 0.3,
+        "max": 0.3
+      },
+      "frioRede": {
+        "mediana": 12,
+        "min": 12,
+        "max": 12
+      },
+      "quenteRede": {
+        "mediana": 2,
+        "min": 2,
+        "max": 2
+      },
+      "heapMB": {
+        "mediana": 1.54,
+        "min": 1.54,
+        "max": 1.54
+      }
+    },
+    {
+      "cenario": "vitral",
+      "rotulo": "vitral, sem dedupe",
+      "n": 4,
+      "frioMs": {
+        "mediana": 2008,
+        "min": 1994.4,
+        "max": 2257.3
+      },
+      "quenteMs": {
+        "mediana": 490.6,
+        "min": 448.5,
+        "max": 563.8
+      },
+      "frioKB": {
+        "mediana": 234,
+        "min": 234,
+        "max": 234
+      },
+      "frioJsKB": {
+        "mediana": 231,
+        "min": 231,
+        "max": 231
+      },
+      "quenteKB": {
+        "mediana": 0.7,
+        "min": 0.7,
+        "max": 0.7
+      },
+      "frioRede": {
+        "mediana": 22,
+        "min": 22,
+        "max": 22
+      },
+      "quenteRede": {
+        "mediana": 5,
+        "min": 5,
+        "max": 5
+      },
+      "heapMB": {
+        "mediana": 2.4,
+        "min": 2.4,
+        "max": 2.4
+      }
+    },
+    {
+      "cenario": "vitral",
+      "rotulo": "vitral, sem dedupe",
+      "n": 8,
+      "frioMs": {
+        "mediana": 3113.1,
+        "min": 3099.6,
+        "max": 3223.4
+      },
+      "quenteMs": {
+        "mediana": 655.1,
+        "min": 616.4,
+        "max": 711.8
+      },
+      "frioKB": {
+        "mediana": 456.5,
+        "min": 456.5,
+        "max": 456.5
+      },
+      "frioJsKB": {
+        "mediana": 451.1,
+        "min": 451.1,
+        "max": 451.1
+      },
+      "quenteKB": {
+        "mediana": 1.3,
+        "min": 1.3,
+        "max": 1.3
+      },
+      "frioRede": {
+        "mediana": 34,
+        "min": 34,
+        "max": 34
+      },
+      "quenteRede": {
+        "mediana": 9,
+        "min": 9,
+        "max": 9
+      },
+      "heapMB": {
+        "mediana": 3.51,
+        "min": 3.51,
+        "max": 3.51
+      }
+    },
+    {
+      "cenario": "vitral-dedupe",
+      "rotulo": "vitral, com dedupe",
+      "n": 1,
+      "frioMs": {
+        "mediana": 1427.5,
+        "min": 1408.4,
+        "max": 1439
+      },
+      "quenteMs": {
+        "mediana": 427,
+        "min": 391,
+        "max": 443.2
+      },
+      "frioKB": {
+        "mediana": 79.8,
+        "min": 79.8,
+        "max": 79.8
+      },
+      "frioJsKB": {
+        "mediana": 78.5,
+        "min": 78.5,
+        "max": 78.5
+      },
+      "quenteKB": {
+        "mediana": 0.3,
+        "min": 0.3,
+        "max": 0.3
+      },
+      "frioRede": {
+        "mediana": 18,
+        "min": 18,
+        "max": 18
+      },
+      "quenteRede": {
+        "mediana": 2,
+        "min": 2,
+        "max": 2
+      },
+      "heapMB": {
+        "mediana": 1.6,
+        "min": 1.6,
+        "max": 1.6
+      }
+    },
+    {
+      "cenario": "vitral-dedupe",
+      "rotulo": "vitral, com dedupe",
+      "n": 4,
+      "frioMs": {
+        "mediana": 1849.5,
+        "min": 1833.8,
+        "max": 1892.4
+      },
+      "quenteMs": {
+        "mediana": 454.1,
+        "min": 421,
+        "max": 501.5
+      },
+      "frioKB": {
+        "mediana": 146.3,
+        "min": 145.5,
+        "max": 146.3
+      },
+      "frioJsKB": {
+        "mediana": 141.4,
+        "min": 140.7,
+        "max": 141.4
+      },
+      "quenteKB": {
+        "mediana": 0.7,
+        "min": 0.7,
+        "max": 0.7
+      },
+      "frioRede": {
+        "mediana": 41,
+        "min": 40,
+        "max": 41
+      },
+      "quenteRede": {
+        "mediana": 5,
+        "min": 5,
+        "max": 5
+      },
+      "heapMB": {
+        "mediana": 2.18,
+        "min": 2.18,
+        "max": 2.18
+      }
+    },
+    {
+      "cenario": "vitral-dedupe",
+      "rotulo": "vitral, com dedupe",
+      "n": 8,
+      "frioMs": {
+        "mediana": 2541.1,
+        "min": 2454.5,
+        "max": 2873.8
+      },
+      "quenteMs": {
+        "mediana": 540.1,
+        "min": 522.4,
+        "max": 575.2
+      },
+      "frioKB": {
+        "mediana": 175.5,
+        "min": 175.5,
+        "max": 175.5
+      },
+      "frioJsKB": {
+        "mediana": 166.2,
+        "min": 166.2,
+        "max": 166.2
+      },
+      "quenteKB": {
+        "mediana": 1.3,
+        "min": 1.3,
+        "max": 1.3
+      },
+      "frioRede": {
+        "mediana": 69,
+        "min": 69,
+        "max": 69
+      },
+      "quenteRede": {
+        "mediana": 9,
+        "min": 9,
+        "max": 9
+      },
+      "heapMB": {
+        "mediana": 2.47,
+        "min": 2.47,
+        "max": 2.47
+      }
+    },
+    {
+      "cenario": "mf",
+      "rotulo": "MF, sem shared",
+      "n": 1,
+      "frioMs": {
+        "mediana": 1485.4,
+        "min": 1465.9,
+        "max": 1553.9
+      },
+      "quenteMs": {
+        "mediana": 396.6,
+        "min": 382,
+        "max": 412.3
+      },
+      "frioKB": {
+        "mediana": 100.8,
+        "min": 100.8,
+        "max": 100.8
+      },
+      "frioJsKB": {
+        "mediana": 100.5,
+        "min": 100.5,
+        "max": 100.5
+      },
+      "quenteKB": {
+        "mediana": 0.3,
+        "min": 0.3,
+        "max": 0.3
+      },
+      "frioRede": {
+        "mediana": 7,
+        "min": 7,
+        "max": 7
+      },
+      "quenteRede": {
+        "mediana": 2,
+        "min": 2,
+        "max": 2
+      },
+      "heapMB": {
+        "mediana": 1.68,
+        "min": 1.68,
+        "max": 1.68
+      }
+    },
+    {
+      "cenario": "mf",
+      "rotulo": "MF, sem shared",
+      "n": 4,
+      "frioMs": {
+        "mediana": 2453.6,
+        "min": 2405.5,
+        "max": 2778.2
+      },
+      "quenteMs": {
+        "mediana": 522.8,
+        "min": 493.7,
+        "max": 658.8
+      },
+      "frioKB": {
+        "mediana": 308.9,
+        "min": 308.9,
+        "max": 308.9
+      },
+      "frioJsKB": {
+        "mediana": 308.5,
+        "min": 308.5,
+        "max": 308.5
+      },
+      "quenteKB": {
+        "mediana": 0.7,
+        "min": 0.7,
+        "max": 0.7
+      },
+      "frioRede": {
+        "mediana": 22,
+        "min": 22,
+        "max": 22
+      },
+      "quenteRede": {
+        "mediana": 5,
+        "min": 5,
+        "max": 5
+      },
+      "heapMB": {
+        "mediana": 2.8,
+        "min": 2.8,
+        "max": 2.8
+      }
+    },
+    {
+      "cenario": "mf",
+      "rotulo": "MF, sem shared",
+      "n": 8,
+      "frioMs": {
+        "mediana": 3748.2,
+        "min": 3738.1,
+        "max": 3947.8
+      },
+      "quenteMs": {
+        "mediana": 646,
+        "min": 625.1,
+        "max": 1441.4
+      },
+      "frioKB": {
+        "mediana": 598.1,
+        "min": 598.1,
+        "max": 598.1
+      },
+      "frioJsKB": {
+        "mediana": 597.7,
+        "min": 597.7,
+        "max": 597.7
+      },
+      "quenteKB": {
+        "mediana": 1.3,
+        "min": 1.3,
+        "max": 1.3
+      },
+      "frioRede": {
+        "mediana": 42,
+        "min": 42,
+        "max": 42
+      },
+      "quenteRede": {
+        "mediana": 9,
+        "min": 9,
+        "max": 9
+      },
+      "heapMB": {
+        "mediana": 4.25,
+        "min": 4.25,
+        "max": 4.25
+      }
+    },
+    {
+      "cenario": "mf-shared",
+      "rotulo": "MF, shared singleton",
+      "n": 1,
+      "frioMs": {
+        "mediana": 2633.7,
+        "min": 2620.7,
+        "max": 2676
+      },
+      "quenteMs": {
+        "mediana": 432.3,
+        "min": 403.1,
+        "max": 444.2
+      },
+      "frioKB": {
+        "mediana": 111.3,
+        "min": 111.3,
+        "max": 111.3
+      },
+      "frioJsKB": {
+        "mediana": 110.9,
+        "min": 110.9,
+        "max": 110.9
+      },
+      "quenteKB": {
+        "mediana": 0.3,
+        "min": 0.3,
+        "max": 0.3
+      },
+      "frioRede": {
+        "mediana": 17,
+        "min": 17,
+        "max": 17
+      },
+      "quenteRede": {
+        "mediana": 2,
+        "min": 2,
+        "max": 2
+      },
+      "heapMB": {
+        "mediana": 1.89,
+        "min": 1.89,
+        "max": 1.89
+      }
+    },
+    {
+      "cenario": "mf-shared",
+      "rotulo": "MF, shared singleton",
+      "n": 4,
+      "frioMs": {
+        "mediana": 3543.9,
+        "min": 3285.6,
+        "max": 3644.7
+      },
+      "quenteMs": {
+        "mediana": 540.7,
+        "min": 439.5,
+        "max": 1911.5
+      },
+      "frioKB": {
+        "mediana": 247.1,
+        "min": 242.1,
+        "max": 247.1
+      },
+      "frioJsKB": {
+        "mediana": 246.7,
+        "min": 241.8,
+        "max": 246.7
+      },
+      "quenteKB": {
+        "mediana": 0.7,
+        "min": 0.7,
+        "max": 66.7
+      },
+      "frioRede": {
+        "mediana": 47,
+        "min": 44,
+        "max": 47
+      },
+      "quenteRede": {
+        "mediana": 5,
+        "min": 5,
+        "max": 14
+      },
+      "heapMB": {
+        "mediana": 3.18,
+        "min": 3.12,
+        "max": 3.18
+      }
+    },
+    {
+      "cenario": "mf-shared",
+      "rotulo": "MF, shared singleton",
+      "n": 8,
+      "frioMs": {
+        "mediana": 4166.8,
+        "min": 4144.8,
+        "max": 4330.1
+      },
+      "quenteMs": {
+        "mediana": 938.1,
+        "min": 902.3,
+        "max": 1550.1
+      },
+      "frioKB": {
+        "mediana": 408.6,
+        "min": 408.6,
+        "max": 408.6
+      },
+      "frioJsKB": {
+        "mediana": 408.2,
+        "min": 408.2,
+        "max": 408.2
+      },
+      "quenteKB": {
+        "mediana": 6.3,
+        "min": 6.3,
+        "max": 62.3
+      },
+      "frioRede": {
+        "mediana": 83,
+        "min": 83,
+        "max": 83
+      },
+      "quenteRede": {
+        "mediana": 12,
+        "min": 12,
+        "max": 15
+      },
+      "heapMB": {
+        "mediana": 4.76,
+        "min": 4.76,
+        "max": 4.76
+      }
+    }
+  ]
+}
