@@ -1,6 +1,6 @@
 {
   "name": "create-vitral",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "Cria um host ou um remote vitral: npm create vitral@latest",
   "keywords": [
     "vitral",
