@@ -216,7 +216,7 @@ export default defineConfig({
         },
       },
     },
-    footer: { message: `Licença MIT · <a href="${BASE}marca">Marca</a>`, copyright: 'Feito de partes. Visto como um todo.' },
+    footer: { message: `Licença MIT · <a href="${BASE}marca">Marca</a> · Feito por <a href="https://pacheco.dev.br/">Pacheco Codes</a>`, copyright: 'Feito de partes. Visto como um todo.' },
     outline: { label: 'Nesta página' },
     docFooter: { prev: 'Anterior', next: 'Próximo' },
     darkModeSwitchLabel: 'Tema',
