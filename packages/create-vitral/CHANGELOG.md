@@ -1,5 +1,11 @@
 # create-vitral
 
+## 0.7.1
+
+### Patch Changes
+
+- [#87](https://github.com/joaogabriel15/vitral/pull/87) [`c0d3ebf`](https://github.com/joaogabriel15/vitral/commit/c0d3ebf711751abe02040ed0253104c9e40bb62b) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - README novo no npm: banner, diagrama de como funciona, comparação e números do benchmark. `create-vitral` ganha README com as opções do comando. Descrição e homepage dos pacotes apontam para o site.
+
 ## 0.7.0
 
 ## 0.6.0
