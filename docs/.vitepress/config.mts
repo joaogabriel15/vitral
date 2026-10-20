@@ -57,6 +57,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Dicionários de compressão', link: '/aprender/dicionarios' },
       { text: 'SSR', link: '/aprender/ssr' },
       { text: 'Desenvolvimento e HMR', link: '/aprender/desenvolvimento' },
+      { text: 'Benchmark contra o MF', link: '/aprender/benchmark' },
     ],
   },
   {

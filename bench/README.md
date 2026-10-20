@@ -32,3 +32,18 @@ zstd 19, zstd com dicionário treinado nos outros remotes, brotli/zstd com os
 outros remotes como dicionário e brotli/zstd com a versão anterior do mesmo
 arquivo (delta). Usa os binários `brotli` e `zstd`. Grava `dicionarios.json`.
 Resultado e conclusão em `docs/aprender/dicionarios.md`.
+
+## Benchmark público (manual)
+
+`publico/` compara o host do vitral com o runtime do Module Federation, com
+os mesmos N remotes. Não roda no CI e não muda `baseline.json`.
+
+```bash
+pnpm bench:publico                       # build + 4 cenários x N=1,4,8 x 7 repetições
+node bench/publico/run.mjs --n 4 --runs 3 --only vitral-dedupe,mf-shared
+node bench/publico/run.mjs --sem-build --servir   # só o servidor, porta 4301
+```
+
+Grava `publico/resultado.json` e imprime a tabela da página
+[Benchmark](../docs/aprender/benchmark.md). Cenário novo (dicionário,
+prefetch): um item em `publico/cenarios.mjs`, com os ganchos descritos lá.
