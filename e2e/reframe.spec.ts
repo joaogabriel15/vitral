@@ -53,8 +53,14 @@ test.describe("isolate: 'reframe'", () => {
     await expect(slot.locator('.rota')).toHaveText('/reframe/rota')
     await page.goBack()
     await expect(slot.locator('.rota')).toHaveText(inicio)
-    await page.evaluate(() => history.pushState(null, '', '/do-host'))
+    // navigate() do host (dispara popstate) chega ao remote em todo navegador.
+    await page.evaluate(() => (window as any).vitral.navigate('/do-host'))
     await expect(slot.locator('.rota')).toHaveText('/do-host')
+    // pushState cru do host só é visível onde há Navigation API (currententrychange).
+    if (await page.evaluate(() => 'navigation' in window)) {
+      await page.evaluate(() => history.pushState(null, '', '/do-host-cru'))
+      await expect(slot.locator('.rota')).toHaveText('/do-host-cru')
+    }
 
     // Desmontar remove o iframe; timer e ouvinte esquecidos pelo remote param.
     await page.evaluate(() => (window as any).slots.get('r').destroy())
