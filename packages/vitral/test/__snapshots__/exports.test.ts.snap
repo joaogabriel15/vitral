@@ -151,9 +151,13 @@ exports[`exports públicos > svelte 1`] = `
 
 exports[`exports públicos > testing 1`] = `
 [
+  "CONTRACT_SCHEMA",
   "failingRemote",
+  "harness",
   "mockRemote",
+  "record",
   "resetVitral",
+  "verify",
 ]
 `;
 

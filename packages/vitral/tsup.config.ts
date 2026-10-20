@@ -8,7 +8,7 @@ export default defineConfig([
     clean: true,
     target: 'es2022',
     // Frameworks são peer dependencies: nunca entram no bundle da lib.
-    external: [/^react/, /^vue/, /^svelte/, /^preact/, /^solid-js/, /^@angular\//, 'vite', 'postcss', 'typescript'],
+    external: [/^react/, /^vue/, /^svelte/, /^preact/, /^solid-js/, /^@angular\//, 'vite', 'postcss', 'typescript', 'happy-dom'],
   },
   {
     // Loader para sites de terceiros (`<script src=".../embed.js" async>`):

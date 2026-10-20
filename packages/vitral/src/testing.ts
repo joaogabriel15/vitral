@@ -1,5 +1,7 @@
 /**
- * Utilidades de teste: monte o host sem subir nenhum remote de verdade.
+ * Utilidades de teste: monte o host sem subir nenhum remote de verdade, monte
+ * um remote com `ctx` simulado (`harness`) e grave o contrato do consumidor
+ * (`record`) que o remote reproduz no CI com `vitral test --contract`.
  *
  *   import { mockRemote } from 'vitral/testing'
  *   const carrinho = mockRemote('carrinho', (el, props) => (el.textContent = `itens: ${props.itens}`))
@@ -63,3 +65,8 @@ export function failingRemote(name: string, message = 'falha simulada'): void {
 }
 
 export { __reset as resetVitral } from './index'
+
+// Harness do remote e contrato do consumidor (`vitral test --contract`).
+export { harness, verify, CONTRACT_SCHEMA } from './harness'
+export type { Contract, ContractCase, EmitPhase, Harness, HarnessOptions, VerifyOptions, VerifyResult } from './harness'
+export { record, type RecordOptions, type Recorder } from './recorder'
