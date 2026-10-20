@@ -2,11 +2,11 @@
 import { configure, createSlot } from 'vitral'
 import { parametros, quandoMontar, remotes } from './lista.js'
 
-const { n, base } = parametros()
+const { n, base, maxStale } = parametros()
 const nomes = remotes(n)
 const app = document.getElementById('app')
 quandoMontar(app, n)
-configure({ remotes: Object.fromEntries(nomes.map((nome) => [nome, `/${base}/${nome}/vitral.json`])) })
+configure({ maxStale, remotes: Object.fromEntries(nomes.map((nome) => [nome, `/${base}/${nome}/vitral.json`])) })
 for (const nome of nomes) {
   createSlot(app.appendChild(document.createElement('section')), {
     name: nome,
