@@ -58,7 +58,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Dicionários de compressão', link: '/aprender/dicionarios' },
       { text: 'SSR', link: '/aprender/ssr' },
       { text: 'Desenvolvimento e HMR', link: '/aprender/desenvolvimento' },
-      { text: 'Benchmark contra o MF', link: '/aprender/benchmark' },
+      { text: 'Benchmark contra MF e Multi-Zones', link: '/aprender/benchmark' },
     ],
   },
   {
@@ -84,6 +84,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Module Federation', link: '/migracao/module-federation' },
       { text: 'single-spa', link: '/migracao/single-spa' },
       { text: 'qiankun', link: '/migracao/qiankun' },
+      { text: 'Next.js Multi-Zones', link: '/migracao/multi-zones' },
     ],
   },
 ]

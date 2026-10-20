@@ -1,7 +1,7 @@
 /**
  * Rewriter de HTML em streaming, para runtimes sem `HTMLRewriter` (Node, Deno,
- * Bun). Faz só o que o gateway precisa: acha as tags de abertura de um
- * elemento (`<vitral-remote>`) e dos filhos diretos dele, deixa ler e trocar
+ * Bun). Faz só o que o gateway precisa: acha as tags de abertura de alguns
+ * elementos (`<vitral-remote>`, `<vitral-outlet>`) e dos filhos diretos deles, deixa ler e trocar
  * atributos e inserir HTML logo depois da tag. O resto passa como veio.
  *
  * Ignora comentários e o conteúdo de `<script>`, `<style>`, `<textarea>` e
@@ -80,10 +80,13 @@ class Tag implements EdgeElement {
 }
 
 /**
- * Reescreve `body` em streaming. `tag` é o nome do elemento procurado
- * (minúsculo). Os bytes que não são tags de interesse saem sem mudança.
+ * Reescreve `body` em streaming. `tags` são os nomes dos elementos procurados
+ * (minúsculos). Os bytes que não são tags de interesse saem sem mudança.
  */
-export function rewrite(body: ReadableStream<Uint8Array>, tag: string, handlers: RewriteHandlers): ReadableStream<Uint8Array> {
+export function rewrite(body: ReadableStream<Uint8Array>, tags: string | string[], handlers: RewriteHandlers): ReadableStream<Uint8Array> {
+  const wanted = new Set([tags].flat())
+  // O elemento de interesse em que o parser está (para achar o fechamento dele).
+  let tag = ''
   const decoder = new TextDecoder()
   const encoder = new TextEncoder()
   let buf = ''
@@ -154,7 +157,8 @@ export function rewrite(body: ReadableStream<Uint8Array>, tag: string, handlers:
       }
       if (RAW.has(name)) raw = name
       const selfClosing = source.endsWith('/>') || VOID.has(name)
-      if (name === tag && depth < 0) {
+      if (depth < 0 && wanted.has(name)) {
+        tag = name
         const el = new Tag(name, source)
         const r = handlers.element(el)
         if (r) flush(), await r

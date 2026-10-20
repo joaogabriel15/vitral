@@ -5,6 +5,7 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
 import { reactRemote, Remote, usePortalContainer, useVitral } from '../src/react'
+import { reactRender } from '../src/react-server'
 import { failingRemote, mockRemote } from '../src/testing'
 import { cleanup, flush, serveManifest } from './helpers'
 import { protocol } from '../src/core/state'
@@ -114,6 +115,46 @@ describe('React: reactRemote', () => {
     await act(flush)
     console.error = orig
     expect(div.textContent).toBe('RENDER_FAILED')
+  })
+})
+
+describe('React: SSR (reactRender + hydrate)', () => {
+  function Contador({ inicio }: { inicio: number }) {
+    const [n, setN] = useState(inicio)
+    const id = React.useId()
+    return h('button', { id, onClick: () => setN((x) => x + 1) }, `cliques: ${n}`)
+  }
+
+  it('hidrata o HTML de reactRender sem recriar nem avisar de diferença, e responde a cliques', async () => {
+    const html = reactRender(Contador)({ inicio: 2 })
+    expect(html).toMatch(/^<button id="[^"]+">cliques: 2<\/button>$/)
+    const el = document.body.appendChild(document.createElement('div'))
+    el.innerHTML = html
+    const button = el.querySelector('button')!
+    const erros: unknown[] = []
+    const orig = console.error
+    console.error = (...a: unknown[]) => erros.push(a)
+    const ctx = { name: 'contador', reportError: vi.fn() } as any
+    let handle!: { update?: (p: any) => void; unmount: () => void }
+    await act(async () => {
+      handle = await reactRemote(Contador).hydrate!(el, { inicio: 2 }, ctx)
+    })
+    console.error = orig
+    expect(erros).toEqual([])
+    expect(el.querySelector('button')).toBe(button)
+    await act(async () => button.click())
+    expect(button.textContent).toBe('cliques: 3')
+    await act(async () => handle.update!({ inicio: 9 }))
+    expect(button.textContent).toBe('cliques: 3')
+    await act(async () => handle.unmount())
+    expect(el.innerHTML).toBe('')
+  })
+
+  it('no servidor, useVitral() devolve null', () => {
+    function Nome() {
+      return h('p', null, String(useVitral()?.name ?? 'sem contexto'))
+    }
+    expect(reactRender(Nome)({})).toBe('<p>sem contexto</p>')
   })
 })
 
