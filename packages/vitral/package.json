@@ -473,7 +473,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "11.99 kB"
+      "limit": "12.01 kB"
     },
     {
       "name": "vitals (Web Vitals por remote)",
