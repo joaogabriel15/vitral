@@ -88,4 +88,4 @@ Dentro de cada área, o remote pode ter o próprio roteador com a base da rota. 
 
 ## Números
 
-No [benchmark](/aprender/benchmark#contra-o-next-js-multi-zones), com duas áreas e rede lenta, o vitral com gateway abre a primeira página mais rápido que o Multi-Zones, troca de área 4,7 vezes mais rápido e baixa 63% menos.
+No [benchmark](/aprender/benchmark#contra-o-next-js-multi-zones), com duas áreas e rede lenta, o vitral com gateway abre a primeira página mais rápido que o Multi-Zones, troca de área 4,6 vezes mais rápido e baixa 63% menos.

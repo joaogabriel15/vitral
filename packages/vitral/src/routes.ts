@@ -14,6 +14,7 @@
  * rota muda (`navigate()`, voltar/avançar e links). Navegar dentro do mesmo
  * remote não remonta: o roteador do próprio remote cuida disso.
  */
+import { warmSsr } from './core/loader'
 import { matchRoute as match, type RouteMatch, type Routes } from './core/match'
 import { createSlot, navigate, type Isolation, type Props, type RemoteError, type RemoteSlot, type SlotStatus } from './index'
 
@@ -150,6 +151,7 @@ export class VitralOutletElement extends Base {
       const ssr = this.querySelector<HTMLElement>(':scope>[data-vitral-ssr]')
       if (ssr?.getAttribute('data-vitral-slot') === name) {
         this.#status('loading', null)
+        warmSsr(ssr)
         import('./core/hydrate').then((m) => {
           if (this.#route === name && !this.#slot) this.#slot = m.hydrateSlot(this, ssr, { ...options, props: this.#props })
           else ssr.remove()

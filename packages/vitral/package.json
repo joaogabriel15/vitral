@@ -430,7 +430,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.2 kB",
+      "limit": "6.25 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -448,7 +448,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.25 kB",
+      "limit": "9.3 kB",
       "ignore": [
         "./overrides-*",
         "./channel-*",
