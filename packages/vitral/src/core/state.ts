@@ -37,6 +37,8 @@ export interface Settings {
   canaryKey?: string
   /** Aviso de rollback automático de um canal. */
   onRollback?: (info: RollbackInfo) => void
+  /** Idade máxima, em segundos, do manifesto salvo usado sem esperar a rede. */
+  maxStale?: number
 }
 
 /** Remote baixado e pronto para montar. Faz parte do protocolo v1. */

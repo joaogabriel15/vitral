@@ -35,6 +35,17 @@ export function preload(name: string): void {
 let paths: Promise<typeof import('./sri') | null> | undefined
 
 /**
+ * Baixa o código de SRI e o de dedupe junto com o primeiro manifesto. O de
+ * dedupe só é preciso se o manifesto pedir, mas esperar o manifesto para
+ * pedi-lo custava uma ida e volta antes da cópia do framework.
+ */
+function warm(): void {
+  if (paths) return
+  paths = import('./sri').catch(() => null)
+  import('./dedupe').catch(() => {})
+}
+
+/**
  * Página com SSR do gateway (`holder` é o `[data-vitral-ssr]`): o código de SRI
  * e, se o manifesto no HTML usa dedupe, o de dedupe começam a baixar junto com
  * o da hidratação, e não um depois do outro.
@@ -61,7 +72,7 @@ export function load(name: string, isolate?: Isolation, priority?: RequestPriori
 export function loadFile(name: string, isolate?: Isolation, priority?: RequestPriority): Promise<LoadedRemote> {
   const p = protocol()
   return p.load(name, async () => {
-    paths ??= import('./sri').catch(() => null)
+    warm()
     let resolved: Resolved | undefined
     try {
       await p.pending()
@@ -92,7 +103,7 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
 function devOverride(name: string): Promise<RemoteEntry | undefined> | undefined {
   try {
     const k = 'vitral:overrides'
-    if (location.search.includes('vitral') || localStorage[k] || sessionStorage[k]) return import('./overrides').then((m) => m.overrideFor(name))
+    if (/[?&]vitral=/.test(location.search) || localStorage[k] || sessionStorage[k]) return import('./overrides').then((m) => m.overrideFor(name))
   } catch {}
 }
 
@@ -112,7 +123,7 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
   const m: RemoteManifest =
     entry.manifest ??
     (new URL(entry.url).pathname.endsWith('.json')
-      ? await fetchJson<RemoteManifest>(entry.url, protocol().settings().timeout, name, { cache: 'no-cache', priority })
+      ? await manifestOf(entry.url, name, priority)
       : { name, entry: entry.url })
   // Canal (`{ stable, canary }`): escolhe a versão e segue pelo manifesto dela.
   if ((m as any)?.stable) return resolveEntry(name, await (await import('./channel')).pick(name, entry, m as any), priority)
@@ -158,6 +169,16 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
     if (!protocol().entry(m.name)) protocol().register(m.name, entry)
   }
   return resolved
+}
+
+/**
+ * Com `maxStale`, a cópia salva do manifesto pode valer sem esperar a rede
+ * (`./stale`, um módulo à parte que baixa junto com o manifesto).
+ */
+function manifestOf(url: string, name: string, priority?: RequestPriority): Promise<RemoteManifest> {
+  const { timeout, maxStale } = protocol().settings()
+  const fresh = fetchJson<RemoteManifest>(url, timeout, name, { cache: 'no-cache', priority })
+  return maxStale ? import('./stale').then((m) => m.stale(url, fresh, maxStale), () => fresh) : fresh
 }
 
 /** Namespace ES do arquivo do remote. */

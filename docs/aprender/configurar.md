@@ -91,6 +91,7 @@ Todas as opções: [`vitral/vite`](/referencia/vite).
 | `allowedOrigins` | página e URLs registradas | Origens de onde é permitido carregar código. `['*']` libera tudo |
 | `timeout` | `15000` | Tempo máximo de cada download, em ms |
 | `retries` | `1` | Tentativas extras se o download falhar |
+| `maxStale` | nenhum | Usa o `vitral.json` salvo há até N segundos sem esperar a rede. Veja [Carregamento](/aprender/carregamento#visita-de-volta-sem-esperar-o-manifesto) |
 | `isolate` | `'none'` | `'shadow'` ou `'iframe'` para todos os remotes |
 | `devOverrides` | `false` | Aceita `?vitral=nome@url` fora de `localhost`. `{ preview }` também resolve `?vitral=nome@pr-123`. Nunca em produção |
 | `onMetric` | nenhum | Recebe `{ name, stage, start, duration }` de cada etapa |
