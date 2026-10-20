@@ -46,4 +46,5 @@ Atributos: `exception.type`, `exception.message`, `exception.stacktrace`, `vitra
 
 ## Observações
 
+- Web Vitals por remote: [vitral/vitals](/referencia/vitals). O `otelVitals` deste pacote grava as vitals como histogramas.
 - Os dois só recebem os erros que chegam ao `onError` do `configure`. Veja [Tratamento de erros](/aprender/erros#atribuicao-e-onerror-global).

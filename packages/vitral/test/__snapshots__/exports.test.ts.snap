@@ -24,6 +24,13 @@ exports[`exports públicos > devtools 1`] = `
 ]
 `;
 
+exports[`exports públicos > dict 1`] = `
+[
+  "createDict",
+  "dictMatch",
+]
+`;
+
 exports[`exports públicos > element 1`] = `
 [
   "SharedController",
@@ -82,6 +89,7 @@ exports[`exports públicos > index 1`] = `
 exports[`exports públicos > otel 1`] = `
 [
   "otelOnError",
+  "otelVitals",
 ]
 `;
 
@@ -92,6 +100,13 @@ exports[`exports públicos > preact 1`] = `
   "navigate",
   "preactRemote",
   "useShared",
+]
+`;
+
+exports[`exports públicos > prefetch 1`] = `
+[
+  "prefetch",
+  "warm",
 ]
 `;
 
@@ -150,9 +165,21 @@ exports[`exports públicos > svelte 1`] = `
 
 exports[`exports públicos > testing 1`] = `
 [
+  "CONTRACT_SCHEMA",
   "failingRemote",
+  "harness",
   "mockRemote",
+  "record",
   "resetVitral",
+  "verify",
+]
+`;
+
+exports[`exports públicos > vitals 1`] = `
+[
+  "owner",
+  "rating",
+  "vitals",
 ]
 `;
 

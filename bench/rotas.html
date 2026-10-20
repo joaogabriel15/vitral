@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><title>vitral bench: rotas</title></head>
+<body>
+<vitral-outlet></vitral-outlet>
+<script type="module">
+  // Duas rotas: /rotas/a monta react1 e /rotas/b monta vue1. Com `?prefetch`,
+  // liga `vitral/prefetch` (veja run.mjs --prefetch).
+  import { configure, navigate } from '/vitral/index.js'
+  import { routes } from '/vitral/routes.js'
+
+  configure({ remotes: { react1: '/r/react1/vitral.json', vue1: '/r/vue1/vitral.json' } })
+  routes({ '/rotas/a': 'react1', '/rotas/b': 'vue1' })
+  window.__prefetched = []
+  if (location.search.includes('prefetch')) {
+    const { prefetch } = await import('/vitral/prefetch.js')
+    prefetch({ onPrefetch: (names) => window.__prefetched.push(...names) })
+  }
+  // Navega e devolve o tempo até o remote da rota nova ficar pronto.
+  window.__go = (path) =>
+    new Promise((resolve) => {
+      const t = performance.now()
+      addEventListener('vitral-ready', () => resolve(performance.now() - t), { once: true })
+      navigate(path)
+    })
+  addEventListener('vitral-ready', () => (window.__ready ??= performance.now()), { once: true })
+</script>
+</body>
+</html>
