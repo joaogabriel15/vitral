@@ -10,7 +10,7 @@
     "troca": "de clicar em A até B pronto, no mesmo contexto (cache da visita em A)"
   },
   "versoes": {
-    "vitral": "0.5.0 (commit 52a4a2d)",
+    "vitral": "0.5.0 (commit d03cc4b, o código deste PR)",
     "next": "16.4.2",
     "vite": "8.3.4",
     "@vitejs/plugin-react": "6.1.2",
