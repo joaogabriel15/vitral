@@ -230,6 +230,14 @@ export interface VitralConfig {
   timeout?: number
   /** Tentativas extras se o download falhar. Padrão 1. */
   retries?: number
+  /**
+   * Usa o `vitral.json` salvo na última visita, se tiver até N segundos, sem
+   * esperar a rede; o manifesto novo baixa por trás e vale na visita seguinte.
+   * Poupa uma ida e volta por remote na visita de volta. Um deploy (ou um
+   * rollback) chega a quem já tinha a cópia salva uma visita depois. Padrão:
+   * desligado (sempre revalida).
+   */
+  maxStale?: number
   /** Isolamento padrão para todos os remotes. Padrão `'none'`. */
   isolate?: Isolation
   /**

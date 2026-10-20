@@ -100,6 +100,13 @@ export interface VitralViteOptions extends CssBuildOptions {
    * (`canal.json`). Usa `version` (ou a do package.json). Padrão: false.
    */
   versionDir?: boolean
+  /**
+   * Põe o compile hint do V8 (`//# allFunctionsCalledOnLoad`) nos arquivos
+   * que rodam ao montar o remote, para o Chrome compilá-los de uma vez numa
+   * thread de fundo. Ajuda em CPU lenta e custa memória (veja o guia de
+   * carregamento). Os outros navegadores ignoram. Padrão: false.
+   */
+  compileHints?: boolean
 }
 
 export default function vitral(options: VitralViteOptions = {}): Plugin {
@@ -167,7 +174,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
           lib: { entry: dedupe ? BOOT : options.exposes ? EXPOSES_ENTRY : options.adapter === false ? entry : ENTRY_ID, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
           // Arquivo único (hosts antigos e caminho com blob:) e build dividido (manifesto v2).
-          rollupOptions: { external: options.shared ?? [], output: outputs(rolldown) as any },
+          rollupOptions: { external: options.shared ?? [], output: outputs(rolldown, !!options.compileHints) as any },
           cssCodeSplit: false,
           ...(dir && { outDir: dir }),
         },

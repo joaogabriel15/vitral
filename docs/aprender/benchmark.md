@@ -10,22 +10,27 @@ Mediana de 7 repetições. Rede "Slow 4G" (150 ms de RTT, 1,6 Mbps). Sem throttl
 
 | Cenário | N | Frio (ms) | Quente (ms) | Transferido frio (kB) | Requisições frio | Requisições quente | Heap (MB) |
 | --- | --: | --: | --: | --: | --: | --: | --: |
-| vitral, sem dedupe | 1 | 1222 | 384 | 75,0 | 12 | 2 | 1,54 |
-| vitral, com dedupe | 1 | 1428 | 427 | 79,8 | 18 | 2 | 1,60 |
-| MF, sem shared | 1 | 1485 | 397 | 100,8 | 7 | 2 | 1,68 |
-| MF, shared singleton | 1 | 2634 | 432 | 111,3 | 17 | 2 | 1,89 |
-| vitral, sem dedupe | 4 | 2008 | 491 | 234,0 | 22 | 5 | 2,40 |
-| vitral, com dedupe | 4 | 1850 | 454 | 146,3 | 41 | 5 | 2,18 |
-| MF, sem shared | 4 | 2454 | 523 | 308,9 | 22 | 5 | 2,80 |
-| MF, shared singleton | 4 | 3544 | 541 | 247,1 | 47 | 5 | 3,18 |
-| vitral, sem dedupe | 8 | 3113 | 655 | 456,5 | 34 | 9 | 3,51 |
-| vitral, com dedupe | 8 | 2541 | 540 | 175,5 | 69 | 9 | 2,47 |
-| MF, sem shared | 8 | 3748 | 646 | 598,1 | 42 | 9 | 4,25 |
-| MF, shared singleton | 8 | 4167 | 938 | 408,6 | 83 | 12 | 4,76 |
+| vitral, sem dedupe | 1 | 1097 | 417 | 75,7 | 13 | 2 | 1,54 |
+| vitral, com dedupe | 1 | 1157 | 437 | 79,4 | 18 | 2 | 1,60 |
+| vitral, dedupe e `maxStale` | 1 | 1159 | 298 | 79,9 | 19 | 1 | 1,60 |
+| MF, sem shared | 1 | 1500 | 427 | 100,9 | 7 | 2 | 1,68 |
+| MF, shared singleton | 1 | 2673 | 483 | 111,3 | 17 | 2 | 1,89 |
+| vitral, sem dedupe | 4 | 1971 | 529 | 235,4 | 23 | 5 | 2,39 |
+| vitral, com dedupe | 4 | 1572 | 508 | 146,8 | 41 | 5 | 2,19 |
+| vitral, dedupe e `maxStale` | 4 | 1574 | 390 | 147,2 | 42 | 5 | 2,19 |
+| MF, sem shared | 4 | 2453 | 558 | 308,9 | 22 | 5 | 2,80 |
+| MF, shared singleton | 4 | 3596 | 568 | 247,2 | 47 | 5 | 3,18 |
+| vitral, sem dedupe | 8 | 2972 | 690 | 459,0 | 35 | 9 | 3,51 |
+| vitral, com dedupe | 8 | 2188 | 619 | 177,1 | 69 | 9 | 2,47 |
+| vitral, dedupe e `maxStale` | 8 | 2231 | 462 | 177,5 | 70 | 7 | 2,47 |
+| MF, sem shared | 8 | 3756 | 743 | 598,1 | 42 | 9 | 4,25 |
+| MF, shared singleton | 8 | 4240 | 1086 | 408,7 | 83 | 12 | 4,76 |
 
-Host sozinho (N=0): o do vitral baixa 7,9 kB de JS em 6 requisições (a entrada tem 4,45 kB; o resto são chunks sob demanda que o `configure` busca). O do MF baixa 19,3 kB em 2 requisições.
+Host sozinho (N=0): o do vitral baixa 8,1 kB de JS em 6 requisições (a entrada tem 4,7 kB; o resto são chunks sob demanda que o `configure` busca). O do MF baixa 19,4 kB em 2 requisições.
 
 Mínimo e máximo de cada célula estão em `bench/publico/resultado.json`.
+
+Até a 0.6.0, os números do vitral nesta página tinham cerca de 170 ms a mais na visita fria. Qualquer query com a palavra `vitral` (a página do benchmark usa `?remotes=vitral-…`) baixava o módulo de overrides de desenvolvimento antes do manifesto. Agora só `?vitral=` liga os overrides. Na mesma versão, o código de dedupe passou a baixar junto com o manifesto, e não depois dele.
 
 ## O que os números dizem
 
@@ -33,27 +38,37 @@ Com o framework compartilhado (dedupe no vitral, `shared` singleton no MF):
 
 | N | Frio | Transferido | Heap |
 | --: | --- | --- | --- |
-| 1 | vitral 1428 ms, MF 2634 ms (-46%) | 79,8 kB contra 111,3 kB (-28%) | 1,60 contra 1,89 MB |
-| 4 | vitral 1850 ms, MF 3544 ms (-48%) | 146,3 kB contra 247,1 kB (-41%) | 2,18 contra 3,18 MB |
-| 8 | vitral 2541 ms, MF 4167 ms (-39%) | 175,5 kB contra 408,6 kB (-57%) | 2,47 contra 4,76 MB |
+| 1 | vitral 1157 ms, MF 2673 ms (-57%) | 79,4 kB contra 111,3 kB (-29%) | 1,60 contra 1,89 MB |
+| 4 | vitral 1572 ms, MF 3596 ms (-56%) | 146,8 kB contra 247,2 kB (-41%) | 2,19 contra 3,18 MB |
+| 8 | vitral 2188 ms, MF 4240 ms (-48%) | 177,1 kB contra 408,7 kB (-57%) | 2,47 contra 4,76 MB |
 
 Cada remote leva a própria cópia do framework (sem dedupe, sem `shared`):
 
 | N | Frio | Transferido | Heap |
 | --: | --- | --- | --- |
-| 1 | vitral 1222 ms, MF 1485 ms (-18%) | 75,0 kB contra 100,8 kB (-26%) | 1,54 contra 1,68 MB |
-| 4 | vitral 2008 ms, MF 2454 ms (-18%) | 234,0 kB contra 308,9 kB (-24%) | 2,40 contra 2,80 MB |
-| 8 | vitral 3113 ms, MF 3748 ms (-17%) | 456,5 kB contra 598,1 kB (-24%) | 3,51 contra 4,25 MB |
+| 1 | vitral 1097 ms, MF 1500 ms (-27%) | 75,7 kB contra 100,9 kB (-25%) | 1,54 contra 1,68 MB |
+| 4 | vitral 1971 ms, MF 2453 ms (-20%) | 235,4 kB contra 308,9 kB (-24%) | 2,39 contra 2,80 MB |
+| 8 | vitral 2972 ms, MF 3756 ms (-21%) | 459,0 kB contra 598,1 kB (-23%) | 3,51 contra 4,25 MB |
 
 De onde vem a diferença, olhando as requisições:
 
 - No MF, cada `remoteEntry.js` traz o próprio runtime (cerca de 17 kB com brotli por remote). O host traz mais 19 kB.
-- No MF com `shared`, o remote só pede o React depois de carregar o runtime e passar pelos módulos `loadShare` e `prebuild`: uma cadeia de requisições em série antes de montar. Com 150 ms de RTT, isso pesa mais que os bytes economizados. Com N=1, o `shared` deixa o MF 1149 ms mais lento que sem `shared`.
-- No vitral com dedupe, o React baixa uma vez (cerca de 63 kB). De N=4 para N=8, os 4 remotes a mais custam 29,2 kB juntos.
+- No MF com `shared`, o remote só pede o React depois de carregar o runtime e passar pelos módulos `loadShare` e `prebuild`: uma cadeia de requisições em série antes de montar. Com 150 ms de RTT, isso pesa mais que os bytes economizados. Com N=1, o `shared` deixa o MF 1173 ms mais lento que sem `shared`.
+- No vitral com dedupe, o React baixa uma vez (cerca de 63 kB). De N=4 para N=8, os 4 remotes a mais custam 30,3 kB juntos.
+
+## Visita de volta com maxStale
+
+Com `configure({ maxStale: 300 })`, o host usa o `vitral.json` salvo na visita anterior e não espera a revalidação (veja [Carregamento](./carregamento#visita-de-volta-sem-esperar-o-manifesto)). A visita fria não muda.
+
+| N | Com dedupe | Com dedupe e `maxStale` | Diferença |
+| --: | --: | --: | --: |
+| 1 | 437 ms | 298 ms | -32% |
+| 4 | 508 ms | 390 ms | -23% |
+| 8 | 619 ms | 462 ms | -25% |
 
 ## Com CPU 4x mais lenta
 
-N=4, mesma rede, `Emulation.setCPUThrottlingRate` 4x, 7 repetições (`bench/publico/resultado-cpu4.json`). Bytes e requisições não mudam.
+Medido na 0.4.0, antes das mudanças da 0.7.0. N=4, mesma rede, `Emulation.setCPUThrottlingRate` 4x, 7 repetições (`bench/publico/resultado-cpu4.json`). Bytes e requisições não mudam.
 
 | Cenário | Frio (ms) | Quente (ms) | Quente, mín.–máx. (ms) |
 | --- | --: | --: | --: |
@@ -66,11 +81,10 @@ Na visita quente, o MF sem `shared` (830 ms) fica à frente do vitral com dedupe
 
 ## Onde o vitral perde
 
-- **Requisições com N=1:** o MF sem `shared` faz 7 requisições; o vitral faz 12 sem dedupe e 18 com dedupe.
-- **Dedupe com um remote só:** com N=1, o dedupe deixa o vitral 206 ms mais lento (1428 contra 1222 ms) e 4,8 kB mais pesado. Ele só compensa a partir de 2 remotes do mesmo framework.
+- **Requisições com N=1:** o MF sem `shared` faz 7 requisições; o vitral faz 13 sem dedupe e 18 com dedupe.
+- **Dedupe com um remote só:** com N=1, o dedupe deixa o vitral 60 ms mais lento (1157 contra 1097 ms) e 3,7 kB mais pesado. Ele só compensa a partir de 2 remotes do mesmo framework.
 - **Requisições com dedupe:** o build dividido gera muitos arquivos pequenos. Com N=8, são 69 requisições, contra 42 do MF sem `shared` (mas 83 do MF com `shared`).
-- **Visita quente sem compartilhar, N=8:** MF 646 ms, vitral 655 ms. Empate, dentro da variação (MF de 625 a 1441 ms, vitral de 616 a 712 ms).
-- **Visita quente com CPU 4x, N=4:** MF sem `shared` 830 ms, vitral com dedupe 879 ms.
+- **Visita quente com CPU 4x, N=4 (medido na 0.4.0):** MF sem `shared` 830 ms, vitral com dedupe 879 ms.
 - **Host sozinho:** o do vitral faz 6 requisições contra 2 do MF, mesmo baixando menos.
 
 ## Método
@@ -96,7 +110,7 @@ Na visita quente, o MF sem `shared` (830 ms) fica à frente do vitral com dedupe
 
 | | |
 | --- | --- |
-| vitral | 0.4.0 (commit b77fcce), instalado do tarball do pacote |
+| vitral | 0.6.0 com as mudanças da 0.7.0 (commit c06dbd3), instalado do tarball do pacote |
 | @module-federation/vite | 1.23.5 |
 | @module-federation/runtime | 2.9.2 |
 | vite | 8.3.4 |
@@ -106,7 +120,7 @@ Na visita quente, o MF sem `shared` (830 ms) fica à frente do vitral com dedupe
 | Chromium (Playwright 1.56.1) | 141.0.7390.37, headless |
 | Node | 22.22.0 |
 | Máquina | Intel Xeon 2,10 GHz, 4 núcleos, 16 GB, Linux 6.18 |
-| Data | 19/10/2026 |
+| Data | 20/10/2026 |
 
 ## Limites
 

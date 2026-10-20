@@ -17,5 +17,5 @@ export function quandoMontar(app, n) {
 
 export function parametros() {
   const q = new URLSearchParams(location.search)
-  return { n: Number(q.get('n') ?? 1), base: q.get('remotes') ?? '' }
+  return { n: Number(q.get('n') ?? 1), base: q.get('remotes') ?? '', maxStale: Number(q.get('stale')) || undefined }
 }

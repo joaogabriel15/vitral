@@ -26,6 +26,7 @@
 export const cenarios = [
   { id: 'vitral', rotulo: 'vitral, sem dedupe', host: 'vitral', ferramenta: 'vitral', compartilha: false },
   { id: 'vitral-dedupe', rotulo: 'vitral, com dedupe', host: 'vitral', ferramenta: 'vitral', compartilha: true },
+  { id: 'vitral-salvo', rotulo: 'vitral, dedupe e maxStale', host: 'vitral', ferramenta: 'vitral', compartilha: true, query: { stale: '300' } },
   { id: 'mf', rotulo: 'MF, sem shared', host: 'mf', ferramenta: 'mf', compartilha: false },
   { id: 'mf-shared', rotulo: 'MF, shared singleton', host: 'mf', ferramenta: 'mf', compartilha: true },
   // Passo 18 (dicionário) e passo 22 (prefetch) entram aqui.
