@@ -45,6 +45,8 @@ test.beforeAll(async () => {
         .writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
         .end('<!doctype html><body><vitral-outlet></vitral-outlet><script type="module" src="/host.js"></script></body>')
     }
+    // Para saber se o contexto do navegador tem cache HTTP (o WebKit do CI não tem).
+    if (pathname === '/cacheavel') return void res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'public, max-age=3600' }).end('x')
     if (pathname === '/host.js') return void res.writeHead(200, { 'content-type': 'text/javascript' }).end(HOST_JS)
     if (pathname.startsWith('/vitral/')) {
       try {
@@ -118,9 +120,18 @@ test('depois de A → B algumas vezes, a próxima visita a A pré-carrega B sem 
   await go(page, 'b')
   const all = requests.slice(before)
   const log = how.slice(before).filter((l) => l.startsWith('/r/b/split/')).join('\n')
-  // B monta com o que foi pré-carregado: cada arquivo baixado uma vez só.
-  expect(all.filter((p) => p === '/r/b/split/entry.js'), log).toHaveLength(1)
-  expect(all.filter((p) => p === '/r/b/split/chunk.js'), log).toHaveLength(1)
+  // O prefetch só poupa o download onde o contexto tem cache HTTP. No WebKit
+  // do CI nem um fetch() repetido é reaproveitado: lá o teste confere o resto.
+  const hits = requests.length
+  await page.evaluate(async () => {
+    await (await fetch('/cacheavel')).text()
+    await (await fetch('/cacheavel')).text()
+  })
+  if (requests.length - hits === 1) {
+    // B monta com o que foi pré-carregado: cada arquivo baixado uma vez só.
+    expect(all.filter((p) => p === '/r/b/split/entry.js'), log).toHaveLength(1)
+    expect(all.filter((p) => p === '/r/b/split/chunk.js'), log).toHaveLength(1)
+  }
   expect(await page.evaluate(() => (window as any).__ran)).toEqual(['a/chunk.js', 'a/entry.js', 'b/chunk.js', 'b/entry.js'])
   expect(errors).toEqual([])
   await context.close()
