@@ -24,6 +24,7 @@
  * `HTMLRewriter` quando o runtime tem (Cloudflare Workers); senão, um
  * rewriter próprio em streaming. No Node, `toNodeListener(handler)`.
  */
+import { matchRoute, type Routes } from './core/match'
 import type { Props, RemoteManifest } from './core/types'
 import { decodeEntities, escapeAttr, rewrite, type EdgeElement } from './edge/rewriter'
 
@@ -58,6 +59,11 @@ export interface GatewayOptions {
   isolate?: EdgeIsolation
   /** Remotes que esta URL usa, para os hints da primeira visita. */
   preload?: (url: URL) => string[]
+  /**
+   * Rotas do `<vitral-outlet>` (o mesmo mapa de `routes()` no cliente). O
+   * remote da rota entra nos hints e, com `render`, sai renderizado no outlet.
+   */
+  routes?: Routes
   /** `fetch` usado para falar com o host e os CDNs. Padrão: o global. */
   fetch?: (request: Request) => Promise<Response>
   /** Por quanto tempo o gateway guarda manifestos e CSS, em ms. Padrão 60000. */
@@ -139,7 +145,8 @@ export function gateway(options: GatewayOptions): Gateway {
     const url = new URL(request.url)
     if (url.pathname.startsWith(prefix)) return []
     const names = new Map(seen.get(url.pathname))
-    for (const name of options.preload?.(url) ?? []) if (!names.has(name)) names.set(name, remotes.get(name)?.isolate ?? options.isolate ?? 'none')
+    const route = options.routes && matchRoute(url.pathname, options.routes)
+    for (const name of [...(route ? [route.name] : []), ...(options.preload?.(url) ?? [])]) if (!names.has(name)) names.set(name, remotes.get(name)?.isolate ?? options.isolate ?? 'none')
     const links = await Promise.all([...names].map(([name, isolate]) => linksFor(name, isolate)))
     return links.flat()
   }
@@ -149,7 +156,10 @@ export function gateway(options: GatewayOptions): Gateway {
     const m = r && (await manifest(r).catch(() => null))
     if (!r || !m) return []
     const { abs } = paths(r, m)
-    const js = m.split ? [m.split.entry, ...(m.split.chunks ?? [])] : [m.entry]
+    // Com dedupe, a cópia própria das dependências também: na primeira visita,
+    // é ela que a página usa (a menos que o host já ofereça uma).
+    const own = (m.dedupe ?? []).flatMap((d) => [...(d.chunks ?? []), d.file])
+    const js = m.split ? [...new Set([m.split.entry, ...(m.split.chunks ?? []), ...own])] : [m.entry]
     // Remote com hash: só aquece o cache HTTP. Um modulepreload sem integrity
     // poria o módulo no mapa de módulos sem conferência.
     const hashed = !!m.integrity || Object.keys(m.files ?? {}).length > 0
@@ -189,9 +199,13 @@ export function gateway(options: GatewayOptions): Gateway {
     let ssr = false
     const element = async (el: EdgeElement) => {
       ssr = false
-      const src = el.getAttribute('src')
+      const outlet = el.tagName === 'vitral-outlet'
+      const src = outlet ? null : el.getAttribute('src')
       let r: Remote | undefined
-      if (src) {
+      if (outlet) {
+        const route = options.routes && matchRoute(url.pathname, options.routes)
+        r = route ? remotes.get(route.name) : undefined
+      } else if (src) {
         const abs = new URL(decodeEntities(src), url).href
         for (const x of remotes.values()) if (x.url === abs || abs === new URL(local(x, x.url), url).href) r = x
         if (r && abs === r.url) el.setAttribute('src', local(r, r.url))
@@ -230,9 +244,12 @@ export function gateway(options: GatewayOptions): Gateway {
     const name = escapeAttr(label)
     const scope = m.scope ? ` data-vitral-scope="${escapeAttr(m.scope)}"` : ''
     const root = `<div data-vitral-root="${name}"${scope} style="display:contents">${html}</div>`
+    // O manifesto vai junto (o mesmo que o SSR usou): o cliente não busca de novo.
+    const json = JSON.stringify(relocate(m, (u) => (/^https?:\/\//.test(u) ? local(r, u) : u))).replace(/</g, '\\u003c')
+    const seed = `<script type="application/json" data-vitral-manifest="${escapeAttr(local(r, r.url))}">${json}</script>`
     const css = (m.css ?? []).map(abs)
     const link = (u: string) => `<link rel="stylesheet" href="${escapeAttr(local(r, u))}" crossorigin="anonymous"${sri[u] ? ` integrity="${escapeAttr(sri[u])}"` : ''}>`
-    if (isolate === 'none') return `<div data-vitral-ssr data-vitral-slot="${name}">${css.map(link).join('')}${root}</div>`
+    if (isolate === 'none') return `<div data-vitral-ssr data-vitral-slot="${name}">${seed}${css.map(link).join('')}${root}</div>`
     // No Shadow DOM: o CSS preparado no build, quando há, senão o do manifesto.
     const s = m.shadow
     const files = s && css[0] ? s.css.map((u) => new URL(u, css[0]).href) : css
@@ -246,7 +263,7 @@ export function gateway(options: GatewayOptions): Gateway {
     )
     const style = texts.length ? `<style data-vitral-ssr>${texts.join('\n').replace(/<\/style/gi, '<\\/style')}</style>` : ''
     // `@property` e `@font-face` só valem no documento: ficam fora do shadow root.
-    return `<div data-vitral-ssr data-vitral-slot="${name}">${global.map(link).join('')}<template shadowrootmode="open">${style}${root}</template></div>`
+    return `<div data-vitral-ssr data-vitral-slot="${name}">${seed}${global.map(link).join('')}<template shadowrootmode="open">${style}${root}</template></div>`
   }
 
   const handler = (async (request: Request) => {
@@ -320,9 +337,11 @@ function transform(body: ReadableStream<Uint8Array>, element: ElementHandler, ch
   if (typeof HTMLRewriter !== 'undefined')
     return new HTMLRewriter()
       .on('vitral-remote', { element })
+      .on('vitral-outlet', { element })
       .on('vitral-remote > [slot="fallback"]', { element: child })
+      .on('vitral-outlet > [slot="fallback"]', { element: child })
       .transform(new Response(body, { headers: { 'content-type': 'text/html' } })).body!
-  return rewrite(body, 'vitral-remote', { element, child })
+  return rewrite(body, ['vitral-remote', 'vitral-outlet'], { element, child })
 }
 
 /** Confere `integrity` (`sha256-…`, `sha384-…` ou `sha512-…`, um ou mais) nos bytes. */

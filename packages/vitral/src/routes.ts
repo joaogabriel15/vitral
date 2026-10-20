@@ -14,10 +14,10 @@
  * rota muda (`navigate()`, voltar/avançar e links). Navegar dentro do mesmo
  * remote não remonta: o roteador do próprio remote cuida disso.
  */
-import { createSlot, navigate, type Isolation, type Props, type RemoteSlot } from './index'
+import { matchRoute as match, type RouteMatch, type Routes } from './core/match'
+import { createSlot, navigate, type Isolation, type Props, type RemoteError, type RemoteSlot, type SlotStatus } from './index'
 
-/** Padrão de URL → nome do remote. A primeira rota que bate vence. */
-export type Routes = Record<string, string>
+export type { RouteMatch, Routes }
 
 export interface RoutesOptions {
   /**
@@ -27,43 +27,15 @@ export interface RoutesOptions {
   links?: boolean
 }
 
-export interface RouteMatch {
-  /** Nome do remote. */
-  name: string
-  /** Padrão que bateu. */
-  pattern: string
-  /** Segmentos `:nome` do padrão. */
-  params: Record<string, string>
-}
-
 let table: Routes = {}
 const outlets = new Set<VitralOutletElement>()
-const compiled = new Map<string, RegExp>()
-
-function compile(pattern: string): RegExp {
-  let re = compiled.get(pattern)
-  if (!re) {
-    const body = pattern
-      .replace(/\/\*$|^\*$/, '\0')
-      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-      .replace(/:(\w+)/g, '(?<$1>[^/]+)')
-      .replace(/\/$/, '')
-      .replace('\0', '(?:/.*)?')
-    compiled.set(pattern, (re = new RegExp(`^${body}/?$`)))
-  }
-  return re
-}
 
 /**
  * Remote da rota que bate com `path`, ou `null`. Padrões: `/conta` (exato),
  * `/checkout/*` (o prefixo e tudo abaixo dele), `/produto/:id` e `*` (qualquer).
  */
 export function matchRoute(path: string, routes: Routes = table): RouteMatch | null {
-  for (const [pattern, name] of Object.entries(routes)) {
-    const m = compile(pattern).exec(path)
-    if (m) return { name, pattern, params: { ...m.groups } }
-  }
-  return null
+  return match(path, routes)
 }
 
 /**
@@ -168,12 +140,24 @@ export class VitralOutletElement extends Base {
     } else if (this.#slot) {
       this.#slot.set({ name })
     } else {
-      this.#slot = createSlot(this, {
+      const options = {
         name,
         props: this.#props,
         isolate: (this.getAttribute('isolate') as Isolation) || undefined,
-        onStatus: (s, e) => this.#status(s, e),
-      })
+        onStatus: (s: SlotStatus, e: RemoteError | null) => this.#status(s, e),
+      }
+      // HTML da rota renderizado pelo gateway (`vitral/edge` com `routes`): hidrata, sob demanda.
+      const ssr = this.querySelector<HTMLElement>(':scope>[data-vitral-ssr]')
+      if (ssr?.getAttribute('data-vitral-slot') === name) {
+        this.#status('loading', null)
+        import('./core/hydrate').then((m) => {
+          if (this.#route === name && !this.#slot) this.#slot = m.hydrateSlot(this, ssr, { ...options, props: this.#props })
+          else ssr.remove()
+        })
+        return
+      }
+      ssr?.remove()
+      this.#slot = createSlot(this, options)
     }
   }
 

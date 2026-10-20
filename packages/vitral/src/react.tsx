@@ -7,8 +7,6 @@
  * Remote: export default reactRemote(App)
  */
 import {
-  Component as ReactComponent,
-  createContext,
   useContext,
   useEffect,
   useMemo,
@@ -19,7 +17,8 @@ import {
   type ReactNode,
 } from 'react'
 import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
-import { createRoot } from 'react-dom/client'
+import { createRoot, hydrateRoot } from 'react-dom/client'
+import { RemoteTree, VitralContext } from './react-tree'
 import * as ReactAll from 'react'
 import * as ReactDOM from 'react-dom'
 import * as ReactDOMClient from 'react-dom/client'
@@ -47,38 +46,22 @@ import { memoSelect, same } from './core/shared'
 // Lado do remote
 // ---------------------------------------------------------------------------
 
-const VitralContext = createContext<RemoteContext | null>(null)
-
-/** Erro de render dentro do remote vai para o host em vez de derrubar a página. */
-class Boundary extends ReactComponent<{ ctx: RemoteContext; children: ReactNode }, { failed: boolean }> {
-  state = { failed: false }
-  static getDerivedStateFromError() {
-    return { failed: true }
-  }
-  componentDidCatch(error: unknown) {
-    this.props.ctx.reportError(error)
-  }
-  render() {
-    return this.state.failed ? null : this.props.children
-  }
-}
-
-/** Transforma um componente React em um remote. */
+/**
+ * Transforma um componente React em um remote. Com o HTML do servidor
+ * (`reactRender` de `vitral/react-server`, no gateway), hidrata em vez de montar.
+ */
 export function reactRemote<P extends Props>(Component: ComponentType<P>): RemoteModule<P> {
+  const start = (el: HTMLElement, props: P, ctx: RemoteContext, hydrate: boolean) => {
+    const tree = (p: P) => <RemoteTree Component={Component} props={p} ctx={ctx} />
+    const options = { onUncaughtError: (e: unknown) => ctx.reportError(e) }
+    const root = hydrate ? hydrateRoot(el, tree(props), options) : createRoot(el, options)
+    const render = (p: P) => root.render(tree(p))
+    if (!hydrate) render(props)
+    return { update: render, unmount: () => root.unmount() }
+  }
   return defineRemote<P>({
-    mount(el, props, ctx) {
-      const root = createRoot(el, { onUncaughtError: (e) => ctx.reportError(e) })
-      const render = (p: P) =>
-        root.render(
-          <VitralContext.Provider value={ctx}>
-            <Boundary ctx={ctx}>
-              <Component {...p} />
-            </Boundary>
-          </VitralContext.Provider>,
-        )
-      render(props)
-      return { update: render, unmount: () => root.unmount() }
-    },
+    mount: (el, props, ctx) => start(el, props, ctx, false),
+    hydrate: (el, props, ctx) => start(el, props, ctx, true),
   })
 }
 

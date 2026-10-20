@@ -55,3 +55,19 @@ node bench/publico/run.mjs --sem-build --servir   # só o servidor, porta 4301
 Grava `publico/resultado.json` e imprime a tabela da página
 [Benchmark](../docs/aprender/benchmark.md). Cenário novo (dicionário,
 prefetch): um item em `publico/cenarios.mjs`, com os ganchos descritos lá.
+
+## Contra o Next.js Multi-Zones (manual)
+
+`publico/zonas.mjs` compara um app dividido por rota entre duas equipes: duas
+zonas Next (export estático) contra o app shell do vitral com `routes()`, com
+e sem o gateway de `vitral/edge` (SSR da rota e Early Hints). Mede a primeira
+visita e a troca de rota, em HTTP/2. Não roda no CI.
+
+```bash
+pnpm bench:zonas                                 # build + 7 cenários x 7 repetições
+node bench/publico/zonas.mjs --runs 3 --only vitral-gateway,zonas
+node bench/publico/zonas.mjs --sem-build --servir  # servidores nas portas 4302 (estático) e 4303 (gateway)
+```
+
+Grava `publico/resultado-zonas.json` e imprime a tabela da página
+[Benchmark](../docs/aprender/benchmark.md#contra-o-next-js-multi-zones).

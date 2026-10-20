@@ -31,11 +31,30 @@ const PAGE = `<!doctype html>
 </script>
 </body></html>`
 
+// App shell com rotas: o gateway (com `routes`) renderiza no outlet o remote da URL.
+const SHELL = `<!doctype html>
+<html><head><meta charset="utf-8"><title>edge: rotas</title></head><body>
+<vitral-outlet isolate="shadow" props='{"n":3}'><p slot="fallback">Carregando…</p></vitral-outlet>
+<script>
+  const slot = document.querySelector('vitral-outlet [data-vitral-ssr]')
+  window.__doServidor = slot && slot.shadowRoot && slot.shadowRoot.querySelector('button')
+</script>
+<script type="module">
+  import { configure, navigate } from '/vitral/index.js'
+  import { routes } from '/vitral/routes.js'
+  configure({ retries: 0, remotes: { ssr: '/_vitral/ssr/vitral.json', texto: '/_vitral/texto/vitral.json' } })
+  routes({ '/conta': 'ssr', '/texto': 'texto' })
+  window.__navigate = navigate
+</script>
+</body></html>`
+
 const TYPES: Record<string, string> = { '.js': 'text/javascript', '.html': 'text/html; charset=utf-8' }
 
 let origin: Server
 let edge: Server
+let edgeRotas: Server
 let base = ''
+let baseRotas = ''
 let manifest = ''
 
 const listen = (server: Server) => new Promise<number>((ok) => server.listen(0, () => ok((server.address() as AddressInfo).port)))
@@ -50,7 +69,7 @@ test.beforeAll(async () => {
       if (!body) return void res.writeHead(404).end()
       return void res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'text/plain' }).end(body)
     }
-    res.writeHead(200, { 'content-type': TYPES['.html'], 'cache-control': 'no-cache' }).end(PAGE)
+    res.writeHead(200, { 'content-type': TYPES['.html'], 'cache-control': 'no-cache' }).end(path === '/conta' || path === '/texto' ? SHELL : PAGE)
   })
   const hostPort = await listen(origin)
   manifest = cdn('ssr')
@@ -65,11 +84,23 @@ test.beforeAll(async () => {
     ),
   )
   base = `http://localhost:${await listen(edge)}`
+  edgeRotas = createServer(
+    toNodeListener(
+      gateway({
+        origin: `http://localhost:${hostPort}`,
+        remotes: { ssr: { url: manifest, render }, texto: cdn('texto') },
+        isolate: 'shadow',
+        routes: { '/conta': 'ssr', '/texto': 'texto' },
+      }),
+    ),
+  )
+  baseRotas = `http://localhost:${await listen(edgeRotas)}`
 })
 
 test.afterAll(() => {
   origin?.close()
   edge?.close()
+  edgeRotas?.close()
 })
 
 function watch(page: Page) {
@@ -139,4 +170,48 @@ test('manifesto na mesma origem e Link para os arquivos do remote', async ({ req
   // Caminhos relativos ficam iguais; o hash também.
   expect(own.entry).toBe(upstream.entry)
   expect(own.integrity).toBe(upstream.integrity)
+})
+
+test.describe('rotas: <vitral-outlet> pelo gateway', () => {
+  test('a rota sai renderizada e hidrata com o manifesto do HTML, sem buscá-lo', async ({ page }) => {
+    const { erros, urls } = watch(page)
+    await page.goto(`${baseRotas}/conta`)
+    const outlet = page.locator('vitral-outlet')
+    await expect(outlet).toHaveAttribute('data-vitral-status', 'ready')
+    expect(await page.evaluate(() => (window as any).__chamadas)).toEqual(['hydrate'])
+    const same = await page.evaluate(() => {
+      const b = (window as any).__doServidor as HTMLButtonElement
+      return b.isConnected && document.querySelector('vitral-outlet [data-vitral-ssr]')!.shadowRoot!.querySelector('button') === b
+    })
+    expect(same).toBe(true)
+    const button = page.locator('vitral-outlet button.ssr')
+    await button.click()
+    await expect(button).toHaveText('itens: 4')
+    await expect(page.getByText('Carregando…')).toBeHidden()
+    expect(urls.some((u) => u.endsWith('/_vitral/ssr/vitral.json'))).toBe(false)
+    expect(urls.some((u) => u.includes('/_vitral/ssr/remote-'))).toBe(true)
+    expect(erros).toEqual([])
+  })
+
+  test('trocar de rota monta o outro remote sem recarregar; voltar monta do zero', async ({ page }) => {
+    const { erros } = watch(page)
+    await page.goto(`${baseRotas}/conta`)
+    const outlet = page.locator('vitral-outlet')
+    await expect(outlet).toHaveAttribute('data-vitral-status', 'ready')
+    await page.evaluate(() => ((window as any).__marca = 1))
+    await page.evaluate(() => (window as any).__navigate('/texto'))
+    await expect(outlet).toHaveAttribute('data-vitral-route', 'texto')
+    await expect(outlet).toHaveAttribute('data-vitral-status', 'ready')
+    expect(await outlet.evaluate((el) => el.querySelector('[data-vitral-ssr]'))).toBeNull()
+    await page.evaluate(() => (window as any).__navigate('/conta'))
+    await expect(page.locator('vitral-outlet button.ssr')).toHaveText('itens: 3')
+    expect(await page.evaluate(() => [(window as any).__marca, (window as any).__chamadas])).toEqual([1, ['hydrate', 'mount']])
+    expect(erros).toEqual([])
+  })
+
+  test('Link da rota já na primeira visita, sem `preload`', async ({ request }) => {
+    const link = (await request.get(`${baseRotas}/conta`)).headers()['link']
+    expect(link).toMatch(/<\/_vitral\/ssr\/remote-[0-9a-f]{8}\.js>; rel=preload; as=fetch; crossorigin=anonymous/)
+    expect((await request.get(`${baseRotas}/sobre`)).headers()['link']).toBeUndefined()
+  })
 })

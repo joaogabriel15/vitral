@@ -11,6 +11,7 @@ const entries = {
   routes: () => import('../src/routes'),
   iframe: () => import('../src/iframe'),
   react: () => import('../src/react'),
+  'react-server': () => import('../src/react-server'),
   vue: () => import('../src/vue'),
   svelte: () => import('../src/svelte'),
   preact: () => import('../src/preact'),

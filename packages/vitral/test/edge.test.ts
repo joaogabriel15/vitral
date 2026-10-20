@@ -17,6 +17,14 @@ const MANIFEST = {
   split: { entry: 'split/entry.js', chunks: [`${CDN}split/chunk.js`] },
 }
 
+/** O manifesto que o SSR põe no HTML, já com os caminhos desta origem. */
+const SEED = `<script type="application/json" data-vitral-manifest="/_vitral/carrinho/vitral.json">${JSON.stringify({
+  ...MANIFEST,
+  entry: '/_vitral/carrinho/carrinho-abc.js',
+  files: { '/_vitral/carrinho/carrinho-abc.js': MANIFEST.integrity, 'carrinho-abc.css': MANIFEST.files['carrinho-abc.css'] },
+  split: { entry: 'split/entry.js', chunks: ['/_vitral/carrinho/split/chunk.js'] },
+})}</script>`
+
 const PAGE = `<!doctype html><html><head><title>a < b</title></head><body>
 <!-- <vitral-remote name="carrinho"></vitral-remote> -->
 <script>const t = '<vitral-remote name="carrinho">'</script>
@@ -154,7 +162,7 @@ describe('gateway: SSR', () => {
     const html = await (await get('/')).text()
     expect(render).toHaveBeenCalledWith({ n: 2 })
     expect(html).toContain(
-      '<vitral-remote name="carrinho" props=\'{"n":2}\' isolate="shadow"><div data-vitral-ssr data-vitral-slot="carrinho"><template shadowrootmode="open"><style data-vitral-ssr>.c{color:red;background:url(/_vitral/carrinho/img/x.png)}</style><div data-vitral-root="carrinho" data-vitral-scope="carrinho" style="display:contents"><button>itens: 2</button></div></template></div><p slot="fallback" hidden="">Carregando</p><p slot="error">Erro</p></vitral-remote>',
+      `<vitral-remote name="carrinho" props='{"n":2}' isolate="shadow"><div data-vitral-ssr data-vitral-slot="carrinho">${SEED}<template shadowrootmode="open"><style data-vitral-ssr>.c{color:red;background:url(/_vitral/carrinho/img/x.png)}</style><div data-vitral-root="carrinho" data-vitral-scope="carrinho" style="display:contents"><button>itens: 2</button></div></template></div><p slot="fallback" hidden="">Carregando</p><p slot="error">Erro</p></vitral-remote>`,
     )
     // Comentário e script ficam como estavam.
     expect(html).toContain('<!-- <vitral-remote name="carrinho"></vitral-remote> -->')
@@ -176,7 +184,7 @@ describe('gateway: SSR', () => {
     const { get } = setup({ remotes: { carrinho: { url: `${CDN}vitral.json`, render } } }, { 'https://app.exemplo.com/': page })
     const html = await (await get('/')).text()
     expect(html).toBe(
-      `<vitral-remote src="/_vitral/carrinho/vitral.json" props="{&quot;n&quot;:3}"><div data-vitral-ssr data-vitral-slot="carrinho"><link rel="stylesheet" href="/_vitral/carrinho/carrinho-abc.css" crossorigin="anonymous" integrity="${sri(CSS)}"><div data-vitral-root="carrinho" data-vitral-scope="carrinho" style="display:contents"><button>itens: 3</button></div></div></vitral-remote>`,
+      `<vitral-remote src="/_vitral/carrinho/vitral.json" props="{&quot;n&quot;:3}"><div data-vitral-ssr data-vitral-slot="carrinho">${SEED}<link rel="stylesheet" href="/_vitral/carrinho/carrinho-abc.css" crossorigin="anonymous" integrity="${sri(CSS)}"><div data-vitral-root="carrinho" data-vitral-scope="carrinho" style="display:contents"><button>itens: 3</button></div></div></vitral-remote>`,
     )
   })
 
@@ -211,6 +219,54 @@ describe('gateway: SSR', () => {
     await (await get('/')).text()
     const cdn = fetch.mock.calls.filter(([r]) => r.url.startsWith(CDN))
     expect(cdn).toHaveLength(2)
+  })
+})
+
+describe('gateway: rotas no <vitral-outlet>', () => {
+  const render = vi.fn((props: Record<string, unknown>) => `<p>${props.msg}</p>`)
+  const DEDUPE = { ...MANIFEST, dedupe: [{ name: 'react', range: '^19.0.0', version: '19.3.0', file: 'split/react.js', chunks: [`${CDN}split/chunk.js`] }] }
+  const OUTLET = `<main><vitral-outlet props='{"msg":"oi"}'><p slot="fallback">Carregando</p></vitral-outlet></main>`
+  // Páginas terminam em `/`: o servidor simulado só manda essas como HTML.
+  const pages = {
+    'https://app.exemplo.com/carrinho/itens/': OUTLET,
+    'https://app.exemplo.com/sobre/': OUTLET,
+    [`${CDN}vitral.json`]: JSON.stringify(DEDUPE),
+  }
+  const routes = { '/carrinho/*': 'carrinho', '/conta': 'conta' }
+
+  it('renderiza o remote da rota no outlet, com o manifesto, e esconde o fallback', async () => {
+    const { get } = setup({ remotes: { carrinho: { url: `${CDN}vitral.json`, render, isolate: 'none' } }, routes }, pages)
+    const html = await (await get('/carrinho/itens/')).text()
+    expect(render).toHaveBeenCalledWith({ msg: 'oi' })
+    expect(html).toMatch(/^<main><vitral-outlet props='\{"msg":"oi"\}'><div data-vitral-ssr data-vitral-slot="carrinho"><script type="application\/json" data-vitral-manifest="\/_vitral\/carrinho\/vitral.json">\{"name":"carrinho"/)
+    expect(html).toContain('<div data-vitral-root="carrinho" data-vitral-scope="carrinho" style="display:contents"><p>oi</p></div></div><p slot="fallback" hidden="">Carregando</p></vitral-outlet></main>')
+  })
+
+  it('sem rota que bata, ou rota de remote desconhecido: o outlet sai como veio', async () => {
+    const { get } = setup({ remotes: { carrinho: { url: `${CDN}vitral.json`, render } }, routes }, { ...pages, 'https://app.exemplo.com/conta/': OUTLET })
+    expect(await (await get('/sobre/')).text()).toBe(OUTLET)
+    expect(await (await get('/conta/')).text()).toBe(OUTLET)
+    expect(await (await setup({ remotes: { carrinho: { url: `${CDN}vitral.json`, render } } }, pages).get('/carrinho/itens/')).text()).toBe(OUTLET)
+  })
+
+  it('hints da rota já na primeira visita, com a cópia própria do dedupe', async () => {
+    const { handler } = setup({ routes }, pages)
+    const links = await handler.hints(new Request('https://edge.exemplo.com/carrinho/itens'))
+    expect(links).toEqual([
+      '</_vitral/carrinho/split/entry.js>; rel=preload; as=fetch; crossorigin=anonymous',
+      '</_vitral/carrinho/split/chunk.js>; rel=preload; as=fetch; crossorigin=anonymous',
+      '</_vitral/carrinho/split/react.js>; rel=preload; as=fetch; crossorigin=anonymous',
+      '</_vitral/carrinho/carrinho-abc.css>; rel=preload; as=style; crossorigin=anonymous',
+    ])
+    expect(await handler.hints(new Request('https://edge.exemplo.com/sobre'))).toEqual([])
+  })
+
+  it('o manifesto no HTML não fecha o <script>', async () => {
+    const m = { ...MANIFEST, name: '</script><script>alert(1)</script>' }
+    const { get } = setup({ remotes: { carrinho: { url: `${CDN}vitral.json`, render } }, routes }, { ...pages, [`${CDN}vitral.json`]: JSON.stringify(m) })
+    const html = await (await get('/carrinho/itens/')).text()
+    expect(html).not.toContain('<script>alert')
+    expect(html).toContain('"name":"\\u003c/script>\\u003cscript>alert(1)\\u003c/script>"')
   })
 })
 
