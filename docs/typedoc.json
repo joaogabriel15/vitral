@@ -13,6 +13,7 @@
     "../packages/vitral/src/vite.ts",
     "../packages/vitral/src/sentry.ts",
     "../packages/vitral/src/otel.ts",
+    "../packages/vitral/src/vitals.ts",
     "../packages/vitral/src/single-spa.ts",
     "../packages/vitral/src/federation.ts",
     "../packages/vitral/src/dict.ts"
