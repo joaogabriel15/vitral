@@ -31,11 +31,15 @@ const files = (r: string): Record<string, string> => ({
 let server: Server
 let origin = ''
 const requests: string[] = []
+/** Como cada requisição chegou (destino, modo, revalidação): numa falha, mostra quem baixou de novo. */
+const how: string[] = []
 
 test.beforeAll(async () => {
   server = createServer(async (req, res) => {
     const { pathname } = new URL(req.url!, 'http://x')
     requests.push(pathname)
+    const h = req.headers
+    how.push(`${pathname} dest=${h['sec-fetch-dest']} mode=${h['sec-fetch-mode']} cred=${h.cookie ? 'sim' : 'não'} ims=${h['if-modified-since'] ?? h['if-none-match'] ?? '-'} cache=${h['cache-control'] ?? '-'}`)
     if (pathname === '/a' || pathname === '/b') {
       return void res
         .writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
@@ -113,9 +117,10 @@ test('depois de A → B algumas vezes, a próxima visita a A pré-carrega B sem 
 
   await go(page, 'b')
   const all = requests.slice(before)
+  const log = how.slice(before).filter((l) => l.startsWith('/r/b/split/')).join('\n')
   // B monta com o que foi pré-carregado: cada arquivo baixado uma vez só.
-  expect(all.filter((p) => p === '/r/b/split/entry.js')).toHaveLength(1)
-  expect(all.filter((p) => p === '/r/b/split/chunk.js')).toHaveLength(1)
+  expect(all.filter((p) => p === '/r/b/split/entry.js'), log).toHaveLength(1)
+  expect(all.filter((p) => p === '/r/b/split/chunk.js'), log).toHaveLength(1)
   expect(await page.evaluate(() => (window as any).__ran)).toEqual(['a/chunk.js', 'a/entry.js', 'b/chunk.js', 'b/entry.js'])
   expect(errors).toEqual([])
   await context.close()
