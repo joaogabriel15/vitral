@@ -1,8 +1,9 @@
-<p align="center"><img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/logo.svg" width="96" alt="vitral"></p>
-
-<h1 align="center">vitral</h1>
-
-<p align="center"><strong>Feito de partes. Visto como um todo.</strong></p>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/banner-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/banner.png" width="640" alt="vitral. Feito de partes. Visto como um todo.">
+  </picture>
+</p>
 
 <p align="center">
   <a href="https://github.com/joaogabriel15/vitral/actions/workflows/ci.yml"><img src="https://github.com/joaogabriel15/vitral/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -11,15 +12,48 @@
   <a href="https://github.com/joaogabriel15/vitral/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/vitral" alt="licença MIT"></a>
 </p>
 
+<p align="center">
+  <a href="https://joaogabriel15.github.io/vitral/">Documentação</a> ·
+  <a href="https://joaogabriel15.github.io/vitral/aprender/configurar">Começar</a> ·
+  <a href="https://joaogabriel15.github.io/vitral/por-que">Por que o vitral</a> ·
+  <a href="https://joaogabriel15.github.io/vitral/aprender/benchmark">Benchmark</a> ·
+  <a href="./README.en.md">English</a>
+</p>
+
 Junte micro-frontends de qualquer framework numa página só, sem configuração de build no host.
+
+Cada equipe publica o próprio pedaço da página (um remote) com `vite build`. O host recebe a URL de cada remote e monta tudo no navegador. Não há plugin no host, não há versão de React para combinar entre equipes e um remote fora do ar não derruba a página.
 
 ```bash
 npm install vitral
 ```
 
-- O host só precisa da URL de cada remote.
-- React, Vue, Angular, Svelte, Solid, Preact, Lit e JS puro na mesma página.
-- Cada remote tem o próprio CSS, os próprios erros e o próprio deploy.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/como-funciona-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/como-funciona.png" width="900" alt="Três equipes (React, Vue, Angular) publicam um vitral.json cada uma num CDN. O host lê as URLs com configure e monta os três remotes na mesma página.">
+  </picture>
+</p>
+
+## Por que o vitral
+
+| | Module Federation / single-spa | vitral |
+|---|---|---|
+| Build do host | Config combinada com cada remote | Nenhuma. Só `configure()` |
+| Versões de React/Vue | `shared` e singletons, conflitos de versão | Cada remote leva a sua. Compartilhar é opcional |
+| Remote fora do ar | Pode derrubar a página | Só aquele remote mostra erro |
+| CSS | Vaza entre apps | Escopo automático ou Shadow DOM |
+| Deploy novo | `ChunkLoadError` com cache velho | Arquivos com hash; só o `vitral.json` revalida |
+| Conceitos | Containers, exposes, lifecycles, root config | `mount(el, props, ctx)` → `{ update, unmount }` |
+
+Medido no [benchmark público](https://joaogabriel15.github.io/vitral/aprender/benchmark) (Chromium, rede Slow 4G, mediana de 7 visitas):
+
+- **3,4 kB** de código de host mínimo, com brotli. O host do Module Federation tem 19,4 kB.
+- **57% menos tempo** na primeira visita que o Module Federation com React compartilhado (1157 ms contra 2673 ms, 1 remote).
+- **4,6 vezes mais rápido** para trocar de área que o Next.js Multi-Zones (184 ms contra 850 ms).
+- **10 frameworks** cobertos por testes de ponta a ponta no CI, com host e remote de frameworks diferentes, em Chromium, Firefox, WebKit e mobile.
+
+A página do benchmark também lista onde o vitral perde.
 
 ## Começo rápido
 
@@ -339,17 +373,6 @@ expect(carrinho.lastProps).toEqual({ itens: 2 })
 
 failingRemote('recomendacoes') // testa a tela de erro
 ```
-
-## Comparado com Module Federation e single-spa
-
-| | Module Federation / single-spa | vitral |
-|---|---|---|
-| Build do host | Config combinada com cada remote | Nenhuma. Só `configure()` |
-| Versões de React/Vue | `shared` e singletons, conflitos de versão | Cada remote leva a sua. Compartilhar é opcional |
-| Remote fora do ar | Pode derrubar a página | Só aquele remote mostra erro |
-| CSS | Vaza entre apps | Escopo automático ou Shadow DOM |
-| Deploy novo | `ChunkLoadError` com cache velho | Arquivos com hash; só o `vitral.json` revalida |
-| Conceitos | Containers, exposes, lifecycles, root config | `mount(el, props, ctx)` → `{ update, unmount }` |
 
 ## Links
 
