@@ -125,9 +125,7 @@ export function prefetch(options: PrefetchOptions = {}): () => void {
   }
 }
 
-// `credentials` igual ao da requisição que vai usar o arquivo: o WebKit não
-// reaproveita do cache uma resposta pedida com outro modo de credenciais.
-const heat = (u: string, credentials?: RequestCredentials) => fetch(u, { priority: 'low', credentials }).then((res) => res.arrayBuffer())
+const heat = (u: string) => fetch(u, { priority: 'low' }).then((res) => res.arrayBuffer())
 
 function modulepreload(href: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -150,9 +148,7 @@ async function verifiedOnly(r: Verifiable): Promise<void> {
   const b = r.split ?? { entry: r.entry, chunks: [], sri: { [r.entry]: r.integrity }, priority: 'low' as const }
   const { verified } = await import('./core/sri')
   const url = await verified(b)
-  // Caminho 3: a montagem baixa a entrada com `fetchBytes` (sem credenciais) e
-  // os chunks vêm como módulos.
-  if (!url) await Promise.all([...b.chunks.map((u) => heat(u)), heat(b.entry, 'omit')])
+  if (!url) await Promise.all([...b.chunks, b.entry].map(heat))
   else if (!document.querySelector(`link[rel=modulepreload][href="${CSS.escape(url)}"]`)) await heat(url)
 }
 
@@ -172,7 +168,7 @@ export async function warm(name: string): Promise<boolean> {
     // No iframe o JS roda em outro documento; sem URL, o remote é local.
     if (!entry?.url || (entry.isolate ?? p.settings().isolate) === 'iframe') return false
     const r = await resolveEntry(n, entry as RemoteEntry & { url: string }, 'low')
-    const css = r.css.map((u) => heat(u))
+    const css = r.css.map(heat)
     await Promise.all([r.integrity ? verifiedOnly(r as Verifiable) : modulepreload(r.entry), ...css])
     return true
   } catch {
