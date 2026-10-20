@@ -1,5 +1,11 @@
 # vitral
 
+## 0.7.2
+
+### Patch Changes
+
+- [#89](https://github.com/joaogabriel15/vitral/pull/89) [`a66441d`](https://github.com/joaogabriel15/vitral/commit/a66441df1baa490495b9c20a9ef02672c4d7160b) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - README no npm com as vantagens no topo, comparação com Next.js Multi-Zones e seções de como rodar local e com Docker.
+
 ## 0.7.1
 
 ### Patch Changes
