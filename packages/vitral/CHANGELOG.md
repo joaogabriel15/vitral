@@ -1,5 +1,26 @@
 # vitral
 
+## 0.5.0
+
+### Minor Changes
+
+- [#76](https://github.com/joaogabriel15/vitral/pull/76) [`60bae7d`](https://github.com/joaogabriel15/vitral/commit/60bae7d9e60265155905fe20582b454e3988e121) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Dicionários de compressão (RFC 9842) para os remotes: quem já tem a versão anterior em cache baixa só a diferença. Nos remotes de exemplo, o delta entre a 0.3 e a 0.4 ficou 89% menor que o brotli 11 em média.
+
+  - `npx vitral dict dist --from ../dist-anterior` pré-comprime cada `.js` e `.css` com a versão anterior como dicionário (`.dcz`, e `.dcb` com o binário `brotli`) e grava `vitral-dict.json`.
+  - `vitral/dict`: `createDict({ index, read })` responde `Available-Dictionary` com `Content-Encoding: dcz`/`dcb` e põe `Use-As-Dictionary` nas respostas normais. Só usa `Request`/`Response` da Web (edge, Deno, Bun) e tem `node(req, res, next)` para Node e Express.
+
+- [#80](https://github.com/joaogabriel15/vitral/pull/80) [`6cd9bda`](https://github.com/joaogabriel15/vitral/commit/6cd9bda5a7cd523be60e8121c42e59c9c801c4ac) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral/edge`: gateway de edge que serve host e remotes de uma origem só (`/_vitral/<nome>/…`, com o `vitral.json` reescrito e os mesmos hashes), manda `Link` para Early Hints e faz SSR opcional dos remotes em Declarative Shadow DOM. Roda em Cloudflare Workers (com `HTMLRewriter`) e em Node, Deno e Bun (`toNodeListener` para o Node). Contrato novo e opcional no remote: `render(props)` no servidor e `hydrate(el, props, ctx)` no navegador; o `<vitral-remote>` hidrata o HTML do servidor em vez de montar de novo. Sem `hydrate`, nada muda.
+
+- [#79](https://github.com/joaogabriel15/vitral/pull/79) [`ad1fb64`](https://github.com/joaogabriel15/vitral/commit/ad1fb648a3bf65cbf196380099b20071fd812f0c) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Novo `isolate: 'reframe'`: o JS do remote roda num iframe oculto de mesma origem (globais, timers e ouvintes somem no unmount) e o DOM fica num shadow root na página, com layout, foco e eventos normais. Passa pelo mesmo SRI, allowlist e contrato; `history` do remote sincroniza com o do host. Não é fronteira de segurança: veja a lista do que não é isolado em /aprender/reframe.
+
+- [#78](https://github.com/joaogabriel15/vitral/pull/78) [`fbb0c4f`](https://github.com/joaogabriel15/vitral/commit/fbb0c4ff28bd55988b75277719741ce1c4f5e321) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral/prefetch`: prefetch preditivo de remotes. `prefetch()` conta as transições entre rotas no navegador do usuário (cadeia de Markov de primeira ordem, no `localStorage`) e quais remotes cada rota monta. No tempo ocioso, baixa o `vitral.json` e o JS dos remotes da rota seguinte mais provável, sem executar e pelo mesmo caminho de SRI da montagem (import map com `integrity`, `modulepreload` com `integrity` onde o hash é conferido, ou `fetch`). Não baixa nada com `saveData` nem em 2G. `warm(nome)` faz o mesmo para um remote na hora.
+
+  Um import map novo não repete mais URLs que já estão num mapa anterior (o Chromium escrevia um aviso no console).
+
+- [#74](https://github.com/joaogabriel15/vitral/pull/74) [`9c7d3aa`](https://github.com/joaogabriel15/vitral/commit/9c7d3aa7da5a24d60c6849a387c2b9f4dc459c95) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Nova entrada `vitral/vitals`: `vitals({ onReport })` relata LCP, CLS e INP de cada remote (pelo `data-vitral-root` que contém o elemento) e por rota, com `remote`, `version`, `route`, `navigationId` (Chromium com Soft Navigations), `value` e `rating`. FCP e TTFB saem para a página. `vitral/otel` ganha `otelVitals(meter)`, que grava cada vital num histograma do OpenTelemetry.
+
+- [#75](https://github.com/joaogabriel15/vitral/pull/75) [`8892638`](https://github.com/joaogabriel15/vitral/commit/8892638df25931aad2487fe7aa755984d8a94625) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral test` e contratos do consumidor. `harness` (em `vitral/testing`) monta um remote com `ctx` simulado. `record()` grava no host as props, os updates e os eventos de cada remote em `<remote>.contract.json`. `npx vitral test --contract` reproduz esses casos no CI do remote, em happy-dom, e falha se o mount quebrar, se um evento que o host escuta sumir ou se as props não baterem com o `Props` local. `npx vitral test --since <url>` compara o `vitral.d.ts` publicado com o local e lista as mudanças que quebram o host.
+
 ## 0.4.0
 
 ### Minor Changes
