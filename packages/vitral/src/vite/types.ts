@@ -20,7 +20,8 @@ export function typesFile(name: string, props: string): string {
   return `// Props do remote ${JSON.stringify(name)}, geradas pelo vitral. Não edite.\nexport type Props = ${props}\n`
 }
 
-async function loadTs(root: string): Promise<typeof TS | null> {
+/** TypeScript do projeto (ou o da lib), só se tiver a API em JS. */
+export async function loadTs(root: string): Promise<typeof TS | null> {
   // O TypeScript 7 (nativo, o padrão do create-vite) não tem API em JS: sem
   // `createProgram`, tenta o próximo e, sem nenhum, não gera os tipos.
   const api = (ts: typeof TS | undefined) => (typeof ts?.createProgram === 'function' ? ts : null)

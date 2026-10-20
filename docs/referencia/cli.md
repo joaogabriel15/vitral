@@ -219,6 +219,26 @@ npx vitral canal canal.json --stable 1.4.0                  # volta uma versão
 
 Campos próprios do canal (lidos por um `resolve`) ficam como estão. Termina com código `1` se a mudança deixaria o canal inválido, e aí não grava nada.
 
+## vitral test
+
+Roda no CI do remote. Veja [Contratos entre host e remote](/aprender/contratos).
+
+```bash
+npx vitral test --contract contracts/                    # reproduz os contratos dos hosts
+npx vitral test --since https://cdn.exemplo.com/carrinho/vitral.json   # diff das props com a versão publicada
+npx vitral test --contract contracts/ --since https://cdn.exemplo.com/carrinho/vitral.json
+```
+
+| Opção | O que faz |
+| --- | --- |
+| `--contract arquivo\|pasta` | Contrato `.contract.json`, ou pasta com eles. Pode repetir |
+| `--since url\|arquivo` | `vitral.d.ts` publicado (ou a URL do `vitral.json` ou da pasta) para comparar com o local |
+| `--dir pasta` | Pasta do build. Padrão `dist` |
+| `--entry arquivo` | Módulo JS do remote. Padrão: o `entry` de `<dir>/vitral.json` |
+| `--types arquivo` | `vitral.d.ts` local. Padrão `<dir>/vitral.d.ts` |
+
+Precisa do `happy-dom` instalado (`npm i -D happy-dom`). Usa o TypeScript do projeto para conferir as props; sem ele, só o mount roda. Termina com código `1` se algum caso falhar ou se alguma mudança nas props quebrar o host.
+
 ## vitral dict
 
 Pré-comprime cada `.js` e `.css` do dist com a versão anterior dele como dicionário e grava `vitral-dict.json` para o middleware `vitral/dict`. Receita completa e números em [Dicionários de compressão](/aprender/dicionarios).
