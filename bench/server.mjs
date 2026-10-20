@@ -15,6 +15,7 @@ export function startServer(root, port = 0) {
   const compressed = new Map()
   const fileFor = (path) => {
     if (path === '/' || path === '/index.html') return join(here, 'host.html')
+    if (path.startsWith('/rotas/')) return join(here, 'rotas.html')
     const [, area, ...rest] = path.split('/')
     if (area === 'vitral') return join(root, 'packages/vitral/dist', ...rest)
     if (area === 'r' && REMOTES[rest[0]]) return join(root, 'examples/remotes', REMOTES[rest[0]], 'dist', ...rest.slice(1))

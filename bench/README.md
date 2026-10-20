@@ -16,6 +16,14 @@ node bench/compare.mjs bench/baseline.json head.json
 | `jsKB` | JS transferido na primeira visita (brotli) |
 | `heapGrowthKB` | Heap a mais após 100 ciclos de desmontar e montar (depois de 20 de aquecimento) |
 
+Com `--prefetch`, mede também a troca de rota (`rotas.html`: `/rotas/a` monta
+`react1`, `/rotas/b` monta `vue1`), com cache vazio:
+
+| Métrica | O que mede |
+| --- | --- |
+| `nextReadyMs` | De navegar para B até B pronto, sem prefetch |
+| `nextReadyPrefetchMs` | O mesmo com `vitral/prefetch` treinado (A → B 3 vezes) e o prefetch de B já feito em A |
+
 Cada número é a mediana de 5 execuções. Em cada PR o CI mede a main e o PR na
 mesma máquina e falha se alguma métrica ficar mais de 10% pior.
 `baseline.json` guarda a medição de referência da fase 0.

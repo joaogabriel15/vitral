@@ -1,6 +1,6 @@
 // Benchmark do vitral: host com 3 remotes React e 1 Vue, em 4G simulado.
 //
-//   node bench/run.mjs [--root <repo>] [--out <arquivo.json>] [--runs 5]
+//   node bench/run.mjs [--root <repo>] [--out <arquivo.json>] [--runs 5] [--prefetch]
 //
 // Mede (mediana de --runs):
 // - coldReadyMs: tempo até os 4 remotes prontos, cache vazio
@@ -8,6 +8,10 @@
 // - jsKB: JS transferido na visita fria (comprimido)
 // - heapGrowthKB: heap a mais depois de 100 ciclos de desmontar e montar
 //   (após 20 de aquecimento)
+// Com --prefetch, também (rotas.html: /rotas/a monta react1, /rotas/b monta vue1):
+// - nextReadyMs: tempo de navegar de A até B pronto, com cache vazio
+// - nextReadyPrefetchMs: o mesmo com vitral/prefetch treinado (A → B 3 vezes)
+//   e depois de o prefetch de B terminar na rota A
 import { chromium } from 'playwright'
 import { writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -17,7 +21,7 @@ import { startServer } from './server.mjs'
 
 const here = fileURLToPath(new URL('.', import.meta.url))
 const { values: args } = parseArgs({
-  options: { root: { type: 'string', default: resolve(here, '..') }, out: { type: 'string' }, runs: { type: 'string', default: '5' }, cycles: { type: 'string', default: '100' } },
+  options: { root: { type: 'string', default: resolve(here, '..') }, out: { type: 'string' }, runs: { type: 'string', default: '5' }, cycles: { type: 'string', default: '100' }, prefetch: { type: 'boolean', default: false } },
 })
 const RUNS = Number(args.runs)
 const CYCLES = Number(args.cycles)
@@ -56,12 +60,43 @@ async function visit(context, url) {
   return { ...p, ready: await p.page.evaluate(() => window.__ready) }
 }
 
+/** Tempo de A até B pronto, numa visita com cache vazio. Com `prefetch`, treina antes. */
+async function nextReady(browser, base, prefetch) {
+  const q = prefetch ? '?prefetch' : ''
+  let storageState
+  if (prefetch) {
+    const training = await browser.newContext()
+    const page = await training.newPage()
+    await page.goto(`${base}/rotas/a${q}`)
+    await page.waitForFunction(() => window.__ready, null, { timeout: 60_000 })
+    for (let i = 0; i < 3; i++) {
+      await page.evaluate(() => window.__go('/rotas/b'))
+      await page.evaluate(() => window.__go('/rotas/a'))
+    }
+    storageState = await training.storageState()
+    await training.close()
+  }
+  const context = await browser.newContext({ storageState })
+  const { page, errors } = await openPage(context)
+  await page.goto(`${base}/rotas/a${q}`)
+  await page.waitForFunction(() => window.__ready, null, { timeout: 60_000 })
+  if (prefetch) await page.waitForFunction(() => window.__prefetched.includes('vue1'), null, { timeout: 60_000 })
+  // Tempo de leitura da página A, igual nos dois casos.
+  await page.waitForTimeout(500)
+  const ms = await page.evaluate(() => window.__go('/rotas/b'))
+  if (errors.length) throw new Error(`erros na página: ${errors.join('; ')}`)
+  await context.close()
+  return ms
+}
+
 const server = await startServer(args.root)
 const browser = await chromium.launch()
 const cold = []
 const warm = []
 const js = []
 const heap = []
+const next = []
+const nextPrefetch = []
 try {
   for (let i = 0; i < RUNS; i++) {
     const context = await browser.newContext()
@@ -84,6 +119,10 @@ try {
     const after = (await second.cdp.send('Runtime.getHeapUsage')).usedSize
     heap.push(after - before)
     await context.close()
+    if (args.prefetch) {
+      next.push(await nextReady(browser, server.url, false))
+      nextPrefetch.push(await nextReady(browser, server.url, true))
+    }
   }
 } finally {
   await browser.close()
@@ -98,5 +137,6 @@ const result = {
   jsKB: round(median(js) / 1024),
   heapGrowthKB: round(median(heap) / 1024),
 }
+if (args.prefetch) Object.assign(result, { nextReadyMs: round(median(next)), nextReadyPrefetchMs: round(median(nextPrefetch)) })
 console.log(JSON.stringify(result, null, 2))
 if (args.out) writeFileSync(args.out, JSON.stringify(result, null, 2) + '\n')
