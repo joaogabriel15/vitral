@@ -30,8 +30,8 @@ async function buildRemote(fixture: string, out: string, options: VitralViteOpti
 }
 
 beforeAll(async () => {
-  manifest = await buildRemote('vite-remote', outDir)
-  splitManifest = await buildRemote('vite-split', splitDir, { contract: { version: '2.1.0' } })
+  manifest = await buildRemote('vite-remote', outDir, { compileHints: true })
+  splitManifest = await buildRemote('vite-split', splitDir, { contract: { version: '2.1.0' }, compileHints: true })
   shadowManifest = await buildRemote('vite-shadow', shadowDir)
 }, 60_000)
 
@@ -152,6 +152,16 @@ describe('manifesto v2', () => {
     expect(entry).toContain(`__vitralImport("./${lazy}",["./${dep}"])`)
     expect(entry).toMatch(/function __vitralImport\(u,d\)/)
     expect(entry.replace(/function __vitralImport[^\n]*/, '')).not.toMatch(/\bimport\(/)
+  })
+
+  it('compile hint do V8 na entrada e nos chunks que ela importa, não nos import() lazy', () => {
+    const hint = '//# allFunctionsCalledOnLoad\n'
+    expect(readFileSync(join(outDir, manifest.entry), 'utf8').startsWith(hint)).toBe(true)
+    expect(readFileSync(join(splitDir, splitManifest.split!.entry), 'utf8').startsWith(hint)).toBe(true)
+    expect(readFileSync(join(splitDir, splitManifest.split!.chunks![0]), 'utf8').startsWith(hint)).toBe(true)
+    const lazy = readdirSync(join(splitDir, 'split')).find((f) => f.startsWith('grafico-'))!
+    expect(readFileSync(join(splitDir, 'split', lazy), 'utf8')).not.toContain('allFunctionsCalledOnLoad')
+    expect(readFileSync(join(shadowDir, shadowManifest.entry), 'utf8')).not.toContain('allFunctionsCalledOnLoad')
   })
 
   it('recusa o build se um import() do remote não puder passar pelo helper', () => {

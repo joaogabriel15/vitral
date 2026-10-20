@@ -37,13 +37,24 @@ export interface Split {
 export const sri = (file: string): string => 'sha384-' + createHash('sha384').update(readFileSync(file)).digest('base64')
 
 /** As duas saídas do build: arquivo único e build dividido. */
-export function outputs(rolldown: boolean): Record<string, unknown>[] {
+export function outputs(rolldown: boolean, hints = false): Record<string, unknown>[] {
+  const banner = hints ? { banner: compileHint } : {}
   return [
-    { format: 'es', ...(rolldown ? { codeSplitting: false } : { inlineDynamicImports: true }) },
+    { format: 'es', ...banner, ...(rolldown ? { codeSplitting: false } : { inlineDynamicImports: true }) },
     // Os assets saem com o mesmo nome nas duas (o Vite só aceita um padrão).
-    { format: 'es', entryFileNames: `${SPLIT}remote-[hash].js`, chunkFileNames: `${SPLIT}[name]-[hash].js` },
+    { format: 'es', ...banner, entryFileNames: `${SPLIT}remote-[hash].js`, chunkFileNames: `${SPLIT}[name]-[hash].js` },
   ]
 }
+
+/**
+ * Compile hint do V8 (Chrome 136+): o arquivo inteiro é compilado logo, numa
+ * thread de fundo, em vez de função por função quando cada uma roda. Vale
+ * para o que roda ao montar: a entrada, os chunks que ela importa e as cópias
+ * do dedupe. Os `import()` do app (rotas, partes lazy) ficam de fora. Os
+ * outros navegadores ignoram o comentário.
+ */
+export const compileHint = (chunk: { isEntry?: boolean; isDynamicEntry?: boolean; name?: string }): string =>
+  chunk.isEntry || !chunk.isDynamicEntry || chunk.name?.startsWith('_vitral') ? '//# allFunctionsCalledOnLoad' : ''
 
 /** A saída é o build dividido? */
 export const isSplit = (bundle: Bundle): boolean =>

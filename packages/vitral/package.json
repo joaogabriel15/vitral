@@ -252,6 +252,7 @@
         "./shadow-*",
         "./reframe-*",
         "./overrides-*",
+        "./stale-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -260,7 +261,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "4.65 kB"
+      "limit": "4.72 kB"
     },
     {
       "name": "núcleo",
@@ -270,6 +271,7 @@
         "./shadow-*",
         "./reframe-*",
         "./overrides-*",
+        "./stale-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -311,6 +313,7 @@
         "./shadow-*",
         "./reframe-*",
         "./overrides-*",
+        "./stale-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -319,7 +322,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "5.35 kB"
+      "limit": "5.42 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -329,6 +332,7 @@
         "./shadow-*",
         "./reframe-*",
         "./overrides-*",
+        "./stale-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -337,7 +341,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "5.57 kB"
+      "limit": "5.64 kB"
     },
     {
       "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
@@ -374,6 +378,7 @@
         "./shadow-*",
         "./reframe-*",
         "./overrides-*",
+        "./stale-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -393,6 +398,7 @@
         "./shadow-*",
         "./reframe-*",
         "./overrides-*",
+        "./stale-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -411,6 +417,7 @@
         "./shadow-*",
         "./reframe-*",
         "./overrides-*",
+        "./stale-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -430,11 +437,12 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.25 kB",
+      "limit": "6.32 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
         "./overrides-*",
+        "./stale-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -448,9 +456,10 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.3 kB",
+      "limit": "9.37 kB",
       "ignore": [
         "./overrides-*",
+        "./stale-*",
         "./channel-*",
         "./reframe-*",
         "./hydrate-*"
@@ -476,6 +485,7 @@
       "ignore": [
         "./shadow-*",
         "./overrides-*",
+        "./stale-*",
         "./sri-*",
         "./dedupe-*",
         "./contract-*",
@@ -491,6 +501,7 @@
       "limit": "6 kB",
       "ignore": [
         "./overrides-*",
+        "./stale-*",
         "./channel-*",
         "./reframe-*",
         "./hydrate-*"
@@ -499,7 +510,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "12.01 kB"
+      "limit": "12.17 kB"
     },
     {
       "name": "vitals (Web Vitals por remote)",

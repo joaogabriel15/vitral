@@ -77,6 +77,43 @@ configure({ timeout: 15000, retries: 1 })
 | `timeout` | `15000` | Tempo máximo de cada download, em ms |
 | `retries` | `1` | Novas tentativas do JS em erro de rede ou `TIMEOUT` |
 
+## Visita de volta sem esperar o manifesto
+
+O `vitral.json` é o único arquivo sem hash no nome, então o host sempre o revalida: na visita de volta, cada remote espera uma ida e volta antes de rodar, mesmo com o JS no cache. Com `maxStale`, o host usa o manifesto salvo na última visita, se ele tiver até N segundos, e baixa o novo por trás para a visita seguinte.
+
+```ts
+configure({ maxStale: 300 }) // 5 minutos
+```
+
+| Situação | O que acontece |
+| --- | --- |
+| Cópia salva com até `maxStale` segundos | Monta com ela, sem esperar a rede. O manifesto novo baixa ao mesmo tempo e fica salvo |
+| Cópia mais velha, corrompida ou ausente | Espera o manifesto da rede, como sem `maxStale` |
+| `localStorage` bloqueado | Igual a sem `maxStale` |
+
+O custo: um deploy novo, ou um [rollback](/aprender/canary), chega uma visita depois para quem tinha a cópia salva. Os arquivos antigos continuam no CDN (nomes com hash), então a versão velha monta inteira. Use um valor que caiba no tempo que você aceita para um rollback chegar a todos. Medição em [Benchmark](/aprender/benchmark#visita-de-volta-com-maxstale).
+
+## Compile hints do V8
+
+```ts
+vitral({ compileHints: true })
+```
+
+O plugin põe `//# allFunctionsCalledOnLoad` no topo da entrada do remote, dos chunks que ela importa e das cópias do [dedupe](/aprender/dedupe). O Chrome 136+ compila esses arquivos inteiros de uma vez, numa thread de fundo, em vez de compilar cada função quando ela roda pela primeira vez ([V8](https://v8.dev/blog/explicit-compile-hints)). Os `import()` do app ficam de fora. Firefox e Safari ignoram o comentário.
+
+Medição com 4 remotes (3 React e 1 Vue), Slow 4G, mediana de 9 visitas alternadas:
+
+| | Sem hint | Com hint |
+| --- | --: | --: |
+| CPU 4x mais lenta, sem dedupe: 1ª visita | 2684 ms | 2548 ms (-5%) |
+| CPU 4x mais lenta, sem dedupe: visita de volta | 1388 ms | 1192 ms (-14%) |
+| CPU 4x mais lenta, com dedupe: 1ª visita | 1968 ms | 1878 ms (-5%) |
+| CPU 4x mais lenta, com dedupe: visita de volta | 1320 ms | 1188 ms (-10%) |
+| CPU normal, 1ª visita | sem diferença medida | |
+| Heap JS depois de montar | 2,18–2,39 MB | 2,62–3,05 MB (+20% a +28%) |
+
+Ligue quando o público usa celulares com CPU fraca e o remote roda logo ao abrir a página. Deixe desligado (o padrão) quando memória pesa mais que tempo de CPU.
+
 ## Métricas
 
 ```ts

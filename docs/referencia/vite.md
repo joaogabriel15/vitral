@@ -34,6 +34,7 @@ export default { plugins: [react(), vitral({ entry: 'src/remote.tsx', dedupe: ['
 | `contract` | nenhum | `{ version }`: versão do contrato no `vitral.json`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
 | `sbom` | `false` | Gera `sbom.cdx.json` (CycloneDX 1.6). Veja [SBOM](/aprender/seguranca#sbom) |
 | `target` | nenhum | `'mcp-app'`: gera só `mcp-app.html`, com JS e CSS inline. Veja [MCP App](/aprender/mcp-app) |
+| `compileHints` | `false` | Compile hint do V8 nos arquivos que rodam ao montar. Veja [Carregamento](/aprender/carregamento#compile-hints-do-v8) |
 | `versionDir` | `false` | Grava o build em `dist/<versão>/`. Veja [Canary e rollback](/aprender/canary) |
 | `shared` | nenhum | Obsoleta. Use `dedupe` |
 
