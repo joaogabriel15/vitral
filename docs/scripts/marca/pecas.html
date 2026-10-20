@@ -1,0 +1,178 @@
+<!doctype html>
+<!--
+  Fonte das imagens da marca (docs/public/marca/*.png).
+  Gere de novo com: pnpm --dir docs marca
+  ?tema=escuro troca as cores. Cada peça é um elemento com id.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --cobalto: #2563eb;
+    --esmeralda: #059669;
+    --rubi: #e11d48;
+    --ambar: #d97706;
+    --violeta: #7c3aed;
+    --chumbo: #161b26;
+    --fundo: #ffffff;
+    --fundo-2: #f6f7f9;
+    --borda: #e3e6eb;
+    --texto: #0f172a;
+    --texto-2: #475569;
+    --codigo: #f1f3f6;
+  }
+  .escuro {
+    --fundo: #161b26;
+    --fundo-2: #1d2330;
+    --borda: #2b3242;
+    --texto: #f1f5f9;
+    --texto-2: #a3adbf;
+    --codigo: #10141d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; color: var(--texto); background: transparent; }
+  code, .mono { font-family: 'JetBrains Mono', monospace; }
+  .peca { background: var(--fundo); position: relative; overflow: hidden; margin-bottom: 40px; }
+  .faixa { position: absolute; left: 0; right: 0; top: 0; height: 8px;
+    background: linear-gradient(90deg, var(--cobalto) 0 25%, var(--esmeralda) 25% 50%, var(--ambar) 50% 75%, var(--rubi) 75%); }
+  .escuro .logo .chumbo { stroke: rgba(255,255,255,.14); }
+
+  /* Imagem de compartilhamento: 1200x630 */
+  #og { width: 1200px; height: 630px; padding: 88px 88px 0; background: var(--chumbo); color: #f1f5f9; }
+  #og .topo { display: flex; align-items: center; gap: 44px; }
+  #og .logo { width: 196px; height: 196px; flex: none; }
+  #og h1 { font-size: 132px; font-weight: 800; letter-spacing: -5px; line-height: 1; }
+  #og .lema { font-size: 40px; font-weight: 600; margin-top: 14px; color: #f1f5f9; }
+  #og .desc { font-size: 31px; line-height: 1.4; color: #a3adbf; margin-top: 52px; max-width: 1000px; }
+  #og .rodape { position: absolute; left: 88px; right: 88px; bottom: 56px; display: flex; justify-content: space-between; align-items: center; font-size: 25px; color: #a3adbf; }
+  #og .rodape code { color: #f1f5f9; background: #0d1018; border: 1px solid #2b3242; padding: 10px 18px; border-radius: 10px; font-size: 24px; }
+  #og .logo .chumbo { stroke: rgba(255,255,255,.14); }
+
+  /* Banner do README: 1280x320 */
+  #banner { width: 1280px; height: 320px; display: flex; align-items: center; justify-content: center; gap: 48px; }
+  #banner .logo { width: 168px; height: 168px; }
+  #banner h1 { font-size: 104px; font-weight: 800; letter-spacing: -4px; line-height: 1; }
+  #banner .lema { font-size: 32px; font-weight: 600; margin-top: 12px; }
+  #banner .desc { font-size: 22px; color: var(--texto-2); margin-top: 10px; }
+
+  /* Diagrama "como funciona": 1200 de largura */
+  #diagrama { width: 1200px; padding: 56px 48px 44px; }
+  #diagrama .grade { display: grid; grid-template-columns: 320px 76px 290px 76px minmax(0, 1fr); align-items: start; }
+  #diagrama .seta { align-self: center; margin-top: 30px; }
+  #diagrama .titulo-col { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-2); margin-bottom: 14px; }
+  .equipe { border: 1px solid var(--borda); border-left: 6px solid var(--cor); border-radius: 10px; padding: 14px 16px; background: var(--fundo-2); margin-bottom: 14px; }
+  .equipe:last-child { margin-bottom: 0; }
+  .equipe b { font-size: 19px; display: block; }
+  .equipe span { font-size: 15px; color: var(--texto-2); }
+  .seta { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--texto-2); font-size: 13px; text-align: center; gap: 6px; }
+  .seta svg { width: 56px; height: 20px; }
+  .cdn { border: 1px solid var(--borda); border-radius: 12px; padding: 16px; background: var(--fundo-2); }
+  .cdn .arq { font-size: 15px; padding: 9px 12px; border-radius: 8px; background: var(--codigo); margin-top: 10px; border-left: 4px solid var(--cor); }
+  .cdn .arq:first-of-type { margin-top: 0; }
+  .host { border: 2px solid var(--texto); border-radius: 12px; overflow: hidden; }
+  .host .barra { display: flex; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--borda); background: var(--fundo-2); align-items: center; }
+  .host .barra i { width: 10px; height: 10px; border-radius: 50%; background: var(--borda); display: block; }
+  .host .barra span { margin-left: 8px; font-size: 13px; color: var(--texto-2); }
+  .host pre { font-size: 14px; line-height: 1.55; padding: 12px 14px; background: var(--codigo); border-bottom: 1px solid var(--borda); }
+  .host .pagina { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; }
+  .host .area { border-radius: 8px; padding: 10px; font-size: 14px; font-weight: 600; color: #fff; background: var(--cor); }
+  .host .area small { display: block; font-weight: 500; opacity: .85; font-size: 12px; }
+  .host .area.larga { grid-column: 1 / -1; }
+  .garantias { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 34px; }
+  .garantias div { border-top: 4px solid var(--cor); padding-top: 10px; }
+  .garantias b { font-size: 17px; display: block; }
+  .garantias span { font-size: 14.5px; color: var(--texto-2); line-height: 1.45; display: block; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<template id="logo">
+  <svg class="logo" viewBox="0 0 128 128" aria-hidden="true">
+    <path class="chumbo" d="M64,6 L122,64 L64,122 L6,64 Z" fill="#0f172a" stroke="#0f172a" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M64,16 L86,38 L64,60 L42,38 Z" fill="#3b82f6"/>
+    <path d="M90,42 L112,64 L90,86 L68,64 Z" fill="#10b981"/>
+    <path d="M64,68 L86,90 L64,112 L42,90 Z" fill="#f43f5e"/>
+    <path d="M38,42 L60,64 L38,86 L16,64 Z" fill="#f59e0b"/>
+    <path d="M64,54 L74,64 L64,74 L54,64 Z" fill="#8b5cf6" stroke="#0f172a" stroke-width="5" stroke-linejoin="round"/>
+  </svg>
+</template>
+
+<section id="og" class="peca">
+  <div class="faixa"></div>
+  <div class="topo">
+    <i data-logo></i>
+    <div>
+      <h1>vitral</h1>
+      <p class="lema">Feito de partes. Visto como um todo.</p>
+    </div>
+  </div>
+  <p class="desc">Micro-frontends de qualquer framework numa página só. O host não precisa de configuração de build: só da URL de cada remote.</p>
+  <div class="rodape">
+    <span>React · Next · Vue · Nuxt · Angular · Svelte · Solid · Preact · Lit · JS</span>
+    <code>npm i vitral</code>
+  </div>
+</section>
+
+<section id="banner" class="peca">
+  <div class="faixa"></div>
+  <i data-logo></i>
+  <div>
+    <h1>vitral</h1>
+    <p class="lema">Feito de partes. Visto como um todo.</p>
+    <p class="desc">Micro-frontends de qualquer framework numa página só.</p>
+  </div>
+</section>
+
+<section id="diagrama" class="peca">
+  <div class="grade">
+    <div>
+      <p class="titulo-col">Cada equipe</p>
+      <div class="equipe" style="--cor: var(--cobalto)"><b>Carrinho · React</b><span>vite build gera vitral.json, JS e CSS</span></div>
+      <div class="equipe" style="--cor: var(--esmeralda)"><b>Busca · Vue</b><span>vite build gera vitral.json, JS e CSS</span></div>
+      <div class="equipe" style="--cor: var(--rubi)"><b>Conta · Angular</b><span>vite build gera vitral.json, JS e CSS</span></div>
+    </div>
+    <div class="seta">
+      <svg viewBox="0 0 56 20"><path d="M2 10H50M42 3l9 7-9 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      deploy<br>próprio
+    </div>
+    <div>
+      <p class="titulo-col">Qualquer CDN</p>
+      <div class="cdn">
+        <div class="arq mono" style="--cor: var(--cobalto)">/carrinho/vitral.json</div>
+        <div class="arq mono" style="--cor: var(--esmeralda)">/busca/vitral.json</div>
+        <div class="arq mono" style="--cor: var(--rubi)">/conta/vitral.json</div>
+      </div>
+    </div>
+    <div class="seta">
+      <svg viewBox="0 0 56 20"><path d="M2 10H50M42 3l9 7-9 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      baixa em<br>runtime
+    </div>
+    <div>
+      <p class="titulo-col">Host em qualquer framework</p>
+      <div class="host">
+        <div class="barra"><i></i><i></i><i></i><span>loja.empresa.com</span></div>
+<pre class="mono">configure({ remotes })</pre>
+        <div class="pagina">
+          <div class="area larga" style="--cor: var(--esmeralda)">busca<small>Vue</small></div>
+          <div class="area" style="--cor: var(--rubi)">conta<small>Angular</small></div>
+          <div class="area" style="--cor: var(--cobalto)">carrinho<small>React</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="garantias">
+    <div style="--cor: var(--cobalto)"><b>Sem build no host</b><span>Só a URL do vitral.json de cada remote.</span></div>
+    <div style="--cor: var(--esmeralda)"><b>CSS isolado</b><span>O CSS de um remote não muda o host nem os outros.</span></div>
+    <div style="--cor: var(--ambar)"><b>Erro isolado</b><span>Um remote fora do ar mostra o próprio erro. O resto da página funciona.</span></div>
+    <div style="--cor: var(--rubi)"><b>Hash conferido</b><span>Com integrity, o JS só roda se o SHA&#8209;384 bater.</span></div>
+  </div>
+</section>
+
+<script>
+  if (new URLSearchParams(location.search).get('tema') === 'escuro') document.body.classList.add('escuro')
+  const logo = document.getElementById('logo').content
+  for (const slot of document.querySelectorAll('[data-logo]')) slot.replaceWith(logo.cloneNode(true))
+</script>
+</body>
+</html>

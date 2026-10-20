@@ -7,7 +7,8 @@
     "build": "typedoc && vitepress build",
     "preview": "vitepress preview",
     "api": "typedoc",
-    "check": "node scripts/check-erros.mjs"
+    "check": "node scripts/check-erros.mjs",
+    "marca": "node scripts/marca.mjs"
   },
   "devDependencies": {
     "typedoc": "0.28.20",

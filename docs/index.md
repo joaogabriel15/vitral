@@ -17,8 +17,34 @@ import { withBase } from 'vitepress'
   <p class="vt-desc">Junte micro-frontends de qualquer framework numa página só, sem configuração de build no host.</p>
   <div class="vt-actions">
     <a class="vt-btn primary" :href="withBase('/aprender/configurar')">Começar</a>
-    <a class="vt-btn" :href="withBase('/referencia/')">Referência</a>
+    <a class="vt-btn" :href="withBase('/por-que')">Por que o vitral</a>
   </div>
+</div>
+
+<div class="vt-wide">
+
+<div class="vt-numeros">
+  <div><b>3,4 kB</b><span>código de host mínimo, com brotli</span></div>
+  <div><b>-57%</b><span>de tempo na primeira visita contra o Module Federation com React compartilhado</span></div>
+  <div><b>4,6x</b><span>mais rápido para trocar de área que o Next.js Multi-Zones</span></div>
+  <div><b>10</b><span>frameworks, como host e como remote</span></div>
+</div>
+
+<p class="vt-fonte">Medido no Chromium com rede Slow 4G, mediana de 7 visitas. <a :href="withBase('/aprender/benchmark')">Método e onde o vitral perde</a>.</p>
+
+</div>
+
+<div class="vt-wide">
+
+## Como funciona
+
+<picture class="vt-diagrama">
+  <img class="so-claro" :src="withBase('/marca/como-funciona.png')" alt="Três equipes (React, Vue, Angular) publicam um vitral.json cada uma num CDN. O host lê as URLs com configure e monta os três remotes na mesma página.">
+  <img class="so-escuro" :src="withBase('/marca/como-funciona-escuro.png')" alt="">
+</picture>
+
+Cada equipe publica o próprio pedaço da página com `vite build`. O host recebe a URL de cada pedaço e monta tudo no navegador. [Por que o vitral](/por-que) explica quando usar e quando não usar.
+
 </div>
 
 <div class="vt-section">

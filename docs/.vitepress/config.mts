@@ -19,6 +19,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
   {
     text: 'Começar',
     items: [
+      { text: 'Por que o vitral', link: '/por-que' },
       { text: 'Configurar host e remote', link: '/aprender/configurar' },
       { text: 'Início rápido', link: '/aprender/' },
       { text: 'Instalação', link: '/aprender/instalacao' },
@@ -144,7 +145,31 @@ export default defineConfig({
   rewrites: { 'erros/README.md': 'erros/index.md' },
   srcExclude: ['**/node_modules/**'],
   sitemap: { hostname: SITE },
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: `${BASE}logo.svg` }]],
+  head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: `${BASE}logo.svg` }],
+    ['meta', { name: 'theme-color', content: '#161b26' }],
+    ['meta', { property: 'og:type', content: 'website' }],
+    ['meta', { property: 'og:site_name', content: 'vitral' }],
+    ['meta', { property: 'og:locale', content: 'pt_BR' }],
+    ['meta', { property: 'og:image', content: `${SITE}marca/og.png` }],
+    ['meta', { property: 'og:image:width', content: '1200' }],
+    ['meta', { property: 'og:image:height', content: '630' }],
+    ['meta', { property: 'og:image:alt', content: 'vitral. Micro-frontends de qualquer framework numa página só.' }],
+    ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
+    ['meta', { name: 'twitter:image', content: `${SITE}marca/og.png` }],
+  ],
+
+  // Título e descrição da página em cada link compartilhado.
+  transformPageData(page) {
+    const title = page.frontmatter.title ?? page.title
+    const description = page.frontmatter.description ?? page.description
+    page.frontmatter.head ??= []
+    page.frontmatter.head.push(
+      ['meta', { property: 'og:title', content: title ? `${title} | vitral` : 'vitral' }],
+      ['meta', { property: 'og:description', content: description || 'Micro-frontends de qualquer framework numa página só, sem configuração de build no host.' }],
+      ['meta', { property: 'og:url', content: SITE + page.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '') }],
+    )
+  },
 
   markdown: {
     container: { tipLabel: 'Nota', warningLabel: 'Atenção', dangerLabel: 'Perigo', infoLabel: 'Info', detailsLabel: 'Detalhes' },
@@ -153,15 +178,18 @@ export default defineConfig({
   themeConfig: {
     logo: '/logo.svg',
     nav: [
+      { text: 'Por que', link: '/por-que' },
       { text: 'Aprender', link: '/aprender/configurar', activeMatch: '^/(aprender|frameworks|migracao)/' },
       { text: 'Referência', link: '/referencia/', activeMatch: '^/(referencia|api)/' },
       { text: 'Erros', link: '/erros/', activeMatch: '^/erros/' },
+      { text: 'Benchmark', link: '/aprender/benchmark' },
       { text: 'npm', link: 'https://www.npmjs.com/package/vitral' },
     ],
     sidebar: {
       '/aprender/': aprender,
       '/frameworks/': aprender,
       '/migracao/': aprender,
+      '/por-que': aprender,
       '/referencia/': referencia,
       '/api/': [{ text: 'Referência', link: '/referencia/' }, { text: 'TypeDoc', link: '/api/' }, ...api],
       '/erros/': [
@@ -187,7 +215,7 @@ export default defineConfig({
         },
       },
     },
-    footer: { message: 'Licença MIT', copyright: 'Feito de partes. Visto como um todo.' },
+    footer: { message: `Licença MIT · <a href="${BASE}marca">Marca</a>`, copyright: 'Feito de partes. Visto como um todo.' },
     outline: { label: 'Nesta página' },
     docFooter: { prev: 'Anterior', next: 'Próximo' },
     darkModeSwitchLabel: 'Tema',
