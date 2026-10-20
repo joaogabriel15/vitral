@@ -32,7 +32,7 @@ slot.destroy()
 | `name` | Nome registrado |
 | `src` | URL do `vitral.json`. Dispensa `configure` |
 | `props` | Props iniciais |
-| `isolate` | `'none'`, `'shadow'` ou `'iframe'` |
+| `isolate` | `'none'`, `'shadow'`, `'iframe'` ou `'reframe'` |
 | `priority` | `'high'` |
 | `styles` | Estilos do host no Shadow DOM |
 | `onStatus(status, erro)` | Chamado a cada mudança: `'loading'`, `'ready'` ou `'error'` |

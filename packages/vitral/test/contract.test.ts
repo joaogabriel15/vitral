@@ -94,14 +94,16 @@ describe('contrato: interface de erro', () => {
     carrinho({ version: '3.0.0' }, '^2')
     const got: (string | undefined)[] = []
     const s = createSlot(box(), { name: 'carrinho', onStatus: (status, e) => got.push(e?.code ?? status) })
-    await flush()
-    expect(s.status).toBe('error')
-    expect(got).toEqual(['loading', 'CONTRACT_MISMATCH'])
-    carrinho({ version: '2.0.0' }, '^2')
-    s.retry()
-    await flush()
-    expect(s.status).toBe('ready')
-    s.destroy()
+    // O import() do remote leva um número variável de ticks: espera o estado, não os ticks.
+    try {
+      await vi.waitFor(() => expect(s.status).toBe('error'))
+      expect(got).toEqual(['loading', 'CONTRACT_MISMATCH'])
+      carrinho({ version: '2.0.0' }, '^2')
+      s.retry()
+      await vi.waitFor(() => expect(s.status).toBe('ready'))
+    } finally {
+      s.destroy()
+    }
   })
 
   it('<Remote> mostra o error: o React da página não serve ao remote', async () => {
@@ -109,7 +111,8 @@ describe('contrato: interface de erro', () => {
     const div = box()
     const root = createRoot(div)
     await act(async () => root.render(h(Remote, { name: 'carrinho', fallback: h('i', null, 'carregando'), error: (e: RemoteError) => h('b', null, e.code) })))
-    await act(() => flush())
+    // Um act() por vez: o React recusa act() sobreposto.
+    for (let i = 0; i < 100 && div.textContent !== 'CONTRACT_MISMATCH'; i++) await act(() => flush(1))
     expect(div.textContent).toBe('CONTRACT_MISMATCH')
     expect(montagens).not.toHaveBeenCalled()
     act(() => root.unmount())

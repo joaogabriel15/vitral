@@ -8,6 +8,7 @@ O CSS de cada remote vale só dentro dele. O host não precisa conhecer as class
 | --- | --- | --- | --- |
 | Escopo (padrão) | nada | Não | Sim, o que não for sobrescrito |
 | Shadow DOM | `isolate="shadow"` | Não | Só o que herda (fonte, cor, variáveis CSS) |
+| [Reframe](./reframe) | `isolate="reframe"` | Não | Só o que herda (fonte, cor, variáveis CSS) |
 | [Iframe](./iframe) | `isolate="iframe"` | Não | Não |
 
 ## Escopo

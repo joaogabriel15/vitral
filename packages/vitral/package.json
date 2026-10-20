@@ -128,6 +128,18 @@
       "types": "./dist/federation.d.ts",
       "import": "./dist/federation.js"
     },
+    "./vitals": {
+      "types": "./dist/vitals.d.ts",
+      "import": "./dist/vitals.js"
+    },
+    "./dict": {
+      "types": "./dist/dict.d.ts",
+      "import": "./dist/dict.js"
+    },
+    "./prefetch": {
+      "types": "./dist/prefetch.d.ts",
+      "import": "./dist/prefetch.js"
+    },
     "./edge": {
       "types": "./dist/edge.d.ts",
       "import": "./dist/edge.js"
@@ -152,6 +164,7 @@
   "peerDependencies": {
     "@angular/core": ">=17",
     "@angular/platform-browser": ">=17",
+    "happy-dom": ">=15",
     "preact": ">=10",
     "react": ">=18",
     "react-dom": ">=18",
@@ -190,6 +203,9 @@
       "optional": true
     },
     "typescript": {
+      "optional": true
+    },
+    "happy-dom": {
       "optional": true
     }
   },
@@ -230,6 +246,7 @@
       "import": "{ configure, createSlot }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -247,6 +264,7 @@
       "import": "{ RemoteError, __reset, component, configure, createEventBus, createSlot, defineRemote, events, html, loadRemote, mountRemote, navigate, preload, register, render, unsafeHTML }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -261,7 +279,7 @@
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.59 kB"
+      "limit": "2.61 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
@@ -287,6 +305,7 @@
       "import": "{ configure, createSlot, provide, shared, batch }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -296,7 +315,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "5.34 kB"
+      "limit": "5.35 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -304,6 +323,7 @@
       "import": "{ configure, createSlot, provide, shared, batch, persist, syncTabs }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -314,6 +334,15 @@
         "./hydrate-*"
       ],
       "limit": "5.57 kB"
+    },
+    {
+      "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
+      "path": "dist/reframe-*.js",
+      "ignore": [
+        "./chunk-*",
+        "./shadow-*"
+      ],
+      "limit": "2.8 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -339,6 +368,7 @@
         "react",
         "react-dom",
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -357,6 +387,7 @@
       "ignore": [
         "vue",
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -374,6 +405,7 @@
       "import": "{ defineVitralElement }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -397,6 +429,7 @@
       "limit": "6.2 kB",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -411,10 +444,11 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.13 kB",
+      "limit": "9.15 kB",
       "ignore": [
         "./overrides-*",
         "./channel-*",
+        "./reframe-*",
         "./hydrate-*"
       ]
     },
@@ -431,6 +465,22 @@
       "limit": "1.25 kB"
     },
     {
+      "name": "prefetch",
+      "path": "dist/prefetch.js",
+      "import": "{ prefetch }",
+      "limit": "3.25 kB",
+      "ignore": [
+        "./shadow-*",
+        "./overrides-*",
+        "./sri-*",
+        "./dedupe-*",
+        "./contract-*",
+        "./expose-*",
+        "./capture-*",
+        "./channel-*"
+      ]
+    },
+    {
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
@@ -438,13 +488,26 @@
       "ignore": [
         "./overrides-*",
         "./channel-*",
+        "./reframe-*",
         "./hydrate-*"
       ]
     },
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "11.97 kB"
+      "limit": "12.01 kB"
+    },
+    {
+      "name": "vitals (Web Vitals por remote)",
+      "path": "dist/vitals.js",
+      "import": "{ vitals }",
+      "limit": "1.4 kB"
+    },
+    {
+      "name": "dict (middleware de servidor)",
+      "path": "dist/dict.js",
+      "import": "{ createDict }",
+      "limit": "1 kB"
     },
     {
       "name": "edge (gateway, no servidor)",
