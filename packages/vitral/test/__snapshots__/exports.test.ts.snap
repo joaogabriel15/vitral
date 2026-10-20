@@ -103,6 +103,13 @@ exports[`exports públicos > preact 1`] = `
 ]
 `;
 
+exports[`exports públicos > prefetch 1`] = `
+[
+  "prefetch",
+  "warm",
+]
+`;
+
 exports[`exports públicos > react 1`] = `
 [
   "Remote",

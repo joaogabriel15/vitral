@@ -24,6 +24,7 @@ const entries = {
   'single-spa': () => import('../src/single-spa'),
   federation: () => import('../src/federation'),
   dict: () => import('../src/dict'),
+  prefetch: () => import('../src/prefetch'),
 }
 
 describe('exports públicos', () => {
