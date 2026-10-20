@@ -248,7 +248,9 @@ describe('warm()', () => {
     configure({ remotes: { b: CDN + 'b/vitral.json' } })
     expect(await warm('b/Mini')).toBe(true)
     expect(urls(fetch).sort()).toEqual([CDN + 'b/b.css', CDN + 'b/remote.js', CDN + 'b/vitral.json'])
-    expect(fetch).toHaveBeenCalledWith(CDN + 'b/remote.js', { priority: 'low' })
+    // Mesmo modo de credenciais do fetchBytes da montagem: o WebKit só reaproveita o cache assim.
+    expect(fetch).toHaveBeenCalledWith(CDN + 'b/remote.js', { priority: 'low', credentials: 'omit' })
+    expect(fetch).toHaveBeenCalledWith(CDN + 'b/b.css', { priority: 'low', credentials: undefined })
     expect(document.head.querySelector('link[rel="modulepreload"]')).toBeNull()
   })
 
