@@ -43,7 +43,8 @@ Cada página mostra a assinatura, os parâmetros, o retorno e um exemplo.
 | [`vitral/testing`](./testing) | Remotes falsos em testes |
 | [`vitral/devtools`](./devtools) | Trocar URLs em desenvolvimento |
 | [`vitral/sentry`](./monitoramento#vitral-sentry) | Erros no Sentry |
-| [`vitral/otel`](./monitoramento#vitral-otel) | Erros no OpenTelemetry |
+| [`vitral/otel`](./monitoramento#vitral-otel) | Erros e Web Vitals no OpenTelemetry |
+| [`vitral/vitals`](./vitals) | Web Vitals por remote e por rota |
 | [`vitral/single-spa`](./single-spa) | App do single-spa como remote |
 | [`vitral/federation`](./federation) | Remote do Module Federation no host |
 | [CLI](./cli) | Tipos das props e migração |
