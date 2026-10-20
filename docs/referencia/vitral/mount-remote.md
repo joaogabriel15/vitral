@@ -23,7 +23,7 @@ carrinho.unmount()
 | `target` | Elemento que recebe o remote |
 | `name` | Nome registrado |
 | `props` | Props iniciais |
-| `options.isolate` | `'none'`, `'shadow'` ou `'iframe'` |
+| `options.isolate` | `'none'`, `'shadow'`, `'iframe'` ou `'reframe'` |
 | `options.priority` | `'high'` para baixar com prioridade |
 | `options.styles` | Estilos do host no Shadow DOM |
 | `options.onError` | Chamado quando o remote quebra depois de montado |
