@@ -4,7 +4,7 @@ Roda o remote num iframe com `sandbox`, sem acesso ao DOM, aos cookies e ao stor
 
 ## Quando usar
 
-Para código de terceiros ou legado que mexe em `window`. Para os outros casos, use o modo padrão ou Shadow DOM.
+Para código de terceiros ou legado que mexe em `window`. Para os outros casos, use o modo padrão ou Shadow DOM. Para isolar só o JS e manter o DOM na página, use [Reframe](./reframe).
 
 ## Código
 

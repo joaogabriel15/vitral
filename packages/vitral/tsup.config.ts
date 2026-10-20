@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { defineConfig } from 'tsup'
 
 export default defineConfig([
@@ -18,5 +19,14 @@ export default defineConfig([
     outExtension: () => ({ js: '.js' }),
     minify: true,
     target: 'es2022',
+    // O modo reframe não entra no arquivo único.
+    esbuildPlugins: [
+      {
+        name: 'embed-sem-reframe',
+        setup(build) {
+          build.onResolve({ filter: /^\.\/reframe$/ }, (args) => ({ path: join(args.resolveDir, 'reframe-embed.ts') }))
+        },
+      },
+    ],
   },
 ])
