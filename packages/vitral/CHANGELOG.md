@@ -1,5 +1,11 @@
 # vitral
 
+## 0.6.0
+
+### Minor Changes
+
+- [#82](https://github.com/joaogabriel15/vitral/pull/82) [`52a4a2d`](https://github.com/joaogabriel15/vitral/commit/52a4a2d166ab277706d73938d8cb5c96b68cf0b3) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Rotas com SSR, no lugar do Next.js Multi-Zones: `gateway({ routes })` renderiza o remote da rota dentro do `<vitral-outlet>` e manda os `Link` dele já na primeira visita (com a cópia própria do dedupe); o outlet hidrata esse HTML e troca de rota sem recarregar. O manifesto usado no SSR vai no HTML, e a hidratação não busca o `vitral.json` de novo. `reactRemote` agora exporta `hydrate`, e `vitral/react-server` traz `reactRender` para o `render` do gateway.
+
 ## 0.5.0
 
 ### Minor Changes
