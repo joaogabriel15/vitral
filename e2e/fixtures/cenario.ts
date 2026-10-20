@@ -51,7 +51,7 @@ export interface Host {
   /** Chama `configure()` do vitral na página. */
   configure(config: Record<string, unknown>): Promise<void>
   /** Monta um remote num `<section data-slot>` novo. */
-  montar(name: string, options?: { props?: Record<string, unknown>; isolate?: 'shadow' | 'none' }): Promise<void>
+  montar(name: string, options?: { props?: Record<string, unknown>; isolate?: 'shadow' | 'none' | 'iframe' | 'reframe' }): Promise<void>
   /** O `<section>` do remote: `data-status` é loading, ready ou error. */
   slot(name: string): ReturnType<Page['locator']>
   /** Espera o remote ficar pronto. */

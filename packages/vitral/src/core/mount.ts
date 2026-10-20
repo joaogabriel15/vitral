@@ -48,15 +48,14 @@ export function setFrameMounter(mounter: Mounter): void {
 async function mountOnce<P extends Props>(target: HTMLElement, name: string, props: P, options: MountOptions): Promise<MountedRemote<P>> {
   const p = protocol()
   await p.pending()
-  // Decide antes de baixar: no modo iframe o JS do remote nunca roda na página.
-  if ((options.isolate ?? registered(name)?.isolate ?? p.settings().isolate) === 'iframe') {
-    if (!frames) throw report(new RemoteError('MOUNT_FAILED', name, 'isolate="iframe" precisa de enableIframe(), de vitral/iframe'))
-    return frames(target, name, props, options).catch(fail)
-  }
-  const { module: mod, ...resolved } = await load(name, options.isolate, options.priority)
+  // Decide antes de baixar: nos modos iframe e reframe o JS do remote nunca roda na página.
+  const isolate = options.isolate ?? registered(name)?.isolate ?? p.settings().isolate
+  // Sem enableIframe(), o erro vem de `./reframe`: o texto dele fica fora do host mínimo.
+  if (isolate === 'iframe') return (frames ?? (await import('./reframe')).noFrames)(target, name, props, options).catch(fail)
+  // reframe: o JS roda num iframe oculto (`./reframe`, baixado só por quem usa) e o DOM fica no Shadow DOM.
+  const { module: mod, ...resolved } = await (isolate == 'reframe' ? (await import('./reframe')).load : load)(name, isolate, options.priority)
   const untrack = track(name, resolved)
   ctxHooks.watch?.(name)
-  const isolate = options.isolate ?? resolved.isolate ?? protocol().settings().isolate
   const label = resolved.name ?? name
 
   // Cada montagem ganha seu próprio elemento. Assim duas montagens no mesmo
@@ -73,7 +72,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
   // de custom elements do remote; `portal` fica dentro do shadow root.
   const [release, portal = document.body, shadowRoot = null, registry = customElements, el = target.appendChild(make())] = await injectStyles(
     resolved,
-    isolate === 'shadow' && target,
+    isolate > 'q' && target,
     make,
     options.styles,
   )
@@ -96,7 +95,7 @@ async function mountOnce<P extends Props>(target: HTMLElement, name: string, pro
       else console.error(err)
     },
     navigate,
-    protocol: protocol().protocol,
+    protocol: p.protocol,
     onActivate: on('vitral:activate'),
     onDeactivate: on('vitral:deactivate'),
   }

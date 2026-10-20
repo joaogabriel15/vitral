@@ -26,7 +26,7 @@ Chame antes de renderizar o primeiro remote.
 | `allowedOrigins` | página e URLs registradas | Origens permitidas. `['*']` libera tudo. Veja [SRI e origens](/aprender/seguranca) |
 | `timeout` | `15000` | Tempo máximo de cada download, em ms |
 | `retries` | `1` | Novas tentativas do JS em erro de rede ou `TIMEOUT` |
-| `isolate` | `'none'` | `'shadow'` ou `'iframe'` para todos os remotes |
+| `isolate` | `'none'` | `'shadow'`, `'iframe'` ou `'reframe'` para todos os remotes |
 | `styles` | nenhum | `{ inherit, mirrorTheme }`. Veja [Estilos](/aprender/estilos) |
 | `onMetric` | nenhum | Recebe `{ name, stage, start, duration }` de cada etapa. Veja [Carregamento](/aprender/carregamento#metricas) |
 | `onError` | nenhum | Recebe cada `RemoteError` de qualquer remote, uma vez. Veja [Erros](/aprender/erros#atribuicao-e-onerror-global) |

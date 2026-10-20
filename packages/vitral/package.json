@@ -226,6 +226,7 @@
       "import": "{ configure, createSlot }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -242,6 +243,7 @@
       "import": "{ RemoteError, __reset, component, configure, createEventBus, createSlot, defineRemote, events, html, loadRemote, mountRemote, navigate, preload, register, render, unsafeHTML }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -281,6 +283,7 @@
       "import": "{ configure, createSlot, provide, shared, batch }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -297,6 +300,7 @@
       "import": "{ configure, createSlot, provide, shared, batch, persist, syncTabs }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -306,6 +310,15 @@
         "./channel-*"
       ],
       "limit": "5.57 kB"
+    },
+    {
+      "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
+      "path": "dist/reframe-*.js",
+      "ignore": [
+        "./chunk-*",
+        "./shadow-*"
+      ],
+      "limit": "2.8 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -323,6 +336,7 @@
         "react",
         "react-dom",
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -340,6 +354,7 @@
       "ignore": [
         "vue",
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -356,6 +371,7 @@
       "import": "{ defineVitralElement }",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -378,6 +394,7 @@
       "limit": "6.12 kB",
       "ignore": [
         "./shadow-*",
+        "./reframe-*",
         "./overrides-*",
         "./sri-*",
         "./dedupe-*",
@@ -394,7 +411,8 @@
       "limit": "9.12 kB",
       "ignore": [
         "./overrides-*",
-        "./channel-*"
+        "./channel-*",
+        "./reframe-*"
       ]
     },
     {
@@ -416,13 +434,14 @@
       "limit": "6 kB",
       "ignore": [
         "./overrides-*",
-        "./channel-*"
+        "./channel-*",
+        "./reframe-*"
       ]
     },
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "11.95 kB"
+      "limit": "11.99 kB"
     }
   ]
 }
