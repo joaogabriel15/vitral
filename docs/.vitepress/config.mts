@@ -122,6 +122,7 @@ const referencia: DefaultTheme.SidebarItem[] = [
     items: [
       ...['vite', 'routes', 'iframe', 'testing', 'devtools', 'single-spa', 'federation'].map((p) => ({ text: `vitral/${p}`, link: `/referencia/${p}` })),
       { text: 'vitral/sentry e vitral/otel', link: '/referencia/monitoramento' },
+      { text: 'vitral/vitals', link: '/referencia/vitals' },
       { text: 'CLI', link: '/referencia/cli' },
     ],
   },
