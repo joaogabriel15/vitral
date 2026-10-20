@@ -1,7 +1,7 @@
 {
   "name": "vitral",
   "version": "0.7.0",
-  "description": "Micro-frontends sem burocracia: um contrato mount/unmount, carregamento em runtime e adaptadores para React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS/TS puro.",
+  "description": "Micro-frontends de qualquer framework numa página só, sem configuração de build no host. React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS puro.",
   "keywords": [
     "micro-frontend",
     "micro-frontends",
@@ -29,7 +29,7 @@
     "web-components",
     "typescript"
   ],
-  "homepage": "https://github.com/joaogabriel15/vitral#readme",
+  "homepage": "https://joaogabriel15.github.io/vitral/",
   "bugs": {
     "url": "https://github.com/joaogabriel15/vitral/issues"
   },
