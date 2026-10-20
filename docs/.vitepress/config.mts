@@ -35,6 +35,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Carregamento', link: '/aprender/carregamento' },
       { text: 'Erros', link: '/aprender/erros' },
       { text: 'Testes', link: '/aprender/testes' },
+      { text: 'Contratos entre host e remote', link: '/aprender/contratos' },
       { text: 'Deploy', link: '/aprender/deploy' },
       { text: 'Vários repositórios', link: '/aprender/varios-repositorios' },
       { text: 'Registro e agentes', link: '/aprender/registro' },
@@ -53,6 +54,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Dedupe de dependências', link: '/aprender/dedupe' },
       { text: 'Atualização sem reload', link: '/aprender/atualizacoes' },
       { text: 'Canary e rollback', link: '/aprender/canary' },
+      { text: 'Dicionários de compressão', link: '/aprender/dicionarios' },
       { text: 'SSR', link: '/aprender/ssr' },
       { text: 'Desenvolvimento e HMR', link: '/aprender/desenvolvimento' },
       { text: 'Benchmark contra o MF', link: '/aprender/benchmark' },
@@ -123,6 +125,7 @@ const referencia: DefaultTheme.SidebarItem[] = [
     items: [
       ...['vite', 'routes', 'iframe', 'testing', 'devtools', 'single-spa', 'federation'].map((p) => ({ text: `vitral/${p}`, link: `/referencia/${p}` })),
       { text: 'vitral/sentry e vitral/otel', link: '/referencia/monitoramento' },
+      { text: 'vitral/vitals', link: '/referencia/vitals' },
       { text: 'CLI', link: '/referencia/cli' },
     ],
   },

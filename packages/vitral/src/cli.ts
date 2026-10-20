@@ -3,8 +3,10 @@ import { createRequire } from 'node:module'
 import { canal } from './cli/canal'
 import { serveMcp } from './cli/mcp'
 import { add, registry } from './cli/registry'
+import { dict } from './cli/dict'
 import { doctorCli } from './cli/doctor'
 import { migrate, type MigrateSource } from './cli/migrate'
+import { test } from './cli/test'
 import { flag, types } from './cli/types'
 
 const AJUDA = `Uso:
@@ -16,6 +18,9 @@ const AJUDA = `Uso:
                 [--contract faixa] [--max-kb n] [--json]
   vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
   vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
+  vitral test [--contract arquivo|pasta ...] [--since url|arquivo] [--dir dist] [--entry arquivo]
+              [--types vitral.d.ts]
+  vitral dict <dist> --from <dist-anterior> [--from ...] [--level n] [--no-dcb]
 
   types     Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
             --check só confere se o hash de cada manifesto ainda é o
@@ -33,7 +38,16 @@ const AJUDA = `Uso:
             --dry-run só mostra o que mudaria, sem escrever.
   canal     Cria ou edita o canal de um remote (canary e rollback) e mostra
             como ficou. --stable é obrigatória ao criar; --canary off tira a
-            canary; --percent vai de 0 a 100.`
+            canary; --percent vai de 0 a 100.
+  test      No CI do remote. --contract monta o build em happy-dom com cada
+            caso gravado pelo host (record() de vitral/testing) e falha se o
+            mount quebrar, se um evento que o host escuta sumir ou se as props
+            gravadas não baterem com o Props local. --since compara o Props
+            do vitral.d.ts publicado com o local e falha nas mudanças que
+            quebram o host.
+  dict      Pré-comprime cada arquivo do dist com a versão anterior dele
+            como dicionário (.dcz e, com o binário brotli, .dcb) e grava
+            vitral-dict.json para o middleware vitral/dict.`
 
 const falhou = (err: Error) => {
   console.error(err.message)
@@ -107,6 +121,21 @@ if (command === 'types') {
   const percent = flag(args, '--percent')
   try {
     canal({ file: args[0], stable, canary, percent: percent === undefined ? undefined : Number(percent) })
+  } catch (err) {
+    falhou(err as Error)
+  }
+} else if (command === 'test') {
+  const contracts: string[] = []
+  for (let c = flag(args, '--contract'); c !== undefined; c = flag(args, '--contract')) contracts.push(c)
+  finish(test({ contracts, since: flag(args, '--since'), dir: flag(args, '--dir'), entry: flag(args, '--entry'), types: flag(args, '--types') }))
+} else if (command === 'dict' && args.length) {
+  const from: string[] = []
+  for (let f = flag(args, '--from'); f !== undefined; f = flag(args, '--from')) from.push(f)
+  const level = flag(args, '--level')
+  const noDcb = bool(args, '--no-dcb')
+  try {
+    if (!from.length) throw new Error('[vitral] dict precisa de --from <dist-anterior>')
+    dict({ dist: args[0], from, level: level === undefined ? undefined : Number(level), brotli: noDcb ? false : undefined })
   } catch (err) {
     falhou(err as Error)
   }
