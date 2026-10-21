@@ -217,7 +217,7 @@
     "@angular/common": "^22.2.2",
     "@angular/compiler": "^22.2.2",
     "@angular/core": "^22.2.2",
-    "@angular/platform-browser": "^22.2.2",
+    "@angular/platform-browser": "^22.2.3",
     "@arethetypeswrong/cli": "^0.18.5",
     "@size-limit/preset-small-lib": "^11.2.0",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
