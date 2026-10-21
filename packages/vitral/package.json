@@ -228,7 +228,7 @@
     "@types/react-dom": "^19.0.0",
     "@vitest/coverage-v8": "4.1.11",
     "happy-dom": "^20.0.0",
-    "preact": "^10.29.8",
+    "preact": "^11.0.1",
     "publint": "^0.3.25",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
