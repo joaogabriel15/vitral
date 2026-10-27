@@ -119,6 +119,7 @@ exports[`exports públicos > next 1`] = `
 exports[`exports públicos > next-config 1`] = `
 [
   "HOST_CONFIG",
+  "devRemotes",
   "hostModule",
   "remoteHeaders",
   "remoteRewrites",

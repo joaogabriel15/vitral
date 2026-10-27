@@ -39,7 +39,7 @@ vi.mock('../src/react', () => ({
 import { interceptNavigation, NextRemote, remoteFor } from '../src/next-host'
 import { protocol } from '../src/core/state'
 import { preload } from '../src/react'
-import { hostModule, remoteHeaders, remoteRewrites, sharedGroups, throughAlias, withVitral } from '../src/next-config'
+import { devRemotes, hostModule, remoteHeaders, remoteRewrites, sharedGroups, throughAlias, withVitral } from '../src/next-config'
 
 /** Navigation API mínima: o teste dispara os eventos `navigate`. */
 function navigation() {
@@ -175,6 +175,14 @@ describe('vitral/next-config', () => {
     expect(throughAlias('@acme/ui/routes', { '@acme/ui$': ui })).toBe('@acme/ui/routes')
     expect(throughAlias('@acme/ui/routes', {})).toBe('@acme/ui/routes')
     expect(hostModule(remotes, { '@acme/ui': { version: '0.2.59', specs: ['@acme/ui/routes'] } }, { '@acme/ui': ui })).toContain(`import(${JSON.stringify(join(ui, 'src/routes.ts'))})`)
+  })
+
+  it('devUrl só vale em dev, apontando para o vitral.json do dev server', () => {
+    const r = { delivery: { url: '/d/vitral.json', basePath: '/d', devUrl: 'http://localhost:5173' }, outro: { url: '/o/vitral.json', basePath: '/o' } }
+    expect(devRemotes(r, false)).toBe(r)
+    expect(devRemotes(r, true).delivery.url).toBe('http://localhost:5173/vitral.json')
+    expect(devRemotes({ x: { url: '/x.json', basePath: '/x', devUrl: 'http://localhost:5174/m.json' } }, true).x.url).toBe('http://localhost:5174/m.json')
+    expect(devRemotes(r, true).outro.url).toBe('/o/vitral.json')
   })
 
   it('rewrites das rotas públicas e headers de cache dos arquivos do remote', () => {

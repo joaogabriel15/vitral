@@ -53,6 +53,12 @@ export interface NextRemoteConfig {
    * remote servido pela mesma origem do host.
    */
   integrity?: false
+  /**
+   * Em `next dev`, o dev server do remote (`http://localhost:5173`): o
+   * remote vem dele, com HMR, sem `?vitral=`. A CSP de dev do host precisa
+   * liberar essa origem em `script-src` e em `connect-src` (`ws:` do HMR).
+   */
+  devUrl?: string
 }
 
 export interface WithVitralOptions {
@@ -147,6 +153,14 @@ export function hostModule(remotes: Record<string, NextRemoteConfig>, groups: Re
 /** Pasta do `vitral.json` de um remote servido pelo próprio host, ou nada. */
 const localDir = (url: string) => (url.startsWith('/') && !url.startsWith('//') ? url.slice(0, url.lastIndexOf('/') + 1) : undefined)
 
+/** Em dev, `devUrl` no lugar de `url` (o manifesto do dev server, em `/vitral.json`). */
+export function devRemotes(remotes: Record<string, NextRemoteConfig>, dev: boolean): Record<string, NextRemoteConfig> {
+  if (!dev) return remotes
+  return Object.fromEntries(
+    Object.entries(remotes).map(([name, r]) => [name, r.devUrl ? { ...r, url: /\.json(\?|$)/.test(r.devUrl) ? r.devUrl : r.devUrl.replace(/\/?$/, '/vitral.json') } : r]),
+  )
+}
+
 export function remoteRewrites(remotes: Record<string, NextRemoteConfig>): Rewrite[] {
   return Object.values(remotes).flatMap((r) =>
     (r.routes ?? []).filter((x) => x.public !== x.zone).map((x) => ({ source: `${x.public}/:path*`, destination: `${x.zone}/:path*` })),
@@ -173,7 +187,7 @@ export function withVitral(nextConfig: NextConfig, options: WithVitralOptions): 
   const groups = sharedGroups(dir, options.share ?? [])
   const emit = (alias?: Record<string, unknown>) => {
     mkdirSync(dirname(file), { recursive: true })
-    writeFileSync(file, hostModule(options.remotes, groups, alias))
+    writeFileSync(file, hostModule(devRemotes(options.remotes, process.env.NODE_ENV === 'development'), groups, alias))
   }
   emit()
   const ours = remoteRewrites(options.remotes)

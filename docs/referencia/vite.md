@@ -36,6 +36,8 @@ export default { plugins: [react(), vitral({ entry: 'src/remote.tsx', dedupe: ['
 | `target` | nenhum | `'mcp-app'`: gera só `mcp-app.html`, com JS e CSS inline. Veja [MCP App](/aprender/mcp-app) |
 | `compileHints` | `false` | Compile hint do V8 nos arquivos que rodam ao montar. Veja [Carregamento](/aprender/carregamento#compile-hints-do-v8) |
 | `versionDir` | `false` | Grava o build em `dist/<versão>/`. Veja [Canary e rollback](/aprender/canary) |
+| `next` | `false` | Builda código escrito para Next.js (`next/*`, `NEXT_PUBLIC_*`, `paths` do tsconfig, `.svg` como componente). Veja [Next.js](/frameworks/next#codigo-escrito-para-next) |
+| `sideEffectFree` | nenhum | Pacotes tratados como sem efeitos colaterais, menos o CSS. Para pacote publicado como código-fonte sem `sideEffects` no `package.json` |
 | `shared` | nenhum | Obsoleta. Use `dedupe` |
 
 ## Saída
@@ -55,3 +57,4 @@ Com `target: 'mcp-app'`, só `dist/mcp-app.html`.
 
 - Um `export default` que já tem `mount` é usado como está.
 - Em `vite dev`, serve um `vitral.json` de desenvolvimento, com CORS e sem SRI.
+- O build dividido lista em `split.lazy` os chunks que o remote só baixa depois (`import()` das rotas), para `preload(nome, { routes: true })`.

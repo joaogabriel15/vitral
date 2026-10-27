@@ -442,3 +442,4 @@ function contractOf(version: string | undefined, groups: Group[]): Pick<RemoteMa
 }
 
 export { vitral }
+export type { NextOptions } from './vite/next'
