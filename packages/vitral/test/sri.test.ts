@@ -226,6 +226,14 @@ describe('módulos de teste do próprio remote (CSP sem data: e blob:)', () => {
     expect(tested).toEqual(probe.map((u) => u + '?preload'))
   })
 
+  it('módulos de teste de outra origem não valem: fica com o caminho 3', async () => {
+    browser({ map: 'ok', preload: (href) => !href.startsWith(PROBE_PREFIX) })
+    csp()
+    const other: [string, string] = ['https://cdn.outro.example/split/vitral-probe.js', 'https://cdn.outro.example/split/vitral-probe-x.js']
+    expect(await (await load())({ ...build, probe: other })).toBeUndefined()
+    expect(JSON.stringify([...document.head.querySelectorAll('script[type="importmap"]')].map((s) => s.textContent))).not.toContain('cdn.outro')
+  })
+
   it('sem módulos do remote e com a CSP bloqueando, fica com o caminho 3', async () => {
     browser({ map: 'ok', preload: (href) => !href.startsWith(PROBE_PREFIX) })
     csp()

@@ -29,4 +29,16 @@ describe('exportOrigins', () => {
     })
     expect(Object.fromEntries(await exportOrigins(c, '/i', new Map()))).toEqual({ w: '/v#v', kk: '/v#k', f: '/m#f' })
   })
+
+  it('export default de um binding fixo ou importado é o mesmo valor; de um let, não', async () => {
+    const c = ctx({
+      '/a': `const A = 1\nexport { A }\nexport default A`,
+      '/b': `import { v } from './v'\nexport default v`,
+      '/c': `let x = 1\nexport { x }\nexport default x`,
+      '/v': `export const v = 1`,
+    })
+    expect((await exportOrigins(c, '/a', new Map())).get('default')).toBe('/a#A')
+    expect((await exportOrigins(c, '/b', new Map())).get('default')).toBe('/v#v')
+    expect((await exportOrigins(c, '/c', new Map())).get('default')).toBe('/c#default')
+  })
 })

@@ -5,7 +5,7 @@ declare module 'next/router' {
     isReady: boolean
     push(url: string, as?: string, options?: { scroll?: boolean; shallow?: boolean }): Promise<boolean>
     replace(url: string, as?: string, options?: { scroll?: boolean; shallow?: boolean }): Promise<boolean>
-    events: { on(type: string, fn: (...args: any[]) => void): void; off(type: string, fn: (...args: any[]) => void): void }
+    events: { on(type: string, fn: (...args: any[]) => void): void; off(type: string, fn: (...args: any[]) => void): void; emit(type: string, ...args: any[]): void }
   }
   export function useRouter(): Router
   const router: Router

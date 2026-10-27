@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { build } from 'vite'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import vitral from '../src/vite'
 import { protocol, resetProtocol } from '../src/core/state'
 import { shared } from '../src/core/dedupe'
@@ -36,7 +36,9 @@ beforeAll(async () => {
   write(ui + 'package.json', JSON.stringify({ name: '@acme/ui', version: '1.2.3', exports: { '.': './src/index.ts', './routes': './src/routes/index.ts', './styles/*': './src/styles/*' } }))
   write(ui + 'tsconfig.json', JSON.stringify({ compilerOptions: { paths: { '@/*': ['./src/*'] } } }))
   write(ui + 'src/index.ts', `export * from './components'\nexport { store as useStore } from '@/store/store'\n`)
-  write(ui + 'src/components/index.ts', `export { Button } from './button/button'\n`)
+  write(ui + 'src/components/index.ts', `export { Button } from './button/button'\nexport { Card } from './card/card'\n`)
+  // \`export default\` de um binding público e um nome que o pacote não publica.
+  write(ui + 'src/components/card/card.ts', `export const Card: string = 'card-proprio'\nexport const cardPrivate: string = 'card-privado'\nexport default Card\n`)
   write(ui + 'src/components/button/button.ts', `export const Button: string = 'botao-proprio'\n`)
   write(ui + 'src/store/store.ts', `export const store = { id: 'store-proprio' }\n`)
   write(ui + 'src/hidden.ts', `export const hidden: string = 'oculto'\n`)
@@ -49,8 +51,9 @@ import { routes } from '@acme/ui/routes'
 import { Button as Deep } from '@/components/ui/button/button'
 import { store } from '@/components/ui/../store/store'
 import { hidden } from '@ui-hidden'
+import CardDefault, { Card as CardDeep, cardPrivate } from '@/components/ui/card/card'
 import { local } from '@/local'
-export default { mount() {}, Button, useStore, routes, Deep, store, hidden, local }
+export default { mount() {}, Button, useStore, routes, Deep, store, hidden, local, CardDefault, CardDeep, cardPrivate }
 `,
   )
   await build({
@@ -89,6 +92,8 @@ describe('dedupe de pacote em código-fonte', () => {
     // A cópia própria não entra no que o host aquece.
     expect(m.split!.lazy ?? []).not.toContain(m.dedupe![0].file)
     expect(warnings.join('\n')).toMatch(/hidden\.ts não sai por nenhum export de @acme\/ui/)
+    expect(warnings.join('\n')).toMatch(/card\.ts: cardPrivate não sai/)
+    expect(warnings.join('\n')).not.toMatch(/card\.ts: .*default/)
   })
 
   it('sem oferta na página, tudo vem da cópia própria, inclusive pelos aliases', async () => {
@@ -102,18 +107,23 @@ describe('dedupe de pacote em código-fonte', () => {
     const hostStore = { id: 'host' }
     shared(protocol())('@acme/ui', '1.4.0', {
       version: '1.4.0',
-      load: async () => ({ '@acme/ui': { Button: 'botao-host', useStore: hostStore }, '@acme/ui/routes': { routes: ['rota-host'] } }),
+      load: async () => ({ '@acme/ui': { Button: 'botao-host', Card: 'card-host', useStore: hostStore }, '@acme/ui/routes': { routes: ['rota-host'] } }),
     })
     const r = await importSplit()
     expect([r.Button, r.Deep, r.routes]).toEqual(['botao-host', 'botao-host', ['rota-host']])
     // `store` interno sai pelo index como `useStore`: o mesmo objeto do host.
     expect(r.store).toBe(hostStore)
     expect(r.useStore).toBe(hostStore)
+    // `export default Card` é o mesmo valor que `Card`; só o nome privado vem da cópia própria.
+    expect([r.CardDefault, r.CardDeep, r.cardPrivate]).toEqual(['card-host', 'card-host', 'card-privado'])
   })
 
-  it('o host sem um dos subpaths: a cópia própria inteira', async () => {
+  it('o host sem um dos subpaths: a cópia própria inteira, com aviso', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     shared(protocol())('@acme/ui', '1.4.0', { version: '1.4.0', load: async () => ({ '@acme/ui': { Button: 'x' } }) })
     expect((await importSplit()).Button).toBe('botao-proprio')
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/@acme\/ui não tem @acme\/ui\/routes/))
+    warn.mockRestore()
   })
 
   it('build dividido publica os módulos de teste do SRI', () => {
