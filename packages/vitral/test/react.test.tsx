@@ -4,7 +4,7 @@ import { act, createElement as h, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
-import { reactRemote, Remote, usePortalContainer, useVitral } from '../src/react'
+import { preload, reactRemote, Remote, usePortalContainer, useVitral } from '../src/react'
 import { reactRender } from '../src/react-server'
 import { failingRemote, mockRemote } from '../src/testing'
 import { cleanup, flush, serveManifest } from './helpers'
@@ -32,6 +32,13 @@ describe('React: host <Remote>', () => {
     expect(typeof (mods['react/compiler-runtime'] as any).c).toBe('function')
     // Versão de outro major não serve.
     expect(protocol().dedupe!('react', '^18.0.0')).toBeUndefined()
+  })
+
+  it('preload já oferece o React antes de algum <Remote> montar', async () => {
+    mockRemote('b', () => {})
+    preload('b')
+    await protocol().pending()
+    expect((await protocol().dedupe!('react', `^${React.version}`))!.react).toBe(React)
   })
 
   it('mostra fallback, monta e repassa props sem remontar', async () => {
