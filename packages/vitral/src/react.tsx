@@ -28,6 +28,8 @@ import { protocol } from './core/state'
 import {
   defineRemote,
   events,
+  preload as corePreload,
+  type PreloadOptions,
   shared,
   type CheckedProps,
   type EventBus,
@@ -164,6 +166,16 @@ function offerReact() {
   }
   // Fora do host mínimo; os downloads esperam a oferta (pending).
   p.pending(import('./core/dedupe').then((m) => m.offer(p, { react: { version: ReactAll.version, modules } })).catch(() => {}))
+}
+
+/**
+ * Começa a baixar um remote antes de algum `<Remote>` montar (no ocioso, no
+ * hover). Já oferece o React do host, para o remote com `dedupe` não baixar
+ * a própria cópia.
+ */
+export function preload(name: string, options?: PreloadOptions): void {
+  offerReact()
+  corePreload(name, options)
 }
 
 /**

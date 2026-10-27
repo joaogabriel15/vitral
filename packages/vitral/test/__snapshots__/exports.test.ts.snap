@@ -93,6 +93,42 @@ exports[`exports públicos > index 1`] = `
 ]
 `;
 
+exports[`exports públicos > next 1`] = `
+[
+  "Head",
+  "Image",
+  "Link",
+  "Router",
+  "RouterContext",
+  "dynamic",
+  "formatUrl",
+  "hostRouter",
+  "nextRemote",
+  "notFound",
+  "redirect",
+  "setBasePath",
+  "useAppRouter",
+  "useParams",
+  "usePathname",
+  "useRouter",
+  "useSearchParams",
+  "withRouter",
+]
+`;
+
+exports[`exports públicos > next-config 1`] = `
+[
+  "HOST_CONFIG",
+  "devRemotes",
+  "hostModule",
+  "remoteHeaders",
+  "remoteRewrites",
+  "sharedGroups",
+  "throughAlias",
+  "withVitral",
+]
+`;
+
 exports[`exports públicos > otel 1`] = `
 [
   "otelOnError",
@@ -121,6 +157,7 @@ exports[`exports públicos > react 1`] = `
 [
   "Remote",
   "events",
+  "preload",
   "reactRemote",
   "useEvent",
   "useEventValue",
@@ -176,6 +213,12 @@ exports[`exports públicos > svelte 1`] = `
 ]
 `;
 
+exports[`exports públicos > sw 1`] = `
+[
+  "remoteFiles",
+]
+`;
+
 exports[`exports públicos > testing 1`] = `
 [
   "CONTRACT_SCHEMA",
@@ -199,6 +242,7 @@ exports[`exports públicos > vitals 1`] = `
 exports[`exports públicos > vite 1`] = `
 [
   "default",
+  "pureExcept",
   "vitral",
 ]
 `;

@@ -26,9 +26,13 @@ export interface SplitBuild {
   entry: string
   /** Chunks que a entrada importa logo. */
   chunks: string[]
+  /** Chunks que o remote só baixa depois (`import()` das rotas). */
+  lazy?: string[]
   /** Hash SRI de cada arquivo, por URL absoluta. */
   sri: Record<string, string>
   priority?: RequestPriority
+  /** Módulos de teste servidos com o remote (manifesto `probe`), com URLs absolutas. */
+  probe?: [string, string]
   /** Cópias próprias das dependências de `dedupe`, com URLs absolutas. */
   dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
 }
@@ -99,13 +103,13 @@ let preloads: Promise<boolean> | undefined
 const KEY = 'vitral:sri-map'
 
 /** Adiciona o mapa do build; o primeiro confere antes que o navegador aplica o hash. */
-async function useMap(sri: Record<string, string>): Promise<boolean> {
+async function useMap(sri: Record<string, string>, own?: [string, string]): Promise<boolean> {
   if (probing) return (await probing) && addMap(sri, false)
   let seen = false
   try {
     seen = localStorage[KEY] === navigator.userAgent
   } catch {}
-  const ok = await (probing = addMap(sri, !seen))
+  const ok = await (probing = addMap(sri, !seen, own))
   if (ok && !seen)
     try {
       localStorage[KEY] = navigator.userAgent
@@ -146,12 +150,12 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
         },
       })
   }
-  if (maps !== false && (maps = await useMap(sri))) {
+  if (maps !== false && (maps = await useMap(sri, build.probe))) {
     await share()
     for (const u of chunks) fetch(u, { priority }).catch(() => {})
     return entry
   }
-  if (await (preloads ??= checkPreloads())) {
+  if (await (preloads ??= checkPreloads(build.probe))) {
     // Para os import() do remote (helper do plugin) conferirem também.
     p.sri = { ...p.sri, ...sri }
     await share(true)
@@ -166,7 +170,7 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
  * também que o hash do mapa vale: um navegador que recusa em silêncio, ou
  * aceita sem conferir, rodaria o remote sem conferência.
  */
-async function addMap(sri: Record<string, string>, probe: boolean): Promise<boolean> {
+async function addMap(sri: Record<string, string>, probe: boolean, own?: [string, string]): Promise<boolean> {
   if (!HTMLScriptElement.supports?.('importmap')) return false
   const integrity: Record<string, string> = {}
   // Um mapa recusado desliga o caminho 1 de vez, então já marca aqui.
@@ -176,23 +180,37 @@ async function addMap(sri: Record<string, string>, probe: boolean): Promise<bool
   const urls = probe ? ['export{}', 'export{}//'].map((c) => URL.createObjectURL(new Blob([c], { type: 'text/javascript' }))) : []
   for (const u of urls) integrity[u] = PROBE_SRI
   let ok = true
+  const fail = () => (ok = false)
+  const load = (u: string) => import(/* @vite-ignore */ /* webpackIgnore: true */ u)
   try {
-    const s = document.createElement('script')
-    s.type = 'importmap'
-    s.nonce = document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce ?? ''
-    s.onerror = () => (ok = false)
-    s.addEventListener('securitypolicyviolation', () => (ok = false))
-    s.textContent = JSON.stringify({ integrity })
-    document.head.append(s)
-    // O erro de um mapa recusado chega numa tarefa.
-    await tick()
-    await tick()
-    if (ok && probe) ok = await check((u) => import(/* @vite-ignore */ /* webpackIgnore: true */ u), urls[0], urls[1])
+    await map(integrity, fail)
+    if (ok && probe) {
+      let r = await check(load, urls[0], urls[1])
+      // CSP sem `blob:`: nem o módulo certo carrega. Testa com os do remote, servidos com ele.
+      if (r === undefined && own) {
+        await map({ [own[0]]: PROBE_SRI, [own[1]]: PROBE_SRI }, fail)
+        r = ok && (await check(load, own[0], own[1]))
+      }
+      ok = !!r
+    }
   } catch {
     ok = false
   }
   for (const u of urls) URL.revokeObjectURL(u)
   return ok
+}
+
+/** Adiciona um import map; `fail` se o navegador ou a CSP o recusar (o erro chega numa tarefa). */
+async function map(integrity: Record<string, string>, fail: () => void): Promise<void> {
+  const s = document.createElement('script')
+  s.type = 'importmap'
+  s.nonce = document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce ?? ''
+  s.onerror = fail
+  s.addEventListener('securitypolicyviolation', fail)
+  s.textContent = JSON.stringify({ integrity })
+  document.head.append(s)
+  await tick()
+  await tick()
 }
 
 function preload(href: string, integrity: string, fetchPriority: RequestPriority = 'auto'): Promise<unknown> {
@@ -204,15 +222,21 @@ function preload(href: string, integrity: string, fetchPriority: RequestPriority
 }
 
 /** O navegador confere o hash do modulepreload? */
-function checkPreloads(): Promise<boolean> {
-  if (!document.createElement('link').relList.supports('modulepreload')) return Promise.resolve(false)
-  return check((href) => preload(href, PROBE_SRI), PROBE, PROBE + '//')
+async function checkPreloads(own?: [string, string]): Promise<boolean> {
+  if (!document.createElement('link').relList.supports('modulepreload')) return false
+  const load = (href: string) => preload(href, PROBE_SRI)
+  const r = await check(load, PROBE, PROBE + '//')
+  // CSP sem `data:`: os do remote, com URLs novas (as do import map já podem estar no mapa de módulos).
+  return !!(r === undefined && own ? await check(load, ...(own.map((u) => u + (u.includes('?') ? '&' : '?') + 'preload') as [string, string])) : r)
 }
 
-/** O módulo certo carrega e o errado falha? Sem resposta em 3s, na dúvida, não. */
-function check(load: (url: string) => Promise<unknown>, good: string, bad: string): Promise<boolean> {
+/**
+ * O módulo certo carrega e o errado falha? `undefined` se nem o certo
+ * carrega (a CSP bloqueou). Sem resposta em 3s, na dúvida, não.
+ */
+function check(load: (url: string) => Promise<unknown>, good: string, bad: string): Promise<boolean | undefined> {
   return Promise.race([
-    Promise.all([load(good).then(() => true, () => false), load(bad).then(() => false, () => true)]).then(([a, b]) => a && b),
+    Promise.all([load(good).then(() => true, () => false), load(bad).then(() => false, () => true)]).then(([a, b]) => (a ? b : undefined)),
     new Promise<boolean>((resolve) => setTimeout(resolve, 3000, false)),
   ])
 }

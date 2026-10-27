@@ -42,11 +42,14 @@ export const VIRTUAL_ENTRY = '\0vitral:entry'
  * Código da entrada virtual. `scope` dá nome à tag de um Web Component que
  * ainda não foi registrado.
  */
-export function entryCode(file: string, adapter: AdapterName, scope: string): string {
+export function entryCode(file: string, adapter: AdapterName, scope: string, next = false): string {
   const head = `import * as m from ${JSON.stringify(file)}\nconst c = m.default ?? m\n`
   if (adapter !== 'element') {
     const [from, fn] = WRAP[adapter]
-    return `${head}import { ${fn} as wrap } from '${from}'\nexport default typeof c?.mount === 'function' ? c : wrap(c)\n`
+    // Modo next: o componente recebe o roteador do host Next (prop `__next`).
+    const inner = next && adapter === 'react' ? 'nextRemote(c)' : 'c'
+    const bridge = inner === 'c' ? '' : `import { nextRemote } from 'vitral/next'\n`
+    return `${head}${bridge}import { ${fn} as wrap } from '${from}'\nexport default typeof c?.mount === 'function' ? c : wrap(${inner})\n`
   }
   // Sem framework: Web Component (Lit, Stencil, vanilla) ou função que devolve html``.
   return `${head}import { elementRemote } from 'vitral/element'

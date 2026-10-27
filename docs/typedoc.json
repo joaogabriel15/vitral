@@ -18,7 +18,11 @@
     "../packages/vitral/src/federation.ts",
     "../packages/vitral/src/dict.ts",
     "../packages/vitral/src/prefetch.ts",
-    "../packages/vitral/src/edge.ts"
+    "../packages/vitral/src/edge.ts",
+    "../packages/vitral/src/next.tsx",
+    "../packages/vitral/src/next-host.tsx",
+    "../packages/vitral/src/next-config.ts",
+    "../packages/vitral/src/sw.ts"
   ],
   "tsconfig": "../packages/vitral/tsconfig.json",
   "out": "api",

@@ -71,7 +71,7 @@ export function shared(p: Protocol): NonNullable<Protocol['dedupe']> {
 export function offer(p: Protocol, groups: NonNullable<VitralConfig['dedupe']>): void {
   for (const name in groups) {
     const { version, modules } = groups[name]
-    shared(p)(name, version, { version, load: async () => modules })
+    shared(p)(name, version, { version, load: typeof modules === 'function' ? modules : async () => modules })
     // O contrato confere só o que o próprio host oferece.
     p.configure({ offered: { ...p.settings().offered, [name]: version } })
   }

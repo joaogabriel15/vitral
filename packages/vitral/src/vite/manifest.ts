@@ -13,6 +13,11 @@ import type { RemoteManifest } from '../core/types'
 import type { Group } from './dedupe'
 
 export const SPLIT = 'split/'
+/** Mesmo conteúdo dos testes com `data:`/`blob:` do runtime: o primeiro bate com o hash, o segundo não. */
+const PROBES: [string, string][] = [
+  [`${SPLIT}vitral-probe.js`, 'export{}'],
+  [`${SPLIT}vitral-probe-x.js`, 'export{}//'],
+]
 
 interface Chunk {
   type: 'chunk'
@@ -32,13 +37,16 @@ export interface Split {
   files: string[]
   /** Cópia própria de cada grupo de `dedupe`: o arquivo e o que ele importa. */
   own: Record<string, { file: string; chunks: string[] }>
+  /** O que o remote só baixa depois (`import()` das rotas), sem as cópias de `dedupe`. */
+  lazy: string[]
 }
 
 export const sri = (file: string): string => 'sha384-' + createHash('sha384').update(readFileSync(file)).digest('base64')
 
 /** As duas saídas do build: arquivo único e build dividido. */
 export function outputs(rolldown: boolean, hints = false): Record<string, unknown>[] {
-  const banner = hints ? { banner: compileHint } : {}
+  // No Rolldown, o `banner` passa pelo minificador, que tira comentários; o `postBanner` entra depois.
+  const banner = hints ? { [rolldown ? 'postBanner' : 'banner']: compileHint } : {}
   return [
     { format: 'es', ...banner, ...(rolldown ? { codeSplitting: false } : { inlineDynamicImports: true }) },
     // Os assets saem com o mesmo nome nas duas (o Vite só aceita um padrão).
@@ -110,7 +118,16 @@ export function collect(outDir: string, bundle: Bundle): Split | undefined {
   const soon = deps(entry)
   if (Object.keys(own).length) for (const d of live.get(entry)!) if (!Object.values(own).some((o) => o.file === d)) soon.add(d), deps(d, soon)
   soon.delete(entry)
-  return { entry, chunks: [...soon], files: [...used], own }
+  // Tudo que o app alcança sem passar por uma cópia própria; o que não vem logo é lazy.
+  const ownFiles = new Set(Object.values(own).map((o) => o.file))
+  const app = new Set<string>()
+  const stack = [entry]
+  while (stack.length) {
+    const n = stack.pop()!
+    for (const d of [...(byName.get(n)?.imports ?? []), ...live.get(n)!]) if (byName.has(d) && !ownFiles.has(d) && !app.has(d)) app.add(d), stack.push(d)
+  }
+  const lazy = [...app].filter((n) => n !== entry && !soon.has(n))
+  return { entry, chunks: [...soon], files: [...used], own, lazy }
 }
 
 /** Troca os `import()` de `c` pelo helper. Devolve os chunks importados assim. */
@@ -152,5 +169,7 @@ export function withSplit(m: RemoteManifest, outDir: string, s?: Split, groups: 
   const dedupe = groups
     .filter((g) => s?.own[g.name])
     .map(({ name, range, version }) => ({ name, range, version, ...s!.own[name] }))
-  return { ...m, files, ...(s && { split: { entry: s.entry, chunks: s.chunks } }), ...(dedupe.length && { dedupe }) }
+  // Módulos de teste do SRI: o navegador confere o hash sem `data:` nem `blob:`.
+  if (s) for (const [file, code] of PROBES) writeFileSync(join(outDir, file), code)
+  return { ...m, files, ...(s && { split: { entry: s.entry, chunks: s.chunks, ...(s.lazy.length && { lazy: s.lazy }) }, probe: PROBES.map(([f]) => f) as [string, string] }), ...(dedupe.length && { dedupe }) }
 }
