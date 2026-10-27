@@ -133,7 +133,11 @@ describe('manifesto v2', () => {
     expect(m.entry).toMatch(/^remote-[\w-]+\.js$/)
     expect(m.split!.entry).toMatch(/^split\/remote-[\w-]+\.js$/)
     expect(m.split!.chunks).toEqual([expect.stringMatching(/^split\/comum-[\w-]+\.js$/)])
-    const js = readdirSync(join(splitDir, 'split')).map((f) => `split/${f}`)
+    // O import() do gráfico: o que o host pode aquecer depois (preload com routes).
+    expect(m.split!.lazy).toEqual([expect.stringMatching(/^split\/grafico-[\w-]+\.js$/)])
+    // Os módulos de teste do SRI não têm hash no manifesto: o runtime só confere se o navegador confere.
+    expect(m.probe).toEqual(['split/vitral-probe.js', 'split/vitral-probe-x.js'])
+    const js = readdirSync(join(splitDir, 'split')).map((f) => `split/${f}`).filter((f) => !m.probe!.includes(f))
     expect(js.sort()).toEqual(Object.keys(m.files!).filter((f) => f.startsWith('split/')).sort())
     expect(js).toHaveLength(3)
     for (const [file, hash] of Object.entries(m.files!)) expect(hash).toBe(sha384(join(splitDir, file)))

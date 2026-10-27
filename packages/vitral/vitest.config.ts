@@ -3,7 +3,11 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 
 export default defineConfig({
   plugins: [svelte({ include: ['test/**/*.svelte'] })],
-  resolve: { conditions: ['browser'] },
+  resolve: {
+    conditions: ['browser'],
+    // `vitral/next-host` importa do app (Next e o módulo do withVitral).
+    alias: { 'next/router': new URL('./test/stubs/next-router.ts', import.meta.url).pathname, 'vitral-next-host-config': new URL('./test/stubs/next-host-config.ts', import.meta.url).pathname },
+  },
   test: {
     // Força o build de navegador do Solid/Svelte (o padrão do Node é o de SSR).
     server: { deps: { inline: [/solid-js/, /svelte/] } },

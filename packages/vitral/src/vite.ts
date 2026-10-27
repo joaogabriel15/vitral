@@ -11,6 +11,7 @@
  * SRI do JS. O host só precisa da URL do `vitral.json`.
  */
 import { createHash } from 'node:crypto'
+import { createRequire } from 'node:module'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
@@ -25,6 +26,10 @@ import { type CssBuildOptions, splitShadowCss, transformCss } from './css-build'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
 import { extractProps, typesFile } from './vite/types'
 import { MCP_APP_GLOBAL, mcpAppHtml } from './vite/mcp-app'
+import { minifyWhitespace } from './vite/minify'
+import { loadNext, NEXT_IDS, nextDefine, resolveNextId, type NextOptions } from './vite/next'
+import { optimizerPaths, pathCandidates, pathsFor } from './vite/tsconfig'
+import { svgComponents, type SvgComponents } from './vite/svg'
 import { DEV_CSS, DEV_IDS, devEntryCode, devManifest, devOptimizeDeps, loadPreamble, resolveDevId, scopeDevCss, serveDevManifest, VIRTUAL_DEV_ENTRY } from './vite/dev'
 
 export interface VitralViteOptions extends CssBuildOptions {
@@ -107,6 +112,22 @@ export interface VitralViteOptions extends CssBuildOptions {
    * carregamento). Os outros navegadores ignoram. Padrão: false.
    */
   compileHints?: boolean
+  /**
+   * Pacotes tratados como sem efeitos colaterais, menos o CSS deles: o
+   * tree-shaking tira o que o remote não usa. Útil para pacote publicado como
+   * código-fonte sem `sideEffects` no package.json. Ex.: `['@empresa/ui']`.
+   */
+  sideEffectFree?: string[]
+  /**
+   * Builda com o Vite um código escrito para Next.js: `next/link`,
+   * `next/image`, `next/head`, `next/dynamic`, `next/router` e
+   * `next/navigation` vêm de `vitral/next`, e as `NEXT_PUBLIC_*` do `.env`
+   * entram em `process.env`. `basePath` é o do `next.config`. Também lê os
+   * `paths` do tsconfig de cada arquivo, importa `.svg` como componente (com
+   * o SVGR do projeto) e builda com `NODE_ENV=production` mesmo com
+   * `NODE_ENV=development` no `.env`. Padrão: false.
+   */
+  next?: boolean | NextOptions
 }
 
 export default function vitral(options: VitralViteOptions = {}): Plugin {
@@ -121,10 +142,16 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   let framework: AdapterName = 'element'
   const entryFile = () => resolve(root, entry!)
   let serve = false
+  let minify = false
+  let rolldown = false
   let shared: Group[] = []
+  let svg: Promise<SvgComponents | undefined> | undefined
   const dedupe = !!options.dedupe?.length
   const hooks = dedupeHooks(() => (options.exposes ? EXPOSES_ENTRY : options.adapter === false ? entryFile() : ENTRY_ID), () => shared)
   const mcp = options.target === 'mcp-app'
+  const next: NextOptions | undefined = options.next === true ? {} : options.next || undefined
+  const paths = !!next && next.tsconfigPaths !== false
+  const files = !!options.dedupe?.some((d) => d.endsWith('/*'))
   if (mcp && (options.exposes || dedupe || options.shared?.length)) {
     throw new Error("[vitral] target: 'mcp-app' gera um HTML único: não combina com exposes, dedupe nem shared.")
   }
@@ -150,21 +177,27 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
   }
   return {
     name: 'vitral',
-    config(user, { mode, command }) {
+    async config(user, { mode, command }) {
       entry ??= findEntry(resolve(user.root ?? process.cwd()))
       if (!entry) throw new Error('[vitral] não achei a entrada do remote (src/remote.* ou src/App.*). Use vitral({ entry }).')
       // Vite 8+ (rolldown) usa codeSplitting; Vite 5-7 (rollup) usa inlineDynamicImports.
-      const rolldown = 'rolldownVersion' in (this as any).meta
+      rolldown = 'rolldownVersion' in ((this as any)?.meta ?? {})
+      // O Vite troca NODE_ENV por development quando o .env pede (e o JSX sai
+      // com jsxDEV). O app Next tem NODE_ENV=development no .env de dev; o build continua de produção.
+      if (next && command === 'build' && mode !== 'development' && process.env.VITE_USER_NODE_ENV === undefined) process.env.VITE_USER_NODE_ENV = ''
+      // Vite 8: o Rolldown tira os espaços ao gerar o código.
+      const whitespace = rolldown && user.build?.minify !== false ? { minify: { codegen: { removeWhitespace: true } } } : {}
       const dir = options.versionDir ? versionDir(user.root ?? process.cwd(), user.build?.outDir, options.version) : undefined
       return {
         // Código de biblioteca não tem process.env; React e Vue precisam disso.
-        define: { 'process.env.NODE_ENV': JSON.stringify(mode === 'development' ? 'development' : 'production') },
+        define: next
+          ? nextDefine({ ...process.env, ...(await import('vite')).loadEnv(mode, user.root ?? process.cwd(), 'NEXT_PUBLIC_') } as Record<string, string>, mode)
+          : { 'process.env.NODE_ENV': JSON.stringify(mode === 'development' ? 'development' : 'production') },
         server: { cors: true },
-        ...(command === 'serve' && { optimizeDeps: devOptimizeDeps(user.plugins, entry, options.adapter) }),
         preview: { cors: true },
         // O remote não tem index.html: sem isso o Vite só descobre as
         // dependências no primeiro request e recarrega a página do host.
-        optimizeDeps: user.optimizeDeps?.entries ? undefined : { entries: [entry] },
+        optimizeDeps: optimizeDeps(command === 'serve', user, entry, options.adapter, next && { rolldown, paths }),
         build: mcp ? {
           // Um IIFE só, sem chunks: o HTML do MCP App não pode buscar arquivos.
           lib: { entry: options.adapter === false ? entry : ENTRY_ID, formats: ['iife'], name: MCP_APP_GLOBAL, fileName: () => 'mcp-app.js', cssFileName: 'remote' },
@@ -174,8 +207,14 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
           // Nomes com hash: cache eterno no CDN. Só o vitral.json muda a cada deploy.
           lib: { entry: dedupe ? BOOT : options.exposes ? EXPOSES_ENTRY : options.adapter === false ? entry : ENTRY_ID, fileName: () => 'remote-[hash].js', cssFileName: 'remote' },
           // Arquivo único (hosts antigos e caminho com blob:) e build dividido (manifesto v2).
-          rollupOptions: { external: options.shared ?? [], output: outputs(rolldown, !!options.compileHints) as any },
+          rollupOptions: {
+            external: options.shared ?? [],
+            output: outputs(rolldown, !!options.compileHints).map((o) => ({ ...o, ...whitespace })) as any,
+            ...(options.sideEffectFree?.length && { treeshake: { moduleSideEffects: pureExcept(options.sideEffectFree) } }),
+          },
           cssCodeSplit: false,
+          // A entrada do dedupe usa top-level await, fora do target padrão do Vite 5 e 6.
+          ...(dedupe && !user.build?.target && { target: 'es2022' }),
           ...(dir && { outDir: dir }),
         },
       }
@@ -185,6 +224,12 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       framework = detectAdapter(c.plugins)
       adapter = options.adapter || framework
       serve = c.command === 'serve'
+      minify = !serve && c.build.minify !== false
+      // O plugin põe NODE_ENV=production no código; NODE_ENV=development num
+      // .env faz o Vite compilar o JSX de dev, que não existe no React de produção.
+      if (!serve && c.mode !== 'development' && process.env.NODE_ENV === 'development') {
+        throw new Error('[vitral] NODE_ENV=development (de um .env?) num build de produção: o JSX sai com jsxDEV e o remote quebra. Rode com NODE_ENV=production.')
+      }
       outDir = resolve(c.root, c.build.outDir)
       try {
         pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
@@ -192,7 +237,12 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     },
     async buildStart() {
       // Em dev cada pacote vem do próprio node_modules: o dedupe é só do build.
-      if (dedupe && !serve) shared = await groups(options.dedupe!, root, entry!, (id, importer) => this.resolve(id, importer, { skipSelf: true }))
+      // Resolução do Node, não this.resolve: no Rollup (Vite 5-7) o plugin
+      // commonjs faz this.load do pacote, que não anda durante o buildStart.
+      if (dedupe && !serve) {
+        hooks.reset()
+        shared = await groups(options.dedupe!, root, entry!, nodeResolve)
+      }
     },
     // Modo dev: /vitral.json aponta para um módulo com o cliente HMR.
     configureServer(server) {
@@ -203,26 +253,65 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     // nem chegam ao JS. As checagens nos handlers continuam para Vite 5 e 6.0-6.2.
     resolveId: {
       order: 'pre',
-      filter: { id: [...(dedupe ? [dedupeIds(options.dedupe!)] : []), ...(options.exposes ? [EXPOSES_IDS] : []), /__vitral_entry__\.js$/, DEV_IDS] },
-      handler(id, importer) {
+      filter: {
+        id: [
+          ...(dedupe ? [dedupeIds(options.dedupe!)] : []),
+          ...(options.exposes ? [EXPOSES_IDS] : []),
+          ...(next ? [NEXT_IDS] : []),
+          // `paths` do tsconfig e dedupe de `pacote/*`: qualquer import que não é relativo.
+          ...(paths || files ? [/^[^.\0]/] : []),
+          /__vitral_entry__\.js$/,
+          DEV_IDS,
+        ],
+      },
+      async handler(id, importer, opts) {
+        const shim = next && resolveNextId(id)
+        if (shim) return shim
         const own = dedupe && !serve ? hooks.resolveId.handler(id, importer) : null
         if (own) return own
         if (options.exposes && resolveExposesId(id)) return resolveExposesId(id)
         if (id.endsWith(ENTRY_ID)) return VIRTUAL_ENTRY
-        return resolveDevId(id)
+        const dev = resolveDevId(id)
+        if (dev) return dev
+        if (!importer || importer.startsWith('\0') || id.startsWith('\0') || /^(\.|\/|[a-zA-Z]:|virtual:)/.test(id)) return null
+        const byShared = files && !serve && hooks.files()
+        const config = paths ? pathsFor(importer.split('?')[0]) : null
+        const candidates = config ? pathCandidates(id, config) : undefined
+        if (!candidates && !byShared) return null
+        for (const c of candidates ?? [id]) {
+          const r = await this.resolve(c, importer, { ...opts, skipSelf: true })
+          if (!r || r.external) continue
+          return (byShared && (await hooks.resolved(this as any, r.id, importer))) || r
+        }
+        return null
       },
     },
     load: {
+      // Antes do vite:asset, que faria do .svg uma URL.
+      order: 'pre',
       // Todos os módulos virtuais do vitral: \0vitral... e \0virtual:vitral...
-      filter: { id: /^\x00(virtual:)?vitral/ },
-      handler(id) {
-        const own = dedupe && !serve ? hooks.load(id) : null
+      filter: { id: [/^\x00(virtual:)?vitral/, ...(next?.svgr !== false && next ? [/\.svg$/] : [])] },
+      async handler(id) {
+        if (next && next.svgr !== false && id.endsWith('.svg') && !id.startsWith('\0')) {
+          const svgr = await (svg ??= svgComponents(root))
+          return svgr ? svgr.transform(id) : null
+        }
+        const own = dedupe && !serve ? await hooks.load(this as any, id) : null
         if (own != null) return own
         const exposed = options.exposes ? loadExposes(id, root, entry!, options.exposes, options.adapter === false ? undefined : ENTRY_ID) : null
         if (exposed != null) return exposed
-        if (id === VIRTUAL_ENTRY) return entryCode(resolve(root, entry!), adapter, scopeName())
+        const shim = next && loadNext(id, next)
+        if (shim) return shim
+        if (id === VIRTUAL_ENTRY) return entryCode(resolve(root, entry!), adapter, scopeName(), !!next)
         if (id === VIRTUAL_DEV_ENTRY) return devEntryCode(framework, options.adapter === false ? resolve(root, entry!) : undefined)
         return loadPreamble(id)
+      },
+    },
+    // Vite 5-7: depois do minificador do Vite, que no modo lib deixa os espaços.
+    renderChunk: {
+      order: 'post',
+      handler(code, chunk, out) {
+        if (minify && !rolldown && out.format === 'es') return minifyWhitespace(code, chunk.fileName, !!out.sourcemap)
       },
     },
     transform: {
@@ -289,6 +378,39 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       const props = options.types === false ? null : await extractProps(root, entryFile())
       if (props) writeFileSync(join(outDir, 'vitral.d.ts'), typesFile(done.name, props))
     },
+  }
+}
+
+/**
+ * `optimizeDeps` do remote. Em dev, o pré-bundle já leva o adaptador e, no
+ * modo next, os shims de `next/*` e o plugin dos `paths` do tsconfig.
+ */
+function optimizeDeps(
+  serve: boolean,
+  user: { plugins?: unknown; optimizeDeps?: { entries?: unknown } },
+  entry: string,
+  adapter: AdapterName | false | undefined,
+  next?: false | { rolldown: boolean; paths: boolean },
+) {
+  const own = user.optimizeDeps?.entries ? {} : { entries: [entry] }
+  if (!serve) return own
+  // Descoberto depois, o vitral/next faria o Vite refazer o pré-bundle, com outra cópia do React.
+  const include = [...devOptimizeDeps(user.plugins, entry, adapter).include, ...(next ? ['vitral/next'] : [])]
+  return { ...own, include, ...(next && next.paths && optimizerPaths(next.rolldown)) }
+}
+
+/** `moduleSideEffects` com os pacotes de `sideEffectFree` sem efeitos, menos o CSS deles. */
+export function pureExcept(pkgs: string[]): (id: string) => boolean {
+  const dirs = pkgs.map((p) => `/node_modules/${p}/`)
+  return (id) => /\.(css|scss|sass|less|styl)($|\?)/.test(id) || !dirs.some((d) => id.replace(/\\/g, '/').includes(d))
+}
+
+/** Caminho do pacote como o Node resolve a partir de `importer`, ou null. */
+async function nodeResolve(id: string, importer: string): Promise<{ id: string } | null> {
+  try {
+    return { id: createRequire(importer).resolve(id) }
+  } catch {
+    return null
   }
 }
 

@@ -198,6 +198,27 @@ describe('caminho 1: import map com integrity', () => {
   })
 })
 
+describe('módulos de teste do próprio remote (CSP sem data: e blob:)', () => {
+  const probe: [string, string] = [data('export{}'), data('throw new Error("hash")')]
+
+  it('caminho 1: testa com os módulos do manifesto, sem criar blob:', async () => {
+    browser({ map: 'ok' })
+    const verified = await load()
+    expect(await verified({ ...build, probe })).toBe(build.entry)
+    expect(blobs).not.toHaveBeenCalled()
+    const first = JSON.parse(document.head.querySelector('script[type="importmap"]')!.textContent!).integrity
+    expect(first).toEqual({ ...build.sri, [probe[0]]: PROBE_SRI, [probe[1]]: PROBE_SRI })
+  })
+
+  it('caminho 2: o modulepreload testa URLs novas dos mesmos módulos', async () => {
+    browser({ map: 'error', preload: (href) => !href.includes('throw') })
+    const verified = await load()
+    expect(await verified({ ...build, probe })).toBe(build.entry)
+    const tested = [...document.head.querySelectorAll<HTMLLinkElement>('link[rel="modulepreload"][href^="data:"]')].map((l) => l.href)
+    expect(tested).toEqual(probe.map((u) => u + '?preload'))
+  })
+})
+
 describe('caminho 2: modulepreload com integrity', () => {
   it('chunks antes da entrada, cada um com o próprio hash', async () => {
     browser({ map: 'error', preload: checks })

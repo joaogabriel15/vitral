@@ -26,9 +26,13 @@ export interface SplitBuild {
   entry: string
   /** Chunks que a entrada importa logo. */
   chunks: string[]
+  /** Chunks que o remote só baixa depois (`import()` das rotas). */
+  lazy?: string[]
   /** Hash SRI de cada arquivo, por URL absoluta. */
   sri: Record<string, string>
   priority?: RequestPriority
+  /** Módulos de teste servidos com o remote (manifesto `probe`), com URLs absolutas. */
+  probe?: [string, string]
   /** Cópias próprias das dependências de `dedupe`, com URLs absolutas. */
   dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
 }
@@ -99,13 +103,13 @@ let preloads: Promise<boolean> | undefined
 const KEY = 'vitral:sri-map'
 
 /** Adiciona o mapa do build; o primeiro confere antes que o navegador aplica o hash. */
-async function useMap(sri: Record<string, string>): Promise<boolean> {
+async function useMap(sri: Record<string, string>, own?: [string, string]): Promise<boolean> {
   if (probing) return (await probing) && addMap(sri, false)
   let seen = false
   try {
     seen = localStorage[KEY] === navigator.userAgent
   } catch {}
-  const ok = await (probing = addMap(sri, !seen))
+  const ok = await (probing = addMap(sri, !seen, own))
   if (ok && !seen)
     try {
       localStorage[KEY] = navigator.userAgent
@@ -146,12 +150,12 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
         },
       })
   }
-  if (maps !== false && (maps = await useMap(sri))) {
+  if (maps !== false && (maps = await useMap(sri, build.probe))) {
     await share()
     for (const u of chunks) fetch(u, { priority }).catch(() => {})
     return entry
   }
-  if (await (preloads ??= checkPreloads())) {
+  if (await (preloads ??= checkPreloads(build.probe))) {
     // Para os import() do remote (helper do plugin) conferirem também.
     p.sri = { ...p.sri, ...sri }
     await share(true)
@@ -166,14 +170,16 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
  * também que o hash do mapa vale: um navegador que recusa em silêncio, ou
  * aceita sem conferir, rodaria o remote sem conferência.
  */
-async function addMap(sri: Record<string, string>, probe: boolean): Promise<boolean> {
+async function addMap(sri: Record<string, string>, probe: boolean, own?: [string, string]): Promise<boolean> {
   if (!HTMLScriptElement.supports?.('importmap')) return false
   const integrity: Record<string, string> = {}
   // Um mapa recusado desliga o caminho 1 de vez, então já marca aqui.
   for (const u in sri) if (!/\.css([?#]|$)/.test(u) && !mapped.has(u)) mapped.add(u), (integrity[u] = sri[u])
   // Dois módulos `blob:` (URLs novas, fora do mapa de módulos), os dois com o
   // hash do primeiro: o certo carrega e o errado tem de falhar.
-  const urls = probe ? ['export{}', 'export{}//'].map((c) => URL.createObjectURL(new Blob([c], { type: 'text/javascript' }))) : []
+  // Com os módulos de teste do remote, nada de `blob:` (a CSP pode não aceitar).
+  const blobs = probe && !own
+  const urls = !probe ? [] : own ? [...own] : ['export{}', 'export{}//'].map((c) => URL.createObjectURL(new Blob([c], { type: 'text/javascript' })))
   for (const u of urls) integrity[u] = PROBE_SRI
   let ok = true
   try {
@@ -191,7 +197,7 @@ async function addMap(sri: Record<string, string>, probe: boolean): Promise<bool
   } catch {
     ok = false
   }
-  for (const u of urls) URL.revokeObjectURL(u)
+  if (blobs) for (const u of urls) URL.revokeObjectURL(u)
   return ok
 }
 
@@ -204,9 +210,11 @@ function preload(href: string, integrity: string, fetchPriority: RequestPriority
 }
 
 /** O navegador confere o hash do modulepreload? */
-function checkPreloads(): Promise<boolean> {
+function checkPreloads(own?: [string, string]): Promise<boolean> {
   if (!document.createElement('link').relList.supports('modulepreload')) return Promise.resolve(false)
-  return check((href) => preload(href, PROBE_SRI), PROBE, PROBE + '//')
+  // URLs novas: as do teste do import map já podem estar no mapa de módulos.
+  const [good, bad] = own ? own.map((u) => u + (u.includes('?') ? '&' : '?') + 'preload') : [PROBE, PROBE + '//']
+  return check((href) => preload(href, PROBE_SRI), good, bad)
 }
 
 /** O módulo certo carrega e o errado falha? Sem resposta em 3s, na dúvida, não. */
