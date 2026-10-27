@@ -177,28 +177,40 @@ async function addMap(sri: Record<string, string>, probe: boolean, own?: [string
   for (const u in sri) if (!/\.css([?#]|$)/.test(u) && !mapped.has(u)) mapped.add(u), (integrity[u] = sri[u])
   // Dois módulos `blob:` (URLs novas, fora do mapa de módulos), os dois com o
   // hash do primeiro: o certo carrega e o errado tem de falhar.
-  // Com os módulos de teste do remote, nada de `blob:` (a CSP pode não aceitar).
-  const blobs = probe && !own
-  const urls = !probe ? [] : own ? [...own] : ['export{}', 'export{}//'].map((c) => URL.createObjectURL(new Blob([c], { type: 'text/javascript' })))
+  const urls = probe ? ['export{}', 'export{}//'].map((c) => URL.createObjectURL(new Blob([c], { type: 'text/javascript' }))) : []
   for (const u of urls) integrity[u] = PROBE_SRI
   let ok = true
+  const fail = () => (ok = false)
+  const load = (u: string) => import(/* @vite-ignore */ /* webpackIgnore: true */ u)
   try {
-    const s = document.createElement('script')
-    s.type = 'importmap'
-    s.nonce = document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce ?? ''
-    s.onerror = () => (ok = false)
-    s.addEventListener('securitypolicyviolation', () => (ok = false))
-    s.textContent = JSON.stringify({ integrity })
-    document.head.append(s)
-    // O erro de um mapa recusado chega numa tarefa.
-    await tick()
-    await tick()
-    if (ok && probe) ok = await check((u) => import(/* @vite-ignore */ /* webpackIgnore: true */ u), urls[0], urls[1])
+    await map(integrity, fail)
+    if (ok && probe) {
+      let r = await check(load, urls[0], urls[1])
+      // CSP sem `blob:`: nem o módulo certo carrega. Testa com os do remote, servidos com ele.
+      if (r === undefined && own) {
+        await map({ [own[0]]: PROBE_SRI, [own[1]]: PROBE_SRI }, fail)
+        r = ok && (await check(load, own[0], own[1]))
+      }
+      ok = !!r
+    }
   } catch {
     ok = false
   }
-  if (blobs) for (const u of urls) URL.revokeObjectURL(u)
+  for (const u of urls) URL.revokeObjectURL(u)
   return ok
+}
+
+/** Adiciona um import map; `fail` se o navegador ou a CSP o recusar (o erro chega numa tarefa). */
+async function map(integrity: Record<string, string>, fail: () => void): Promise<void> {
+  const s = document.createElement('script')
+  s.type = 'importmap'
+  s.nonce = document.querySelector<HTMLScriptElement>('script[nonce]')?.nonce ?? ''
+  s.onerror = fail
+  s.addEventListener('securitypolicyviolation', fail)
+  s.textContent = JSON.stringify({ integrity })
+  document.head.append(s)
+  await tick()
+  await tick()
 }
 
 function preload(href: string, integrity: string, fetchPriority: RequestPriority = 'auto'): Promise<unknown> {
@@ -210,17 +222,21 @@ function preload(href: string, integrity: string, fetchPriority: RequestPriority
 }
 
 /** O navegador confere o hash do modulepreload? */
-function checkPreloads(own?: [string, string]): Promise<boolean> {
-  if (!document.createElement('link').relList.supports('modulepreload')) return Promise.resolve(false)
-  // URLs novas: as do teste do import map já podem estar no mapa de módulos.
-  const [good, bad] = own ? own.map((u) => u + (u.includes('?') ? '&' : '?') + 'preload') : [PROBE, PROBE + '//']
-  return check((href) => preload(href, PROBE_SRI), good, bad)
+async function checkPreloads(own?: [string, string]): Promise<boolean> {
+  if (!document.createElement('link').relList.supports('modulepreload')) return false
+  const load = (href: string) => preload(href, PROBE_SRI)
+  const r = await check(load, PROBE, PROBE + '//')
+  // CSP sem `data:`: os do remote, com URLs novas (as do import map já podem estar no mapa de módulos).
+  return !!(r === undefined && own ? await check(load, ...(own.map((u) => u + (u.includes('?') ? '&' : '?') + 'preload') as [string, string])) : r)
 }
 
-/** O módulo certo carrega e o errado falha? Sem resposta em 3s, na dúvida, não. */
-function check(load: (url: string) => Promise<unknown>, good: string, bad: string): Promise<boolean> {
+/**
+ * O módulo certo carrega e o errado falha? `undefined` se nem o certo
+ * carrega (a CSP bloqueou). Sem resposta em 3s, na dúvida, não.
+ */
+function check(load: (url: string) => Promise<unknown>, good: string, bad: string): Promise<boolean | undefined> {
   return Promise.race([
-    Promise.all([load(good).then(() => true, () => false), load(bad).then(() => false, () => true)]).then(([a, b]) => a && b),
+    Promise.all([load(good).then(() => true, () => false), load(bad).then(() => false, () => true)]).then(([a, b]) => (a ? b : undefined)),
     new Promise<boolean>((resolve) => setTimeout(resolve, 3000, false)),
   ])
 }

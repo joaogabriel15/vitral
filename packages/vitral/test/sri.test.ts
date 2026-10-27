@@ -28,6 +28,8 @@ const mapped = () => {
 /** Hash `sha256` dos módulos de teste do import map (o de `export{}`). */
 const PROBE_SRI = 'sha256-d3bjIZdvLjBurwdLwkSVOnEBPFFly+T1SR9r3VVHBGg='
 const data = (c: string) => `data:text/javascript,${encodeURIComponent(c)}`
+/** Os módulos de teste do modulepreload da própria lib (`data:` sem codificar). */
+const PROBE_PREFIX = 'data:text/javascript,export{}'
 
 /**
  * Simula o navegador. `map`: `ok` aceita o import map e confere o hash dele,
@@ -199,23 +201,35 @@ describe('caminho 1: import map com integrity', () => {
 })
 
 describe('módulos de teste do próprio remote (CSP sem data: e blob:)', () => {
-  const probe: [string, string] = [data('export{}'), data('throw new Error("hash")')]
+  const probe: [string, string] = [data('export{}') + '#remote', data('throw new Error("hash")') + '#remote']
+  /** CSP sem `blob:` nem `data:`: os módulos de teste da página não carregam. */
+  const csp = () => blobs.mockImplementation(() => 'blob:bloqueado')
 
-  it('caminho 1: testa com os módulos do manifesto, sem criar blob:', async () => {
+  it('sem CSP, os blob: bastam: nenhum módulo do remote é baixado', async () => {
     browser({ map: 'ok' })
-    const verified = await load()
-    expect(await verified({ ...build, probe })).toBe(build.entry)
-    expect(blobs).not.toHaveBeenCalled()
-    const first = JSON.parse(document.head.querySelector('script[type="importmap"]')!.textContent!).integrity
-    expect(first).toEqual({ ...build.sri, [probe[0]]: PROBE_SRI, [probe[1]]: PROBE_SRI })
+    expect(await (await load())({ ...build, probe })).toBe(build.entry)
+    expect(JSON.stringify([...document.head.querySelectorAll('script[type="importmap"]')].map((s) => s.textContent))).not.toContain('#remote')
   })
 
-  it('caminho 2: o modulepreload testa URLs novas dos mesmos módulos', async () => {
-    browser({ map: 'error', preload: (href) => !href.includes('throw') })
-    const verified = await load()
-    expect(await verified({ ...build, probe })).toBe(build.entry)
-    const tested = [...document.head.querySelectorAll<HTMLLinkElement>('link[rel="modulepreload"][href^="data:"]')].map((l) => l.href)
+  it('caminho 1: com blob: bloqueado, testa com os módulos do manifesto', async () => {
+    browser({ map: 'ok' })
+    csp()
+    expect(await (await load())({ ...build, probe })).toBe(build.entry)
+    const maps = [...document.head.querySelectorAll('script[type="importmap"]')].map((s) => JSON.parse(s.textContent!).integrity)
+    expect(maps.at(-1)).toEqual({ [probe[0]]: PROBE_SRI, [probe[1]]: PROBE_SRI })
+  })
+
+  it('caminho 2: com data: bloqueado, o modulepreload testa URLs novas dos módulos do remote', async () => {
+    browser({ map: 'error', preload: (href) => !href.startsWith(PROBE_PREFIX) && !href.includes('throw') })
+    expect(await (await load())({ ...build, probe })).toBe(build.entry)
+    const tested = [...document.head.querySelectorAll<HTMLLinkElement>('link[rel="modulepreload"][href*="#remote"]')].map((l) => l.href)
     expect(tested).toEqual(probe.map((u) => u + '?preload'))
+  })
+
+  it('sem módulos do remote e com a CSP bloqueando, fica com o caminho 3', async () => {
+    browser({ map: 'ok', preload: (href) => !href.startsWith(PROBE_PREFIX) })
+    csp()
+    expect(await (await load())(build)).toBeUndefined()
   })
 })
 
