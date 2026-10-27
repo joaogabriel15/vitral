@@ -26,8 +26,37 @@ export function loadModule<T = Record<string, unknown>>(name: string): Promise<T
 }
 
 /** Começa a baixar um remote (JS e CSS) sem montar (ex.: no hover de um link). */
-export function preload(name: string): void {
-  load(name).catch(() => {})
+export function preload(name: string, options: PreloadOptions = {}): void {
+  const done = load(name)
+  done.catch(() => {})
+  if (options.routes) done.then(warmRoutes, () => {})
+}
+
+export interface PreloadOptions {
+  /**
+   * Depois do remote, aquece no cache HTTP, com o navegador ocioso, os
+   * chunks que ele só carrega depois (`import()` das rotas). Não baixa as
+   * cópias de `dedupe`. Padrão: false.
+   */
+  routes?: boolean
+}
+
+/** Os JS do build dividido que a montagem não baixou: as rotas e partes lazy. */
+export function routeChunks(r: LoadedRemote & { split?: SplitBuild }): string[] {
+  const s = r.split
+  if (!s) return []
+  if (s.lazy) return s.lazy
+  // Manifesto sem `lazy` (builds antigos): o que sobra, menos as cópias de dedupe e o que elas usam.
+  const dir = s.entry.slice(0, s.entry.lastIndexOf('/') + 1)
+  const loaded = new Set([s.entry, ...s.chunks, ...(s.probe ?? []), ...(s.dedupe ?? []).flatMap((d) => [d.file, ...(d.chunks ?? [])])])
+  return Object.keys(r.sri ?? {}).filter((u) => u.startsWith(dir) && u.endsWith('.js') && !loaded.has(u))
+}
+
+function warmRoutes(r: LoadedRemote): void {
+  // O corpo precisa ser lido: resposta grande largada no meio não fica no cache HTTP.
+  const run = () => routeChunks(r).forEach((u) => fetch(u, { priority: 'low' } as RequestInit).then((res) => res.arrayBuffer()).catch(() => {}))
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 10000 })
+  else setTimeout(run, 1)
 }
 
 // Os caminhos de SRI sem `blob:` ficam num módulo à parte, fora do host
@@ -142,19 +171,21 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
     shadow: m.shadow,
     // A integridade declarada pelo host vence a do manifesto, e aí só o
     // arquivo único (o que ela descreve) é usado.
-    integrity: entry.integrity ?? m.integrity,
+    integrity: entry.integrity === false ? undefined : (entry.integrity ?? m.integrity),
     isolate: entry.isolate,
     scope: m.scope,
     version: m.version,
     sri,
     priority,
     split:
-      m.split && !entry.integrity
+      m.split && typeof entry.integrity !== 'string'
         ? {
             entry: abs(m.split.entry),
             chunks: (m.split.chunks ?? []).map(abs),
+            ...(m.split.lazy && { lazy: m.split.lazy.map(abs) }),
             sri,
             priority,
+            ...(m.probe && { probe: m.probe.map(abs) as [string, string] }),
             dedupe: m.dedupe?.map((d) => ({ ...d, file: abs(d.file), chunks: d.chunks?.map(abs) })),
           }
         : undefined,
@@ -188,7 +219,17 @@ async function importModule(name: string, r: Resolved): Promise<any> {
     withTimeout(timeout, name, import(/* @vite-ignore */ /* webpackIgnore: true */ url)).catch((e) => {
       throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, `falha ao importar ${r.entry}`, e)
     })
-  if (!r.integrity) return run(r.entry)
+  // Sem hash a conferir, o build dividido baixa só o que a primeira tela usa
+  // e pega as dependências de dedupe da página, como no caminho com SRI.
+  if (!r.integrity) {
+    if (!r.split) return run(r.entry)
+    if (r.split.dedupe?.length) {
+      const { shared } = await import('./dedupe')
+      for (const d of r.split.dedupe)
+        shared(protocol())(d.name, d.range, { version: d.version, url: d.file, load: async () => (await run(d.file)).default })
+    }
+    return run(r.split.entry)
+  }
   // Com integrity, a conferência mora no módulo de SRI. Sem ele, nada roda.
   const sri = await paths
   if (!sri) throw new RemoteError('LOAD_FAILED', name, 'não foi possível carregar o verificador de integrity')

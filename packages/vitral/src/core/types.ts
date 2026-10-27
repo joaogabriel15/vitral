@@ -116,8 +116,13 @@ export interface RemoteEntry {
    * (ex.: `() => import('./carrinho')`). Útil em monorepos e testes.
    */
   module?: RemoteModule<any> | (() => Promise<RemoteModule<any> | { default: RemoteModule<any> }>)
-  /** Hash SRI (`sha256-…`, `sha384-…`, `sha512-…`) do JS. Verificado antes de executar. */
-  integrity?: string
+  /**
+   * Hash SRI (`sha256-…`, `sha384-…`, `sha512-…`) do JS. Verificado antes de
+   * executar. Sem ele, vale o do manifesto. `false` não confere hash nenhum:
+   * para um remote da mesma origem numa página cuja CSP não aceita `data:`
+   * nem `blob:` em `script-src`, onde a conferência não tem como rodar.
+   */
+  integrity?: string | false
   /** CSS extra para carregar junto. */
   css?: string[]
   /** Isolamento padrão para este remote. */
@@ -268,8 +273,11 @@ export interface VitralConfig {
    * Dependências que o host oferece aos remotes com `dedupe`, por grupo:
    * `{ vue: { version: Vue.version, modules: { vue: Vue } } }`. O remote usa
    * a do host se a versão estiver na faixa dele; senão, a própria cópia.
+   * `modules` pode ser uma função que carrega os módulos só quando algum
+   * remote pede (`() => import('vue').then((vue) => ({ vue }))`): o host não
+   * paga por eles no bundle inicial.
    */
-  dedupe?: Record<string, { version: string; modules: SharedModules }>
+  dedupe?: Record<string, { version: string; modules: SharedModules | (() => Promise<SharedModules>) }>
   /**
    * Faixa de versão do contrato que o host aceita dos remotes (ex.: `'^2'`).
    * Antes de executar o remote, o host confere a versão do `contract` do
@@ -331,7 +339,14 @@ export interface RemoteManifest {
    * continuam apontando para o arquivo único, usado por hosts antigos e
    * quando o navegador não confere o hash por módulo.
    */
-  split?: { entry: string; chunks?: string[] }
+  split?: { entry: string; chunks?: string[]; lazy?: string[] }
+  /**
+   * Dois módulos de teste do build dividido (`export{}` e um com hash errado),
+   * servidos junto com o remote. O runtime testa com eles se o navegador
+   * confere o hash, no lugar de `data:` e `blob:`, que uma CSP sem esses
+   * esquemas bloqueia.
+   */
+  probe?: [string, string]
   /**
    * Dependências de `dedupe` do build dividido: faixa aceita, versão da
    * cópia própria e o arquivo dela, para o loader baixar junto com a entrada.

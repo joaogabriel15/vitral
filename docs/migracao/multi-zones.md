@@ -81,10 +81,18 @@ export default {
 
 Dentro de cada área, o remote pode ter o próprio roteador com a base da rota. Veja [Rotas](/aprender/rotas#com-o-roteador-do-host).
 
+## Sem gateway: o app Next principal como host
+
+Se o app principal já é Next e o SSR das zonas não é necessário, as zonas viram remotes direto dentro dele, sem gateway:
+
+1. Cada zona builda com `vitral({ next: { basePath } })`, sem mudar o código Next dela. Veja [Código escrito para Next](/frameworks/next#codigo-escrito-para-next).
+2. O app principal troca as rewrites por `withVitral` e ganha uma página por zona com `<NextRemote>`. Veja [Host Next no lugar das zonas](/frameworks/next#host-next-no-lugar-das-zonas).
+3. Links e `location.assign` para as rotas da zona passam a trocar de área sem recarregar (`VitralNext`).
+
 ## O que não migra
 
 - **Recursos de servidor do Next dentro da zona:** Server Components, Server Actions, `getServerSideProps`, `next/image` e middleware. O `render` do remote é um `renderToString` do componente: dados do servidor entram como props (atributo `props` do outlet) ou são buscados no cliente.
-- **Host Next com SSR do remote:** num app Next como host, `<Remote>` renderiza o `fallback` no servidor e monta no cliente. O SSR pelo gateway vale para o app shell sem framework.
+- **Host Next com SSR do remote:** num app Next como host, `<Remote>` e `<NextRemote>` renderizam o `fallback` no servidor e montam no cliente. O SSR pelo gateway vale para o app shell sem framework.
 
 ## Números
 

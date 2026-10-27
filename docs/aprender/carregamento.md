@@ -32,6 +32,8 @@ import { preload } from 'vitral'
 link.addEventListener('pointerenter', () => preload('checkout'), { once: true })
 ```
 
+`preload('checkout', { routes: true })` também aquece no cache HTTP, com o navegador ocioso, os chunks que o remote só baixa depois (`import()` das rotas). A primeira tela de cada rota abre sem download.
+
 | Opção | Valores | O que faz |
 | --- | --- | --- |
 | `loading` | `lazy`, `idle` | Monta a 200px de aparecer na tela, ou com o navegador ocioso |
