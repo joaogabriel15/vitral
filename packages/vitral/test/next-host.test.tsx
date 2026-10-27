@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { act, createElement as h } from 'react'
@@ -98,6 +98,17 @@ describe('vitral/next-host', () => {
     expect(go('/store/3')).toBe(false)
   })
 
+  it('erro ao carregar a rota: a navegação de página inteira do Next passa, sem laço', () => {
+    const go = navigation()
+    const stop = interceptNavigation()
+    expect(go('/store/5')).toBe(true)
+    // handleRouteInfoError do Next: emite routeChangeError e logo navega a página inteira para a mesma URL.
+    router.events.emit('routeChangeError')
+    expect(go('/store/5')).toBe(false)
+    expect(router.push).toHaveBeenCalledTimes(1)
+    stop()
+  })
+
   it('sem Navigation API, nada muda', () => {
     expect(() => interceptNavigation()()).not.toThrow()
   })
@@ -110,6 +121,7 @@ describe('vitral/next-host', () => {
     expect(name).toBe('delivery')
     expect(props.a).toBe(1)
     expect(props.__next).toMatchObject({ asPath: '/store/x', basePath: '/delivery', routes: [{ public: '/store', zone: '/delivery/store' }] })
+    expect(props.__next.events).toBe(router.events)
     props.__next.push('/store/y')
     expect(router.push).toHaveBeenCalledWith('/store/y', undefined, undefined)
     const p = protocol()
@@ -216,5 +228,24 @@ describe('vitral/next-config', () => {
     expect(readFileSync(file, 'utf8')).toContain('import("../node_modules/@acme/ui/src/routes.ts")')
     const merged = withVitral({ rewrites: () => ({ beforeFiles: [{ source: '/b', destination: '/c' }], afterFiles: [] }) }, { remotes, dir })
     expect((await merged.rewrites!() as any).beforeFiles).toEqual([...remoteRewrites(remotes), { source: '/b', destination: '/c' }])
+  })
+
+  it('withVitral não regrava o módulo igual e não quebra sem poder gravar (next start em disco só de leitura)', () => {
+    withVitral({}, { remotes, dir })
+    const file = join(dir, '.vitral/host-config.mjs')
+    const before = statSync(file).mtimeMs
+    utimesSync(file, new Date(0), new Date(0))
+    withVitral({}, { remotes, dir })
+    expect(statSync(file).mtimeMs).toBe(0)
+    expect(before).toBeGreaterThan(0)
+    const blocked = mkdtempSync(join(tmpdir(), 'vitral-ro-'))
+    writeFileSync(join(blocked, 'package.json'), '{}')
+    // `.vitral` como arquivo: a pasta não pode ser criada.
+    writeFileSync(join(blocked, '.vitral'), '')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(() => withVitral({}, { remotes, dir: blocked })).not.toThrow()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('não consegui gravar'))
+    warn.mockRestore()
+    rmSync(blocked, { recursive: true, force: true })
   })
 })

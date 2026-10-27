@@ -89,8 +89,20 @@ async function read(ctx: ParseContext, file: string): Promise<Parsed> {
       for (const s of n.specifiers)
         if (s.type !== 'ImportNamespaceSpecifier')
           imports.set(s.local.name, { source: n.source.value, name: s.type === 'ImportDefaultSpecifier' ? 'default' : nameOf(s.imported) })
+  // Bindings que não mudam depois de declarados: `export default x` de um deles é o mesmo valor que `x`.
+  const fixed = new Set<string>()
   for (const n of body) {
-    if (n.type === 'ExportDefaultDeclaration') out.local.set('default', `${file}#default`)
+    const d = n.type === 'ExportNamedDeclaration' ? n.declaration : n
+    if (d?.type === 'FunctionDeclaration' || d?.type === 'ClassDeclaration') d.id && fixed.add(d.id.name)
+    else if (d?.type === 'VariableDeclaration' && d.kind === 'const') for (const x of d.declarations) for (const name of bindings(x.id)) fixed.add(name)
+  }
+  for (const n of body) {
+    if (n.type === 'ExportDefaultDeclaration') {
+      const id = n.declaration.type === 'Identifier' ? n.declaration.name : undefined
+      const via = id ? imports.get(id) : undefined
+      if (via) out.named.push({ exported: 'default', name: via.name, source: await target(via.source), fallback: `${file}#default` })
+      else out.local.set('default', id && fixed.has(id) ? `${file}#${id}` : `${file}#default`)
+    }
     else if (n.type === 'ExportAllDeclaration') {
       if (n.exported) out.local.set(nameOf(n.exported), `${file}#${nameOf(n.exported)}`)
       else {

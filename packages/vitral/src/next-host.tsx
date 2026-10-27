@@ -46,6 +46,7 @@ export function interceptNavigation(): () => void {
   const nav = (globalThis as any).navigation
   if (!nav) return () => {}
   // Se o próprio Next pedir página inteira para a mesma URL (erro ao carregar a rota), deixa passar.
+  // Só a troca concluída zera: o Next emite `routeChangeError` logo antes dessa navegação.
   let last: string | undefined
   const done = () => (last = undefined)
   const on = (e: any) => {
@@ -60,11 +61,9 @@ export function interceptNavigation(): () => void {
   }
   nav.addEventListener('navigate', on)
   Router.events.on('routeChangeComplete', done)
-  Router.events.on('routeChangeError', done)
   return () => {
     nav.removeEventListener('navigate', on)
     Router.events.off('routeChangeComplete', done)
-    Router.events.off('routeChangeError', done)
   }
 }
 
@@ -102,7 +101,7 @@ export function NextRemote({ name, props, fallback = null, ...rest }: NextRemote
   setup()
   const router = useRouter()
   const r = remotes[name]
-  const host = useMemo<HostRouter>(() => ({ asPath: router.asPath, basePath: r?.basePath, routes: r?.routes, push, replace }), [router.asPath, r])
+  const host = useMemo<HostRouter>(() => ({ asPath: router.asPath, basePath: r?.basePath, routes: r?.routes, push, replace, events: Router.events }), [router.asPath, r])
   const all = useMemo(() => ({ ...props, __next: host }), [props, host])
   if (!router.isReady) return fallback
   return createElement(Remote, { ...rest, name, fallback, props: all })

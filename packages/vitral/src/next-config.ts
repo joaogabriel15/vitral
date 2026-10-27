@@ -188,15 +188,28 @@ export function remoteHeaders(remotes: Record<string, NextRemoteConfig>): Header
   })
 }
 
+/** Grava só se o conteúdo mudou: o \`mtime\` igual não dispara rebuild no \`next dev\`. */
+function writeChanged(file: string, text: string): void {
+  try {
+    if (readFileSync(file, 'utf8') === text) return
+  } catch {}
+  writeFileSync(file, text)
+}
+
 export function withVitral(nextConfig: NextConfig, options: WithVitralOptions): NextConfig {
   const dir = resolve(options.dir ?? process.cwd())
   // Fora do distDir, que o Turbopack não lê. A pasta se ignora sozinha no git.
   const file = join(dir, '.vitral', 'host-config.mjs')
   const groups = sharedGroups(dir, options.share ?? [])
   const emit = (alias?: Record<string, unknown>) => {
-    mkdirSync(dirname(file), { recursive: true })
-    writeFileSync(join(dirname(file), '.gitignore'), '*\n')
-    writeFileSync(file, hostModule(devRemotes(options.remotes, process.env.NODE_ENV === 'development'), groups, alias, dirname(file)))
+    try {
+      mkdirSync(dirname(file), { recursive: true })
+      writeChanged(join(dirname(file), '.gitignore'), '*\n')
+      writeChanged(file, hostModule(devRemotes(options.remotes, process.env.NODE_ENV === 'development'), groups, alias, dirname(file)))
+    } catch (e) {
+      // `next start` num disco só de leitura: o build já levou o módulo gerado.
+      console.warn(`[vitral] não consegui gravar ${file} (${(e as Error).message}). No build ele é necessário; no next start, não.`)
+    }
   }
   // Turbopack não chama o `webpack()`: vale o alias dele (caminhos relativos ao app).
   emit(Object.fromEntries(Object.entries(nextConfig.turbopack?.resolveAlias ?? {}).map(([k, v]) => [k, typeof v === 'string' && v.startsWith('.') ? resolve(dir, v) : v])))

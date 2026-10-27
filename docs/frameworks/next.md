@@ -148,7 +148,7 @@ A configuração gerada fica em `.vitral/host-config.mjs`, na pasta do app (a pa
 
 `VitralNext` registra os remotes, oferece as dependências de `share`, faz o preload e intercepta navegações de página inteira para uma rota de remote (`location.assign`, `<a>` comum): elas viram `Router.push`, sem recarregar. Precisa da [Navigation API](https://developer.mozilla.org/docs/Web/API/Navigation_API); sem ela, a página recarrega como antes.
 
-`NextRemote` passa o roteador do Next ao remote: `useRouter`, `<Link>` e `router.push` dentro dele usam o do host, com as rotas públicas. O remote vê os caminhos como numa zona com `basePath`.
+`NextRemote` passa o roteador do Next ao remote: `useRouter`, `<Link>`, `router.push`, o `Router` padrão de `next/router`, `redirect()` e `router.events` dentro dele usam o do host, com as rotas públicas. O remote vê os caminhos como numa zona com `basePath`.
 
 ## Vindo do Multi-Zones
 
