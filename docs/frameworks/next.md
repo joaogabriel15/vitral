@@ -134,6 +134,8 @@ export default function Delivery() {
 | `share` | O host oferece estas dependências com [`dedupe`](/aprender/dedupe). Só baixam quando um remote pede. `pacote/*` oferece o pacote e cada subpath do `exports` |
 | `transpilePackages` | Ganha `vitral`, para o servidor do Next empacotar a configuração gerada |
 
+A configuração gerada fica em `.vitral/host-config.mjs`, na pasta do app (a pasta já se ignora no git). Funciona com webpack e com Turbopack.
+
 | Opção do remote | Padrão | O que faz |
 | --- | --- | --- |
 | `url` | obrigatório | URL do `vitral.json` |

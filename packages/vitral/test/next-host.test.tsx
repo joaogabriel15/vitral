@@ -209,7 +209,11 @@ describe('vitral/next-config', () => {
     expect(userWebpack).toHaveBeenCalled()
     expect(readFileSync(file, 'utf8')).toContain('"i18next": { version: "25.1.0"')
     expect(config.transpilePackages).toEqual(['vitral'])
-    expect(config.turbopack!.resolveAlias!['vitral-next-host-config']).toBe('./.next/cache/vitral/host-config.mjs')
+    expect(config.turbopack!.resolveAlias!['vitral-next-host-config']).toBe('./.vitral/host-config.mjs')
+    expect(readFileSync(join(dir, '.vitral/.gitignore'), 'utf8')).toBe('*\n')
+    // Sem webpack (Turbopack), o módulo usa o alias do turbopack, relativo ao app.
+    withVitral({ turbopack: { resolveAlias: { '@acme/ui': './node_modules/@acme/ui' } } }, { remotes, share: ['@acme/ui/*'], dir })
+    expect(readFileSync(file, 'utf8')).toContain('import("../node_modules/@acme/ui/src/routes.ts")')
     const merged = withVitral({ rewrites: () => ({ beforeFiles: [{ source: '/b', destination: '/c' }], afterFiles: [] }) }, { remotes, dir })
     expect((await merged.rewrites!() as any).beforeFiles).toEqual([...remoteRewrites(remotes), { source: '/b', destination: '/c' }])
   })

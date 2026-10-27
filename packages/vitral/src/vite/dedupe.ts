@@ -11,7 +11,7 @@
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { exportOrigins, type ParseContext } from './exports'
+import { exportOrigins, type ParseContext, type Parsed } from './exports'
 
 /** O grupo do React vem inteiro do mesmo lugar: o React DOM exige a mesma versão do React. */
 const REACT = ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react/compiler-runtime']
@@ -134,7 +134,7 @@ export function dedupeHooks(entry: () => string, getGroups: () => Group[]) {
   // Arquivo de cada especificador (como o build resolve) e a origem de cada export dos grupos com `files`.
   let entries: Promise<Map<string, string>> | undefined
   let origins: Map<string, Promise<Map<string, { spec: string; name: string }>>> = new Map()
-  const exports = new Map<string, Promise<Map<string, string>>>()
+  const exports = new Map<string, Promise<Parsed>>()
   const entryFiles = (ctx: ParseContext) =>
     (entries ??= (async () => {
       const map = new Map<string, string>()
