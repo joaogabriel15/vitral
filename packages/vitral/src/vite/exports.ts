@@ -27,18 +27,54 @@ function bindings(node: any, out: string[] = []): string[] {
   return out
 }
 
-/** Nome exportado → origem. O resultado fica em `cache`, por arquivo, durante o build. */
-export function exportOrigins(ctx: ParseContext, file: string, cache: Map<string, Promise<Origins>>, stack: string[] = []): Promise<Origins> {
-  // Reexport circular: o arquivo que já está sendo lido conta como vazio aqui.
-  // shortcut: dois ciclos que começam em leituras paralelas diferentes ainda se esperam; serializar as leituras se aparecer.
-  if (stack.includes(file)) return Promise.resolve(new Map())
-  let found = cache.get(file)
-  if (!found) cache.set(file, (found = read(ctx, file, cache, [...stack, file])))
-  return found
+/** O que um arquivo exporta, com os `from` já resolvidos. Não depende de outros arquivos. */
+export interface Parsed {
+  /** Exports declarados no próprio arquivo: nome → origem. */
+  local: Map<string, string>
+  /** Reexports por nome: `export { a as b } from`, ou `import { a }` + `export { a as b }`. */
+  named: { exported: string; source?: string; name: string; fallback: string }[]
+  /** `export * from`. */
+  star: string[]
 }
 
-async function read(ctx: ParseContext, file: string, cache: Map<string, Promise<Origins>>, stack: string[]): Promise<Origins> {
-  const out: Origins = new Map()
+/**
+ * Nome exportado → origem. Primeiro lê cada arquivo alcançado pelos
+ * reexports (a leitura de um arquivo nunca espera a de outro, então leituras
+ * paralelas com ciclos não se travam); depois resolve as origens de uma vez.
+ * `cache` guarda as leituras durante o build.
+ */
+export async function exportOrigins(ctx: ParseContext, file: string, cache: Map<string, Promise<Parsed>>): Promise<Origins> {
+  const parsed = new Map<string, Parsed>()
+  const queue = [file]
+  while (queue.length) {
+    const f = queue.shift()!
+    if (parsed.has(f)) continue
+    let p = cache.get(f)
+    if (!p) cache.set(f, (p = read(ctx, f)))
+    const done = await p
+    parsed.set(f, done)
+    queue.push(...done.star, ...done.named.flatMap((n) => (n.source ? [n.source] : [])))
+  }
+  return origins(file, parsed, new Map(), [])
+}
+
+function origins(file: string, parsed: Map<string, Parsed>, memo: Map<string, Origins>, stack: string[]): Origins {
+  // Reexport circular: o arquivo que já está sendo resolvido conta como vazio aqui.
+  if (stack.includes(file)) return new Map()
+  const known = memo.get(file)
+  if (known) return known
+  const p = parsed.get(file)!
+  const next = [...stack, file]
+  const out: Origins = new Map(p.local)
+  for (const n of p.named) out.set(n.exported, (n.source && origins(n.source, parsed, memo, next).get(n.name)) || n.fallback)
+  // `export *` não leva `default` nem sobrescreve um nome explícito.
+  for (const s of p.star) for (const [name, origin] of origins(s, parsed, memo, next)) if (name !== 'default' && !out.has(name)) out.set(name, origin)
+  memo.set(file, out)
+  return out
+}
+
+async function read(ctx: ParseContext, file: string): Promise<Parsed> {
+  const out: Parsed = { local: new Map(), named: [], star: [] }
   const info = await ctx.load({ id: file })
   if (!info.code) return out
   const body: any[] = ctx.parse(info.code).body ?? []
@@ -47,43 +83,36 @@ async function read(ctx: ParseContext, file: string, cache: Map<string, Promise<
     const r = await ctx.resolve(source, file, { skipSelf: false })
     return r && !r.external ? r.id : undefined
   }
-  const from = async (source: string, name: string) => {
-    const t = await target(source)
-    return t && (await exportOrigins(ctx, t, cache, stack)).get(name)
-  }
   const imports = new Map<string, { source: string; name: string }>()
   for (const n of body)
     if (n.type === 'ImportDeclaration')
       for (const s of n.specifiers)
         if (s.type !== 'ImportNamespaceSpecifier')
           imports.set(s.local.name, { source: n.source.value, name: s.type === 'ImportDefaultSpecifier' ? 'default' : nameOf(s.imported) })
-  const star: string[] = []
   for (const n of body) {
-    if (n.type === 'ExportDefaultDeclaration') out.set('default', `${file}#default`)
+    if (n.type === 'ExportDefaultDeclaration') out.local.set('default', `${file}#default`)
     else if (n.type === 'ExportAllDeclaration') {
-      if (n.exported) out.set(nameOf(n.exported), `${file}#${nameOf(n.exported)}`)
-      else star.push(n.source.value)
+      if (n.exported) out.local.set(nameOf(n.exported), `${file}#${nameOf(n.exported)}`)
+      else {
+        const t = await target(n.source.value)
+        if (t) out.star.push(t)
+      }
     } else if (n.type === 'ExportNamedDeclaration') {
       if (n.exportKind === 'type') continue
       if (n.declaration) {
         const d = n.declaration
         const names = d.type === 'VariableDeclaration' ? d.declarations.flatMap((x: any) => bindings(x.id)) : d.id ? [d.id.name] : []
-        for (const name of names) out.set(name, `${file}#${name}`)
+        for (const name of names) out.local.set(name, `${file}#${name}`)
       }
       for (const s of n.specifiers ?? []) {
         if (s.exportKind === 'type') continue
         const exported = nameOf(s.exported)
         const local = nameOf(s.local)
         const via = n.source ? { source: n.source.value, name: local } : imports.get(local)
-        out.set(exported, (via && (await from(via.source, via.name))) || `${file}#${n.source ? exported : local}`)
+        const fallback = `${file}#${n.source ? exported : local}`
+        out.named.push({ exported, name: via?.name ?? local, source: via ? await target(via.source) : undefined, fallback })
       }
     }
-  }
-  // `export *` não leva `default` nem sobrescreve um nome explícito.
-  for (const source of star) {
-    const t = await target(source)
-    if (!t) continue
-    for (const [name, origin] of await exportOrigins(ctx, t, cache, stack)) if (name !== 'default' && !out.has(name)) out.set(name, origin)
   }
   return out
 }

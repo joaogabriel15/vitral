@@ -21,7 +21,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import type { ZoneRoute } from './next'
 import { subpaths } from './vite/dedupe'
 
@@ -141,9 +141,16 @@ export function throughAlias(spec: string, alias: Record<string, unknown> = {}):
 }
 
 /** Código do módulo gerado: configuração dos remotes e ofertas que só importam quando pedidas. */
-export function hostModule(remotes: Record<string, NextRemoteConfig>, groups: ReturnType<typeof sharedGroups>, alias?: Record<string, unknown>): string {
+export function hostModule(remotes: Record<string, NextRemoteConfig>, groups: ReturnType<typeof sharedGroups>, alias?: Record<string, unknown>, from?: string): string {
+  // Caminho relativo ao módulo gerado: o Turbopack não aceita caminho absoluto em import().
+  const spec = (s: string) => {
+    const t = throughAlias(s, alias)
+    if (!from || !isAbsolute(t)) return t
+    const r = relative(from, t).replace(/\\/g, '/')
+    return r.startsWith('.') ? r : './' + r
+  }
   const shared = Object.entries(groups).map(([name, g]) => {
-    const imports = g.specs.map((s) => `import(${JSON.stringify(throughAlias(s, alias))})`).join(', ')
+    const imports = g.specs.map((s) => `import(${JSON.stringify(spec(s))})`).join(', ')
     const modules = g.specs.map((s, i) => `${JSON.stringify(s)}: m[${i}]`).join(', ')
     return `  ${JSON.stringify(name)}: { version: ${JSON.stringify(g.version)}, modules: () => Promise.all([${imports}]).then((m) => ({ ${modules} })) },`
   })
@@ -183,13 +190,16 @@ export function remoteHeaders(remotes: Record<string, NextRemoteConfig>): Header
 
 export function withVitral(nextConfig: NextConfig, options: WithVitralOptions): NextConfig {
   const dir = resolve(options.dir ?? process.cwd())
-  const file = join(dir, nextConfig.distDir ?? '.next', 'cache', 'vitral', 'host-config.mjs')
+  // Fora do distDir, que o Turbopack não lê. A pasta se ignora sozinha no git.
+  const file = join(dir, '.vitral', 'host-config.mjs')
   const groups = sharedGroups(dir, options.share ?? [])
   const emit = (alias?: Record<string, unknown>) => {
     mkdirSync(dirname(file), { recursive: true })
-    writeFileSync(file, hostModule(devRemotes(options.remotes, process.env.NODE_ENV === 'development'), groups, alias))
+    writeFileSync(join(dirname(file), '.gitignore'), '*\n')
+    writeFileSync(file, hostModule(devRemotes(options.remotes, process.env.NODE_ENV === 'development'), groups, alias, dirname(file)))
   }
-  emit()
+  // Turbopack não chama o `webpack()`: vale o alias dele (caminhos relativos ao app).
+  emit(Object.fromEntries(Object.entries(nextConfig.turbopack?.resolveAlias ?? {}).map(([k, v]) => [k, typeof v === 'string' && v.startsWith('.') ? resolve(dir, v) : v])))
   const ours = remoteRewrites(options.remotes)
   const headers = remoteHeaders(options.remotes)
   return {
