@@ -186,6 +186,8 @@ Exemplo completo, com Dockerfiles e configuração do nginx: [`examples/docker`]
 
 No Next e no Nuxt o componente renderiza o `fallback` no servidor e monta o remote no cliente.
 
+Uma zona do Multi-Zones vira remote sem reescrever o código Next (`vitral({ next: true })`), e o app Next principal vira host com `withVitral` e `<NextRemote>`, trocando de área sem recarregar. Veja [Next.js](https://joaogabriel15.github.io/vitral/frameworks/next).
+
 ### Host em Vue
 
 ```vue

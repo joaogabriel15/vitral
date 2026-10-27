@@ -44,6 +44,19 @@ Inclua a origem dos remotes em `script-src` e `connect-src`, e `blob:` em `scrip
 Content-Security-Policy: script-src 'self' https://cdn.empresa.com blob:; connect-src 'self' https://cdn.empresa.com
 ```
 
+## Offline
+
+`remoteFiles` de `vitral/sw` lista tudo que um remote publica, para o service worker do host guardar no cache:
+
+```js
+// sw.js do host
+import { remoteFiles } from 'vitral/sw'
+
+self.addEventListener('install', (e) => e.waitUntil(
+  remoteFiles('/delivery-remote/vitral.json').then((urls) => caches.open('remotes').then((c) => c.addAll(urls))),
+))
+```
+
 ## Versão nova sem recarregar
 
 Para SPAs que ficam abertas por horas:

@@ -78,6 +78,8 @@ Content-Security-Policy: script-src 'self' https://cdn.empresa.com blob:; connec
 
 Se a página tem um `<script nonce>`, a lib usa o mesmo `nonce` no import map do SRI. Sem `nonce`, a CSP bloqueia esse mapa e a lib usa os outros caminhos.
 
+Sem `blob:` e `data:` na CSP, os módulos de teste da página não carregam. O build dividido publica dois módulos de teste junto com o remote (`split/vitral-probe.js` e `split/vitral-probe-x.js`, campo `probe` do `vitral.json`), e a lib testa com eles. Assim o SRI funciona com `script-src 'self'` quando o remote é servido pela mesma origem. O caminho com `blob:` continua bloqueado; num navegador sem os outros dois, o remote não carrega.
+
 ## Overrides de desenvolvimento
 
 `?vitral=nome@http://localhost:5174` troca a URL de um remote e descarta a `integrity` do host. Só funciona com a página em `localhost` ou com `configure({ devOverrides })`. Não ligue `devOverrides` em produção, nem na forma `{ preview }`: qualquer link com `?vitral=` executaria código de outra origem. O modelo `preview` não restringe as URLs aceitas, só resolve apelidos.
