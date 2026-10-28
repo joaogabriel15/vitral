@@ -150,12 +150,15 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
         },
       })
   }
-  if (maps !== false && (maps = await useMap(sri, build.probe))) {
+  // Os módulos de teste do remote decidem se o navegador confere o hash: só valem se a rede não pode trocá-los
+  // (mesma origem da página, ou data:). Um CDN de outra origem podia responder 404 ao módulo errado e passar no teste.
+  const probes = build.probe?.every((u) => u.startsWith('data:') || new URL(u, location.href).origin === location.origin) ? build.probe : undefined
+  if (maps !== false && (maps = await useMap(sri, probes))) {
     await share()
     for (const u of chunks) fetch(u, { priority }).catch(() => {})
     return entry
   }
-  if (await (preloads ??= checkPreloads(build.probe))) {
+  if (await (preloads ??= checkPreloads(probes))) {
     // Para os import() do remote (helper do plugin) conferirem também.
     p.sri = { ...p.sri, ...sri }
     await share(true)

@@ -123,4 +123,38 @@ describe('preload com routes', () => {
     // Com `lazy` no manifesto, vale a lista do build (chunks que o app e uma cópia de dedupe dividem entram).
     expect(routeChunks({ module: {} as any, entry: '', css: [], sri, split: { ...split, lazy: [d + 'rota.js', d + 'own-dep.js'] } } as any)).toEqual([d + 'rota.js', d + 'own-dep.js'])
   })
+
+  it('warmRoutes: no máximo 3 downloads por vez, e nada com economia de dados', async () => {
+    const { warmRoutes } = await import('../src/core/loader')
+    const d = 'https://cdn.x/r/split/'
+    const lazy = ['1', '2', '3', '4', '5'].map((f) => d + f + '.js')
+    const r = { module: {} as any, entry: '', css: [], split: { entry: d + 'e.js', chunks: [], sri: {}, lazy } } as any
+    let open = 0
+    let max = 0
+    const seen: string[] = []
+    const release: (() => void)[] = []
+    const fetchMock = vi.fn((u: string) => {
+      seen.push(u)
+      max = Math.max(max, ++open)
+      return new Promise<any>((ok) => release.push(() => (open--, ok({ arrayBuffer: async () => new ArrayBuffer(0) }))))
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('requestIdleCallback', (fn: () => void) => (fn(), 1))
+    try {
+      vi.stubGlobal('navigator', { ...navigator, connection: { saveData: true } })
+      warmRoutes(r)
+      expect(fetchMock).not.toHaveBeenCalled()
+      vi.stubGlobal('navigator', { ...navigator, connection: {} })
+      warmRoutes(r)
+      expect(seen).toHaveLength(3)
+      while (release.length) {
+        release.shift()!()
+        await new Promise((ok) => setTimeout(ok, 0))
+      }
+      expect(seen).toEqual(lazy)
+      expect(max).toBe(3)
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
 })

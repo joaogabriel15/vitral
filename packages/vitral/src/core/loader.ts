@@ -52,9 +52,15 @@ export function routeChunks(r: LoadedRemote & { split?: SplitBuild }): string[] 
   return Object.keys(r.sri ?? {}).filter((u) => u.startsWith(dir) && u.endsWith('.js') && !loaded.has(u))
 }
 
-function warmRoutes(r: LoadedRemote): void {
+export function warmRoutes(r: LoadedRemote): void {
+  // Economia de dados ou 2G: não baixa o que talvez nem seja usado.
+  const c = (navigator as any).connection
+  if (c?.saveData || /2g/.test(c?.effectiveType)) return
+  const queue = routeChunks(r).slice()
   // O corpo precisa ser lido: resposta grande largada no meio não fica no cache HTTP.
-  const run = () => routeChunks(r).forEach((u) => fetch(u, { priority: 'low' } as RequestInit).then((res) => res.arrayBuffer()).catch(() => {}))
+  const next = (): unknown => queue.length && fetch(queue.shift()!, { priority: 'low' } as RequestInit).then((res) => res.arrayBuffer()).catch(() => {}).then(next)
+  // Três downloads por vez: não disputa a banda com o que a página pede.
+  const run = () => [0, 0, 0].map(next)
   if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 10000 })
   else setTimeout(run, 1)
 }
