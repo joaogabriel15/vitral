@@ -19,6 +19,7 @@ import {
   lazy,
   Suspense,
   useContext,
+  useEffect,
   useMemo,
   useSyncExternalStore,
   type AnchorHTMLAttributes,
@@ -175,9 +176,12 @@ export function useRouter(): NextRouter {
   return provided ?? own
 }
 
-/** `Router` (export default de `next/router`): o roteador da URL fora de componentes. */
+/** O roteador do host do `NextRemote` montado, para o `Router` e o `redirect` fora de componentes. */
+let mounted: NextRouter | null = null
+
+/** `Router` (export default de `next/router`): o do host dentro do `NextRemote`, senão o da URL. */
 export const Router: NextRouter = new Proxy({} as NextRouter, {
-  get: (_, key) => (locationRouter(here()) as any)[key],
+  get: (_, key) => ((mounted ?? locationRouter(here())) as any)[key],
 })
 
 export function withRouter<P extends object>(Component: ComponentType<P & { router: NextRouter }>): ComponentType<P> {
@@ -220,12 +224,15 @@ export function useSearchParams(): URLSearchParams {
   return useMemo(() => new URL(asPath, 'http://x').searchParams, [asPath])
 }
 
+const noParams = Object.freeze({})
+
 export function useParams<T extends Record<string, string | string[]> = Record<string, string | string[]>>(): T {
-  return {} as T
+  // Sempre o mesmo objeto: um `useEffect([params])` não roda a cada render.
+  return noParams as T
 }
 
 export function redirect(url: string): never {
-  void go(url, true)
+  void (mounted ? mounted.replace(url) : go(url, true))
   throw new Error(`NEXT_REDIRECT;${url}`)
 }
 
@@ -354,6 +361,8 @@ export interface HostRouter {
   routes?: ZoneRoute[]
   push(url: string, options?: { scroll?: boolean }): void
   replace(url: string, options?: { scroll?: boolean }): void
+  /** `Router.events` do host: `routeChangeStart`, `routeChangeComplete`… chegam ao remote. */
+  events?: NextRouter['events']
 }
 
 const under = (path: string, prefix: string) => path === prefix || path.startsWith(prefix + '/')
@@ -406,7 +415,7 @@ export function hostRouter(host: HostRouter): NextRouter {
     reload: () => location.reload(),
     prefetch: () => Promise.resolve(),
     beforePopState: () => {},
-    events: routerEvents,
+    events: host.events ?? routerEvents,
     hrefOf,
   }
 }
@@ -418,7 +427,13 @@ export function hostRouter(host: HostRouter): NextRouter {
  */
 export function nextRemote<P extends object>(Component: ComponentType<P>): ComponentType<P & { __next?: HostRouter }> {
   return function NextRemote({ __next: host, ...props }: P & { __next?: HostRouter }) {
-    const router = useMemo(() => host && hostRouter(host), [host?.asPath, host?.basePath, host?.routes, host?.push, host?.replace])
+    const router = useMemo(() => host && hostRouter(host), [host?.asPath, host?.basePath, host?.routes, host?.push, host?.replace, host?.events])
+    if (router) mounted = router
+    useEffect(() => {
+      if (!router) return
+      mounted = router
+      return () => void (mounted === router && (mounted = null))
+    }, [router])
     const app = createElement(Component as ComponentType<any>, props)
     return router ? createElement(RouterContext.Provider, { value: router }, app) : app
   }

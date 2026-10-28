@@ -223,16 +223,21 @@ export function dedupeHooks(entry: () => string, getGroups: () => Group[]) {
         const index = await originsOf(ctx, g)
         const own = await exportOrigins(ctx, file, exports)
         const via = [...own].map(([name, origin]) => [name, index.get(origin)] as const)
-        if (via.every(([, v]) => v) && via.length) {
-          // Tudo o que o arquivo exporta sai também por um especificador do pacote: o mesmo objeto do host.
-          return (
-            `import { deps } from ${JSON.stringify(DEPS)}\n` +
-            via.map(([name, v], i) => `const v${i} = deps[${JSON.stringify(v!.spec)}][${JSON.stringify(v!.name)}]\n` + (name === 'default' ? `export default v${i}\n` : `export { v${i} as ${JSON.stringify(name)} }\n`)).join('')
-          )
-        }
-        ctx.warn?.(`dedupe: ${file.slice(g.dir!.length + 1)} não sai por nenhum export de ${g.name}: o remote leva uma cópia própria deste arquivo`)
         const f = JSON.stringify(file)
-        return `export * from ${f}\n` + (own.has('default') ? `export { default } from ${f}\n` : '')
+        const shared = via.filter(([, v]) => v)
+        const rest = via.filter(([, v]) => !v).map(([name]) => name)
+        if (!shared.length) {
+          ctx.warn?.(`dedupe: ${file.slice(g.dir!.length + 1)} não sai por nenhum export de ${g.name}: o remote leva uma cópia própria deste arquivo`)
+          return `export * from ${f}\n` + (own.has('default') ? `export { default } from ${f}\n` : '')
+        }
+        // Os nomes que saem por um especificador do pacote vêm do objeto do host; só os outros, da cópia própria.
+        if (rest.length)
+          ctx.warn?.(`dedupe: ${file.slice(g.dir!.length + 1)}: ${rest.join(', ')} não sai(em) por nenhum export de ${g.name}: esses nomes vêm de uma cópia própria deste arquivo`)
+        return (
+          `import { deps } from ${JSON.stringify(DEPS)}\n` +
+          shared.map(([name, v], i) => `const v${i} = deps[${JSON.stringify(v!.spec)}][${JSON.stringify(v!.name)}]\n` + (name === 'default' ? `export default v${i}\n` : `export { v${i} as ${JSON.stringify(name)} }\n`)).join('') +
+          (rest.length ? `export { ${rest.map((n) => (n === 'default' ? 'default' : JSON.stringify(n))).join(', ')} } from ${f}\n` : '')
+        )
       }
       return null
     },
@@ -254,7 +259,9 @@ const p = globalThis[Symbol.for("vitral")]
 const shared = !!(p && p.dedupe) && /\\/split\\/[^/]*$/.test(import.meta.url)
 async function need(name, range, version, keys, load) {
   let m = shared && (await p.dedupe(name, range, { version, load }))
-  if (!m || keys.some((k) => !(k in m))) m = await load()
+  const missing = m ? keys.filter((k) => !(k in m)) : []
+  if (missing.length) console.warn("[vitral] dedupe: a oferta de " + name + " não tem " + missing.join(", ") + "; o remote usa a cópia própria inteira")
+  if (!m || missing.length) m = await load()
   Object.assign(deps, m)
 }
 await Promise.all([${calls.join(', ')}])

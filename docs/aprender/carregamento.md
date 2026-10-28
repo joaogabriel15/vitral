@@ -32,7 +32,7 @@ import { preload } from 'vitral'
 link.addEventListener('pointerenter', () => preload('checkout'), { once: true })
 ```
 
-`preload('checkout', { routes: true })` também aquece no cache HTTP, com o navegador ocioso, os chunks que o remote só baixa depois (`import()` das rotas). A primeira tela de cada rota abre sem download.
+`preload('checkout', { routes: true })` também aquece no cache HTTP, com o navegador ocioso, os chunks que o remote só baixa depois (`import()` das rotas). A primeira tela de cada rota abre sem download. São no máximo 3 downloads por vez, e nada com economia de dados (`saveData`) ou 2G.
 
 | Opção | Valores | O que faz |
 | --- | --- | --- |

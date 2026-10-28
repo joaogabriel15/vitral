@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { dynamic, formatUrl, hostRouter, Image, Link, nextRemote, RouterContext, setBasePath, useRouter, usePathname, type NextRouter } from '../src/next'
+import { dynamic, formatUrl, hostRouter, Image, Link, nextRemote, redirect, Router, RouterContext, setBasePath, useParams, useRouter, usePathname, type NextRouter } from '../src/next'
 import vitral, { pureExcept } from '../src/vite'
 import { entryCode } from '../src/vite/adapter'
 import { loadNext, nextDefine, resolveNextId } from '../src/vite/next'
@@ -143,6 +143,34 @@ describe('vitral/next: roteador do host (NextRemote)', () => {
     expect(pushed).toEqual(['/orders/9'])
     await hostRouter(host('/store', pushed)).replace('/approvals')
     expect(pushed).toEqual(['/orders/9', 'replace:/delivery/approvals'])
+  })
+
+  it('Router padrão e redirect() usam o roteador do host enquanto o remote está montado', async () => {
+    const pushed: string[] = []
+    const Remote = nextRemote(() => h(Where))
+    await render(h(Remote, { __next: host('/store', pushed) }))
+    expect(Router.asPath).toBe('/store')
+    await Router.push('/store/orders/7')
+    expect(() => redirect('/approvals')).toThrow('NEXT_REDIRECT')
+    expect(pushed).toEqual(['/orders/7', 'replace:/delivery/approvals'])
+    expect(location.pathname).toBe('/')
+    roots.forEach((u) => u())
+    roots = []
+    history.replaceState(null, '', '/a')
+    expect(Router.asPath).toBe('/a')
+  })
+
+  it('router.events do remote são os do host', () => {
+    const events = { on() {}, off() {}, emit() {} }
+    expect(hostRouter({ ...host('/store'), events }).events).toBe(events)
+  })
+
+  it('useParams devolve sempre o mesmo objeto', async () => {
+    const seen: object[] = []
+    const P = () => (seen.push(useParams()), null)
+    await render(h(P))
+    await render(h(P))
+    expect(seen[0]).toBe(seen[1])
   })
 
   it('sem __next, o remote usa o roteador da URL', async () => {
