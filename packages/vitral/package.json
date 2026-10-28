@@ -1,6 +1,6 @@
 {
   "name": "vitral",
-  "version": "0.7.2",
+  "version": "0.8.0",
   "description": "Micro-frontends de qualquer framework numa página só, sem configuração de build no host. React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit e JS puro.",
   "keywords": [
     "micro-frontend",

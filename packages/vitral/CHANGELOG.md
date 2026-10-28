@@ -1,5 +1,15 @@
 # vitral
 
+## 0.8.0
+
+### Minor Changes
+
+- [#96](https://github.com/joaogabriel15/vitral/pull/96) [`65abc65`](https://github.com/joaogabriel15/vitral/commit/65abc658586f745ee2aa956fe82e5161996c9bfb) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Next.js sem Multi-Zones: `vitral/next-config` (`withVitral`) gera rewrites, headers de cache e as ofertas de `dedupe` do host; `vitral/next-host` traz `VitralNext` (registro, preload e navegação sem reload para rotas de remote) e `NextRemote` (o roteador do host no remote); `devUrl` liga o dev server do remote em `next dev`, com HMR. O modo `next` do plugin lê os `paths` do tsconfig de cada pacote (também no pré-bundle de dev), importa `.svg` como componente e builda em produção com `NODE_ENV=development` no `.env`. `dedupe: ['pacote/*']` compartilha um pacote publicado como código-fonte, inclusive arquivos internos que ele reexporta. O build dividido publica módulos de teste do SRI (CSP sem `data:`/`blob:`) e a lista `split.lazy`, usada por `preload(nome, { routes: true })`. Novos: `vitral/sw` (`remoteFiles`), `sideEffectFree`, `integrity: false` no registro e `dedupe` com módulos carregados sob demanda.
+
+### Patch Changes
+
+- [#98](https://github.com/joaogabriel15/vitral/pull/98) [`c1d51ce`](https://github.com/joaogabriel15/vitral/commit/c1d51cea03b80400a344362044df1df1d368264e) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Correções do host Next: a navegação de página inteira que o próprio Next pede depois de falhar ao carregar uma rota não entra mais em laço; o `Router` padrão de `next/router`, `redirect()` e `router.events` usam o roteador do host dentro do `NextRemote`; `useParams()` devolve sempre o mesmo objeto. `withVitral` só regrava `.vitral/host-config.mjs` quando muda e não quebra o `next start` em disco só de leitura. Dedupe de `pacote/*`: `export default X` conta como o mesmo valor de `X`, um arquivo interno com nomes privados reexporta do host os públicos, e a cópia própria inteira por falta de um subpath avisa no console. `preload({ routes: true })` baixa no máximo 3 chunks por vez e nada com economia de dados. Os módulos de teste de SRI do remote só valem na mesma origem da página.
+
 ## 0.7.2
 
 ### Patch Changes
