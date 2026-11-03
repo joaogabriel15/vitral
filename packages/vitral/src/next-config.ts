@@ -22,6 +22,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
+import { satisfies } from './core/semver'
+import type { RemoteManifest } from './core/types'
 import type { ZoneRoute } from './next'
 import { subpaths } from './vite/dedupe'
 
@@ -53,6 +55,19 @@ export interface NextRemoteConfig {
    * remote servido pela mesma origem do host.
    */
   integrity?: false
+  /**
+   * `false` não põe no HTML da página do remote os `<link rel="preload">` do
+   * `vitral.json`, do CSS e do JS da primeira tela. Padrão: põe, quando o
+   * `withVitral` acha o `vitral.json` no build (em `public/` ou em
+   * `manifestFile`).
+   */
+  htmlPreload?: false
+  /**
+   * Caminho no disco do `vitral.json`, quando ele não fica em `public/` (remote
+   * servido por outro servidor ou por rewrite). Lido no build do host para os
+   * `<link rel="preload">` do HTML.
+   */
+  manifestFile?: string
   /**
    * Em `next dev`, o dev server do remote (`http://localhost:5173`): o
    * remote vem dele, com HMR, sem `?vitral=`. A CSP de dev do host precisa
@@ -141,7 +156,13 @@ export function throughAlias(spec: string, alias: Record<string, unknown> = {}):
 }
 
 /** Código do módulo gerado: configuração dos remotes e ofertas que só importam quando pedidas. */
-export function hostModule(remotes: Record<string, NextRemoteConfig>, groups: ReturnType<typeof sharedGroups>, alias?: Record<string, unknown>, from?: string): string {
+export function hostModule(
+  remotes: Record<string, NextRemoteConfig>,
+  groups: ReturnType<typeof sharedGroups>,
+  alias?: Record<string, unknown>,
+  from?: string,
+  names?: Record<string, Record<string, string[]>>,
+): string {
   // Caminho relativo ao módulo gerado: o Turbopack não aceita caminho absoluto em import().
   const spec = (s: string) => {
     const t = throughAlias(s, alias)
@@ -150,7 +171,11 @@ export function hostModule(remotes: Record<string, NextRemoteConfig>, groups: Re
     return r.startsWith('.') ? r : './' + r
   }
   const shared = Object.entries(groups).map(([name, g]) => {
-    const imports = g.specs.map((s) => `import(${JSON.stringify(spec(s))})`).join(', ')
+    // Com os nomes que os remotes usam, o webpack só considera usados esses
+    // exports: o resto do pacote (gráficos de um barrel, por exemplo) não entra
+    // nas páginas que importam o pacote. O Turbopack ignora o comentário.
+    const only = (s: string) => (names?.[name] ? `/* webpackExports: ${JSON.stringify(['default', ...(names[name][s] ?? []).filter((n) => n !== 'default')])} */ ` : '')
+    const imports = g.specs.map((s) => `import(${only(s)}${JSON.stringify(spec(s))})`).join(', ')
     const modules = g.specs.map((s, i) => `${JSON.stringify(s)}: m[${i}]`).join(', ')
     return `  ${JSON.stringify(name)}: { version: ${JSON.stringify(g.version)}, modules: () => Promise.all([${imports}]).then((m) => ({ ${modules} })) },`
   })
@@ -159,6 +184,68 @@ export function hostModule(remotes: Record<string, NextRemoteConfig>, groups: Re
 
 /** Pasta do `vitral.json` de um remote servido pelo próprio host, ou nada. */
 const localDir = (url: string) => (url.startsWith('/') && !url.startsWith('//') ? url.slice(0, url.lastIndexOf('/') + 1) : undefined)
+
+/** `[href, integrity]` de cada arquivo que o HTML da página do remote pré-carrega. */
+export interface HtmlHints {
+  manifest: string
+  css: [string, string?][]
+  js: [string, string?][]
+}
+
+/**
+ * Lê o `vitral.json` no build e lista o que a primeira tela do remote baixa: o
+ * manifesto, o CSS e o JS (entrada, chunks e as cópias de dedupe que o host
+ * não oferece). `offered`: versão de cada grupo que o host oferece.
+ */
+export function htmlHints(dir: string, r: NextRemoteConfig, offered: Record<string, string>): HtmlHints | undefined {
+  const m = r.htmlPreload === false ? undefined : readManifest(dir, r)
+  if (!m) return
+  const base = new URL(r.url, 'http://host.invalid/')
+  const at = (f: string) => {
+    const u = new URL(f, base)
+    return u.origin === 'http://host.invalid' ? u.pathname + u.search : u.href
+  }
+  const hint = (f: string): [string, string?] => (r.integrity !== false && m.files?.[f] ? [at(f), m.files[f]] : [at(f)])
+  const own = (m.dedupe ?? []).filter((d) => !(offered[d.name] && satisfies(offered[d.name], d.range))).flatMap((d) => [...(d.chunks ?? []), d.file])
+  return {
+    manifest: at(r.url),
+    css: (m.css ?? []).map(hint),
+    js: (m.split ? [...own, ...(m.split.chunks ?? []), m.split.entry] : [m.entry]).map(hint),
+  }
+}
+
+/** O `vitral.json` do remote no disco (em `public/` ou `manifestFile`), ou nada. */
+function readManifest(dir: string, r: NextRemoteConfig): RemoteManifest | undefined {
+  const file = r.manifestFile ? resolve(dir, r.manifestFile) : localDir(r.url) && join(dir, 'public', r.url.split(/[?#]/)[0])
+  try {
+    const m = JSON.parse(readFileSync(file || '', 'utf8'))
+    // Canal (`{ stable, canary }`): a versão só é escolhida no navegador.
+    return typeof m?.entry === 'string' ? m : undefined
+  } catch {}
+}
+
+/**
+ * Nomes que os remotes usam de cada especificador de `share`, lidos dos
+ * manifestos no build. Só quando o build acha o manifesto de todos os remotes:
+ * um remote de fora pode usar qualquer nome, e aí as ofertas vão inteiras. Um
+ * grupo sem `uses` num manifesto (build antigo) também vai inteiro.
+ */
+export function offeredNames(dir: string, remotes: Record<string, NextRemoteConfig>, groups: ReturnType<typeof sharedGroups>): Record<string, Record<string, string[]>> | undefined {
+  const manifests = Object.values(remotes).map((r) => readManifest(dir, r))
+  if (manifests.some((m) => !m)) return
+  const out: Record<string, Record<string, Set<string>>> = Object.fromEntries(Object.keys(groups).map((g) => [g, {}]))
+  for (const m of manifests)
+    for (const d of m!.dedupe ?? []) {
+      if (!out[d.name]) continue
+      if (!d.uses) delete out[d.name]
+      else
+        for (const [spec, list] of Object.entries(d.uses)) {
+          const set = (out[d.name][spec] ??= new Set())
+          for (const n of list) set.add(n)
+        }
+    }
+  return Object.fromEntries(Object.entries(out).map(([g, specs]) => [g, Object.fromEntries(Object.entries(specs).map(([k, v]) => [k, [...v].sort()]))]))
+}
 
 /** Em dev, `devUrl` no lugar de `url` (o manifesto do dev server, em `/vitral.json`). */
 export function devRemotes(remotes: Record<string, NextRemoteConfig>, dev: boolean): Record<string, NextRemoteConfig> {
@@ -188,6 +275,23 @@ export function remoteHeaders(remotes: Record<string, NextRemoteConfig>): Header
   })
 }
 
+/** Cada remote com os `hints` do HTML (fora do `next dev` com `devUrl`, que serve outro build). */
+function withHints(dir: string, remotes: Record<string, NextRemoteConfig>, groups: ReturnType<typeof sharedGroups>, dev: boolean): Record<string, Omit<NextRemoteConfig, 'manifestFile' | 'htmlPreload'> & { hints?: HtmlHints }> {
+  let react: string | undefined
+  try {
+    react = installed(dir, 'react').version
+  } catch {}
+  const offered: Record<string, string> = { ...(react && { react }), ...Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, g.version])) }
+  return Object.fromEntries(
+    Object.entries(remotes).map(([name, r]) => {
+      const hints = dev && r.devUrl ? undefined : htmlHints(dir, r, offered)
+      // O caminho no disco não vai para o bundle do navegador.
+      const { manifestFile: _, htmlPreload: __, ...rest } = r
+      return [name, hints ? { ...rest, hints } : rest]
+    }),
+  )
+}
+
 /** Grava só se o conteúdo mudou: o \`mtime\` igual não dispara rebuild no \`next dev\`. */
 function writeChanged(file: string, text: string): void {
   try {
@@ -205,7 +309,10 @@ export function withVitral(nextConfig: NextConfig, options: WithVitralOptions): 
     try {
       mkdirSync(dirname(file), { recursive: true })
       writeChanged(join(dirname(file), '.gitignore'), '*\n')
-      writeChanged(file, hostModule(devRemotes(options.remotes, process.env.NODE_ENV === 'development'), groups, alias, dirname(file)))
+      const dev = process.env.NODE_ENV === 'development'
+      // Em dev com `devUrl`, o remote vem de outro build: ofertas inteiras.
+      const names = dev && Object.values(options.remotes).some((r) => r.devUrl) ? undefined : offeredNames(dir, options.remotes, groups)
+      writeChanged(file, hostModule(withHints(dir, devRemotes(options.remotes, dev), groups, dev), groups, alias, dirname(file), names))
     } catch (e) {
       // `next start` num disco só de leitura: o build já levou o módulo gerado.
       console.warn(`[vitral] não consegui gravar ${file} (${(e as Error).message}). No build ele é necessário; no next start, não.`)

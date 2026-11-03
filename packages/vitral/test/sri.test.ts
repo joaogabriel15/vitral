@@ -98,6 +98,15 @@ describe('caminho 1: import map com integrity', () => {
     expect(document.head.querySelector('link[rel="modulepreload"]')).toBeNull()
   })
 
+  it('chunk que o HTML já pré-carrega (host Next) não é aquecido de novo com fetch', async () => {
+    browser({ map: 'ok' })
+    const link = Object.assign(document.createElement('link'), { rel: 'preload', as: 'script', href: CDN + 'split/a.js' })
+    document.head.append(link)
+    const verified = await load()
+    expect(await verified(build)).toBe(build.entry)
+    expect(fetch).not.toHaveBeenCalledWith(CDN + 'split/a.js', expect.anything())
+  })
+
   it('o primeiro mapa leva dois módulos de teste com o mesmo hash; os próximos, não', async () => {
     browser({ map: 'ok' })
     const verified = await load()

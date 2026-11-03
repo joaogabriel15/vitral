@@ -121,6 +121,8 @@ exports[`exports públicos > next-config 1`] = `
   "HOST_CONFIG",
   "devRemotes",
   "hostModule",
+  "htmlHints",
+  "offeredNames",
   "remoteHeaders",
   "remoteRewrites",
   "sharedGroups",

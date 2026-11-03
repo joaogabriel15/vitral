@@ -278,7 +278,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "4.83 kB"
+      "limit": "5.02 kB"
     },
     {
       "name": "núcleo",
@@ -298,17 +298,17 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.78 kB"
+      "limit": "5.96 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.76 kB"
+      "limit": "2.96 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
       "path": "dist/dedupe-*.js",
-      "limit": "690 B"
+      "limit": "760 B"
     },
     {
       "name": "overrides (sob demanda)",
@@ -321,7 +321,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.02 kB"
+      "limit": "1.03 kB"
     },
     {
       "name": "host mínimo + store",
@@ -341,7 +341,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.53 kB"
+      "limit": "5.71 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -361,7 +361,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.76 kB"
+      "limit": "5.94 kB"
     },
     {
       "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
@@ -408,7 +408,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.33 kB"
+      "limit": "6.51 kB"
     },
     {
       "name": "vue",
@@ -429,7 +429,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.12 kB"
+      "limit": "6.31 kB"
     },
     {
       "name": "element",
@@ -449,7 +449,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.49 kB"
+      "limit": "6.66 kB"
     },
     {
       "name": "devtools",
@@ -460,7 +460,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.67 kB",
+      "limit": "6.84 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -480,7 +480,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.59 kB",
+      "limit": "9.88 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -506,7 +506,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "3.28 kB",
+      "limit": "3.29 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -536,7 +536,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "12.59 kB"
+      "limit": "12.81 kB"
     },
     {
       "name": "vitals (Web Vitals por remote)",

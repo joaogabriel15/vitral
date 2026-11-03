@@ -48,7 +48,9 @@ const fake = (version: string, keys = KEYS) => {
 
 describe('build com dedupe', () => {
   it('manifesto: faixa ^ da versão instalada e a cópia própria num arquivo à parte', () => {
-    expect(m.dedupe).toEqual([{ name: 'react', range: `^${RealReact.version}`, version: RealReact.version, file: expect.stringMatching(/^split\/.*own.*react.*\.js$/), chunks: [] }])
+    expect(m.dedupe).toEqual([{ name: 'react', range: `^${RealReact.version}`, version: RealReact.version, file: expect.stringMatching(/^split\/.*own.*react.*\.js$/), chunks: [], uses: expect.any(Object) }])
+    // Os nomes que o remote lê de cada especificador: o host pode oferecer só esses.
+    expect(m.dedupe![0].uses).toMatchObject({ react: expect.arrayContaining(['createContext']), 'react-dom/client': expect.arrayContaining(['createRoot']), 'react/jsx-runtime': expect.arrayContaining(['jsx']) })
     expect(m.files![m.dedupe![0].file]).toMatch(/^sha384-/)
     // O loader baixa a entrada, o módulo de dependências e o remote juntos; a cópia própria, só se precisar.
     expect(m.split!.chunks).not.toContain(m.dedupe![0].file)

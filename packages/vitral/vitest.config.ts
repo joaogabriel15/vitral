@@ -6,7 +6,7 @@ export default defineConfig({
   resolve: {
     conditions: ['browser'],
     // `vitral/next-host` importa do app (Next e o módulo do withVitral).
-    alias: { 'next/router': new URL('./test/stubs/next-router.ts', import.meta.url).pathname, 'vitral-next-host-config': new URL('./test/stubs/next-host-config.ts', import.meta.url).pathname },
+    alias: { 'next/head': new URL('./test/stubs/next-head.ts', import.meta.url).pathname, 'next/router': new URL('./test/stubs/next-router.ts', import.meta.url).pathname, 'vitral-next-host-config': new URL('./test/stubs/next-host-config.ts', import.meta.url).pathname },
   },
   test: {
     // Força o build de navegador do Solid/Svelte (o padrão do Node é o de SSR).

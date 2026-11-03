@@ -1,3 +1,4 @@
+import { dedupeModule, sriModule } from './bundled'
 import { prefetchCss } from './css'
 import { fail, isRemoteError, RemoteError, report } from './errors'
 import { checkOrigin } from './registry'
@@ -76,8 +77,8 @@ let paths: Promise<typeof import('./sri') | null> | undefined
  */
 function warm(): void {
   if (paths) return
-  paths = import('./sri').catch(() => null)
-  import('./dedupe').catch(() => {})
+  paths = sriModule().catch(() => null)
+  dedupeModule().catch(() => {})
 }
 
 /**
@@ -86,8 +87,8 @@ function warm(): void {
  * o da hidratação, e não um depois do outro.
  */
 export function warmSsr(holder: Element): void {
-  paths ??= import('./sri').catch(() => null)
-  if (holder.querySelector('script[data-vitral-manifest]')?.textContent?.includes('"dedupe"')) import('./dedupe').catch(() => {})
+  paths ??= sriModule().catch(() => null)
+  if (holder.querySelector('script[data-vitral-manifest]')?.textContent?.includes('"dedupe"')) dedupeModule().catch(() => {})
 }
 
 /**
@@ -110,6 +111,9 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
     warm()
     let resolved: Resolved | undefined
     try {
+      // O manifesto já baixa enquanto as ofertas de dedupe se registram.
+      const known = p.entry(name)
+      const early = known?.url && !known.module && !known.manifest && !overrides() ? prefetchManifest(known.url, name, priority) : undefined
       await p.pending()
       // Override troca a URL e descarta a integrity do host; o isolamento continua.
       const override = await devOverride(name)
@@ -117,8 +121,11 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
       if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
       if (entry.module) return await loadLocal(name, entry)
       let t = performance.now()
-      resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority)
+      resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority, entry.url === known?.url ? early : undefined)
       metric(name, 'manifest', t)
+      // O boot do remote confere, com isto, que a oferta do host tem os nomes que ele usa.
+      const d = resolved.split?.dedupe
+      if (d?.some((x) => x.uses)) (p.uses ??= {})[resolved.split!.entry] = Object.fromEntries(d.map((x) => [x.name, x.uses]))
       // O CSS baixa junto com o JS; a montagem espera os dois.
       prefetchCss(resolved, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', priority)
       t = performance.now()
@@ -136,9 +143,13 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
  * código fica em outro módulo, baixado só quando a página pede um override.
  */
 function devOverride(name: string): Promise<RemoteEntry | undefined> | undefined {
+  if (overrides()) return import('./overrides').then((m) => m.overrideFor(name))
+}
+
+function overrides(): boolean | undefined {
   try {
     const k = 'vitral:overrides'
-    if (/[?&]vitral=/.test(location.search) || localStorage[k] || sessionStorage[k]) return import('./overrides').then((m) => m.overrideFor(name))
+    return /[?&]vitral=/.test(location.search) || !!(localStorage[k] || sessionStorage[k])
   } catch {}
 }
 
@@ -150,7 +161,8 @@ async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote
 
 type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild; priority?: RequestPriority }
 
-export async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, priority?: RequestPriority): Promise<Resolved> {
+/** `early`: o manifesto já pedido por `loadFile` para esta URL. */
+export async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, priority?: RequestPriority, early?: Promise<RemoteManifest>): Promise<Resolved> {
   checkOrigin(name, entry.url)
   // O manifesto é o único arquivo sem hash no nome: sempre revalida, para
   // nunca usar um deploy velho (o resto pode ter cache eterno). Um manifesto
@@ -158,7 +170,7 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
   const m: RemoteManifest =
     entry.manifest ??
     (new URL(entry.url).pathname.endsWith('.json')
-      ? await manifestOf(entry.url, name, priority)
+      ? await (early ?? manifestOf(entry.url, name, priority))
       : { name, entry: entry.url })
   // Canal (`{ stable, canary }`): escolhe a versão e segue pelo manifesto dela.
   if ((m as any)?.stable) return resolveEntry(name, await (await import('./channel')).pick(name, entry, m as any), priority)
@@ -208,13 +220,29 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
   return resolved
 }
 
+/** Pede o manifesto antes das ofertas de dedupe; nada se a origem não é permitida. */
+function prefetchManifest(url: string, name: string, priority?: RequestPriority): Promise<RemoteManifest> | undefined {
+  try {
+    if (!new URL(url).pathname.endsWith('.json')) return
+    checkOrigin(name, url)
+  } catch {
+    return
+  }
+  const f = manifestOf(url, name, priority)
+  f.catch(() => {})
+  return f
+}
+
 /**
  * Com `maxStale`, a cópia salva do manifesto pode valer sem esperar a rede
  * (`./stale`, um módulo à parte que baixa junto com o manifesto).
  */
 function manifestOf(url: string, name: string, priority?: RequestPriority): Promise<RemoteManifest> {
   const { timeout, maxStale } = protocol().settings()
-  const fresh = fetchJson<RemoteManifest>(url, timeout, name, { cache: 'no-cache', priority })
+  // `same-origin`, o modo do `<link rel="preload" crossorigin>` que o host põe
+  // no HTML: sem ele o navegador baixa o manifesto de novo. Para outra origem
+  // continua sem cookies.
+  const fresh = fetchJson<RemoteManifest>(url, timeout, name, { cache: 'no-cache', credentials: 'same-origin', priority })
   return maxStale ? import('./stale').then((m) => m.stale(url, fresh, maxStale), () => fresh) : fresh
 }
 
@@ -230,7 +258,7 @@ async function importModule(name: string, r: Resolved): Promise<any> {
   if (!r.integrity) {
     if (!r.split) return run(r.entry)
     if (r.split.dedupe?.length) {
-      const { shared } = await import('./dedupe')
+      const { shared } = await dedupeModule()
       for (const d of r.split.dedupe)
         shared(protocol())(d.name, d.range, { version: d.version, url: d.file, load: async () => (await run(d.file)).default })
     }

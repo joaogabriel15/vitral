@@ -27,6 +27,12 @@ vi.mock('vitral-next-host-config', () => ({
   remotes: {
     delivery: { url: '/delivery-remote/vitral.json', basePath: '/delivery', routes: [{ public: '/store', zone: '/delivery/store' }], integrity: false },
     outro: { url: 'https://cdn.x/vitral.json', basePath: '/outro', preload: 'route' },
+    hinted: {
+      url: '/h/vitral.json',
+      basePath: '/h',
+      preload: false,
+      hints: { manifest: '/h/vitral.json', css: [['/h/a.css', 'sha384-c']], js: [['/h/split/chunk.js', 'sha384-k'], ['/h/split/e.js']] },
+    },
   },
   shared: { i18next: { version: '25.0.0', modules: async () => ({ i18next: { ok: true } }) } },
 }))
@@ -39,7 +45,7 @@ vi.mock('../src/react', () => ({
 import { interceptNavigation, NextRemote, remoteFor } from '../src/next-host'
 import { protocol } from '../src/core/state'
 import { preload } from '../src/react'
-import { devRemotes, hostModule, remoteHeaders, remoteRewrites, sharedGroups, throughAlias, withVitral } from '../src/next-config'
+import { devRemotes, hostModule, htmlHints, offeredNames, remoteHeaders, remoteRewrites, sharedGroups, throughAlias, withVitral } from '../src/next-config'
 
 /** Navigation API mínima: o teste dispara os eventos `navigate`. */
 function navigation() {
@@ -151,6 +157,33 @@ describe('vitral/next-host', () => {
     await act(async () => root.unmount())
   })
 
+  it('NextRemote põe no HTML o preload do manifesto, do CSS e do JS, antes do roteador ficar pronto', async () => {
+    const div = document.body.appendChild(document.createElement('div'))
+    const root = createRoot(div)
+    router.isReady = false
+    // O React 19 leva os <link> para o <head>; o next/head de verdade também.
+    const links = () => [...document.querySelectorAll('link[rel=preload]')].map((l) => [l.getAttribute('as'), l.getAttribute('href'), l.getAttribute('integrity'), l.getAttribute('crossorigin')])
+    try {
+      await act(async () => root.render(h(NextRemote, { name: 'hinted', fallback: h('p', { id: 'fb' }) })))
+      expect(div.querySelector('#fb')).not.toBeNull()
+      expect(links()).toEqual([
+        ['fetch', '/h/vitral.json', null, 'anonymous'],
+        ['style', '/h/a.css', 'sha384-c', 'anonymous'],
+        ['script', '/h/split/chunk.js', 'sha384-k', 'anonymous'],
+        ['script', '/h/split/e.js', null, 'anonymous'],
+      ])
+      // Shadow DOM: o CSS vem por fetch, sem preload de estilo.
+      await act(async () => root.render(h(NextRemote, { name: 'hinted', isolate: 'shadow' })))
+      expect(links().map((l) => l[0])).toEqual(['fetch', 'script', 'script'])
+      // Remote sem hints (manifesto não achado no build): nada no head.
+      await act(async () => root.render(h(NextRemote, { name: 'delivery' })))
+      expect(links()).toEqual([])
+    } finally {
+      router.isReady = true
+      await act(async () => root.unmount())
+    }
+  })
+
   it('preload: a rota aberta já, os outros no ocioso, `route` nunca antes', async () => {
     vi.resetModules()
     history.replaceState(null, '', '/store/1')
@@ -248,6 +281,73 @@ describe('vitral/next-config', () => {
     expect(readFileSync(file, 'utf8')).toContain('import("../node_modules/@acme/ui/src/routes.ts")')
     const merged = withVitral({ rewrites: () => ({ beforeFiles: [{ source: '/b', destination: '/c' }], afterFiles: [] }) }, { remotes, dir })
     expect((await merged.rewrites!() as any).beforeFiles).toEqual([...remoteRewrites(remotes), { source: '/b', destination: '/c' }])
+  })
+
+  it('hints do HTML: lidos do vitral.json no build, com hash, sem as cópias de dedupe que o host oferece', () => {
+    const manifest = {
+      name: 'delivery',
+      entry: 'remote-a.js',
+      css: ['remote-a.css'],
+      files: { 'remote-a.css': 'sha384-css', 'split/e.js': 'sha384-e', 'split/c.js': 'sha384-c', 'split/react.js': 'sha384-r', 'split/q.js': 'sha384-q' },
+      split: { entry: 'split/e.js', chunks: ['split/c.js'], lazy: ['split/rota.js'] },
+      dedupe: [
+        { name: 'react', range: '^19.0.0', version: '19.1.0', file: 'split/react.js' },
+        { name: 'query', range: '^5.0.0', version: '5.1.0', file: 'split/q.js', chunks: ['split/q2.js'] },
+      ],
+    }
+    write('public/delivery-remote/vitral.json', JSON.stringify(manifest))
+    const r = { url: '/delivery-remote/vitral.json', basePath: '/delivery' }
+    expect(htmlHints(dir, r, { react: '19.2.0' })).toEqual({
+      manifest: '/delivery-remote/vitral.json',
+      css: [['/delivery-remote/remote-a.css', 'sha384-css']],
+      js: [['/delivery-remote/split/q2.js'], ['/delivery-remote/split/q.js', 'sha384-q'], ['/delivery-remote/split/c.js', 'sha384-c'], ['/delivery-remote/split/e.js', 'sha384-e']],
+    })
+    // React fora da faixa: a cópia do remote também vai; `integrity: false` tira os hashes.
+    const loose = htmlHints(dir, { ...r, integrity: false }, { react: '18.3.0', query: '5.2.0' })!
+    expect(loose.js).toEqual([['/delivery-remote/split/react.js'], ['/delivery-remote/split/c.js'], ['/delivery-remote/split/e.js']])
+    // Fora de public/: `manifestFile`, com a URL do remote.
+    write('remote-dist/vitral.json', JSON.stringify({ name: 'x', entry: 'remote-b.js', files: { 'remote-b.js': 'sha384-b' } }))
+    expect(htmlHints(dir, { url: 'https://cdn.x/d/vitral.json', basePath: '/x', manifestFile: 'remote-dist/vitral.json' }, {})).toEqual({
+      manifest: 'https://cdn.x/d/vitral.json',
+      css: [],
+      js: [['https://cdn.x/d/remote-b.js', 'sha384-b']],
+    })
+    expect(htmlHints(dir, { ...r, htmlPreload: false }, {})).toBeUndefined()
+    expect(htmlHints(dir, { url: '/nao-existe/vitral.json', basePath: '/n' }, {})).toBeUndefined()
+    expect(htmlHints(dir, { url: 'https://cdn.x/vitral.json', basePath: '/x' }, {})).toBeUndefined()
+    write('public/canal/vitral.json', JSON.stringify({ stable: '/a/vitral.json', canary: '/b/vitral.json' }))
+    expect(htmlHints(dir, { url: '/canal/vitral.json', basePath: '/c' }, {})).toBeUndefined()
+    // No módulo gerado: os hints, sem o caminho no disco; em dev com devUrl, nada.
+    write('node_modules/react/package.json', JSON.stringify({ name: 'react', version: '19.2.0' }))
+    withVitral({}, { remotes: { delivery: { ...r, manifestFile: 'public/delivery-remote/vitral.json' } }, dir })
+    const code = readFileSync(join(dir, '.vitral/host-config.mjs'), 'utf8')
+    expect(code).toContain('"hints"')
+    expect(code).not.toContain('split/react.js')
+    expect(code).not.toContain('manifestFile')
+    vi.stubEnv('NODE_ENV', 'development')
+    withVitral({}, { remotes: { delivery: { ...r, devUrl: 'http://localhost:5173' } }, dir })
+    vi.unstubAllEnvs()
+    expect(readFileSync(join(dir, '.vitral/host-config.mjs'), 'utf8')).not.toContain('"hints"')
+  })
+
+  it('ofertas só com os nomes que os remotes usam (webpackExports), quando o build acha todos os manifestos', () => {
+    const groups = { '@acme/ui': { version: '0.2.59', specs: ['@acme/ui', '@acme/ui/routes'] }, i18next: { version: '25.1.0', specs: ['i18next'] } }
+    const m = (uses?: Record<string, string[]>) => ({ name: 'r', entry: 'remote.js', dedupe: [{ name: '@acme/ui', range: '^0.2.0', version: '0.2.59', file: 'split/own.js', ...(uses && { uses }) }] })
+    write('public/a/vitral.json', JSON.stringify(m({ '@acme/ui': ['Button', 'default'] })))
+    write('public/b/vitral.json', JSON.stringify(m({ '@acme/ui': ['Card'], '@acme/ui/routes': [] })))
+    const two = { a: { url: '/a/vitral.json', basePath: '/a' }, b: { url: '/b/vitral.json', basePath: '/b' } }
+    const names = offeredNames(dir, two, groups)
+    // i18next: nenhum remote pede; vai só com o default.
+    expect(names).toEqual({ '@acme/ui': { '@acme/ui': ['Button', 'Card', 'default'], '@acme/ui/routes': [] }, i18next: {} })
+    const code = hostModule(two, groups, undefined, undefined, names)
+    expect(code).toContain('import(/* webpackExports: ["default","Button","Card"] */ "@acme/ui"), import(/* webpackExports: ["default"] */ "@acme/ui/routes")')
+    expect(code).toContain('import(/* webpackExports: ["default"] */ "i18next")')
+    // Um remote sem manifesto no build (de outra origem): tudo inteiro.
+    expect(offeredNames(dir, { ...two, c: { url: 'https://cdn.x/vitral.json', basePath: '/c' } }, groups)).toBeUndefined()
+    expect(hostModule(two, groups)).toContain('import("@acme/ui")')
+    // Manifesto antigo, sem `uses`: aquele grupo vai inteiro.
+    write('public/b/vitral.json', JSON.stringify(m()))
+    expect(offeredNames(dir, two, groups)).toEqual({ i18next: {} })
   })
 
   it('withVitral não regrava o módulo igual e não quebra sem poder gravar (next start em disco só de leitura)', () => {
