@@ -16,6 +16,7 @@
  * 3. Bytes conferidos e executados via `blob:` (`loader.ts`), o caminho de
  *    sempre. Vale para os outros navegadores e para quem já falhou.
  */
+import { dedupeModule } from './bundled'
 import { verifyIntegrity } from './integrity'
 import type { Protocol } from './state'
 import { RemoteError } from './errors'
@@ -139,7 +140,7 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
   // remotes, junto com a entrada. O código do dedupe só vem se houver.
   const share = async (pre?: boolean) => {
     if (!run || !dedupe.length) return
-    const { shared } = await import('./dedupe')
+    const { shared } = await dedupeModule()
     for (const d of dedupe)
       shared(p)(d.name, d.range, {
         version: d.version,
@@ -155,7 +156,9 @@ export async function verified(build: SplitBuild, run?: (url: string) => Promise
   const probes = build.probe?.every((u) => u.startsWith('data:') || new URL(u, location.href).origin === location.origin) ? build.probe : undefined
   if (maps !== false && (maps = await useMap(sri, probes))) {
     await share()
-    for (const u of chunks) fetch(u, { priority }).catch(() => {})
+    // Chunk que o HTML já pré-carrega (host Next) não baixa de novo.
+    const hinted = new Set([...document.querySelectorAll<HTMLLinkElement>('link[rel=preload]')].map((l) => l.href))
+    for (const u of chunks) if (!hinted.has(u)) fetch(u, { priority }).catch(() => {})
     return entry
   }
   if (await (preloads ??= checkPreloads(probes))) {
