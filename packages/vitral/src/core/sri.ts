@@ -35,7 +35,7 @@ export interface SplitBuild {
   /** Módulos de teste servidos com o remote (manifesto `probe`), com URLs absolutas. */
   probe?: [string, string]
   /** Cópias próprias das dependências de `dedupe`, com URLs absolutas. */
-  dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
+  dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[]; uses?: Record<string, string[]> }[]
 }
 
 /** O que o loader sabe de um remote com integrity. */

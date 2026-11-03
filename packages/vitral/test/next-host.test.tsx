@@ -45,7 +45,7 @@ vi.mock('../src/react', () => ({
 import { interceptNavigation, NextRemote, remoteFor } from '../src/next-host'
 import { protocol } from '../src/core/state'
 import { preload } from '../src/react'
-import { devRemotes, hostModule, htmlHints, remoteHeaders, remoteRewrites, sharedGroups, throughAlias, withVitral } from '../src/next-config'
+import { devRemotes, hostModule, htmlHints, offeredNames, remoteHeaders, remoteRewrites, sharedGroups, throughAlias, withVitral } from '../src/next-config'
 
 /** Navigation API mínima: o teste dispara os eventos `navigate`. */
 function navigation() {
@@ -328,6 +328,26 @@ describe('vitral/next-config', () => {
     withVitral({}, { remotes: { delivery: { ...r, devUrl: 'http://localhost:5173' } }, dir })
     vi.unstubAllEnvs()
     expect(readFileSync(join(dir, '.vitral/host-config.mjs'), 'utf8')).not.toContain('"hints"')
+  })
+
+  it('ofertas só com os nomes que os remotes usam (webpackExports), quando o build acha todos os manifestos', () => {
+    const groups = { '@acme/ui': { version: '0.2.59', specs: ['@acme/ui', '@acme/ui/routes'] }, i18next: { version: '25.1.0', specs: ['i18next'] } }
+    const m = (uses?: Record<string, string[]>) => ({ name: 'r', entry: 'remote.js', dedupe: [{ name: '@acme/ui', range: '^0.2.0', version: '0.2.59', file: 'split/own.js', ...(uses && { uses }) }] })
+    write('public/a/vitral.json', JSON.stringify(m({ '@acme/ui': ['Button', 'default'] })))
+    write('public/b/vitral.json', JSON.stringify(m({ '@acme/ui': ['Card'], '@acme/ui/routes': [] })))
+    const two = { a: { url: '/a/vitral.json', basePath: '/a' }, b: { url: '/b/vitral.json', basePath: '/b' } }
+    const names = offeredNames(dir, two, groups)
+    // i18next: nenhum remote pede; vai só com o default.
+    expect(names).toEqual({ '@acme/ui': { '@acme/ui': ['Button', 'Card', 'default'], '@acme/ui/routes': [] }, i18next: {} })
+    const code = hostModule(two, groups, undefined, undefined, names)
+    expect(code).toContain('import(/* webpackExports: ["default","Button","Card"] */ "@acme/ui"), import(/* webpackExports: ["default"] */ "@acme/ui/routes")')
+    expect(code).toContain('import(/* webpackExports: ["default"] */ "i18next")')
+    // Um remote sem manifesto no build (de outra origem): tudo inteiro.
+    expect(offeredNames(dir, { ...two, c: { url: 'https://cdn.x/vitral.json', basePath: '/c' } }, groups)).toBeUndefined()
+    expect(hostModule(two, groups)).toContain('import("@acme/ui")')
+    // Manifesto antigo, sem `uses`: aquele grupo vai inteiro.
+    write('public/b/vitral.json', JSON.stringify(m()))
+    expect(offeredNames(dir, two, groups)).toEqual({ i18next: {} })
   })
 
   it('withVitral não regrava o módulo igual e não quebra sem poder gravar (next start em disco só de leitura)', () => {

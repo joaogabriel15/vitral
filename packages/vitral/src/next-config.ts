@@ -156,7 +156,13 @@ export function throughAlias(spec: string, alias: Record<string, unknown> = {}):
 }
 
 /** Código do módulo gerado: configuração dos remotes e ofertas que só importam quando pedidas. */
-export function hostModule(remotes: Record<string, NextRemoteConfig>, groups: ReturnType<typeof sharedGroups>, alias?: Record<string, unknown>, from?: string): string {
+export function hostModule(
+  remotes: Record<string, NextRemoteConfig>,
+  groups: ReturnType<typeof sharedGroups>,
+  alias?: Record<string, unknown>,
+  from?: string,
+  names?: Record<string, Record<string, string[]>>,
+): string {
   // Caminho relativo ao módulo gerado: o Turbopack não aceita caminho absoluto em import().
   const spec = (s: string) => {
     const t = throughAlias(s, alias)
@@ -165,7 +171,11 @@ export function hostModule(remotes: Record<string, NextRemoteConfig>, groups: Re
     return r.startsWith('.') ? r : './' + r
   }
   const shared = Object.entries(groups).map(([name, g]) => {
-    const imports = g.specs.map((s) => `import(${JSON.stringify(spec(s))})`).join(', ')
+    // Com os nomes que os remotes usam, o webpack só considera usados esses
+    // exports: o resto do pacote (gráficos de um barrel, por exemplo) não entra
+    // nas páginas que importam o pacote. O Turbopack ignora o comentário.
+    const only = (s: string) => (names?.[name] ? `/* webpackExports: ${JSON.stringify(['default', ...(names[name][s] ?? []).filter((n) => n !== 'default')])} */ ` : '')
+    const imports = g.specs.map((s) => `import(${only(s)}${JSON.stringify(spec(s))})`).join(', ')
     const modules = g.specs.map((s, i) => `${JSON.stringify(s)}: m[${i}]`).join(', ')
     return `  ${JSON.stringify(name)}: { version: ${JSON.stringify(g.version)}, modules: () => Promise.all([${imports}]).then((m) => ({ ${modules} })) },`
   })
@@ -188,17 +198,8 @@ export interface HtmlHints {
  * não oferece). `offered`: versão de cada grupo que o host oferece.
  */
 export function htmlHints(dir: string, r: NextRemoteConfig, offered: Record<string, string>): HtmlHints | undefined {
-  if (r.htmlPreload === false) return
-  const local = localDir(r.url)
-  const file = r.manifestFile ? resolve(dir, r.manifestFile) : local && join(dir, 'public', r.url.split(/[?#]/)[0])
-  let m: RemoteManifest
-  try {
-    m = JSON.parse(readFileSync(file || '', 'utf8'))
-  } catch {
-    return
-  }
-  // Canal (`{ stable, canary }`): a versão só é escolhida no navegador.
-  if (typeof m?.entry !== 'string') return
+  const m = r.htmlPreload === false ? undefined : readManifest(dir, r)
+  if (!m) return
   const base = new URL(r.url, 'http://host.invalid/')
   const at = (f: string) => {
     const u = new URL(f, base)
@@ -211,6 +212,39 @@ export function htmlHints(dir: string, r: NextRemoteConfig, offered: Record<stri
     css: (m.css ?? []).map(hint),
     js: (m.split ? [...own, ...(m.split.chunks ?? []), m.split.entry] : [m.entry]).map(hint),
   }
+}
+
+/** O `vitral.json` do remote no disco (em `public/` ou `manifestFile`), ou nada. */
+function readManifest(dir: string, r: NextRemoteConfig): RemoteManifest | undefined {
+  const file = r.manifestFile ? resolve(dir, r.manifestFile) : localDir(r.url) && join(dir, 'public', r.url.split(/[?#]/)[0])
+  try {
+    const m = JSON.parse(readFileSync(file || '', 'utf8'))
+    // Canal (`{ stable, canary }`): a versão só é escolhida no navegador.
+    return typeof m?.entry === 'string' ? m : undefined
+  } catch {}
+}
+
+/**
+ * Nomes que os remotes usam de cada especificador de `share`, lidos dos
+ * manifestos no build. Só quando o build acha o manifesto de todos os remotes:
+ * um remote de fora pode usar qualquer nome, e aí as ofertas vão inteiras. Um
+ * grupo sem `uses` num manifesto (build antigo) também vai inteiro.
+ */
+export function offeredNames(dir: string, remotes: Record<string, NextRemoteConfig>, groups: ReturnType<typeof sharedGroups>): Record<string, Record<string, string[]>> | undefined {
+  const manifests = Object.values(remotes).map((r) => readManifest(dir, r))
+  if (manifests.some((m) => !m)) return
+  const out: Record<string, Record<string, Set<string>>> = Object.fromEntries(Object.keys(groups).map((g) => [g, {}]))
+  for (const m of manifests)
+    for (const d of m!.dedupe ?? []) {
+      if (!out[d.name]) continue
+      if (!d.uses) delete out[d.name]
+      else
+        for (const [spec, list] of Object.entries(d.uses)) {
+          const set = (out[d.name][spec] ??= new Set())
+          for (const n of list) set.add(n)
+        }
+    }
+  return Object.fromEntries(Object.entries(out).map(([g, specs]) => [g, Object.fromEntries(Object.entries(specs).map(([k, v]) => [k, [...v].sort()]))]))
 }
 
 /** Em dev, `devUrl` no lugar de `url` (o manifesto do dev server, em `/vitral.json`). */
@@ -276,7 +310,9 @@ export function withVitral(nextConfig: NextConfig, options: WithVitralOptions): 
       mkdirSync(dirname(file), { recursive: true })
       writeChanged(join(dirname(file), '.gitignore'), '*\n')
       const dev = process.env.NODE_ENV === 'development'
-      writeChanged(file, hostModule(withHints(dir, devRemotes(options.remotes, dev), groups, dev), groups, alias, dirname(file)))
+      // Em dev com `devUrl`, o remote vem de outro build: ofertas inteiras.
+      const names = dev && Object.values(options.remotes).some((r) => r.devUrl) ? undefined : offeredNames(dir, options.remotes, groups)
+      writeChanged(file, hostModule(withHints(dir, devRemotes(options.remotes, dev), groups, dev), groups, alias, dirname(file), names))
     } catch (e) {
       // `next start` num disco só de leitura: o build já levou o módulo gerado.
       console.warn(`[vitral] não consegui gravar ${file} (${(e as Error).message}). No build ele é necessário; no next start, não.`)
