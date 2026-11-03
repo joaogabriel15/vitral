@@ -156,8 +156,18 @@ No build do host, o `withVitral` lê o `vitral.json` do remote (em `public/` ou 
 
 - O hash de cada arquivo vai no `integrity` do preload, e o `import()` do remote confere de novo. Um arquivo trocado no caminho não roda.
 - O código de SRI e de `dedupe` do vitral vem no bundle do host (cerca de 3 kB), e o manifesto baixa enquanto as ofertas de `share` se registram. Depois da hidratação, nenhum download espera outro.
-- Os links refletem o remote do build do host. Builde o remote antes do host. Se o remote for publicado sem um build novo do host, os links apontam para os arquivos antigos: o navegador baixa à toa, e o remote carrega certo pelo manifesto.
+- Os links refletem o remote do build do host. Builde o remote antes do host. Se o remote for publicado sem um build novo do host, os links apontam para os arquivos antigos: o navegador baixa à toa (ou mostra 404 no console, se eles já saíram do servidor), e o remote carrega certo pelo manifesto.
 - Com o preload no HTML, `maxStale` não ajuda: o manifesto já baixa em paralelo com o JS do host.
+
+### Ofertas só com os nomes usados
+
+Uma oferta de `share` é um `import()` do pacote. Com o pacote inteiro, o webpack considera usados todos os exports dos barrels dele e deixa de descartar o que a página não usa. Uma página que só importa o layout de uma biblioteca de componentes acaba levando os gráficos, os formulários e o calendário dela.
+
+Quando o build do host acha o `vitral.json` de todos os remotes (em `public/` ou em `manifestFile`), o `withVitral` gera cada oferta com `/* webpackExports: [...] */` e só os nomes que os remotes usam (o campo `uses` do manifesto). Assim o webpack volta a descartar o resto. Se um remote publicado depois usar um nome que a oferta não tem, ele usa a cópia própria daquele grupo e avisa no console, sem quebrar. Rebuildar o host volta a oferecer tudo o que ele usa.
+
+- Um remote sem manifesto no build (de outra origem, sem `manifestFile`), ou com um manifesto anterior a este campo, faz as ofertas irem inteiras, como antes.
+- Em `next dev` com `devUrl`, as ofertas vão inteiras.
+- O Turbopack ignora o `webpackExports`. Com ele, a oferta continua trazendo o pacote inteiro.
 
 `NextRemote` passa o roteador do Next ao remote: `useRouter`, `<Link>`, `router.push`, o `Router` padrão de `next/router`, `redirect()` e `router.events` dentro dele usam o do host, com as rotas públicas. O remote vê os caminhos como numa zona com `basePath`.
 

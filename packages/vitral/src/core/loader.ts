@@ -123,6 +123,9 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
       let t = performance.now()
       resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority, entry.url === known?.url ? early : undefined)
       metric(name, 'manifest', t)
+      // O boot do remote confere, com isto, que a oferta do host tem os nomes que ele usa.
+      const d = resolved.split?.dedupe
+      if (d?.some((x) => x.uses)) (p.uses ??= {})[resolved.split!.entry] = Object.fromEntries(d.map((x) => [x.name, x.uses]))
       // O CSS baixa junto com o JS; a montagem espera os dois.
       prefetchCss(resolved, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', priority)
       t = performance.now()

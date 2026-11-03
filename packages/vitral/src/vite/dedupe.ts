@@ -22,6 +22,27 @@ const OWN = '\0vitral-own:'
 const SHIM = '\0vitral-shim:'
 const DEEP = '\0vitral-deep:'
 
+/**
+ * Nomes que o remote lê de cada especificador do host, a partir dos módulos
+ * que o build manteve (`renderedExports`). Vai no manifesto (`uses`): o host
+ * oferece só esses nomes e o boot confere que a oferta tem todos.
+ */
+export function usedNames(modules: Iterable<[string, { renderedExports?: string[] }]>): Record<string, string[]> {
+  const out: Record<string, Set<string>> = {}
+  const add = (spec: string, name: string) => (out[spec] ??= new Set()).add(name)
+  for (const [id, m] of modules) {
+    if (id.startsWith(SHIM)) {
+      const spec = id.slice(SHIM.length)
+      out[spec] ??= new Set()
+      for (const n of m.renderedExports ?? []) add(spec, n)
+    } else if (id.startsWith(DEEP)) for (const n of m.renderedExports ?? []) for (const [spec, name] of deepVia.get(id)?.get(n) ?? []) add(spec, name)
+  }
+  return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, [...v].sort()]))
+}
+
+/** Arquivo interno (`\0vitral-deep:`): nome exportado → [especificador, nome] no host. */
+const deepVia = new Map<string, Map<string, [string, string][]>>()
+
 export interface Group {
   name: string
   range: string
@@ -231,6 +252,7 @@ export function dedupeHooks(entry: () => string, getGroups: () => Group[]) {
         const f = JSON.stringify(file)
         const shared = via.filter(([, v]) => v)
         const rest = via.filter(([, v]) => !v).map(([name]) => name)
+        deepVia.set(id, new Map(shared.map(([name, v]) => [name, [[v!.spec, v!.name]]])))
         if (!shared.length) {
           ctx.warn?.(`dedupe: ${file.slice(g.dir!.length + 1)} não sai por nenhum export de ${g.name}: o remote leva uma cópia própria deste arquivo`)
           return `export * from ${f}\n` + (own.has('default') ? `export { default } from ${f}\n` : '')
@@ -262,9 +284,12 @@ function boot(entry: string, groups: Group[]): string {
   return `const { deps } = await import(${JSON.stringify(DEPS)})
 const p = globalThis[Symbol.for("vitral")]
 const shared = !!(p && p.dedupe) && /\\/split\\/[^/]*$/.test(import.meta.url)
+const uses = (p && p.uses && p.uses[import.meta.url]) || {}
 async function need(name, range, version, keys, load) {
   let m = shared && (await p.dedupe(name, range, { version, load }))
-  const missing = m ? keys.filter((k) => !(k in m)) : []
+  // A oferta pode ter só os nomes que o remote usa (host Next): confere cada um.
+  const has = (o, n) => n === "default" || (o != null && (n in o || (o.default != null && n in Object(o.default))))
+  const missing = m ? keys.flatMap((k) => (!(k in m) ? [k] : (uses[name]?.[k] || []).filter((n) => !has(m[k], n)).map((n) => k + " " + n))) : []
   if (missing.length) console.warn("[vitral] dedupe: a oferta de " + name + " não tem " + missing.join(", ") + "; o remote usa a cópia própria inteira")
   if (!m || missing.length) m = await load()
   Object.assign(deps, m)

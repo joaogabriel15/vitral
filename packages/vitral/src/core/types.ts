@@ -351,7 +351,15 @@ export interface RemoteManifest {
    * Dependências de `dedupe` do build dividido: faixa aceita, versão da
    * cópia própria e o arquivo dela, para o loader baixar junto com a entrada.
    */
-  dedupe?: { name: string; range: string; version: string; file: string; chunks?: string[] }[]
+  dedupe?: {
+    name: string
+    range: string
+    version: string
+    file: string
+    chunks?: string[]
+    /** Nomes que o remote lê de cada especificador do grupo (o host pode oferecer só esses). */
+    uses?: Record<string, string[]>
+  }[]
   /** O que o remote declara para o host conferir antes de montar. */
   contract?: RemoteContract
   /**

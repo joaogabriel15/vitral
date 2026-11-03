@@ -81,6 +81,11 @@ export interface Protocol {
    */
   sri?: Record<string, string>
   /**
+   * Nomes que cada remote lê das ofertas de `dedupe` (manifesto `uses`), pela
+   * URL da entrada dividida: o boot do remote confere que a oferta tem todos.
+   */
+  uses?: Record<string, Record<string, Record<string, string[]> | undefined>>
+  /**
    * Dependência compartilhada do grupo `name` (`dedupe`). Devolve a primeira
    * oferta com versão em `range`; sem nenhuma, registra `own` (que fica
    * disponível para os próximos) e devolve a dela. A oferta carrega uma vez
