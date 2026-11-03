@@ -44,7 +44,7 @@ function setup() {
 /** Navegação de página inteira para uma rota de remote vira `Router.push`. Devolve a função que desliga. */
 export function interceptNavigation(): () => void {
   const nav = (globalThis as any).navigation
-  if (!nav) return () => {}
+  if (!nav) return interceptClicks()
   // Se o próprio Next pedir página inteira para a mesma URL (erro ao carregar a rota), deixa passar.
   // Só a troca concluída zera: o Next emite `routeChangeError` logo antes dessa navegação.
   let last: string | undefined
@@ -65,6 +65,27 @@ export function interceptNavigation(): () => void {
     nav.removeEventListener('navigate', on)
     Router.events.off('routeChangeComplete', done)
   }
+}
+
+/**
+ * Sem Navigation API (Firefox e Safari antigos): só os cliques em `<a>` comuns
+ * para rota de remote viram `Router.push`. `location.assign` não tem como ser
+ * interceptado e continua recarregando a página.
+ */
+function interceptClicks(): () => void {
+  const on = (e: MouseEvent) => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+    if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download')) return
+    const url = new URL(a.href, location.href)
+    if (url.origin !== location.origin || !remoteFor(url.pathname)) return
+    // Só o hash muda: o navegador rola sem recarregar.
+    if (url.pathname === location.pathname && url.search === location.search && url.hash) return
+    e.preventDefault()
+    void Router.push(url.pathname + url.search + url.hash)
+  }
+  document.addEventListener('click', on)
+  return () => document.removeEventListener('click', on)
 }
 
 /** Coloque uma vez, no `_app`. */

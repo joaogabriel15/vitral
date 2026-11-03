@@ -56,10 +56,23 @@ export function reactRemote<P extends Props>(Component: ComponentType<P>): Remot
   const start = (el: HTMLElement, props: P, ctx: RemoteContext, hydrate: boolean) => {
     const tree = (p: P) => <RemoteTree Component={Component} props={p} ctx={ctx} />
     const options = { onUncaughtError: (e: unknown) => ctx.reportError(e) }
+    // Com CSS escopado e portais no `body` (fora do Shadow DOM), os portais ganham o escopo do remote.
+    const scope = ctx.portalContainer === document.body && el.closest('[data-vitral-scope]')?.getAttribute('data-vitral-scope')
+    // Num chunk à parte: o host que só usa `<Remote>` não leva esse código.
+    let stop: (() => void) | undefined
+    let gone = false
+    if (scope) void import('./core/portals').then((m) => gone || (stop = m.scopePortals(el, scope)))
     const root = hydrate ? hydrateRoot(el, tree(props), options) : createRoot(el, options)
     const render = (p: P) => root.render(tree(p))
     if (!hydrate) render(props)
-    return { update: render, unmount: () => root.unmount() }
+    return {
+      update: render,
+      unmount: () => {
+        root.unmount()
+        gone = true
+        stop?.()
+      },
+    }
   }
   return defineRemote<P>({
     mount: (el, props, ctx) => start(el, props, ctx, false),

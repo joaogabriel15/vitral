@@ -70,6 +70,32 @@ describe('React: host <Remote>', () => {
 })
 
 describe('React: reactRemote', () => {
+  it('com CSS escopado, os portais no body ganham o escopo do remote (inclusive portal dentro de portal)', async () => {
+    const { createPortal } = await import('react-dom')
+    function Inner() {
+      return createPortal(h('p', { id: 'interno' }, 'menu'), document.body)
+    }
+    function Dialog() {
+      return h('section', null, createPortal(h('div', { id: 'dialog' }, h(Inner)), document.body))
+    }
+    const el = document.body.appendChild(document.createElement('div'))
+    el.setAttribute('data-vitral-scope', 'delivery')
+    const ctx = { name: 'delivery', portalContainer: document.body, reportError() {} } as any
+    let mounted: any
+    await act(async () => {
+      mounted = await reactRemote(Dialog as any).mount(el, {}, ctx)
+    })
+    // O código dos portais chega num chunk à parte; o portal já aberto também ganha o escopo.
+    await vi.waitFor(() => expect(document.getElementById('dialog')!.getAttribute('data-vitral-scope')).toBe('delivery'))
+    expect(document.getElementById('interno')!.getAttribute('data-vitral-scope')).toBe('delivery')
+    // Portal do host (outra raiz do React) não ganha o escopo.
+    await render(createPortal(h('div', { id: 'host' }), document.body))
+    expect(document.getElementById('host')!.hasAttribute('data-vitral-scope')).toBe(false)
+    await act(async () => mounted.unmount())
+    el.remove()
+  })
+
+
   it('usePortalContainer devolve o destino de portais do contexto (no Shadow DOM, dentro do shadow root)', async () => {
     const seen: (HTMLElement | undefined)[] = []
     function Card() {
