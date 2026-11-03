@@ -10,6 +10,8 @@
 // Com `?silent`, o host faz o import map ser ignorado sem evento de erro (como
 // um navegador que recusa o mapa em silêncio): os módulos de teste do mapa
 // mostram que o hash não vale, e a lib não usa o caminho 1.
+// Com `?hints`, o HTML traz os `<link rel="preload">` que o `NextRemote` põe
+// (manifesto, chunk e entrada, com o hash), como no host Next.
 import { expect, test, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
@@ -66,7 +68,7 @@ function files(base: string, mode: Mode) {
   return { good, bad }
 }
 
-type Mode = 'ok' | 'tamper' | 'wronghash' | 'flaky' | 'redirect' | 'lazy' | 'lazybad'
+type Mode = 'ok' | 'tamper' | 'wronghash' | 'flaky' | 'redirect' | 'lazy' | 'lazybad' | 'bad'
 
 let server: Server
 let origin = ''
@@ -85,7 +87,16 @@ test.beforeAll(async () => {
     if (url.pathname === '/') {
       const headers: Record<string, string> = { 'content-type': 'text/html; charset=utf-8' }
       if (csp) headers['content-security-policy'] = `script-src ${csp}`
-      return void res.writeHead(200, headers).end('<!doctype html><body><main id="app"></main><script type="module" src="/host.js"></script></body>')
+      let head = ''
+      const r = /^\/r\/(\w+)\/\w+\/vitral\.json$/.exec(url.searchParams.get('remote') ?? '')
+      if (url.searchParams.has('hints') && r) {
+        const dir = url.searchParams.get('remote')!.replace(/vitral\.json$/, '')
+        const { good } = files(origin + dir, r[1] as Mode)
+        head =
+          `<link rel="preload" as="fetch" crossorigin="anonymous" href="${dir}vitral.json">` +
+          ['split/chunk.js', 'split/entry.js'].map((f) => `<link rel="preload" as="script" crossorigin="anonymous" href="${dir}${f}" integrity="${sha(good[f])}">`).join('')
+      }
+      return void res.writeHead(200, headers).end(`<!doctype html><head>${head}</head><body><main id="app"></main><script type="module" src="/host.js"></script></body>`)
     }
     if (url.pathname === '/host.js') return void res.writeHead(200, { 'content-type': 'text/javascript' }).end(HOST_JS)
     if (url.pathname.startsWith('/vitral/')) {
@@ -124,7 +135,7 @@ test.beforeAll(async () => {
     const n = (seen.get(url.pathname) ?? 0) + 1
     seen.set(url.pathname, n)
     // Adulterado: certo na primeira requisição, trocado em todas as outras.
-    const tampered = ((mode === 'tamper' || mode === 'redirect') && n > 1) || (mode === 'lazybad' && file === 'split/lazy.js')
+    const tampered = ((mode === 'tamper' || mode === 'redirect') && n > 1) || (mode === 'lazybad' && file === 'split/lazy.js') || (mode === 'bad' && file === 'split/chunk.js')
     res.writeHead(200, headers).end(tampered ? bad(file) : good[file])
   })
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
@@ -134,11 +145,12 @@ test.beforeAll(async () => {
 test.afterAll(() => server?.close())
 
 let ids = 0
-async function open(page: Page, mode: Mode, csp: string | null, silent = false) {
+async function open(page: Page, mode: Mode, csp: string | null, silent = false, hints = false) {
   const id = `t${process.pid}x${ids++}`
   const q = new URLSearchParams({ remote: `/r/${mode}/${id}/vitral.json` })
   if (csp) q.set('csp', csp)
   if (silent) q.set('silent', '')
+  if (hints) q.set('hints', '')
   await page.goto(`${origin}/?${q}`)
   await expect(page.locator('body[data-status="ready"], body[data-status="error"]')).toHaveCount(1)
   return id
@@ -247,6 +259,31 @@ for (const [label, csp] of Object.entries(CSPS) as [keyof typeof CSPS, string | 
       expect(s.tampered).toEqual([])
       if (EXPECTED[info.project.name][label] < 3) expect(s.status).toBe('error')
       else expect(s.text).toBe('ok arquivo único')
+    })
+
+    test('com o preload no HTML (host Next): mesmo caminho, arquivos verificados, sem baixar de novo', async ({ page }, info) => {
+      const id = await open(page, 'ok', csp, false, true)
+      const s = await state(page)
+      const path = EXPECTED[info.project.name][label]
+      expect(pathOf(s)).toBe(path)
+      expect(s.status).toBe('ready')
+      expect(s.ran).toEqual(path < 3 ? ['chunk.js', 'entry.js'] : ['remote.js'])
+      // O Chromium reaproveita os preloads (medido); nos outros, o cache HTTP decide.
+      if (path < 3 && (info.project.name === 'chromium' || info.project.name === 'mobile')) {
+        const mine = requests.filter((p) => p.includes(`/${id}/`))
+        for (const f of ['vitral.json', 'split/chunk.js', 'split/entry.js']) expect(mine.filter((p) => p.endsWith('/' + f))).toHaveLength(1)
+      }
+    })
+
+    test('com o preload no HTML, arquivo adulterado nunca executa', async ({ page }) => {
+      // Certo no preload, trocado nas requisições seguintes.
+      await open(page, 'tamper', csp, false, true)
+      const s = await state(page)
+      expect(s.tampered).toEqual([])
+      if (s.status === 'error') expect(s.error).toBe('INTEGRITY')
+      // Adulterado já no preload: o hash do HTML não bate, e nada adulterado roda.
+      await open(page, 'bad', csp, false, true)
+      expect((await state(page)).tampered).toEqual([])
     })
 
     test('com base absoluto, redirecionar a entrada não executa chunk sem verificação', async ({ page }) => {
