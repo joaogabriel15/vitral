@@ -107,6 +107,8 @@ configure({ styles: { inherit: ['/assets/base.css'] } })
 
 ## Portais (Radix, Headless UI, MUI)
 
+Com CSS escopado e sem Shadow DOM, um remote React (`reactRemote`) não precisa mudar nada: cada elemento que o React do remote coloca no `document.body` por portal (dialogs, popovers e menus do Radix, por exemplo) ganha o `data-vitral-scope` do remote, e o CSS escopado vale lá também. Isso vale mesmo quando a biblioteca de UI vem do host pelo `dedupe`. Portais de outros frameworks e do Shadow DOM usam o `portalContainer` abaixo.
+
 Popovers, menus e dialogs costumam ir para o `document.body`. No Shadow DOM, isso os tira do shadow root e eles perdem o CSS do remote. Use `ctx.portalContainer`: um elemento dentro do shadow root, com o CSS, as variáveis e o tema (`class` e `data-theme`) do remote. Sem Shadow DOM, ele é o próprio `document.body`.
 
 Radix:
