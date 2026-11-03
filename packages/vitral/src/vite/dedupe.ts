@@ -102,7 +102,8 @@ export async function groups(list: string[], root: string, entry: string, resolv
       }
       try {
         const mod = await import(pathToFileURL(found.id.split('?')[0]).href)
-        const extra = mod.default && typeof mod.default === 'object' ? Object.keys(mod.default) : []
+        // CommonJS: os nomes ficam no `module.exports`, que pode ser uma função (o `axios` é).
+        const extra = mod.default && (typeof mod.default === 'object' || typeof mod.default === 'function') ? Object.keys(mod.default) : []
         group.names[spec] = [...new Set([...Object.keys(mod), ...extra])].filter((n) => n !== 'default' && ident.test(n))
       } catch {
         // Código-fonte (TypeScript, aliases): os nomes saem do build.
@@ -210,11 +211,15 @@ export function dedupeHooks(entry: () => string, getGroups: () => Group[]) {
           const file = [...(await entryFiles(ctx))].find(([, k]) => k === spec)?.[0]
           names = file ? [...(await exportOrigins(ctx, file, exports)).keys()].filter((n) => n !== 'default' && ident.test(n)) : []
         }
+        // Um nome que só existe no `default` (como `axios.get`) também sai por nome: o `require()`
+        // de um pacote CommonJS recebe o módulo inteiro e lê esses nomes dele.
         return (
           `import { deps } from ${JSON.stringify(DEPS)}\n` +
           `const m = deps[${JSON.stringify(spec)}]\n` +
-          `export default m.default ?? m\n` +
-          (names.length ? `export const { ${names.join(', ')} } = m\n` : '')
+          `const d = m.default ?? m\n` +
+          `export default d\n` +
+          // `export { v as "delete" }`: nomes que são palavras reservadas (`axios.delete`) também saem.
+          names.map((n, i) => `const v${i} = ${JSON.stringify(n)} in m ? m[${JSON.stringify(n)}] : d?.[${JSON.stringify(n)}]\nexport { v${i} as ${JSON.stringify(n)} }\n`).join('')
         )
       }
       if (id.startsWith(DEEP)) {

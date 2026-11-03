@@ -109,8 +109,28 @@ describe('vitral/next-host', () => {
     stop()
   })
 
-  it('sem Navigation API, nada muda', () => {
-    expect(() => interceptNavigation()()).not.toThrow()
+  it('sem Navigation API, clique em <a> comum para rota de remote vira Router.push; o resto passa', () => {
+    const stop = interceptNavigation()
+    const click = (href: string, init: MouseEventInit = {}, attrs: Record<string, string> = {}) => {
+      const a = document.body.appendChild(document.createElement('a'))
+      a.href = href
+      for (const [k, v] of Object.entries(attrs)) a.setAttribute(k, v)
+      const span = a.appendChild(document.createElement('span'))
+      const e = new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ...init })
+      span.dispatchEvent(e)
+      a.remove()
+      return e.defaultPrevented
+    }
+    expect(click('/store/4?x=1')).toBe(true)
+    expect(router.push).toHaveBeenCalledWith('/store/4?x=1')
+    // (Link de outra origem fica de fora do teste: o happy-dom navega a janela antes de o clique chegar ao document.)
+    expect(click('/reporting')).toBe(false)
+    expect(click('/store/4', { ctrlKey: true })).toBe(false)
+    expect(click('/store/4', {}, { target: '_blank' })).toBe(false)
+    expect(click('/store/4', {}, { download: '' })).toBe(false)
+    expect(router.push).toHaveBeenCalledTimes(1)
+    stop()
+    expect(click('/store/5')).toBe(false)
   })
 
   it('NextRemote registra os remotes, passa o roteador do host e oferece só sob demanda', async () => {
