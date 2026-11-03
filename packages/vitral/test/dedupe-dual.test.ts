@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { build } from 'vite'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import vitral from '../src/vite'
 import { protocol, resetProtocol } from '../src/core/state'
 import { shared } from '../src/core/dedupe'
@@ -67,10 +67,13 @@ afterAll(() => rmSync(root, { recursive: true, force: true }))
 afterEach(() => resetProtocol())
 
 let copies = 0
-async function importSplit() {
+async function importSplit(uses?: boolean) {
   const dir = join(out, `copia-${copies++}`)
   cpSync(join(out, 'split'), join(dir, 'split'), { recursive: true })
-  return (await import(pathToFileURL(join(dir, m.split!.entry)).href)).default
+  const url = pathToFileURL(join(dir, m.split!.entry)).href
+  // Como o loader faz: os nomes do manifesto, pela URL da entrada.
+  if (uses) protocol().uses = { [url]: Object.fromEntries(m.dedupe!.map((d) => [d.name, d.uses])) }
+  return (await import(url)).default
 }
 
 describe('dedupe de pacote ESM + CommonJS (como o axios)', () => {
@@ -86,9 +89,20 @@ describe('dedupe de pacote ESM + CommonJS (como o axios)', () => {
 
   it('com a oferta do host, o import e o require do pacote CommonJS usam o objeto do host', async () => {
     // O host oferece o namespace ESM: só `isHttpError` e `default` saem por nome; `id` e `delete` ficam no default.
-    const host = Object.assign(() => {}, { id: 'httpc-host', isHttpError: () => true, delete: () => 'del-host' })
+    const host = Object.assign(() => {}, { id: 'httpc-host', isHttpError: () => true, create: () => host, delete: () => 'del-host' })
     shared(protocol())('httpc', '1.22.0', { version: '1.22.0', load: async () => ({ httpc: { default: host, isHttpError: host.isHttpError } }) })
-    const r = await importSplit()
+    const r = await importSplit(true)
     expect([r.id, r.via(), r.isHttpError()]).toEqual(['httpc-host', 'httpc-host|del-host', true])
+  })
+
+  it('o manifesto lista os nomes que o remote lê; oferta sem um deles: cópia própria, com aviso', async () => {
+    expect(m.dedupe![0].uses!.httpc).toEqual(expect.arrayContaining(['isHttpError']))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    // Oferta só com alguns nomes (como a do host Next com webpack), sem `isHttpError`.
+    shared(protocol())('httpc', '1.22.0', { version: '1.22.0', load: async () => ({ httpc: { default: { id: 'parcial' } } }) })
+    const r = await importSplit(true)
+    expect(r.id).toBe('httpc-proprio')
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/a oferta de httpc não tem .*httpc isHttpError/))
+    warn.mockRestore()
   })
 })

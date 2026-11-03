@@ -10,7 +10,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join, posix } from 'node:path'
 import type { RemoteManifest } from '../core/types'
-import type { Group } from './dedupe'
+import { usedNames, type Group } from './dedupe'
 
 export const SPLIT = 'split/'
 /** Mesmo conteúdo dos testes com `data:`/`blob:` do runtime: o primeiro bate com o hash, o segundo não. */
@@ -26,6 +26,7 @@ interface Chunk {
   imports: string[]
   dynamicImports: string[]
   facadeModuleId?: string | null
+  modules?: Record<string, { renderedExports?: string[] }>
 }
 type Bundle = Record<string, { type: string; fileName: string }>
 
@@ -39,6 +40,8 @@ export interface Split {
   own: Record<string, { file: string; chunks: string[] }>
   /** O que o remote só baixa depois (`import()` das rotas), sem as cópias de `dedupe`. */
   lazy: string[]
+  /** Nomes que o remote lê de cada especificador de `dedupe`. */
+  uses: Record<string, string[]>
 }
 
 export const sri = (file: string): string => 'sha384-' + createHash('sha384').update(readFileSync(file)).digest('base64')
@@ -127,7 +130,9 @@ export function collect(outDir: string, bundle: Bundle): Split | undefined {
     for (const d of [...(byName.get(n)?.imports ?? []), ...live.get(n)!]) if (byName.has(d) && !ownFiles.has(d) && !app.has(d)) app.add(d), stack.push(d)
   }
   const lazy = [...app].filter((n) => n !== entry && !soon.has(n))
-  return { entry, chunks: [...soon], files: [...used], own, lazy }
+  // Só o código do app: a cópia própria importa o pacote inteiro.
+  const uses = usedNames([...app, entry].flatMap((n) => Object.entries(byName.get(n)?.modules ?? {})))
+  return { entry, chunks: [...soon], files: [...used], own, lazy, uses }
 }
 
 /** Troca os `import()` de `c` pelo helper. Devolve os chunks importados assim. */
@@ -168,7 +173,10 @@ export function withSplit(m: RemoteManifest, outDir: string, s?: Split, groups: 
   for (const f of [m.entry, ...(m.css ?? []), ...(m.shadow?.css ?? []), ...(m.shadow?.global ?? []), ...(s?.files ?? [])]) files[f] = sri(join(outDir, f))
   const dedupe = groups
     .filter((g) => s?.own[g.name])
-    .map(({ name, range, version }) => ({ name, range, version, ...s!.own[name] }))
+    .map(({ name, range, version, keys }) => {
+      const uses = Object.fromEntries(keys.filter((k) => s!.uses[k]).map((k) => [k, s!.uses[k]]))
+      return { name, range, version, ...s!.own[name], uses }
+    })
   // Módulos de teste do SRI: o navegador confere o hash sem `data:` nem `blob:`.
   if (s) for (const [file, code] of PROBES) writeFileSync(join(outDir, file), code)
   return { ...m, files, ...(s && { split: { entry: s.entry, chunks: s.chunks, ...(s.lazy.length && { lazy: s.lazy }) }, probe: PROBES.map(([f]) => f) as [string, string] }), ...(dedupe.length && { dedupe }) }

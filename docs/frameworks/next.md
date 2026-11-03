@@ -145,8 +145,29 @@ A configuração gerada fica em `.vitral/host-config.mjs`, na pasta do app (a pa
 | `warmRoutes` | `false` | Depois do preload, aquece os chunks das rotas do remote (`import()`) |
 | `devUrl` | nenhum | Em `next dev`, o dev server do remote, com HMR. A CSP de dev precisa liberar a origem em `script-src` e `connect-src` (`ws:`) |
 | `integrity` | do manifesto | `false` dispensa a conferência de hash (remote na mesma origem) |
+| `htmlPreload` | ligado | `false` tira do HTML da página do remote os `<link rel="preload">` (veja abaixo) |
+| `manifestFile` | `public/` + `url` | Caminho no disco do `vitral.json`, quando ele não fica em `public/` (remote servido por outro servidor ou por rewrite) |
 
 `VitralNext` registra os remotes, oferece as dependências de `share`, faz o preload e intercepta navegações de página inteira para uma rota de remote (`location.assign`, `<a>` comum): elas viram `Router.push`, sem recarregar. Com a [Navigation API](https://developer.mozilla.org/docs/Web/API/Navigation_API) vale para `location.assign` e para `<a>`. Sem ela, só os cliques em `<a>` comuns viram `Router.push`; `location.assign` não tem como ser interceptado e recarrega a página como antes.
+
+### Remote no HTML da página
+
+No build do host, o `withVitral` lê o `vitral.json` do remote (em `public/` ou em `manifestFile`). O `NextRemote` põe no `<head>` da página um `<link rel="preload">` para o manifesto, o CSS e o JS da primeira tela (entrada, chunks e as cópias de `dedupe` que o host não oferece). Assim o remote baixa junto com o JS do host, e não depois da hidratação. Quem abre a área do remote direto, como primeira página, é quem mais ganha.
+
+- O hash de cada arquivo vai no `integrity` do preload, e o `import()` do remote confere de novo. Um arquivo trocado no caminho não roda.
+- O código de SRI e de `dedupe` do vitral vem no bundle do host (cerca de 3 kB), e o manifesto baixa enquanto as ofertas de `share` se registram. Depois da hidratação, nenhum download espera outro.
+- Os links refletem o remote do build do host. Builde o remote antes do host. Se o remote for publicado sem um build novo do host, os links apontam para os arquivos antigos: o navegador baixa à toa (ou mostra 404 no console, se eles já saíram do servidor), e o remote carrega certo pelo manifesto.
+- Com o preload no HTML, `maxStale` não ajuda: o manifesto já baixa em paralelo com o JS do host.
+
+### Ofertas só com os nomes usados
+
+Uma oferta de `share` é um `import()` do pacote. Com o pacote inteiro, o webpack considera usados todos os exports dos barrels dele e deixa de descartar o que a página não usa. Uma página que só importa o layout de uma biblioteca de componentes acaba levando os gráficos, os formulários e o calendário dela.
+
+Quando o build do host acha o `vitral.json` de todos os remotes (em `public/` ou em `manifestFile`), o `withVitral` gera cada oferta com `/* webpackExports: [...] */` e só os nomes que os remotes usam (o campo `uses` do manifesto). Assim o webpack volta a descartar o resto. Se um remote publicado depois usar um nome que a oferta não tem, ele usa a cópia própria daquele grupo e avisa no console, sem quebrar. Rebuildar o host volta a oferecer tudo o que ele usa.
+
+- Um remote sem manifesto no build (de outra origem, sem `manifestFile`), ou com um manifesto anterior a este campo, faz as ofertas irem inteiras, como antes.
+- Em `next dev` com `devUrl`, as ofertas vão inteiras.
+- O Turbopack ignora o `webpackExports`. Com ele, a oferta continua trazendo o pacote inteiro.
 
 `NextRemote` passa o roteador do Next ao remote: `useRouter`, `<Link>`, `router.push`, o `Router` padrão de `next/router`, `redirect()` e `router.events` dentro dele usam o do host, com as rotas públicas. O remote vê os caminhos como numa zona com `basePath`.
 

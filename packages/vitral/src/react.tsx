@@ -24,6 +24,7 @@ import * as ReactDOM from 'react-dom'
 import * as ReactDOMClient from 'react-dom/client'
 import * as JSXRuntime from 'react/jsx-runtime'
 import * as JSXDevRuntime from 'react/jsx-dev-runtime'
+import { dedupeModule } from './core/bundled'
 import { protocol } from './core/state'
 import {
   defineRemote,
@@ -178,7 +179,7 @@ function offerReact() {
     ...(compiler && { 'react/compiler-runtime': compiler }),
   }
   // Fora do host mínimo; os downloads esperam a oferta (pending).
-  p.pending(import('./core/dedupe').then((m) => m.offer(p, { react: { version: ReactAll.version, modules } })).catch(() => {}))
+  p.pending(dedupeModule().then((m) => m.offer(p, { react: { version: ReactAll.version, modules } })).catch(() => {}))
 }
 
 /**

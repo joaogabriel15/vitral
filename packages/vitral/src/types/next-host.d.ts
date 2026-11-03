@@ -12,10 +12,15 @@ declare module 'next/router' {
   export default router
 }
 
+declare module 'next/head' {
+  import type { ReactNode } from 'react'
+  export default function Head(props: { children?: ReactNode }): ReactNode
+}
+
 declare module 'vitral-next-host-config' {
   export const remotes: Record<
     string,
-    { url: string; basePath: string; routes?: { public: string; zone: string }[]; preload?: 'idle' | 'route' | false; warmRoutes?: boolean; integrity?: false; devUrl?: string }
+    { url: string; basePath: string; routes?: { public: string; zone: string }[]; preload?: 'idle' | 'route' | false; warmRoutes?: boolean; integrity?: false; devUrl?: string; hints?: { manifest: string; css: [string, string?][]; js: [string, string?][] } }
   >
   export const shared: Record<string, { version: string; modules: () => Promise<Record<string, unknown>> }>
 }
