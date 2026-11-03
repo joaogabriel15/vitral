@@ -1,5 +1,11 @@
 # vitral
 
+## 0.9.0
+
+### Minor Changes
+
+- [#101](https://github.com/joaogabriel15/vitral/pull/101) [`73f27bc`](https://github.com/joaogabriel15/vitral/commit/73f27bcda157ec2b1c7d3e84c5b21f1361a61543) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `dedupe` de pacotes CommonJS como o axios: os nomes do `module.exports` saem também quando ele é uma função, nomes reservados como `delete` não quebram mais o build, e o `require()` de um pacote CommonJS recebe os métodos que só existem no `default` (`axios.get`). Com CSS escopado, os portais que o React do remote coloca no `document.body` (dialogs e popovers do Radix, por exemplo) ganham o escopo do remote sozinhos, sem mudar a biblioteca de UI. Sem Navigation API, o `VitralNext` troca os cliques em `<a>` comuns para rota de remote por `Router.push`.
+
 ## 0.8.0
 
 ### Minor Changes
