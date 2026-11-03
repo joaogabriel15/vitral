@@ -146,7 +146,7 @@ A configuração gerada fica em `.vitral/host-config.mjs`, na pasta do app (a pa
 | `devUrl` | nenhum | Em `next dev`, o dev server do remote, com HMR. A CSP de dev precisa liberar a origem em `script-src` e `connect-src` (`ws:`) |
 | `integrity` | do manifesto | `false` dispensa a conferência de hash (remote na mesma origem) |
 
-`VitralNext` registra os remotes, oferece as dependências de `share`, faz o preload e intercepta navegações de página inteira para uma rota de remote (`location.assign`, `<a>` comum): elas viram `Router.push`, sem recarregar. Precisa da [Navigation API](https://developer.mozilla.org/docs/Web/API/Navigation_API); sem ela, a página recarrega como antes.
+`VitralNext` registra os remotes, oferece as dependências de `share`, faz o preload e intercepta navegações de página inteira para uma rota de remote (`location.assign`, `<a>` comum): elas viram `Router.push`, sem recarregar. Com a [Navigation API](https://developer.mozilla.org/docs/Web/API/Navigation_API) vale para `location.assign` e para `<a>`. Sem ela, só os cliques em `<a>` comuns viram `Router.push`; `location.assign` não tem como ser interceptado e recarrega a página como antes.
 
 `NextRemote` passa o roteador do Next ao remote: `useRouter`, `<Link>`, `router.push`, o `Router` padrão de `next/router`, `redirect()` e `router.events` dentro dele usam o do host, com as rotas públicas. O remote vê os caminhos como numa zona com `basePath`.
 
