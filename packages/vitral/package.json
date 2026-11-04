@@ -287,8 +287,7 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ],
       "limit": "5.11 kB"
     },
@@ -307,8 +306,7 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ],
       "limit": "6.10 kB"
     },
@@ -350,8 +348,7 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ],
       "limit": "5.79 kB"
     },
@@ -370,8 +367,7 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ],
       "limit": "6.01 kB"
     },
@@ -417,10 +413,9 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ],
-      "limit": "6.95 kB"
+      "limit": "7.15 kB"
     },
     {
       "name": "vue",
@@ -438,8 +433,7 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ],
       "limit": "6.51 kB"
     },
@@ -458,8 +452,7 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ],
       "limit": "6.93 kB"
     },
@@ -484,8 +477,7 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ]
     },
     {
@@ -498,8 +490,7 @@
         "./stale-*",
         "./channel-*",
         "./reframe-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ]
     },
     {
@@ -541,8 +532,7 @@
         "./stale-*",
         "./channel-*",
         "./reframe-*",
-        "./hydrate-*",
-        "./portals-*"
+        "./hydrate-*"
       ]
     },
     {

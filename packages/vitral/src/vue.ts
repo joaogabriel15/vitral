@@ -138,7 +138,7 @@ export { events }
  *
  * Slots: `fallback` (carregando) e `error` ({ error, retry }).
  */
-export const VitralRemote = defineComponent({
+export const VitralRemote = /* @__PURE__ */ defineComponent({
   name: 'VitralRemote',
   props: {
     /** Nome registrado. Com `src`, o nome sob o qual a URL é registrada. */
