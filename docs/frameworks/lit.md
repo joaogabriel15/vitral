@@ -4,51 +4,77 @@ Lit, Stencil ou qualquer Custom Element. Import: `vitral/element`.
 
 ## Hoje e com vitral
 
-Exemplo: uma loja que mostra o carrinho de outra equipe, feito em Lit.
+Exemplo: uma loja mostra o carrinho, feito em Lit por outra equipe. Os dois lados têm os mesmos arquivos, na mesma ordem.
 
 ### Hoje, com o elemento num script
 
-O carrinho publica um script que registra a tag. A loja carrega o script e usa a tag.
+```js
+// carrinho/src/Carrinho.js
+import { LitElement, html } from 'lit'
+
+export default class Carrinho extends LitElement {
+  static properties = { userId: {} }
+  render() {
+    return html`<p>Carrinho do usuário ${this.userId}</p>`
+  }
+}
+```
 
 ```js
 // carrinho/src/index.js
-import { Carrinho } from './Carrinho'
+import Carrinho from './Carrinho.js'
 
 customElements.define('meu-carrinho', Carrinho)
 ```
 
-```html
-<!-- loja -->
-<script type="module" src="https://cdn.empresa.com/carrinho/index.js"></script>
-
-<meu-carrinho user-id="42"></meu-carrinho>
+```js
+// carrinho/vite.config.js
+export default {
+  build: { lib: { entry: 'src/index.js', formats: ['es'], fileName: 'carrinho' } },
+}
 ```
 
-Duas lojas, ou dois carrinhos em versões diferentes, não podem registrar a mesma tag na página. O CSS e a versão do Lit também não ficam isolados.
+```html
+<!-- loja/index.html -->
+<script type="module" src="https://cdn.empresa.com/carrinho/carrinho.js"></script>
+
+<meu-carrinho userid="42"></meu-carrinho>
+```
+
+Duas versões do carrinho não podem registrar a mesma tag na mesma página, e o CSS não fica isolado.
 
 ### Com vitral
 
 ```js
-// carrinho/src/remote.js (a classe, sem customElements.define)
-import { Carrinho } from './Carrinho'
+// carrinho/src/Carrinho.js (igual)
+import { LitElement, html } from 'lit'
 
-export default Carrinho
+export default class Carrinho extends LitElement {
+  static properties = { userId: {} }
+  render() {
+    return html`<p>Carrinho do usuário ${this.userId}</p>`
+  }
+}
 ```
 
 ```js
-// carrinho/vite.config.js
+// carrinho/src/index.js (não precisa mais: o plugin registra a tag)
+```
+
+```js
+// carrinho/vite.config.js (vitral no lugar do build.lib)
 import vitral from 'vitral/vite'
 
-export default { plugins: [vitral({ entry: 'src/remote.js' })] }
+export default {
+  plugins: [vitral({ name: 'carrinho', entry: 'src/Carrinho.js' })],
+}
 ```
 
 ```html
-<!-- loja -->
+<!-- loja/index.html -->
 <script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
 
-<vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json" props='{"userId": 42}'>
-  <p slot="fallback">Carregando…</p>
-</vitral-remote>
+<vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json" props='{"userId": 42}'></vitral-remote>
 ```
 
 O plugin registra a tag num registro só do remote. Duas versões do carrinho podem estar na mesma página.

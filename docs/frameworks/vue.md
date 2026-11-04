@@ -4,9 +4,20 @@ Vue 3.3 ou mais novo. Import: `vitral/vue`.
 
 ## Hoje e com vitral
 
-Exemplo: uma loja em Vue que mostra o catálogo de outra equipe.
+Exemplo: uma loja em Vue mostra o catálogo, feito por outra equipe. Os dois lados têm os mesmos arquivos, na mesma ordem.
 
 ### Hoje, com Module Federation
+
+```vue
+<!-- catalogo/src/Catalogo.vue -->
+<script setup>
+defineProps({ userId: Number })
+</script>
+
+<template>
+  <p>Catálogo do usuário {{ userId }}</p>
+</template>
+```
 
 ```js
 // catalogo/vite.config.js
@@ -14,25 +25,34 @@ import vue from '@vitejs/plugin-vue'
 import { federation } from '@module-federation/vite'
 
 export default {
-  plugins: [vue(), federation({
-    name: 'catalogo',
-    filename: 'remoteEntry.js',
-    exposes: { './Catalogo': './src/Catalogo.vue' },
-    shared: { vue: { singleton: true } },
-  })],
+  plugins: [
+    vue(),
+    federation({
+      name: 'catalogo',
+      filename: 'remoteEntry.js',
+      exposes: { './Catalogo': './src/Catalogo.vue' },
+      shared: { vue: { singleton: true } },
+    }),
+  ],
 }
 ```
 
 ```js
 // loja/vite.config.js
+import vue from '@vitejs/plugin-vue'
+import { federation } from '@module-federation/vite'
+
 export default {
-  plugins: [vue(), federation({
-    name: 'loja',
-    remotes: {
-      catalogo: { type: 'module', name: 'catalogo', entry: 'https://cdn.empresa.com/catalogo/remoteEntry.js' },
-    },
-    shared: { vue: { singleton: true } },
-  })],
+  plugins: [
+    vue(),
+    federation({
+      name: 'loja',
+      remotes: {
+        catalogo: { type: 'module', name: 'catalogo', entry: 'https://cdn.empresa.com/catalogo/remoteEntry.js' },
+      },
+      shared: { vue: { singleton: true } },
+    }),
+  ],
 }
 ```
 
@@ -40,26 +60,55 @@ export default {
 <!-- loja/src/App.vue -->
 <script setup>
 import { defineAsyncComponent } from 'vue'
+
 const Catalogo = defineAsyncComponent(() => import('catalogo/Catalogo'))
 </script>
 
 <template>
-  <Catalogo :user-id="42" />
+  <Suspense>
+    <Catalogo :user-id="42" />
+    <template #fallback>Carregando…</template>
+  </Suspense>
 </template>
 ```
 
 ### Com vitral
 
+```vue
+<!-- catalogo/src/Catalogo.vue (igual) -->
+<script setup>
+defineProps({ userId: Number })
+</script>
+
+<template>
+  <p>Catálogo do usuário {{ userId }}</p>
+</template>
+```
+
 ```js
-// catalogo/vite.config.js (no lugar do federation)
+// catalogo/vite.config.js (vitral no lugar do federation)
 import vue from '@vitejs/plugin-vue'
 import vitral from 'vitral/vite'
 
-export default { plugins: [vue(), vitral({ entry: 'src/Catalogo.vue' })] }
+export default {
+  plugins: [
+    vue(),
+    vitral({ name: 'catalogo', entry: 'src/Catalogo.vue' }),
+  ],
+}
+```
+
+```js
+// loja/vite.config.js (sem o federation)
+import vue from '@vitejs/plugin-vue'
+
+export default {
+  plugins: [vue()],
+}
 ```
 
 ```vue
-<!-- loja/src/App.vue (sem plugin no build da loja) -->
+<!-- loja/src/App.vue -->
 <script setup>
 import { configure } from 'vitral'
 import { VitralRemote } from 'vitral/vue'
@@ -74,7 +123,7 @@ configure({ remotes: { catalogo: 'https://cdn.empresa.com/catalogo/vitral.json' 
 </template>
 ```
 
-O componente `Catalogo.vue` não muda. Guia completo: [Migrar do Module Federation](/migracao/module-federation).
+Guia completo: [Migrar do Module Federation](/migracao/module-federation).
 
 ## Host
 

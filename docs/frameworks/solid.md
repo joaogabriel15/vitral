@@ -4,11 +4,18 @@ Solid 1.8 ou mais novo. Import: `vitral/solid`.
 
 ## Hoje e com vitral
 
-Exemplo: uma loja em Solid que mostra o carrinho de outra equipe.
+Exemplo: uma loja em Solid mostra o carrinho, feito por outra equipe. Os dois lados têm os mesmos arquivos, na mesma ordem.
 
 ### Hoje, com Module Federation
 
-O Module Federation não tem adaptador para Solid. O carrinho expõe uma função que monta o componente, e a loja chama essa função.
+O Module Federation não tem adaptador para Solid, então o carrinho expõe uma função que monta o componente.
+
+```jsx
+// carrinho/src/Carrinho.jsx
+export default function Carrinho(props) {
+  return <p>Carrinho do usuário {props.userId}</p>
+}
+```
 
 ```jsx
 // carrinho/src/montar.jsx
@@ -22,19 +29,46 @@ export function montar(el, props) {
 
 ```js
 // carrinho/vite.config.js
-federation({
-  name: 'carrinho',
-  filename: 'remoteEntry.js',
-  exposes: { './montar': './src/montar.jsx' },
-  shared: { 'solid-js': { singleton: true } },
-})
+import solid from 'vite-plugin-solid'
+import { federation } from '@module-federation/vite'
+
+export default {
+  plugins: [
+    solid(),
+    federation({
+      name: 'carrinho',
+      filename: 'remoteEntry.js',
+      exposes: { './montar': './src/montar.jsx' },
+      shared: { 'solid-js': { singleton: true } },
+    }),
+  ],
+}
+```
+
+```js
+// loja/vite.config.js
+import solid from 'vite-plugin-solid'
+import { federation } from '@module-federation/vite'
+
+export default {
+  plugins: [
+    solid(),
+    federation({
+      name: 'loja',
+      remotes: {
+        carrinho: { type: 'module', name: 'carrinho', entry: 'https://cdn.empresa.com/carrinho/remoteEntry.js' },
+      },
+      shared: { 'solid-js': { singleton: true } },
+    }),
+  ],
+}
 ```
 
 ```jsx
-// loja/src/Pagina.jsx (a loja também tem o federation() com remotes)
+// loja/src/Pagina.jsx
 import { onCleanup, onMount } from 'solid-js'
 
-function Pagina() {
+export function Pagina() {
   let el
   onMount(async () => {
     const { montar } = await import('carrinho/montar')
@@ -47,32 +81,51 @@ function Pagina() {
 ### Com vitral
 
 ```jsx
-// carrinho/src/remote.jsx (no lugar do montar.jsx)
-import { solidRemote } from 'vitral/solid'
-import Carrinho from './Carrinho'
-
-export default solidRemote(Carrinho)
-```
-
-```js
-// carrinho/vite.config.js (sem federation)
-import solid from 'vite-plugin-solid'
-import vitral from 'vitral/vite'
-
-export default { plugins: [solid(), vitral({ entry: 'src/remote.jsx' })] }
+// carrinho/src/Carrinho.jsx (igual)
+export default function Carrinho(props) {
+  return <p>Carrinho do usuário {props.userId}</p>
+}
 ```
 
 ```jsx
-// loja/src/Pagina.jsx (sem plugin no build da loja)
+// carrinho/src/montar.jsx (não precisa mais: o plugin monta o componente)
+```
+
+```js
+// carrinho/vite.config.js (vitral no lugar do federation)
+import solid from 'vite-plugin-solid'
+import vitral from 'vitral/vite'
+
+export default {
+  plugins: [
+    solid(),
+    vitral({ name: 'carrinho', entry: 'src/Carrinho.jsx' }),
+  ],
+}
+```
+
+```js
+// loja/vite.config.js (sem o federation)
+import solid from 'vite-plugin-solid'
+
+export default {
+  plugins: [solid()],
+}
+```
+
+```jsx
+// loja/src/Pagina.jsx
 import { configure } from 'vitral'
 import { Remote } from 'vitral/solid'
 
 configure({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })
 
-function Pagina() {
+export function Pagina() {
   return <Remote name="carrinho" props={{ userId: 42 }} fallback={<p>Carregando…</p>} />
 }
 ```
+
+Mudar `props` atualiza o carrinho sem remontar. Carregando e erro em [Host](#host).
 
 ## Host
 
