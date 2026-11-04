@@ -19,7 +19,43 @@ configure({ remotes })    vite build → dist/vitral.json
 <Remote name="carrinho">  ← baixa e monta o remote
 ```
 
-## O remote
+## Hoje, com Module Federation
+
+Exemplo: uma loja que mostra o carrinho de outra equipe. Com Module Federation, loja e carrinho combinam a configuração no build dos dois, e os dois precisam usar o mesmo framework:
+
+```js
+// carrinho/webpack.config.js
+new ModuleFederationPlugin({
+  name: 'carrinho',
+  filename: 'remoteEntry.js',
+  exposes: { './Carrinho': './src/Carrinho' },
+  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+})
+```
+
+```js
+// loja/webpack.config.js
+new ModuleFederationPlugin({
+  name: 'loja',
+  remotes: { carrinho: 'carrinho@https://cdn.empresa.com/carrinho/remoteEntry.js' },
+  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+})
+```
+
+```jsx
+// loja/src/App.jsx
+const Carrinho = React.lazy(() => import('carrinho/Carrinho'))
+
+<ErrorBoundary fallback={<p>Erro</p>}>
+  <Suspense fallback={<p>Carregando…</p>}>
+    <Carrinho userId={42} />
+  </Suspense>
+</ErrorBoundary>
+```
+
+Com vitral, o mesmo carrinho fica como nas duas seções abaixo. Só o carrinho tem plugin, a loja não muda o build, e o carrinho pode até ser de outro framework: aqui ele é Vue.
+
+## O remote, com vitral
 
 Um componente comum, exportado como `default`:
 
@@ -44,7 +80,7 @@ import vitral from 'vitral/vite'
 export default { plugins: [vue(), vitral()] }
 ```
 
-## O host
+## O host, com vitral
 
 ```jsx
 import { configure } from 'vitral'

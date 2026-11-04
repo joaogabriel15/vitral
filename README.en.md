@@ -82,28 +82,67 @@ The minimal host code is 5.1 kB with brotli. [How it was measured](https://joaog
 
 ## Quick start
 
-`npm create vitral@latest` scaffolds a host and a remote.
+Example: a React shop that shows the cart, built by another team.
 
-**1. In the remote**, export your component and add the plugin:
+### Today, with Module Federation
+
+Shop and cart agree on config in both builds: what each one exposes, what it takes from the other, and which versions they share.
+
+```js
+// cart/webpack.config.js
+new ModuleFederationPlugin({
+  name: 'cart',
+  filename: 'remoteEntry.js',
+  exposes: { './Cart': './src/Cart' },
+  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+})
+```
+
+```js
+// shop/webpack.config.js
+new ModuleFederationPlugin({
+  name: 'shop',
+  remotes: { cart: 'cart@https://cdn.example.com/cart/remoteEntry.js' },
+  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+})
+```
 
 ```jsx
-// src/App.jsx (or .vue, .svelte, .tsx…)
+// shop/src/App.jsx
+const Cart = React.lazy(() => import('cart/Cart'))
+
+export function App() {
+  return (
+    <ErrorBoundary fallback={<p>Error</p>}>
+      <Suspense fallback={<p>Loading…</p>}>
+        <Cart userId={42} />
+      </Suspense>
+    </ErrorBoundary>
+  )
+}
+```
+
+### The same app with vitral
+
+Only the cart has a plugin. The shop build does not change.
+
+```jsx
+// cart/src/App.jsx (the same component)
 export default function Cart({ userId }) { … }
 ```
 
 ```js
-// vite.config.js
+// cart/vite.config.js (instead of ModuleFederationPlugin)
 import react from '@vitejs/plugin-react'
 import vitral from 'vitral/vite'
 
 export default { plugins: [react(), vitral()] }
 ```
 
-`vite build` outputs the JS, the CSS and a `vitral.json`. Deploy `dist` to any CDN.
-
-**2. In the host**, register the URL and render the remote:
+`vite build` outputs the JS, the CSS and a `vitral.json`. Publish the `dist` folder to any CDN.
 
 ```jsx
+// shop/src/App.jsx (no plugin in the shop build)
 import { configure } from 'vitral'
 import { Remote } from 'vitral/react'
 
@@ -114,14 +153,25 @@ export function App() {
 }
 ```
 
-That's it. Changing `props` updates the remote without remounting.
+Done. Changing `props` updates the remote without remounting. To generate a ready shop and cart: `npm create vitral@latest`.
 
-In any HTML page, with no build:
+### What changes
+
+| | Module Federation | vitral |
+|---|---|---|
+| Shop build | Plugin with `remotes` and `shared` | No change |
+| React version | Agreed between teams (`singleton`) | Each uses its own. One copy only with [`dedupe`](https://joaogabriel15.github.io/vitral/aprender/dedupe) |
+| Loading and errors | `Suspense` and `ErrorBoundary` | `fallback` and `error` on `<Remote>` |
+| Framework | The same on both sides | Any. A React shop can show a Vue cart |
+
+On any HTML page, no build:
 
 ```html
 <script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
 <vitral-remote src="https://cdn.example.com/cart/vitral.json"></vitral-remote>
 ```
+
+Full guide: [Migrate from Module Federation](https://joaogabriel15.github.io/vitral/migracao/module-federation) (in Portuguese).
 
 ## Frameworks
 
@@ -140,63 +190,7 @@ In any HTML page, with no build:
 
 Host and remote do not need to use the same framework.
 
-## Next.js and Nuxt as host
-
-The remote is always a Vite project (React, Vue or another), as in the quick start above. The host can be a Next or Nuxt app.
-
-**Next.js (App Router):**
-
-```tsx
-// app/cart.tsx
-'use client'
-import { configure } from 'vitral'
-import { Remote } from 'vitral/react'
-
-if (typeof window !== 'undefined') {
-  configure({ remotes: { cart: 'https://cdn.example.com/cart/vitral.json' } })
-}
-
-export function Cart({ userId }: { userId: number }) {
-  return <Remote name="cart" props={{ userId }} fallback={<p>Loading…</p>} />
-}
-```
-
-```tsx
-// app/page.tsx
-import { Cart } from './cart'
-
-export default function Page() {
-  return <main><Cart userId={42} /></main>
-}
-```
-
-**Nuxt 3 and 4:**
-
-```ts
-// app/plugins/vitral.client.ts
-import { configure } from 'vitral'
-
-export default defineNuxtPlugin(() => {
-  configure({ remotes: { catalog: 'https://cdn.example.com/catalog/vitral.json' } })
-})
-```
-
-```vue
-<!-- app/pages/index.vue -->
-<script setup lang="ts">
-import { VitralRemote } from 'vitral/vue'
-</script>
-
-<template>
-  <VitralRemote name="catalog" :props="{ userId: 42 }">
-    <template #fallback><p>Loading…</p></template>
-  </VitralRemote>
-</template>
-```
-
-In both, the server renders the `fallback` and the remote mounts in the browser. No `dynamic(..., { ssr: false })` or `<ClientOnly>` needed.
-
-## Multi-Zones or vitral
+## Next.js as host
 
 Example: a Next.js shop with a "My account" area built by another team.
 
@@ -322,6 +316,114 @@ If the account code already uses `next/link` or `useRouter`, no rewrite needed: 
 | Shop layout | Each zone repeats its own | The account area sits inside the shop layout |
 
 Full guide, with per-route SSR and prefetch: [Migrate from Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones) (in Portuguese).
+
+With the App Router, the host uses `<Remote>` from `vitral/react` in a `'use client'` component. Example in [Next.js](https://joaogabriel15.github.io/vitral/frameworks/next#host-com-app-router) (in Portuguese).
+
+## Nuxt as host
+
+Example: a Nuxt shop with a "Catalog" area, built by another team.
+
+### Today, with two Nuxt apps
+
+The shop forwards `/catalog` URLs to the catalog app.
+
+```
+shop/      main Nuxt app
+catalog/   second Nuxt app
+```
+
+```ts
+// catalog/nuxt.config.ts
+export default defineNuxtConfig({
+  app: { baseURL: '/catalog/' },
+})
+```
+
+```vue
+<!-- catalog/app/pages/index.vue -->
+<template><h1>Catalog</h1></template>
+```
+
+```ts
+// shop/nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/catalog/**': { proxy: `${process.env.CATALOG_URL}/catalog/**` },
+  },
+})
+```
+
+```vue
+<!-- shop/app/components/Menu.vue -->
+<!-- <a>, not <NuxtLink>: the page reloads and downloads Nuxt and Vue again. -->
+<a href="/catalog">Catalog</a>
+```
+
+### The same app with vitral
+
+The shop stays the only Nuxt app. The catalog becomes a remote: a Vite project with the same component.
+
+```
+shop/      Nuxt app (the host)
+catalog/   Vite project (the remote)
+```
+
+```js
+// catalog/vite.config.js (instead of the catalog Nuxt app)
+import vue from '@vitejs/plugin-vue'
+import vitral from 'vitral/vite'
+
+export default { plugins: [vue(), vitral({ name: 'catalog', dedupe: ['vue'] })] }
+```
+
+```vue
+<!-- catalog/src/App.vue (the same page component) -->
+<template><h1>Catalog</h1></template>
+```
+
+```ts
+// shop/app/plugins/vitral.client.ts (instead of the proxy)
+import * as Vue from 'vue'
+import { configure } from 'vitral'
+
+export default defineNuxtPlugin(() => {
+  configure({
+    remotes: { catalog: 'https://cdn.example.com/catalog/vitral.json' },
+    dedupe: { vue: { version: Vue.version, modules: { vue: Vue } } }, // the catalog uses this Vue
+  })
+})
+```
+
+```vue
+<!-- shop/app/pages/catalog.vue (new file: the page that shows the catalog) -->
+<script setup lang="ts">
+import { VitralRemote } from 'vitral/vue'
+</script>
+
+<template>
+  <VitralRemote name="catalog">
+    <template #fallback><p>Loading…</p></template>
+  </VitralRemote>
+</template>
+```
+
+```vue
+<!-- shop/app/components/Menu.vue -->
+<!-- Plain <NuxtLink>: switching areas does not reload. -->
+<NuxtLink to="/catalog">Catalog</NuxtLink>
+```
+
+The server renders the `fallback` and the catalog mounts in the browser. No `<ClientOnly>` needed.
+
+### What changes
+
+| | Two Nuxt apps | vitral |
+|---|---|---|
+| Nuxt apps | One per area | Only the shop |
+| Config | `baseURL` in the catalog, `proxy` in the shop | Plugin in the catalog, `configure()` in the shop |
+| Switching areas | Reloads the page | No reload |
+| Vue and Nuxt | Downloaded again in each area | One copy of Vue for the whole page |
+| Shop layout | Each app repeats its own | The catalog sits inside the shop layout |
 
 ## What else comes with it
 

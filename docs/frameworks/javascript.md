@@ -2,6 +2,60 @@
 
 Sem framework. Import: `vitral` e `vitral/element`.
 
+## Hoje e com vitral
+
+Exemplo: uma página que mostra o carrinho de outra equipe.
+
+### Hoje, com iframe
+
+```html
+<!-- loja -->
+<iframe id="carrinho" src="https://carrinho.empresa.com/?userId=42" style="width: 100%; height: 400px; border: 0"></iframe>
+
+<script>
+  // trocar o usuário: mensagem para o iframe
+  document.getElementById('carrinho').contentWindow.postMessage({ userId: 43 }, 'https://carrinho.empresa.com')
+
+  // ouvir o carrinho
+  window.addEventListener('message', (e) => {
+    if (e.origin === 'https://carrinho.empresa.com') console.log(e.data)
+  })
+</script>
+```
+
+O carrinho roda um app inteiro dentro do iframe, com altura fixa e sem o CSS da página.
+
+### Com vitral
+
+```js
+// carrinho/src/remote.js (só o carrinho, sem a página em volta)
+import { component, html } from 'vitral'
+
+export default component(({ userId }) => html`<p>Carrinho de ${userId}</p>`)
+```
+
+```js
+// carrinho/vite.config.js
+import vitral from 'vitral/vite'
+
+export default { plugins: [vitral()] }
+```
+
+```html
+<!-- loja -->
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+
+<vitral-remote id="carrinho" src="https://cdn.empresa.com/carrinho/vitral.json" props='{"userId": 42}'></vitral-remote>
+
+<script type="module">
+  const el = document.getElementById('carrinho')
+  el.props = { userId: 43 }                                   // atualiza sem remontar
+  el.addEventListener('vitral-ready', () => console.log('pronto'))
+</script>
+```
+
+O carrinho monta na página, com a altura do conteúdo. Se precisar de isolamento total, `isolate="iframe"` ainda existe: veja [Iframe](/aprender/iframe).
+
 ## Host
 
 ### Sem build
