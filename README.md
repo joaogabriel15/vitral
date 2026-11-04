@@ -20,7 +20,7 @@
   <a href="./README.en.md">English</a>
 </p>
 
-Junte micro-frontends de qualquer framework numa página só, sem configuração de build no host.
+Micro-frontends com qualquer framework, sem configurar build no host. React, Next.js, Vue, Nuxt, Angular, Svelte e outros na mesma página.
 
 Cada equipe publica o próprio pedaço da página (um remote) com `vite build`. O host recebe a URL de cada remote e monta tudo no navegador.
 
