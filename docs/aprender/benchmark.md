@@ -10,27 +10,27 @@ Mediana de 7 repetições. Rede "Slow 4G" (150 ms de RTT, 1,6 Mbps). Sem throttl
 
 | Cenário | N | Frio (ms) | Quente (ms) | Transferido frio (kB) | Requisições frio | Requisições quente | Heap (MB) |
 | --- | --: | --: | --: | --: | --: | --: | --: |
-| vitral, sem dedupe | 1 | 1097 | 417 | 75,7 | 13 | 2 | 1,54 |
-| vitral, com dedupe | 1 | 1157 | 437 | 79,4 | 18 | 2 | 1,60 |
-| vitral, dedupe e `maxStale` | 1 | 1159 | 298 | 79,9 | 19 | 1 | 1,60 |
-| MF, sem shared | 1 | 1500 | 427 | 100,9 | 7 | 2 | 1,68 |
-| MF, shared singleton | 1 | 2673 | 483 | 111,3 | 17 | 2 | 1,89 |
-| vitral, sem dedupe | 4 | 1971 | 529 | 235,4 | 23 | 5 | 2,39 |
-| vitral, com dedupe | 4 | 1572 | 508 | 146,8 | 41 | 5 | 2,19 |
-| vitral, dedupe e `maxStale` | 4 | 1574 | 390 | 147,2 | 42 | 5 | 2,19 |
-| MF, sem shared | 4 | 2453 | 558 | 308,9 | 22 | 5 | 2,80 |
-| MF, shared singleton | 4 | 3596 | 568 | 247,2 | 47 | 5 | 3,18 |
-| vitral, sem dedupe | 8 | 2972 | 690 | 459,0 | 35 | 9 | 3,51 |
-| vitral, com dedupe | 8 | 2188 | 619 | 177,1 | 69 | 9 | 2,47 |
-| vitral, dedupe e `maxStale` | 8 | 2231 | 462 | 177,5 | 70 | 7 | 2,47 |
-| MF, sem shared | 8 | 3756 | 743 | 598,1 | 42 | 9 | 4,25 |
-| MF, shared singleton | 8 | 4240 | 1086 | 408,7 | 83 | 12 | 4,76 |
+| vitral, sem dedupe | 1 | 1053 | 392 | 71,6 | 14 | 2 | 1,72 |
+| vitral, com dedupe | 1 | 1104 | 402 | 75,8 | 19 | 2 | 1,75 |
+| vitral, dedupe e `maxStale` | 1 | 1112 | 253 | 76,2 | 20 | 1 | 1,76 |
+| MF, sem shared | 1 | 1466 | 392 | 100,4 | 7 | 2 | 1,84 |
+| MF, shared singleton | 1 | 2605 | 420 | 110,9 | 17 | 2 | 2,14 |
+| vitral, sem dedupe | 4 | 1747 | 468 | 211,2 | 20 | 5 | 2,72 |
+| vitral, com dedupe | 4 | 1532 | 450 | 131,0 | 38 | 5 | 2,32 |
+| vitral, dedupe e `maxStale` | 4 | 1668 | 298 | 131,4 | 39 | 1 | 2,33 |
+| MF, sem shared | 4 | 2397 | 460 | 308,6 | 22 | 5 | 3,13 |
+| MF, shared singleton | 4 | 3586 | 480 | 247,0 | 48 | 5 | 3,61 |
+| vitral, sem dedupe | 8 | 2818 | 553 | 409,3 | 28 | 9 | 3,99 |
+| vitral, com dedupe | 8 | 2114 | 531 | 152,6 | 60 | 9 | 2,60 |
+| vitral, dedupe e `maxStale` | 8 | 2266 | 348 | 153,3 | 62 | 6 | 2,60 |
+| MF, sem shared | 8 | 3783 | 592 | 597,9 | 42 | 9 | 4,91 |
+| MF, shared singleton | 8 | 4467 | 946 | 408,6 | 85 | 12 | 5,17 |
 
-Host sozinho (N=0): o do vitral baixa 8,1 kB de JS em 6 requisições (a entrada tem 4,7 kB; o resto são chunks sob demanda que o `configure` busca). O do MF baixa 19,4 kB em 2 requisições.
+Host sozinho (N=0): o do vitral baixa 8,5 kB de JS em 6 requisições (a entrada e os chunks sob demanda que o `configure` busca). O do MF baixa 18,9 kB em 2 requisições.
 
 Mínimo e máximo de cada célula estão em `bench/publico/resultado.json`.
 
-Até a 0.6.0, os números do vitral nesta página tinham cerca de 170 ms a mais na visita fria. Qualquer query com a palavra `vitral` (a página do benchmark usa `?remotes=vitral-…`) baixava o módulo de overrides de desenvolvimento antes do manifesto. Agora só `?vitral=` liga os overrides. Na mesma versão, o código de dedupe passou a baixar junto com o manifesto, e não depois dele.
+Na 0.11.1, os remotes Vue e JS puro deixaram de levar o código do host (o `<vitral-remote>` e o loader), e os remotes React deixaram de baixar o escopo dos portais num arquivo à parte. Com N=8 e dedupe, isso tirou 14 requisições e 25 kB da visita fria. As medições anteriores à 0.11.1 usavam o Chromium 141 headless shell; estas usam o Chromium 153.
 
 ## O que os números dizem
 
@@ -38,23 +38,23 @@ Com o framework compartilhado (dedupe no vitral, `shared` singleton no MF):
 
 | N | Frio | Transferido | Heap |
 | --: | --- | --- | --- |
-| 1 | vitral 1157 ms, MF 2673 ms (-57%) | 79,4 kB contra 111,3 kB (-29%) | 1,60 contra 1,89 MB |
-| 4 | vitral 1572 ms, MF 3596 ms (-56%) | 146,8 kB contra 247,2 kB (-41%) | 2,19 contra 3,18 MB |
-| 8 | vitral 2188 ms, MF 4240 ms (-48%) | 177,1 kB contra 408,7 kB (-57%) | 2,47 contra 4,76 MB |
+| 1 | vitral 1104 ms, MF 2605 ms (-58%) | 75,8 kB contra 110,9 kB (-32%) | 1,75 contra 2,14 MB |
+| 4 | vitral 1532 ms, MF 3586 ms (-57%) | 131,0 kB contra 247,0 kB (-47%) | 2,32 contra 3,61 MB |
+| 8 | vitral 2114 ms, MF 4467 ms (-53%) | 152,6 kB contra 408,6 kB (-63%) | 2,60 contra 5,17 MB |
 
 Cada remote leva a própria cópia do framework (sem dedupe, sem `shared`):
 
 | N | Frio | Transferido | Heap |
 | --: | --- | --- | --- |
-| 1 | vitral 1097 ms, MF 1500 ms (-27%) | 75,7 kB contra 100,9 kB (-25%) | 1,54 contra 1,68 MB |
-| 4 | vitral 1971 ms, MF 2453 ms (-20%) | 235,4 kB contra 308,9 kB (-24%) | 2,39 contra 2,80 MB |
-| 8 | vitral 2972 ms, MF 3756 ms (-21%) | 459,0 kB contra 598,1 kB (-23%) | 3,51 contra 4,25 MB |
+| 1 | vitral 1053 ms, MF 1466 ms (-28%) | 71,6 kB contra 100,4 kB (-29%) | 1,72 contra 1,84 MB |
+| 4 | vitral 1747 ms, MF 2397 ms (-27%) | 211,2 kB contra 308,6 kB (-32%) | 2,72 contra 3,13 MB |
+| 8 | vitral 2818 ms, MF 3783 ms (-26%) | 409,3 kB contra 597,9 kB (-32%) | 3,99 contra 4,91 MB |
 
 De onde vem a diferença, olhando as requisições:
 
 - No MF, cada `remoteEntry.js` traz o próprio runtime (cerca de 17 kB com brotli por remote). O host traz mais 19 kB.
-- No MF com `shared`, o remote só pede o React depois de carregar o runtime e passar pelos módulos `loadShare` e `prebuild`: uma cadeia de requisições em série antes de montar. Com 150 ms de RTT, isso pesa mais que os bytes economizados. Com N=1, o `shared` deixa o MF 1173 ms mais lento que sem `shared`.
-- No vitral com dedupe, o React baixa uma vez (cerca de 63 kB). De N=4 para N=8, os 4 remotes a mais custam 30,3 kB juntos.
+- No MF com `shared`, o remote só pede o React depois de carregar o runtime e passar pelos módulos `loadShare` e `prebuild`: uma cadeia de requisições em série antes de montar. Com 150 ms de RTT, isso pesa mais que os bytes economizados. Com N=1, o `shared` deixa o MF 1139 ms mais lento que sem `shared`.
+- No vitral com dedupe, o React baixa uma vez (cerca de 63 kB). De N=4 para N=8, os 4 remotes a mais custam 21,6 kB juntos.
 
 ## Visita de volta com maxStale
 
@@ -62,29 +62,37 @@ Com `configure({ maxStale: 300 })`, o host usa o `vitral.json` salvo na visita a
 
 | N | Com dedupe | Com dedupe e `maxStale` | Diferença |
 | --: | --: | --: | --: |
-| 1 | 437 ms | 298 ms | -32% |
-| 4 | 508 ms | 390 ms | -23% |
-| 8 | 619 ms | 462 ms | -25% |
+| 1 | 402 ms | 253 ms | -37% |
+| 4 | 450 ms | 298 ms | -34% |
+| 8 | 531 ms | 348 ms | -34% |
 
 ## Com CPU 4x mais lenta
 
-Medido na 0.4.0, antes das mudanças da 0.7.0. N=4, mesma rede, `Emulation.setCPUThrottlingRate` 4x, 7 repetições (`bench/publico/resultado-cpu4.json`). Bytes e requisições não mudam.
+Mesma rede, `Emulation.setCPUThrottlingRate` 4x, 7 repetições (`bench/publico/resultado-cpu4.json`). Bytes e requisições não mudam.
 
-| Cenário | Frio (ms) | Quente (ms) | Quente, mín.–máx. (ms) |
+| Cenário | N | Frio (ms) | Quente (ms) |
 | --- | --: | --: | --: |
-| vitral, sem dedupe | 2300 | 789 | 682–941 |
-| vitral, com dedupe | 2051 | 879 | 661–1183 |
-| MF, sem shared | 2642 | 830 | 763–2364 |
-| MF, shared singleton | 3767 | 1920 | 834–3017 |
+| vitral, sem dedupe | 1 | 1220 | 583 |
+| vitral, com dedupe | 1 | 1272 | 604 |
+| MF, sem shared | 1 | 1632 | 544 |
+| MF, shared singleton | 1 | 2854 | 638 |
+| vitral, sem dedupe | 4 | 2038 | 837 |
+| vitral, com dedupe | 4 | 1618 | 778 |
+| MF, sem shared | 4 | 2698 | 896 |
+| MF, shared singleton | 4 | 3829 | 943 |
+| vitral, sem dedupe | 8 | 3210 | 1301 |
+| vitral, com dedupe | 8 | 2158 | 1009 |
+| MF, sem shared | 8 | 4039 | 1399 |
+| MF, shared singleton | 8 | 4675 | 1597 |
 
-Na visita quente, o MF sem `shared` (830 ms) fica à frente do vitral com dedupe (879 ms). A variação é grande nos quatro, e as faixas se cruzam.
+Com dedupe, o vitral abre em menos da metade do tempo do MF com `shared` em todos os N. Com N=1, na visita quente, o MF sem `shared` (544 ms) fica à frente do vitral (583 e 604 ms).
 
 ## Onde o vitral perde
 
-- **Requisições com N=1:** o MF sem `shared` faz 7 requisições; o vitral faz 13 sem dedupe e 18 com dedupe.
-- **Dedupe com um remote só:** com N=1, o dedupe deixa o vitral 60 ms mais lento (1157 contra 1097 ms) e 3,7 kB mais pesado. Ele só compensa a partir de 2 remotes do mesmo framework.
-- **Requisições com dedupe:** o build dividido gera muitos arquivos pequenos. Com N=8, são 69 requisições, contra 42 do MF sem `shared` (mas 83 do MF com `shared`).
-- **Visita quente com CPU 4x, N=4 (medido na 0.4.0):** MF sem `shared` 830 ms, vitral com dedupe 879 ms.
+- **Requisições com N=1:** o MF sem `shared` faz 7 requisições; o vitral faz 14 sem dedupe e 19 com dedupe.
+- **Dedupe com um remote só:** com N=1, o dedupe deixa o vitral 51 ms mais lento (1104 contra 1053 ms) e 4,2 kB mais pesado. Ele só compensa a partir de 2 remotes do mesmo framework.
+- **Requisições com dedupe:** o build dividido gera muitos arquivos pequenos. Com N=8, são 60 requisições, contra 42 do MF sem `shared` (mas 85 do MF com `shared`).
+- **Visita quente com N=1:** empate sem throttling (392 ms nos dois sem dedupe e sem `shared`). Com CPU 4x, o MF sem `shared` fica à frente (544 contra 583 ms).
 - **Host sozinho:** o do vitral faz 6 requisições contra 2 do MF, mesmo baixando menos.
 
 ## Método
@@ -110,17 +118,17 @@ Na visita quente, o MF sem `shared` (830 ms) fica à frente do vitral com dedupe
 
 | | |
 | --- | --- |
-| vitral | 0.6.0 com as mudanças da 0.7.0 (commit c06dbd3), instalado do tarball do pacote |
-| @module-federation/vite | 1.23.5 |
-| @module-federation/runtime | 2.9.2 |
-| vite | 8.3.4 |
-| @vitejs/plugin-react / plugin-vue | 6.1.2 / 6.0.10 |
-| react, react-dom | 19.3.0 |
+| vitral | 0.11.0 com as mudanças da 0.11.1 (commit 038dcf4), instalado do tarball do pacote |
+| @module-federation/vite | 1.23.9 |
+| @module-federation/runtime | 2.9.3 |
+| vite | 8.3.5 |
+| @vitejs/plugin-react / plugin-vue | 6.2.1 / 6.0.10 |
+| react, react-dom | 19.3.1 |
 | vue | 3.5.44 |
-| Chromium (Playwright 1.56.1) | 141.0.7390.37, headless |
+| Chromium (Playwright 1.56.1) | 153.0.8010.12, headless |
 | Node | 22.22.0 |
 | Máquina | Intel Xeon 2,10 GHz, 4 núcleos, 16 GB, Linux 6.18 |
-| Data | 20/10/2026 |
+| Data | 04/11/2026 |
 
 ## Limites
 
@@ -129,7 +137,7 @@ Na visita quente, o MF sem `shared` (830 ms) fica à frente do vitral com dedupe
 - O MF foi medido com a configuração padrão do `@module-federation/vite`. Webpack e Rspack com runtime compartilhado entre remotes não foram medidos.
 - Sem `mf-manifest.json` no MF. Com manifesto, cada remote faz uma requisição a mais, como o `vitral.json`.
 - Sem CSS, sem SSR, sem navegação entre rotas.
-- Sem throttling de CPU na tabela principal. Com CPU 4x, só N=4.
+- Sem throttling de CPU na tabela principal. A tabela com CPU 4x não traz bytes nem heap, que não mudam.
 
 ## Reproduzir
 
@@ -144,6 +152,7 @@ O script instala as versões fixadas numa pasta de trabalho (`bench/node_modules
 node bench/publico/run.mjs --n 4 --runs 3 --only vitral-dedupe,mf-shared
 node bench/publico/run.mjs --cpu 4                  # CPU 4x mais lenta
 node bench/publico/run.mjs --sem-build --servir     # só o servidor, porta 4301
+CHROMIUM_PATH=/caminho/chrome node bench/publico/run.mjs   # outro Chromium (vale para o zonas.mjs)
 ```
 
 Com `--servir`, abra `http://127.0.0.1:4301/host-vitral/?remotes=vitral-dedupe&n=4` ou `http://127.0.0.1:4301/host-mf/?remotes=mf-shared&n=4`.
@@ -178,13 +187,13 @@ Mediana de 7 repetições. Rede "Slow 4G" (150 ms de RTT, 1,6 Mbps). HTTP/2. Sem
 
 | Cenário | Abrir A, interativo (ms) | Abrir A, 1ª pintura (ms) | Abrir A (kB) | Trocar A → B (ms) | Trocar (kB) | Baixado A + B (kB) |
 | --- | --: | --: | --: | --: | --: | --: |
-| vitral, sem dedupe | 1236 | 1256 | 75,2 | 652 | 63,3 | 138,5 |
-| vitral, com dedupe | 1435 | 1456 | 78,3 | 363 | 3,3 | 81,6 |
-| vitral, dedupe e prefetch | 1430 | 1452 | 83,3 | 178 | 0 | 83,3 |
-| vitral, gateway com SSR | 651 | 184 | 79,4 | 366 | 3,3 | 82,7 |
-| vitral, gateway e prefetch | 652 | 180 | 81,8 | 184 | 0,6 | 85,1 |
-| Multi-Zones | 969 | 184 | 114,4 | 995 | 114,4 | 228,8 |
-| Multi-Zones, prefetch | 955 | 180 | 115,9 | 850 | 112,9 | 228,8 |
+| vitral, sem dedupe | 1093 | 1112 | 71,4 | 627 | 58,0 | 129,4 |
+| vitral, com dedupe | 1130 | 1148 | 74,3 | 364 | 3,9 | 78,2 |
+| vitral, dedupe e prefetch | 1195 | 1216 | 80,7 | 186 | 0 | 80,7 |
+| vitral, gateway com SSR | 703 | 196 | 76,4 | 369 | 3,8 | 80,2 |
+| vitral, gateway e prefetch | 705 | 196 | 79,6 | 187 | 0,7 | 83,4 |
+| Multi-Zones | 960 | 200 | 114,3 | 998 | 114,3 | 228,5 |
+| Multi-Zones, prefetch | 966 | 196 | 115,8 | 839 | 112,8 | 228,6 |
 
 Mínimo e máximo de cada célula estão em `bench/publico/resultado-zonas.json`.
 
@@ -194,15 +203,15 @@ Melhor configuração de cada um (vitral com gateway e prefetch, Multi-Zones com
 
 | | vitral | Multi-Zones | Diferença |
 | --- | --: | --: | --- |
-| Abrir A, interativo | 652 ms | 955 ms | 32% mais rápido |
-| Abrir A, 1ª pintura | 180 ms | 180 ms | Empate |
-| Trocar A → B | 184 ms | 850 ms | 4,6 vezes mais rápido |
-| Baixado em A + B | 85,1 kB | 228,8 kB | 63% menos |
+| Abrir A, interativo | 705 ms | 966 ms | 27% mais rápido |
+| Abrir A, 1ª pintura | 196 ms | 196 ms | Empate |
+| Trocar A → B | 187 ms | 839 ms | 4,5 vezes mais rápido |
+| Baixado em A + B | 83,4 kB | 228,6 kB | 64% menos |
 
 De onde vem a diferença:
 
-- **Troca de área:** no Multi-Zones, ir para outra zona recarrega a página e baixa React e Next de novo (113 kB), mesmo com arquivos iguais, porque cada zona serve os seus em outro caminho (`/a/_next/…`, `/b/_next/…`). No vitral, o app shell fica, o React fica (dedupe) e só o remote de B vem (3 kB). Com o prefetch, nem isso: B já está baixado.
-- **Primeira visita:** sem gateway, o vitral perde (1435 contra 969 ms). O HTML do app shell chega vazio, e o host descobre um arquivo depois do outro: o JS do host, o `vitral.json`, o código de SRI e de dedupe e, por último, o React. Com o gateway (`routes`), a página já sai com o HTML da rota, o manifesto e o `Link` (Early Hints) de todos os arquivos, o React inclusive. O navegador baixa tudo em paralelo e o outlet só hidrata. Veja [Rotas com SSR](./ssr#rotas-com-ssr).
+- **Troca de área:** no Multi-Zones, ir para outra zona recarrega a página e baixa React e Next de novo (113 kB), mesmo com arquivos iguais, porque cada zona serve os seus em outro caminho (`/a/_next/…`, `/b/_next/…`). No vitral, o app shell fica, o React fica (dedupe) e só o remote de B vem (4 kB). Com o prefetch, nem isso: B já está baixado.
+- **Primeira visita:** sem gateway, o vitral perde (1130 contra 960 ms). O HTML do app shell chega vazio, e o host descobre um arquivo depois do outro: o JS do host, o `vitral.json`, o código de SRI e de dedupe e, por último, o React. Com o gateway (`routes`), a página já sai com o HTML da rota, o manifesto e o `Link` (Early Hints) de todos os arquivos, o React inclusive. O navegador baixa tudo em paralelo e o outlet só hidrata. Veja [Rotas com SSR](./ssr#rotas-com-ssr).
 - **Bytes:** o Next manda o runtime dele (roteador, RSC) além do React. O host do vitral é o app shell e a lib.
 
 ### Com CPU 4x mais lenta
@@ -211,16 +220,16 @@ Melhor configuração de cada um, mesma rede, `Emulation.setCPUThrottlingRate` 4
 
 | | vitral | Multi-Zones | Diferença |
 | --- | --: | --: | --- |
-| Abrir A, interativo | 792 ms | 1251 ms | 37% mais rápido |
-| Abrir A, 1ª pintura | 224 ms | 228 ms | Empate |
-| Trocar A → B | 225 ms | 1239 ms | 5,5 vezes mais rápido |
+| Abrir A, interativo | 859 ms | 1259 ms | 32% mais rápido |
+| Abrir A, 1ª pintura | 244 ms | 240 ms | Empate |
+| Trocar A → B | 232 ms | 1140 ms | 4,9 vezes mais rápido |
 
 Com CPU lenta, a diferença cresce: o Next roda o runtime dele de novo a cada troca de zona.
 
 ### Onde o vitral perde
 
-- **Sem gateway, primeira visita:** 1435 ms contra 969 ms, e a primeira pintura só sai com o JS (1456 contra 184 ms). Quem não pode pôr um servidor na frente do app shell fica com esse custo na primeira visita.
-- **Dedupe com uma área só:** sem dedupe, a primeira visita é 199 ms mais rápida (1236 contra 1435 ms), mas a troca baixa o React de novo (63,3 kB). O dedupe compensa a partir da segunda área visitada.
+- **Sem gateway, primeira visita:** 1130 ms contra 960 ms, e a primeira pintura só sai com o JS (1148 contra 200 ms). Quem não pode pôr um servidor na frente do app shell fica com esse custo na primeira visita.
+- **Dedupe com uma área só:** sem dedupe, a primeira visita é 37 ms mais rápida (1093 contra 1130 ms), mas a troca baixa o React de novo (58 kB). O dedupe compensa a partir da segunda área visitada.
 - **Prerender do Chromium:** com Speculation Rules `prerender`, a zona B poderia abrir já pronta. Não foi medido: com o DevTools ligado (Playwright, CDP), o Chromium desliga o prerender (`PrerenderingDisabledByDevTools`). Só o `prefetch` entrou. O prerender só existe no Chromium e roda a página inteira de B em segundo plano.
 
 ### Método
@@ -242,7 +251,7 @@ Com CPU lenta, a diferença cresce: o Next roda o runtime dele de novo a cada tr
 | Bytes | Corpo das respostas, contado no servidor. O CDP não dá o tamanho dos arquivos que chegam por Early Hints |
 | Repetições | Uma de aquecimento fora da conta, depois 7. Mediana |
 
-Versões: vitral 0.5.0 com este PR, Next 16.4.2, React 19.3.0, Vite 8.3.4, Chromium 141.0.7390.37 (Playwright 1.56.1, headless), Node 22.22.0, na mesma máquina da tabela do MF. Data: 20/10/2026.
+Versões: vitral 0.11.0 com as mudanças da 0.11.1 (commit 038dcf4), Next 16.4.5, React 19.3.1, Vite 8.3.5, Chromium 153.0.8010.12 (Playwright 1.56.1, headless), Node 22.22.0, na mesma máquina da tabela do MF. Data: 04/11/2026.
 
 ### Limites
 
