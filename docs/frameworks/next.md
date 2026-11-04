@@ -163,10 +163,12 @@ No build do host, o `withVitral` lê o `vitral.json` do remote (em `public/` ou 
 
 Uma oferta de `share` é um `import()` do pacote. Com o pacote inteiro, o webpack considera usados todos os exports dos barrels dele e deixa de descartar o que a página não usa. Uma página que só importa o layout de uma biblioteca de componentes acaba levando os gráficos, os formulários e o calendário dela.
 
-Quando o build do host acha o `vitral.json` de todos os remotes (em `public/` ou em `manifestFile`), o `withVitral` gera cada oferta com `/* webpackExports: [...] */` e só os nomes que os remotes usam (o campo `uses` do manifesto). Assim o webpack volta a descartar o resto. Se um remote publicado depois usar um nome que a oferta não tem, ele usa a cópia própria daquele grupo e avisa no console, sem quebrar. Rebuildar o host volta a oferecer tudo o que ele usa.
+Quando o build do host acha o `vitral.json` de todos os remotes (em `public/` ou em `manifestFile`), o `withVitral` gera cada oferta com `/* webpackExports: [...] */` e só os nomes que os remotes usam (o campo `uses` do manifesto). Assim o webpack volta a descartar o resto. Se um remote publicado depois usar um nome que a oferta não tem, ele usa a cópia própria daquele grupo e avisa no console, sem quebrar. O React é a exceção: duas cópias na página quebram hooks e contexto, então o remote fica com o React do host e só avisa. Rebuildar o host volta a oferecer tudo o que ele usa.
 
 - Um remote sem manifesto no build (de outra origem, sem `manifestFile`), ou com um manifesto anterior a este campo, faz as ofertas irem inteiras, como antes.
 - Em `next dev` com `devUrl`, as ofertas vão inteiras.
+- Os nomes de `uses` são os do build de produção de cada pacote. O React de dev exporta nomes que o de produção não tem (`act`, `captureOwnerStack`), e um remote com `import * as React` não os pede ao host.
+- Na página de um remote, o host começa o download do chunk de cada oferta que o remote vai pedir antes da hidratação, e não quando o remote pede. O webpack põe cada `import()` da oferta num chunk à parte, que o HTML não pré-carrega.
 - O Turbopack ignora o `webpackExports`. Com ele, a oferta continua trazendo o pacote inteiro.
 
 `NextRemote` passa o roteador do Next ao remote: `useRouter`, `<Link>`, `router.push`, o `Router` padrão de `next/router`, `redirect()` e `router.events` dentro dele usam o do host, com as rotas públicas. O remote vê os caminhos como numa zona com `basePath`.

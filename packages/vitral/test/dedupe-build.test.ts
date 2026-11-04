@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { build } from 'vite'
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import * as RealReact from 'react'
 import vitral from '../src/vite'
 import { protocol, resetProtocol } from '../src/core/state'
@@ -93,5 +93,46 @@ describe('build com dedupe', () => {
     const remote = (await import(pathToFileURL(join(out, m.entry)).href)).default
     expect(remote.react.version).toBe(RealReact.version)
     expect(read(m.entry)).toContain('react.transitional.element')
+  })
+})
+
+describe('build com dedupe e import * as React', () => {
+  const ns = mkdtempSync(join(tmpdir(), 'vitral-dedupe-ns-'))
+  let n: RemoteManifest
+
+  beforeAll(async () => {
+    await build({
+      root: resolve(__dirname, 'fixtures/vite-dedupe'),
+      configFile: false,
+      logLevel: 'silent',
+      plugins: [vitral({ entry: 'src/namespace.js', adapter: false, dedupe: ['react'] })],
+      build: { outDir: ns, emptyOutDir: true },
+    })
+    n = JSON.parse(readFileSync(join(ns, 'vitral.json'), 'utf8'))
+  }, 60_000)
+
+  afterAll(() => rmSync(ns, { recursive: true, force: true }))
+
+  it('os nomes do manifesto são os do React de produção, mesmo com o de dev carregado no processo', () => {
+    // O vitest roda com NODE_ENV=test: aqui o React carregado é o de dev, que exporta `act` e `captureOwnerStack`.
+    expect(Object.keys(RealReact)).toContain('captureOwnerStack')
+    const uses = n.dedupe![0].uses!.react
+    expect(uses).toEqual(expect.arrayContaining(['createElement', 'useState', 'version']))
+    expect(uses).not.toContain('act')
+    expect(uses).not.toContain('captureOwnerStack')
+  })
+
+  it('oferta do host sem um nome que o remote lê: avisa e fica com o React do host', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const dir = join(ns, 'copia')
+    cpSync(join(ns, 'split'), join(dir, 'split'), { recursive: true })
+    const url = pathToFileURL(join(dir, n.split!.entry)).href
+    // O host Next com webpackExports: a oferta só tem alguns nomes (falta `useState`).
+    protocol().uses = { [url]: { react: n.dedupe![0].uses } }
+    shared(protocol())('react', RealReact.version, fake(RealReact.version))
+    const remote = (await import(url)).default
+    expect(remote.ns.version).toBe(`falso ${RealReact.version}`)
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/a oferta de react não tem .*react useState.*oferta do host mesmo assim/))
+    warn.mockRestore()
   })
 })

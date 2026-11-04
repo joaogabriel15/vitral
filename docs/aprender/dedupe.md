@@ -40,6 +40,6 @@ configure({
 
 Num host Next, `share` do [`withVitral`](/frameworks/next#host-next-no-lugar-das-zonas) gera isso com as versões instaladas.
 
-O manifesto do remote lista, em `uses`, os nomes que ele lê de cada especificador. Se a oferta do host não tem um deles, o remote usa a cópia própria daquele grupo e avisa no console (`a oferta de X não tem ...`).
+O manifesto do remote lista, em `uses`, os nomes que ele lê de cada especificador. Os nomes são os do build de produção de cada pacote. Se a oferta do host não tem um deles, o remote usa a cópia própria daquele grupo e avisa no console (`a oferta de X não tem ...`). No grupo do React, o remote só avisa e fica com o React do host, porque duas cópias na página quebram hooks e contexto.
 
 Cuidado com um `import()` do pacote inteiro numa oferta: para o webpack, ele marca como usados todos os exports dos barrels do pacote. Assim, o que a tela não usa (os gráficos de uma biblioteca de componentes, por exemplo) entra nas páginas que importam o pacote. No host Next, o `withVitral` evita isso no build (veja [Ofertas só com os nomes usados](/frameworks/next#ofertas-so-com-os-nomes-usados)).

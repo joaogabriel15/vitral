@@ -302,6 +302,11 @@ describe('vitral/next-config', () => {
       css: [['/delivery-remote/remote-a.css', 'sha384-css']],
       js: [['/delivery-remote/split/q2.js'], ['/delivery-remote/split/q.js', 'sha384-q'], ['/delivery-remote/split/c.js', 'sha384-c'], ['/delivery-remote/split/e.js', 'sha384-e']],
     })
+    // Com `query` oferecido pelo host: a cópia do remote sai dos hints e o grupo vai em `offers`, para o host aquecer.
+    expect(htmlHints(dir, r, { react: '19.2.0', query: '5.2.0' })).toMatchObject({
+      js: [['/delivery-remote/split/c.js', 'sha384-c'], ['/delivery-remote/split/e.js', 'sha384-e']],
+      offers: ['query'],
+    })
     // React fora da faixa: a cópia do remote também vai; `integrity: false` tira os hashes.
     const loose = htmlHints(dir, { ...r, integrity: false }, { react: '18.3.0', query: '5.2.0' })!
     expect(loose.js).toEqual([['/delivery-remote/split/react.js'], ['/delivery-remote/split/c.js'], ['/delivery-remote/split/e.js']])
