@@ -7,6 +7,8 @@ import { Component as ReactComponent, createContext, type ComponentType, type Re
 import type { Props, RemoteContext } from './core/types'
 
 export const VitralContext = createContext<RemoteContext | null>(null)
+/** Estado do SSR: o do `render` no servidor, o de `ctx.initialState` na hidratação. */
+export const StateContext = createContext<unknown>(undefined)
 
 /** Erro de render dentro do remote vai para o host em vez de derrubar a página. */
 class Boundary extends ReactComponent<{ ctx: RemoteContext | null; children: ReactNode }, { failed: boolean }> {
@@ -22,12 +24,14 @@ class Boundary extends ReactComponent<{ ctx: RemoteContext | null; children: Rea
   }
 }
 
-export function RemoteTree<P extends Props>({ Component, props, ctx }: { Component: ComponentType<P>; props: P; ctx: RemoteContext | null }) {
+export function RemoteTree<P extends Props>({ Component, props, ctx, state = ctx?.initialState }: { Component: ComponentType<P>; props: P; ctx: RemoteContext | null; state?: unknown }) {
   return (
     <VitralContext.Provider value={ctx}>
-      <Boundary ctx={ctx}>
-        <Component {...props} />
-      </Boundary>
+      <StateContext.Provider value={state}>
+        <Boundary ctx={ctx}>
+          <Component {...props} />
+        </Boundary>
+      </StateContext.Provider>
     </VitralContext.Provider>
   )
 }

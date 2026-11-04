@@ -26,13 +26,15 @@
  */
 import { matchRoute, type Routes } from './core/match'
 import { critical, ordered } from './core/order'
+import { htmlOf, inlineJson, ssrHolder, stateScript, type ServerRendered } from './core/ssr-markup'
 import type { Props, RemoteManifest } from './core/types'
 import { decodeEntities, escapeAttr, rewrite, type EdgeElement } from './edge/rewriter'
 
 export type { EdgeElement } from './edge/rewriter'
 
 /** HTML do remote para estas props, no servidor. */
-export type ServerRender = (props: Props) => string | Promise<string>
+/** HTML do remote, ou `{ html, state }`: o estado vai junto e chega em `ctx.initialState`. */
+export type ServerRender = (props: Props) => ServerRendered | Promise<ServerRendered>
 
 /** Isolamento do remote na página (o mesmo de `isolate` no cliente). */
 export type EdgeIsolation = 'shadow' | 'none'
@@ -241,17 +243,17 @@ export function gateway(options: GatewayOptions): Gateway {
     return new Response(body, { status: res.status, statusText: res.statusText, headers })
   }
 
-  async function markup(r: Remote, m: RemoteManifest, label: string, html: string, isolate: EdgeIsolation): Promise<string> {
+  async function markup(r: Remote, m: RemoteManifest, label: string, rendered: ServerRendered, isolate: EdgeIsolation): Promise<string> {
     const { abs, sri } = paths(r, m)
     const name = escapeAttr(label)
     const scope = m.scope ? ` data-vitral-scope="${escapeAttr(m.scope)}"` : ''
-    const root = `<div data-vitral-root="${name}"${scope} style="display:contents">${html}</div>`
+    const root = `<div data-vitral-root="${name}"${scope} style="display:contents">${htmlOf(rendered)}</div>`
     // O manifesto vai junto (o mesmo que o SSR usou): o cliente não busca de novo.
-    const json = JSON.stringify(relocate(m, (u) => (/^https?:\/\//.test(u) ? local(r, u) : u))).replace(/</g, '\\u003c')
-    const seed = `<script type="application/json" data-vitral-manifest="${escapeAttr(local(r, r.url))}">${json}</script>`
+    const relocated = relocate(m, (u) => (/^https?:\/\//.test(u) ? local(r, u) : u))
+    const seed = `<script type="application/json" data-vitral-manifest="${escapeAttr(local(r, r.url))}">${inlineJson(relocated)}</script>${stateScript(rendered)}`
     const css = (m.css ?? []).map(abs)
     const link = (u: string) => `<link rel="stylesheet" href="${escapeAttr(local(r, u))}" crossorigin="anonymous"${sri[u] ? ` integrity="${escapeAttr(sri[u])}"` : ''}>`
-    if (isolate === 'none') return `<div data-vitral-ssr data-vitral-slot="${name}">${seed}${css.map(link).join('')}${root}</div>`
+    if (isolate === 'none') return ssrHolder(label, m, rendered, css.map((u) => [local(r, u), sri[u]]), [local(r, r.url), relocated])
     // No Shadow DOM: o CSS preparado no build, quando há, senão o do manifesto.
     const s = m.shadow
     const files = s && css[0] ? s.css.map((u) => new URL(u, css[0]).href) : css

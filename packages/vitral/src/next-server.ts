@@ -16,7 +16,16 @@
  * como antes.
  */
 import { remotes } from 'vitral-next-host-config'
-import type { RemoteManifest } from './core/types'
+import { ssrHolder, type ServerRendered } from './core/ssr-markup'
+import type { Props, RemoteManifest } from './core/types'
+
+/** SSR de um remote na página do host: o `render` do servidor do remote e as props. */
+export interface RemoteSsr {
+  /** O `render` que o remote exporta para o servidor (`reactRender` de `vitral/react-server`). */
+  render: (props: Props) => ServerRendered | Promise<ServerRendered>
+  /** As mesmas props que a página passa ao `NextRemote`. */
+  props?: Props
+}
 
 export interface RemotePropsOptions {
   /** Segundos em que o manifesto guardado vale sem pedir de novo. Padrão 5. */
@@ -33,9 +42,15 @@ export interface RemotePropsOptions {
    * cliente poderia apontar o servidor para outra máquina.
    */
   origin?: string
-  /** Tempo máximo do pedido, em ms. Padrão 3000. */
+  /** Tempo máximo do pedido, em ms. Padrão 3000. Vale também para o `render` do SSR. */
   timeout?: number
   fetch?: typeof fetch
+  /**
+   * SSR por remote. O HTML vai em `vitralSsr[nome]`, para o `ssr` do
+   * `NextRemote`. Sem o manifesto, com erro ou depois de `timeout`, `null`, e
+   * a página monta no navegador como antes.
+   */
+  ssr?: Record<string, RemoteSsr>
 }
 
 interface Cached {
@@ -103,10 +118,40 @@ export async function remoteManifest(name: string, o: RemotePropsOptions = {}): 
 
 /**
  * Props para a página do remote: `{ vitral: { [name]: manifesto | null } }`.
- * Passe `vitral[name]` ao `NextRemote` em `manifest`.
+ * Passe `vitral[name]` ao `NextRemote` em `manifest`. Com `ssr`, também
+ * `vitralSsr: { [name]: html | null }`, para o `ssr` do `NextRemote`.
  */
-export async function remoteProps(names: string | string[], o: RemotePropsOptions = {}): Promise<{ vitral: Record<string, RemoteManifest | null> }> {
+export async function remoteProps(
+  names: string | string[],
+  o: RemotePropsOptions = {},
+): Promise<{ vitral: Record<string, RemoteManifest | null>; vitralSsr?: Record<string, string | null> }> {
   const list = Array.isArray(names) ? names : [names]
   const found = await Promise.all(list.map((n) => remoteManifest(n, o)))
-  return { vitral: Object.fromEntries(list.map((n, i) => [n, found[i]])) }
+  const vitral = Object.fromEntries(list.map((n, i) => [n, found[i]]))
+  if (!o.ssr) return { vitral }
+  const ssr = o.ssr
+  const html = await Promise.all(list.map((n, i) => (ssr[n] && found[i] ? renderRemote(n, found[i]!, ssr[n], o.timeout ?? 3000) : null)))
+  return { vitral, vitralSsr: Object.fromEntries(list.map((n, i) => [n, html[i]])) }
+}
+
+/** O HTML do remote para a hidratação, ou `null` (erro ou demora). */
+async function renderRemote(name: string, m: RemoteManifest, s: RemoteSsr, timeout: number): Promise<string | null> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const rendered = await Promise.race([
+      Promise.resolve(s.render(s.props ?? {})),
+      new Promise<never>((_, no) => (timer = setTimeout(no, timeout, new Error(`render demorou mais de ${timeout} ms`)))),
+    ])
+    const base = new URL(remotes[name].url, 'http://host.invalid/')
+    const at = (f: string) => {
+      const u = new URL(f, base)
+      return u.origin === 'http://host.invalid' ? u.pathname + u.search : u.href
+    }
+    return ssrHolder(name, m, rendered, (m.css ?? []).map((f) => [at(f), m.files?.[f]]))
+  } catch (e) {
+    console.error(`[vitral] SSR do remote ${name} falhou; a página monta no navegador.`, e)
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
 }

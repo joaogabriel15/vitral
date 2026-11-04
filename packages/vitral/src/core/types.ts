@@ -23,6 +23,11 @@ export type CheckedProps<N extends string> = N extends keyof Remotes ? { name?: 
 export interface RemoteContext {
   /** Nome com que o host registrou este remote. */
   name: string
+  /**
+   * Estado que o `render` do servidor devolveu com o HTML (`{ html, state }`),
+   * só na hidratação. O remote começa dele em vez de buscar os dados de novo.
+   */
+  initialState?: unknown
   /** URL base de onde o remote foi carregado (útil para assets). */
   baseUrl: string
   /**
