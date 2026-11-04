@@ -182,6 +182,39 @@ export default function Delivery({ vitral }) {
 - Sem resposta em 3 s (`timeout`), a prop vem `null` e a página segue como sem ela: o preload do build e o pedido no navegador. Um canal (`{ stable, canary }`) também vem `null`, porque a versão é escolhida por visitante.
 - Funciona em `getStaticProps` com `revalidate` também.
 
+### SSR do remote
+
+Com `ssr`, o servidor do host também renderiza o remote. O HTML aparece antes de qualquer JS, e o navegador só hidrata:
+
+```tsx
+// delivery/src/server.tsx (no remote)
+import { reactRender } from 'vitral/react-server'
+import Delivery from './Delivery'
+
+export const render = reactRender(Delivery, { state: (props) => buscarPedidos(props.loja) })
+```
+
+```tsx
+// pages/delivery/[[...slug]].tsx (no host)
+import { render } from 'delivery/server'
+
+const props = { loja: 1 }
+export const getServerSideProps = async () => ({ props: await remoteProps('delivery', { ssr: { delivery: { render, props } } }) })
+
+export default function Delivery({ vitral, vitralSsr }) {
+  return <NextRemote name="delivery" manifest={vitral.delivery} ssr={vitralSsr?.delivery} props={props} />
+}
+```
+
+- `state` busca os dados no servidor. Eles vão com o HTML, num `<script type="application/json">`, e o remote lê com `useInitialState()` de `vitral/react` nos dois lados, sem buscar de novo no navegador.
+- O HTML leva o CSS do remote (com `integrity`), para pintar certo antes do JS.
+- Se o `render` falha ou passa de `timeout` (3 s), `vitralSsr[nome]` vem `null` e a página monta no navegador como antes.
+- As `props` do `NextRemote` têm de ser as mesmas do servidor. O `render` não recebe o roteador do Next (`__next`).
+- O `render` vem do código do remote no build do host. Se o remote publicar uma versão nova sem um build novo do host, o React acusa a diferença na hidratação e renderiza de novo no navegador.
+- Com `isolate: 'shadow'`, o HTML do servidor é descartado e o remote monta no navegador.
+- Com `policy` `'lazy'` (2G ou economia de dados), a hidratação espera o remote aparecer na tela.
+- Se o layout do host espera algo do navegador para mostrar a página (por exemplo, a autenticação), o HTML do remote só aparece depois disso, e o ganho no FCP some.
+
 ### Ofertas só com os nomes usados
 
 Uma oferta de `share` é um `import()` do pacote. Com o pacote inteiro, o webpack considera usados todos os exports dos barrels dele e deixa de descartar o que a página não usa. Uma página que só importa o layout de uma biblioteca de componentes acaba levando os gráficos, os formulários e o calendário dela.

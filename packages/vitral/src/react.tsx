@@ -16,9 +16,10 @@ import {
   type ComponentType,
   type ReactNode,
 } from 'react'
-import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
+import { hostSlot, when, type Loading, type Prefetch } from './core/host-slot'
+import { policy } from './core/policy'
 import { createRoot, hydrateRoot } from 'react-dom/client'
-import { RemoteTree, VitralContext } from './react-tree'
+import { RemoteTree, StateContext, VitralContext } from './react-tree'
 import * as ReactAll from 'react'
 import * as ReactDOM from 'react-dom'
 import * as ReactDOMClient from 'react-dom/client'
@@ -84,6 +85,15 @@ export function reactRemote<P extends Props>(Component: ComponentType<P>): Remot
 /** Dentro de um remote: dá acesso ao contexto (nome, eventos, baseUrl). */
 export function useVitral(): RemoteContext | null {
   return useContext(VitralContext)
+}
+
+/**
+ * Dentro de um remote: o estado que o `render` do servidor buscou
+ * (`reactRender(C, { state })`). O mesmo no SSR e na hidratação; numa
+ * montagem sem SSR, `undefined`.
+ */
+export function useInitialState<T = unknown>(): T | undefined {
+  return useContext(StateContext) as T | undefined
 }
 
 /**
@@ -156,6 +166,12 @@ export interface RemoteProps<P extends Props = Props> {
   priority?: RequestPriority
   /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
   keepAlive?: boolean | number
+  /**
+   * HTML do remote renderizado no servidor (`remoteProps` de
+   * `vitral/next-server` com `ssr`). Aparece antes do JS e o remote hidrata
+   * em vez de montar. As `props` têm de ser as mesmas do servidor.
+   */
+  ssr?: string | null
 }
 
 let offeredTo: object | undefined
@@ -210,16 +226,21 @@ export function Remote<P extends Props = Props, N extends string = string>({
   prefetch,
   priority,
   keepAlive,
+  ssr,
 }: RemoteProps<P> & CheckedProps<N>) {
   const target = useRef<HTMLDivElement>(null)
   const slot = useRef<RemoteSlot<P> | null>(null)
   const [state, setState] = useState<{ status: SlotStatus; error: RemoteError | null }>({ status: 'loading', error: null })
   const onErrorRef = useRef(onError)
   onErrorRef.current = onError
+  // O HTML do servidor só entra no primeiro render: o React não mexe mais nele.
+  const [html] = useState(() => ssr || null)
+  const latest = useRef(props)
+  latest.current = props
 
   useEffect(() => {
     offerReact()
-    const s = hostSlot<P>(target.current!, {
+    const options = {
       name,
       src,
       props: (props ?? {}) as P,
@@ -228,20 +249,37 @@ export function Remote<P extends Props = Props, N extends string = string>({
       prefetch,
       priority,
       keepAlive,
-      onStatus(status, e) {
+      onStatus(status: SlotStatus, e: RemoteError | null) {
         setState({ status, error: e })
         if (e) {
           if (onErrorRef.current) onErrorRef.current(e)
           else console.error(e)
         }
       },
-    })
-    slot.current = s
+    }
+    const holder = html && target.current!.querySelector<HTMLElement>(':scope>[data-vitral-ssr]')
+    let dead = false
+    let s: RemoteSlot<P> | null = null
+    if (holder) {
+      // Hidrata o HTML do servidor. Com 2G ou economia de dados, só quando ele aparece na tela.
+      const go = () =>
+        import('./core/hydrate').then((m) => {
+          if (!dead) slot.current = s = m.hydrateSlot<P>(target.current!, holder, { ...options, props: (latest.current ?? {}) as P })
+        })
+      const stop = policy() === 'lazy' ? when(target.current!, 'visible', go) : (go(), () => {})
+      const end = () => (stop(), (dead = true))
+      return () => {
+        end()
+        slot.current = null
+        queueMicrotask(() => s?.destroy())
+      }
+    }
+    slot.current = s = hostSlot<P>(target.current!, options)
     return () => {
       slot.current = null
       // Desmonta depois do commit atual para não desmontar uma root React
       // durante a renderização de outra.
-      queueMicrotask(() => s.destroy())
+      queueMicrotask(() => s!.destroy())
     }
   }, [])
   useEffect(() => slot.current?.set({ name, src, isolate }), [name, src, isolate])
@@ -252,10 +290,10 @@ export function Remote<P extends Props = Props, N extends string = string>({
 
   return (
     <div className={className} data-vitral={name ?? src} data-vitral-status={status}>
-      {status === 'loading' && fallback}
+      {status === 'loading' && !html && fallback}
       {status === 'error' && err && (typeof error === 'function' ? error(err, retry) : (error ?? null))}
       {/* O React nunca coloca filhos neste div: ele pertence ao remote. */}
-      <div ref={target} />
+      {html ? <div ref={target} dangerouslySetInnerHTML={{ __html: html }} suppressHydrationWarning /> : <div ref={target} />}
     </div>
   )
 }

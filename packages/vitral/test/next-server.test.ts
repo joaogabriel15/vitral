@@ -59,4 +59,27 @@ describe('vitral/next-server', () => {
     expect((await remoteManifest('loja', { ...o, fetch: async () => { throw new Error('rede') } }))!.version).toBe('1')
     await expect(remoteManifest('nada', o)).rejects.toThrow(/withVitral/)
   })
+
+  it('ssr: HTML do remote com escopo, CSS com hash e estado; erro ou demora dá null', async () => {
+    const m = { ...manifest('1'), scope: 'loja', css: ['loja.css'], files: { 'loja.css': 'sha384-c' } }
+    const f = async () => Response.json(m)
+    const render = vi.fn(async (p: Record<string, unknown>) => ({ html: `<p>${p.id}</p>`, state: { id: p.id } }))
+    const out = await remoteProps(['loja', 'fora'], { origin: 'http://h', fetch: f, ssr: { loja: { render, props: { id: 3 } } } })
+    expect(render).toHaveBeenCalledWith({ id: 3 })
+    expect(out.vitralSsr).toEqual({
+      loja:
+        '<div data-vitral-ssr data-vitral-slot="loja"><script type="application/json" data-vitral-state>{"id":3}</script>' +
+        '<link rel="stylesheet" href="/loja-remote/loja.css" crossorigin="anonymous" integrity="sha384-c">' +
+        '<div data-vitral-root="loja" data-vitral-scope="loja" style="display:contents"><p>3</p></div></div>',
+      fora: null,
+    })
+    clearRemoteCache()
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const bad = await remoteProps('loja', { origin: 'http://h', fetch: f, ssr: { loja: { render: () => { throw new Error('x') } } } })
+    expect(bad.vitralSsr).toEqual({ loja: null })
+    const slow = await remoteProps('loja', { origin: 'http://h', fetch: f, timeout: 20, ssr: { loja: { render: () => new Promise<string>(() => {}) } } })
+    expect(slow.vitralSsr).toEqual({ loja: null })
+    expect(err).toHaveBeenCalledTimes(2)
+    err.mockRestore()
+  })
 })
