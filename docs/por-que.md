@@ -53,7 +53,7 @@ Por baixo, um contrato só: o remote exporta `mount(el, props, ctx)` e devolve `
 Do [benchmark público](/aprender/benchmark), no Chromium, com rede Slow 4G, mediana de 7 visitas:
 
 <div class="vt-numeros">
-  <div><b>3,4 kB</b><span>código de host mínimo, com brotli. O do Module Federation tem 19,4 kB.</span></div>
+  <div><b>5,1 kB</b><span>código de host mínimo, com brotli. O do Module Federation tem 19,4 kB.</span></div>
   <div><b>-58%</b><span>de tempo na primeira visita contra o Module Federation com React compartilhado.</span></div>
   <div><b>4,5x</b><span>mais rápido para trocar de área que o Next.js Multi-Zones.</span></div>
   <div><b>64%</b><span>menos bytes para abrir duas áreas que o Next.js Multi-Zones.</span></div>
@@ -78,7 +78,7 @@ A página do [benchmark](/aprender/benchmark) mostra o método e as versões.
 
 **Para quem programa:** "Cada time faz `vite build` do próprio componente e publica num CDN. O host chama `configure({ remotes })` e usa `<Remote name="carrinho" />`. Sem plugin no host e sem combinar versão de React."
 
-**Para quem decide a arquitetura:** "Deploy independente por equipe, com CSS e erros isolados por remote, hash conferido antes de executar e props tipadas entre host e remote. O host mínimo tem 3,4 kB."
+**Para quem decide a arquitetura:** "Deploy independente por equipe, com CSS e erros isolados por remote, hash conferido antes de executar e props tipadas entre host e remote. O host mínimo tem 5,1 kB."
 
 **Para quem gerencia:** "Cada equipe publica a sua parte do site sem esperar as outras. Se uma parte quebra, só ela some, e o resto do site continua no ar."
 

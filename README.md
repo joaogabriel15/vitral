@@ -31,7 +31,7 @@ Cada equipe publica o próprio pedaço da página (um remote) com `vite build`. 
 - **Deploy independente.** Cada equipe publica quando quiser. O host vê a versão nova sem novo build.
 - **CSS e erros isolados.** O CSS de um remote não muda o resto da página. Um remote fora do ar mostra o próprio erro, e o resto continua funcionando.
 - **Seguro.** O JS só roda se vier de uma origem permitida e se o hash SHA-384 bater.
-- **Leve e rápido.** 3,4 kB de host. Primeira visita 58% mais rápida que o Module Federation e troca de área 4,5 vezes mais rápida que o Next.js Multi-Zones.
+- **Leve e rápido.** 5,1 kB de host. Abre a página na metade do tempo do Module Federation e troca de área 4,5 vezes mais rápido que o Next.js Multi-Zones.
 
 ```bash
 npm install vitral
@@ -54,15 +54,31 @@ npm install vitral
 | Trocar de área | Sem recarregar | Sem recarregar | Recarrega a página e baixa Next e React de novo | Sem recarregar |
 | Isolamento de CSS | Nenhum | Nenhum | Por página | Escopo automático ou Shadow DOM |
 | Remote fora do ar | Erro sem tratamento derruba a página | A tela de erro é com você | A zona inteira fica fora | Só aquele remote mostra erro, com `retry` |
-| Código de host (brotli) | 19,4 kB | 5,8 kB | Runtime do Next em cada zona | 3,4 kB |
+| Código de host (brotli) | 19,4 kB | 5,8 kB | Runtime do Next em cada zona | 5,1 kB |
 
-Medido no [benchmark público](https://joaogabriel15.github.io/vitral/aprender/benchmark) (Chromium, rede Slow 4G, mediana de 7 visitas):
+## Velocidade
 
-- **58% menos tempo** na primeira visita que o Module Federation com React compartilhado (1104 ms contra 2605 ms, 1 remote).
-- **4,5 vezes mais rápido** para trocar de área que o Next.js Multi-Zones (187 ms contra 839 ms), com 64% menos bytes para abrir duas áreas.
-- **10 frameworks** cobertos por testes de ponta a ponta no CI, com host e remote de frameworks diferentes, em Chromium, Firefox, WebKit e mobile.
+Medido no Chromium com rede de celular lenta (Slow 4G). Mediana de 7 visitas. Menor é melhor.
 
-O método e as versões usadas estão na página do benchmark.
+**Contra o Module Federation**, com o React compartilhado entre os remotes:
+
+| | vitral | Module Federation |
+|---|--:|--:|
+| Abrir a página com 1 remote | **1,1 s** | 2,6 s |
+| Abrir a página com 8 remotes | **2,1 s** | 4,5 s |
+| Baixado com 8 remotes | **153 kB** | 409 kB |
+
+**Contra o Next.js Multi-Zones**, com o app dividido em duas áreas:
+
+| | vitral | Multi-Zones |
+|---|--:|--:|
+| Abrir a primeira área | **0,7 s** | 1,0 s |
+| Trocar de área | **0,2 s** | 0,8 s |
+| Baixado para abrir as duas áreas | **83 kB** | 229 kB |
+
+[Como foi medido](https://joaogabriel15.github.io/vitral/aprender/benchmark): versões, máquina e o script para rodar de novo.
+
+Os 10 frameworks têm testes de ponta a ponta no CI, com host e remote de frameworks diferentes, em Chromium, Firefox, WebKit e mobile.
 
 ## Começo rápido
 

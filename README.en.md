@@ -66,15 +66,27 @@ No build at all, in any HTML page:
 <vitral-remote src="https://cdn.example.com/cart/vitral.json"></vitral-remote>
 ```
 
-## Numbers
+## Speed
 
-From the [public benchmark](https://joaogabriel15.github.io/vitral/aprender/benchmark) (Chromium, Slow 4G, median of 7 visits):
+Measured in Chromium on a slow mobile network (Slow 4G). Median of 7 visits. Lower is better.
 
-- **3.4 kB** minimal host code, brotli. Module Federation's host is 19.4 kB.
-- **58% faster** first visit than Module Federation with shared React (1104 ms vs 2605 ms, 1 remote).
-- **4.5× faster** switching areas than Next.js Multi-Zones (187 ms vs 839 ms).
+**Against Module Federation**, with React shared between remotes:
 
-The benchmark page has the method and the versions used.
+| | vitral | Module Federation |
+|---|--:|--:|
+| Open the page with 1 remote | **1.1 s** | 2.6 s |
+| Open the page with 8 remotes | **2.1 s** | 4.5 s |
+| Downloaded with 8 remotes | **153 kB** | 409 kB |
+
+**Against Next.js Multi-Zones**, with the app split into two areas:
+
+| | vitral | Multi-Zones |
+|---|--:|--:|
+| Open the first area | **0.7 s** | 1.0 s |
+| Switch areas | **0.2 s** | 0.8 s |
+| Downloaded to open both areas | **83 kB** | 229 kB |
+
+The minimal host code is 5.1 kB with brotli. [How it was measured](https://joaogabriel15.github.io/vitral/aprender/benchmark): versions, machine and the script to run it again.
 
 ## Local and Docker
 
