@@ -1,5 +1,5 @@
 {
-  "data": "2026-10-20",
+  "data": "2026-11-04",
   "metodo": {
     "rede": "Slow 4G do Lighthouse via CDP Network.emulateNetworkConditions: 150 ms RTT, 1,6 Mbps down, 750 kbps up",
     "cpu": "sem throttling de CPU",
@@ -11,32 +11,32 @@
     "remotes": "3 React para cada Vue; cada remote é um build separado com nome próprio"
   },
   "versoes": {
-    "vitral": "0.6.0 (commit c06dbd3)",
-    "vite": "8.3.4",
-    "@vitejs/plugin-react": "6.1.2",
+    "vitral": "0.11.0 (commit 038dcf4)",
+    "vite": "8.3.5",
+    "@vitejs/plugin-react": "6.2.1",
     "@vitejs/plugin-vue": "6.0.10",
-    "react": "19.3.0",
-    "react-dom": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
     "vue": "3.5.44",
-    "@module-federation/vite": "1.23.5",
-    "@module-federation/runtime": "2.9.2",
-    "chromium": "141.0.7390.37",
+    "@module-federation/vite": "1.23.9",
+    "@module-federation/runtime": "2.9.3",
+    "chromium": "153.0.8010.12",
     "playwright": "1.56.1",
     "node": "v22.22.0"
   },
   "maquina": {
-    "cpu": "Intel(R) Xeon(R) Processor @ 2.80GHz",
+    "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
     "nucleos": 4,
     "memoriaGB": 16,
-    "so": "linux 6.18.44-fc-v139"
+    "so": "linux 6.18.44-fc-v233"
   },
   "host": {
     "vitral": {
-      "jsKB": 8.1,
+      "jsKB": 8.5,
       "requisicoes": 6
     },
     "mf": {
-      "jsKB": 19.4,
+      "jsKB": 18.9,
       "requisicoes": 2
     }
   },
@@ -46,24 +46,24 @@
       "rotulo": "vitral, sem dedupe",
       "n": 1,
       "frioMs": {
-        "mediana": 1096.9,
-        "min": 1091.1,
-        "max": 1113
+        "mediana": 1052.7,
+        "min": 1042.4,
+        "max": 1061.8
       },
       "quenteMs": {
-        "mediana": 417.1,
-        "min": 398.5,
-        "max": 433
+        "mediana": 392.4,
+        "min": 383.1,
+        "max": 406.2
       },
       "frioKB": {
-        "mediana": 75.7,
-        "min": 75.7,
-        "max": 75.7
+        "mediana": 71.6,
+        "min": 71.6,
+        "max": 71.6
       },
       "frioJsKB": {
-        "mediana": 74.8,
-        "min": 74.8,
-        "max": 74.8
+        "mediana": 70.7,
+        "min": 70.7,
+        "max": 70.7
       },
       "quenteKB": {
         "mediana": 0.3,
@@ -71,9 +71,9 @@
         "max": 0.3
       },
       "frioRede": {
-        "mediana": 13,
-        "min": 13,
-        "max": 13
+        "mediana": 14,
+        "min": 14,
+        "max": 14
       },
       "quenteRede": {
         "mediana": 2,
@@ -81,9 +81,9 @@
         "max": 2
       },
       "heapMB": {
-        "mediana": 1.54,
-        "min": 1.54,
-        "max": 1.54
+        "mediana": 1.72,
+        "min": 1.72,
+        "max": 1.72
       }
     },
     {
@@ -91,24 +91,24 @@
       "rotulo": "vitral, sem dedupe",
       "n": 4,
       "frioMs": {
-        "mediana": 1971.2,
-        "min": 1906.4,
-        "max": 2021.4
+        "mediana": 1747.4,
+        "min": 1746.2,
+        "max": 1765.8
       },
       "quenteMs": {
-        "mediana": 528.6,
-        "min": 513.7,
-        "max": 583.1
+        "mediana": 467.6,
+        "min": 433.3,
+        "max": 477.8
       },
       "frioKB": {
-        "mediana": 235.4,
-        "min": 235.4,
-        "max": 235.4
+        "mediana": 211.2,
+        "min": 211.2,
+        "max": 211.2
       },
       "frioJsKB": {
-        "mediana": 232.3,
-        "min": 232.3,
-        "max": 232.3
+        "mediana": 209.1,
+        "min": 209.1,
+        "max": 209.1
       },
       "quenteKB": {
         "mediana": 0.7,
@@ -116,9 +116,9 @@
         "max": 0.7
       },
       "frioRede": {
-        "mediana": 23,
-        "min": 23,
-        "max": 23
+        "mediana": 20,
+        "min": 20,
+        "max": 20
       },
       "quenteRede": {
         "mediana": 5,
@@ -126,9 +126,9 @@
         "max": 5
       },
       "heapMB": {
-        "mediana": 2.39,
-        "min": 2.39,
-        "max": 2.4
+        "mediana": 2.72,
+        "min": 2.72,
+        "max": 2.72
       }
     },
     {
@@ -136,24 +136,24 @@
       "rotulo": "vitral, sem dedupe",
       "n": 8,
       "frioMs": {
-        "mediana": 2971.5,
-        "min": 2960.3,
-        "max": 2988.6
+        "mediana": 2818.3,
+        "min": 2799.7,
+        "max": 2832.4
       },
       "quenteMs": {
-        "mediana": 689.9,
-        "min": 663.5,
-        "max": 759
+        "mediana": 553.2,
+        "min": 542.8,
+        "max": 559.1
       },
       "frioKB": {
-        "mediana": 459,
-        "min": 459,
-        "max": 459
+        "mediana": 409.3,
+        "min": 409.3,
+        "max": 409.3
       },
       "frioJsKB": {
-        "mediana": 453.2,
-        "min": 453.2,
-        "max": 453.2
+        "mediana": 405.6,
+        "min": 405.6,
+        "max": 405.6
       },
       "quenteKB": {
         "mediana": 1.3,
@@ -161,9 +161,9 @@
         "max": 1.3
       },
       "frioRede": {
-        "mediana": 35,
-        "min": 35,
-        "max": 35
+        "mediana": 28,
+        "min": 28,
+        "max": 28
       },
       "quenteRede": {
         "mediana": 9,
@@ -171,9 +171,9 @@
         "max": 9
       },
       "heapMB": {
-        "mediana": 3.51,
-        "min": 3.51,
-        "max": 3.51
+        "mediana": 3.99,
+        "min": 3.99,
+        "max": 4
       }
     },
     {
@@ -181,163 +181,28 @@
       "rotulo": "vitral, com dedupe",
       "n": 1,
       "frioMs": {
-        "mediana": 1156.7,
-        "min": 1133,
-        "max": 1164.6
+        "mediana": 1103.7,
+        "min": 1093.6,
+        "max": 1119.3
       },
       "quenteMs": {
-        "mediana": 437,
-        "min": 414.6,
-        "max": 863.7
+        "mediana": 402,
+        "min": 388.6,
+        "max": 420.6
       },
       "frioKB": {
-        "mediana": 79.4,
-        "min": 79.4,
-        "max": 79.4
+        "mediana": 75.8,
+        "min": 75.8,
+        "max": 75.8
       },
       "frioJsKB": {
-        "mediana": 78,
-        "min": 78,
-        "max": 78
+        "mediana": 74.3,
+        "min": 74.3,
+        "max": 74.3
       },
       "quenteKB": {
         "mediana": 0.3,
         "min": 0.3,
-        "max": 0.3
-      },
-      "frioRede": {
-        "mediana": 18,
-        "min": 18,
-        "max": 18
-      },
-      "quenteRede": {
-        "mediana": 2,
-        "min": 2,
-        "max": 2
-      },
-      "heapMB": {
-        "mediana": 1.6,
-        "min": 1.6,
-        "max": 1.6
-      }
-    },
-    {
-      "cenario": "vitral-dedupe",
-      "rotulo": "vitral, com dedupe",
-      "n": 4,
-      "frioMs": {
-        "mediana": 1572.4,
-        "min": 1558.4,
-        "max": 1577.9
-      },
-      "quenteMs": {
-        "mediana": 507.9,
-        "min": 498.1,
-        "max": 545.3
-      },
-      "frioKB": {
-        "mediana": 146.8,
-        "min": 146.8,
-        "max": 146.8
-      },
-      "frioJsKB": {
-        "mediana": 141.6,
-        "min": 141.6,
-        "max": 141.6
-      },
-      "quenteKB": {
-        "mediana": 0.7,
-        "min": 0.7,
-        "max": 0.7
-      },
-      "frioRede": {
-        "mediana": 41,
-        "min": 41,
-        "max": 41
-      },
-      "quenteRede": {
-        "mediana": 5,
-        "min": 5,
-        "max": 5
-      },
-      "heapMB": {
-        "mediana": 2.19,
-        "min": 2.18,
-        "max": 2.19
-      }
-    },
-    {
-      "cenario": "vitral-dedupe",
-      "rotulo": "vitral, com dedupe",
-      "n": 8,
-      "frioMs": {
-        "mediana": 2187.5,
-        "min": 2177.1,
-        "max": 2767.1
-      },
-      "quenteMs": {
-        "mediana": 619.4,
-        "min": 578.1,
-        "max": 659.9
-      },
-      "frioKB": {
-        "mediana": 177.1,
-        "min": 177.1,
-        "max": 177.1
-      },
-      "frioJsKB": {
-        "mediana": 167.2,
-        "min": 167.2,
-        "max": 167.2
-      },
-      "quenteKB": {
-        "mediana": 1.3,
-        "min": 1.3,
-        "max": 1.3
-      },
-      "frioRede": {
-        "mediana": 69,
-        "min": 69,
-        "max": 69
-      },
-      "quenteRede": {
-        "mediana": 9,
-        "min": 9,
-        "max": 9
-      },
-      "heapMB": {
-        "mediana": 2.47,
-        "min": 2.47,
-        "max": 2.47
-      }
-    },
-    {
-      "cenario": "vitral-salvo",
-      "rotulo": "vitral, dedupe e maxStale",
-      "n": 1,
-      "frioMs": {
-        "mediana": 1159,
-        "min": 1141.9,
-        "max": 1176.2
-      },
-      "quenteMs": {
-        "mediana": 297.8,
-        "min": 278.9,
-        "max": 332.3
-      },
-      "frioKB": {
-        "mediana": 79.9,
-        "min": 79.9,
-        "max": 79.9
-      },
-      "frioJsKB": {
-        "mediana": 78.5,
-        "min": 78.5,
-        "max": 78.5
-      },
-      "quenteKB": {
-        "mediana": 0.1,
-        "min": 0.1,
         "max": 0.3
       },
       "frioRede": {
@@ -346,39 +211,39 @@
         "max": 19
       },
       "quenteRede": {
-        "mediana": 1,
-        "min": 1,
+        "mediana": 2,
+        "min": 2,
         "max": 2
       },
       "heapMB": {
-        "mediana": 1.6,
-        "min": 1.6,
-        "max": 1.6
+        "mediana": 1.75,
+        "min": 1.75,
+        "max": 1.75
       }
     },
     {
-      "cenario": "vitral-salvo",
-      "rotulo": "vitral, dedupe e maxStale",
+      "cenario": "vitral-dedupe",
+      "rotulo": "vitral, com dedupe",
       "n": 4,
       "frioMs": {
-        "mediana": 1574.3,
-        "min": 1565.5,
-        "max": 1591
+        "mediana": 1531.9,
+        "min": 1518,
+        "max": 1534.9
       },
       "quenteMs": {
-        "mediana": 389.6,
-        "min": 333,
-        "max": 414
+        "mediana": 450.4,
+        "min": 421.2,
+        "max": 460.3
       },
       "frioKB": {
-        "mediana": 147.2,
-        "min": 147.2,
-        "max": 147.2
+        "mediana": 131,
+        "min": 131,
+        "max": 131
       },
       "frioJsKB": {
-        "mediana": 142.1,
-        "min": 142.1,
-        "max": 142.1
+        "mediana": 126.3,
+        "min": 126.3,
+        "max": 126.3
       },
       "quenteKB": {
         "mediana": 0.7,
@@ -386,9 +251,9 @@
         "max": 0.7
       },
       "frioRede": {
-        "mediana": 42,
-        "min": 42,
-        "max": 42
+        "mediana": 38,
+        "min": 38,
+        "max": 38
       },
       "quenteRede": {
         "mediana": 5,
@@ -396,9 +261,144 @@
         "max": 5
       },
       "heapMB": {
-        "mediana": 2.19,
-        "min": 2.19,
-        "max": 2.19
+        "mediana": 2.32,
+        "min": 2.32,
+        "max": 2.32
+      }
+    },
+    {
+      "cenario": "vitral-dedupe",
+      "rotulo": "vitral, com dedupe",
+      "n": 8,
+      "frioMs": {
+        "mediana": 2113.6,
+        "min": 2102.6,
+        "max": 2126.2
+      },
+      "quenteMs": {
+        "mediana": 531.2,
+        "min": 526.6,
+        "max": 552.7
+      },
+      "frioKB": {
+        "mediana": 152.6,
+        "min": 152.6,
+        "max": 152.9
+      },
+      "frioJsKB": {
+        "mediana": 143.7,
+        "min": 143.7,
+        "max": 144
+      },
+      "quenteKB": {
+        "mediana": 1.3,
+        "min": 1.3,
+        "max": 1.3
+      },
+      "frioRede": {
+        "mediana": 60,
+        "min": 60,
+        "max": 61
+      },
+      "quenteRede": {
+        "mediana": 9,
+        "min": 9,
+        "max": 9
+      },
+      "heapMB": {
+        "mediana": 2.6,
+        "min": 2.6,
+        "max": 2.6
+      }
+    },
+    {
+      "cenario": "vitral-salvo",
+      "rotulo": "vitral, dedupe e maxStale",
+      "n": 1,
+      "frioMs": {
+        "mediana": 1112,
+        "min": 1108.4,
+        "max": 1154.1
+      },
+      "quenteMs": {
+        "mediana": 253.4,
+        "min": 242.9,
+        "max": 274.2
+      },
+      "frioKB": {
+        "mediana": 76.2,
+        "min": 76.2,
+        "max": 76.2
+      },
+      "frioJsKB": {
+        "mediana": 74.7,
+        "min": 74.7,
+        "max": 74.7
+      },
+      "quenteKB": {
+        "mediana": 0.1,
+        "min": 0.1,
+        "max": 0.1
+      },
+      "frioRede": {
+        "mediana": 20,
+        "min": 20,
+        "max": 20
+      },
+      "quenteRede": {
+        "mediana": 1,
+        "min": 1,
+        "max": 1
+      },
+      "heapMB": {
+        "mediana": 1.76,
+        "min": 1.76,
+        "max": 1.76
+      }
+    },
+    {
+      "cenario": "vitral-salvo",
+      "rotulo": "vitral, dedupe e maxStale",
+      "n": 4,
+      "frioMs": {
+        "mediana": 1667.8,
+        "min": 1659.6,
+        "max": 1680.3
+      },
+      "quenteMs": {
+        "mediana": 298,
+        "min": 284.3,
+        "max": 316.2
+      },
+      "frioKB": {
+        "mediana": 131.4,
+        "min": 131.4,
+        "max": 131.4
+      },
+      "frioJsKB": {
+        "mediana": 126.8,
+        "min": 126.8,
+        "max": 126.8
+      },
+      "quenteKB": {
+        "mediana": 0.1,
+        "min": 0.1,
+        "max": 0.3
+      },
+      "frioRede": {
+        "mediana": 39,
+        "min": 39,
+        "max": 39
+      },
+      "quenteRede": {
+        "mediana": 1,
+        "min": 1,
+        "max": 2
+      },
+      "heapMB": {
+        "mediana": 2.33,
+        "min": 2.33,
+        "max": 2.33
       }
     },
     {
@@ -406,44 +406,44 @@
       "rotulo": "vitral, dedupe e maxStale",
       "n": 8,
       "frioMs": {
-        "mediana": 2231.4,
-        "min": 2179.6,
-        "max": 2804.5
+        "mediana": 2266.3,
+        "min": 2256.6,
+        "max": 2279.8
       },
       "quenteMs": {
-        "mediana": 461.8,
-        "min": 434.7,
-        "max": 536.1
+        "mediana": 348.1,
+        "min": 320,
+        "max": 360
       },
       "frioKB": {
-        "mediana": 177.5,
-        "min": 177.5,
-        "max": 177.5
+        "mediana": 153.3,
+        "min": 153.3,
+        "max": 153.6
       },
       "frioJsKB": {
-        "mediana": 167.7,
-        "min": 167.7,
-        "max": 167.7
+        "mediana": 144.5,
+        "min": 144.5,
+        "max": 144.8
       },
       "quenteKB": {
-        "mediana": 1,
-        "min": 1,
-        "max": 1.3
+        "mediana": 0.9,
+        "min": 0.3,
+        "max": 1
       },
       "frioRede": {
-        "mediana": 70,
-        "min": 70,
-        "max": 70
+        "mediana": 62,
+        "min": 62,
+        "max": 63
       },
       "quenteRede": {
-        "mediana": 7,
-        "min": 7,
-        "max": 9
+        "mediana": 6,
+        "min": 2,
+        "max": 7
       },
       "heapMB": {
-        "mediana": 2.47,
-        "min": 2.47,
-        "max": 2.47
+        "mediana": 2.6,
+        "min": 2.6,
+        "max": 2.6
       }
     },
     {
@@ -451,24 +451,24 @@
       "rotulo": "MF, sem shared",
       "n": 1,
       "frioMs": {
-        "mediana": 1499.9,
-        "min": 1489.9,
-        "max": 1513
+        "mediana": 1466,
+        "min": 1460.2,
+        "max": 1499.5
       },
       "quenteMs": {
-        "mediana": 426.6,
-        "min": 404.9,
-        "max": 464.7
+        "mediana": 391.7,
+        "min": 378.7,
+        "max": 402.4
       },
       "frioKB": {
-        "mediana": 100.9,
-        "min": 100.9,
-        "max": 100.9
+        "mediana": 100.4,
+        "min": 100.4,
+        "max": 100.4
       },
       "frioJsKB": {
-        "mediana": 100.5,
-        "min": 100.5,
-        "max": 100.5
+        "mediana": 100.1,
+        "min": 100.1,
+        "max": 100.1
       },
       "quenteKB": {
         "mediana": 0.3,
@@ -486,9 +486,9 @@
         "max": 2
       },
       "heapMB": {
-        "mediana": 1.68,
-        "min": 1.68,
-        "max": 1.68
+        "mediana": 1.84,
+        "min": 1.84,
+        "max": 1.84
       }
     },
     {
@@ -496,24 +496,24 @@
       "rotulo": "MF, sem shared",
       "n": 4,
       "frioMs": {
-        "mediana": 2452.9,
-        "min": 2438.5,
-        "max": 2459.6
+        "mediana": 2396.7,
+        "min": 2383.1,
+        "max": 2423.2
       },
       "quenteMs": {
-        "mediana": 557.9,
-        "min": 531.9,
-        "max": 581.2
+        "mediana": 459.8,
+        "min": 441.9,
+        "max": 468.5
       },
       "frioKB": {
-        "mediana": 308.9,
-        "min": 308.9,
-        "max": 308.9
-      },
-      "frioJsKB": {
         "mediana": 308.6,
         "min": 308.6,
         "max": 308.6
+      },
+      "frioJsKB": {
+        "mediana": 308.2,
+        "min": 308.2,
+        "max": 308.2
       },
       "quenteKB": {
         "mediana": 0.7,
@@ -531,9 +531,9 @@
         "max": 5
       },
       "heapMB": {
-        "mediana": 2.8,
-        "min": 2.8,
-        "max": 2.8
+        "mediana": 3.13,
+        "min": 3.13,
+        "max": 3.13
       }
     },
     {
@@ -541,24 +541,24 @@
       "rotulo": "MF, sem shared",
       "n": 8,
       "frioMs": {
-        "mediana": 3755.6,
-        "min": 3751.1,
-        "max": 3780.8
+        "mediana": 3783.3,
+        "min": 3768.3,
+        "max": 3807.8
       },
       "quenteMs": {
-        "mediana": 742.9,
-        "min": 660.2,
-        "max": 817.7
+        "mediana": 591.7,
+        "min": 569.6,
+        "max": 613
       },
       "frioKB": {
-        "mediana": 598.1,
-        "min": 598.1,
-        "max": 598.1
+        "mediana": 597.9,
+        "min": 597.9,
+        "max": 597.9
       },
       "frioJsKB": {
-        "mediana": 597.7,
-        "min": 597.7,
-        "max": 597.7
+        "mediana": 597.5,
+        "min": 597.5,
+        "max": 597.5
       },
       "quenteKB": {
         "mediana": 1.3,
@@ -576,9 +576,9 @@
         "max": 9
       },
       "heapMB": {
-        "mediana": 4.25,
-        "min": 4.25,
-        "max": 4.25
+        "mediana": 4.91,
+        "min": 4.91,
+        "max": 4.91
       }
     },
     {
@@ -586,24 +586,24 @@
       "rotulo": "MF, shared singleton",
       "n": 1,
       "frioMs": {
-        "mediana": 2672.8,
-        "min": 2661.3,
-        "max": 2695.1
+        "mediana": 2604.5,
+        "min": 2594.2,
+        "max": 2619.3
       },
       "quenteMs": {
-        "mediana": 482.6,
-        "min": 453.2,
-        "max": 492.7
+        "mediana": 420.1,
+        "min": 404.6,
+        "max": 452
       },
       "frioKB": {
-        "mediana": 111.3,
-        "min": 111.3,
-        "max": 111.3
-      },
-      "frioJsKB": {
         "mediana": 110.9,
         "min": 110.9,
         "max": 110.9
+      },
+      "frioJsKB": {
+        "mediana": 110.5,
+        "min": 110.5,
+        "max": 110.5
       },
       "quenteKB": {
         "mediana": 0.3,
@@ -621,9 +621,9 @@
         "max": 2
       },
       "heapMB": {
-        "mediana": 1.89,
-        "min": 1.89,
-        "max": 1.89
+        "mediana": 2.14,
+        "min": 2.14,
+        "max": 2.14
       }
     },
     {
@@ -631,44 +631,44 @@
       "rotulo": "MF, shared singleton",
       "n": 4,
       "frioMs": {
-        "mediana": 3596.4,
-        "min": 3594.7,
-        "max": 3653.8
+        "mediana": 3586.3,
+        "min": 3270.5,
+        "max": 3608.8
       },
       "quenteMs": {
-        "mediana": 567.9,
-        "min": 538.8,
-        "max": 580.5
+        "mediana": 480.4,
+        "min": 459,
+        "max": 924.9
       },
       "frioKB": {
-        "mediana": 247.2,
-        "min": 247.2,
-        "max": 247.2
+        "mediana": 247,
+        "min": 242,
+        "max": 247
       },
       "frioJsKB": {
-        "mediana": 246.8,
-        "min": 246.8,
-        "max": 246.8
+        "mediana": 246.6,
+        "min": 241.6,
+        "max": 246.6
       },
       "quenteKB": {
         "mediana": 0.7,
         "min": 0.7,
-        "max": 0.7
+        "max": 5.7
       },
       "frioRede": {
-        "mediana": 47,
-        "min": 47,
-        "max": 47
+        "mediana": 48,
+        "min": 45,
+        "max": 48
       },
       "quenteRede": {
         "mediana": 5,
         "min": 5,
-        "max": 5
+        "max": 8
       },
       "heapMB": {
-        "mediana": 3.18,
-        "min": 3.18,
-        "max": 3.18
+        "mediana": 3.61,
+        "min": 3.53,
+        "max": 3.61
       }
     },
     {
@@ -676,44 +676,44 @@
       "rotulo": "MF, shared singleton",
       "n": 8,
       "frioMs": {
-        "mediana": 4240.3,
-        "min": 4211.5,
-        "max": 4274.3
+        "mediana": 4466.6,
+        "min": 4422.9,
+        "max": 4478.8
       },
       "quenteMs": {
-        "mediana": 1086.4,
-        "min": 1037.9,
-        "max": 1171.4
+        "mediana": 946,
+        "min": 586.7,
+        "max": 973.7
       },
       "frioKB": {
-        "mediana": 408.7,
-        "min": 408.7,
-        "max": 408.7
+        "mediana": 408.6,
+        "min": 408.6,
+        "max": 408.6
       },
       "frioJsKB": {
-        "mediana": 408.3,
-        "min": 408.3,
-        "max": 408.3
+        "mediana": 408.2,
+        "min": 408.2,
+        "max": 408.2
       },
       "quenteKB": {
         "mediana": 6.3,
-        "min": 6.3,
+        "min": 1.3,
         "max": 6.3
       },
       "frioRede": {
-        "mediana": 83,
-        "min": 83,
-        "max": 83
+        "mediana": 85,
+        "min": 85,
+        "max": 85
       },
       "quenteRede": {
         "mediana": 12,
-        "min": 12,
+        "min": 9,
         "max": 12
       },
       "heapMB": {
-        "mediana": 4.76,
-        "min": 4.76,
-        "max": 4.77
+        "mediana": 5.17,
+        "min": 5.17,
+        "max": 5.17
       }
     }
   ]
