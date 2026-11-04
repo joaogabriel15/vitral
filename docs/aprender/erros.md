@@ -100,16 +100,11 @@ configure({ onError: otelOnError({ trace, tracer: trace.getTracer('host') }) })
 
 ### Erros sem tratamento
 
-Um erro que o remote não captura chega em `error` ou `unhandledrejection` da janela, sem nome de remote. Com `captureGlobalErrors`, o vitral confere o arquivo do topo da pilha e, se ele estiver na pasta do JS de um remote montado, entrega o erro ao `onError` como `RENDER_FAILED` daquele remote:
+Um erro que o remote não captura chega em `error` ou `unhandledrejection` da janela, sem nome de remote. Com `captureGlobalErrors`, o vitral descobre pelo arquivo do erro qual remote o lançou e entrega ao `onError` como `RENDER_FAILED` daquele remote:
 
 ```ts
 configure({ onError: sentryOnError(Sentry), captureGlobalErrors: true })
 ```
 
-O erro não é atribuído quando:
+Se não dá para saber de qual remote o erro veio, ele segue para o tratamento normal da página.
 
-- a pasta do remote também tem scripts do host (`<script src>` ou `modulepreload` na página);
-- a pilha não tem URL, ou tem uma URL `blob:` (SRI sem suporte do navegador a `integrity` em módulos);
-- o remote já enviou o erro com `ctx.reportError`.
-
-Nesses casos o erro segue para o tratamento normal da página.

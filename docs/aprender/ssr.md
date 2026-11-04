@@ -70,26 +70,7 @@ O host continua igual:
 </vitral-remote>
 ```
 
-O gateway põe dentro do `<vitral-remote>`:
-
-```html
-<div data-vitral-ssr data-vitral-slot="carrinho">
-  <script type="application/json" data-vitral-manifest="/_vitral/carrinho/vitral.json">{…}</script>
-  <template shadowrootmode="open">
-    <style data-vitral-ssr>/* CSS do remote */</style>
-    <div data-vitral-root="carrinho" style="display:contents"><button>itens: 3</button></div>
-  </template>
-</div>
-<p slot="fallback" hidden>Carregando…</p>
-```
-
-No navegador:
-
-- O HTML e o CSS aparecem antes de qualquer JS. O fallback fica escondido.
-- Com `hydrate`, o `<vitral-remote>` chama `hydrate(el, props, ctx)` com a raiz que veio do servidor. Nada é recriado. O `ctx` é o mesmo do `mount`.
-- Sem `hydrate`, monta do jeito normal ao lado e tira o HTML do servidor quando a montagem termina.
-- O código de hidratação é baixado sob demanda, só quando há `[data-vitral-ssr]`.
-- O manifesto que o gateway usou vem no HTML: a hidratação não busca o `vitral.json` de novo. Veja [Manifesto no HTML](../referencia/edge#manifesto-no-html).
+No navegador, o HTML e o CSS do remote aparecem antes de qualquer JS. Com `hydrate`, o remote só liga os eventos no HTML que veio do servidor. Sem `hydrate`, ele monta do jeito normal e troca o HTML do servidor quando termina.
 
 Em React, `reactRender` de `vitral/react-server` faz o `render`, e `reactRemote` (ou o plugin) já exporta o `hydrate`:
 
@@ -101,14 +82,7 @@ import Carrinho from './Carrinho'
 export const render = reactRender(Carrinho)
 ```
 
-| Caso | O que acontece |
-| --- | --- |
-| `isolate` sem Shadow DOM | `<link>` do CSS e a raiz direto no `<div data-vitral-ssr>` |
-| CSS com hash errado ou `render` que lança | A página sai sem o SSR desse remote; `onError` do gateway recebe o erro |
-| `hydrate` lança | Erro `MOUNT_FAILED` no elemento; "Tentar de novo" monta do zero |
-| `refresh(nome)` | Troca a versão hidratada por uma montada do jeito normal |
-
-O CSS vai inline no `<style>`: o gateway confere o hash dele antes, porque o navegador não confere.
+Se o `render` falha, a página sai sem o SSR daquele remote e ele monta no navegador. O `onError` do gateway recebe o erro.
 
 ## Rotas com SSR
 
@@ -146,8 +120,7 @@ export default {
 
 O que acontece:
 
-- **Primeira visita:** o gateway renderiza o remote da URL dentro do `<vitral-outlet>` e manda `Link` (Early Hints) com os arquivos dele, a cópia do React do dedupe inclusive. O navegador baixa host e remote em paralelo e pinta o HTML antes de qualquer JS. O outlet hidrata esse HTML.
+- **Primeira visita:** o gateway renderiza o remote da URL dentro do `<vitral-outlet>` e avisa o navegador para já baixar os arquivos dele. O conteúdo aparece antes de qualquer JS.
 - **Troca de rota:** o outlet monta o remote da rota nova no cliente, sem recarregar a página e sem baixar o framework de novo. Com [`vitral/prefetch`](../referencia/prefetch), o remote da rota seguinte já está baixado.
-- HTML de outra rota (um cache velho, por exemplo) é descartado, e o outlet monta o remote certo.
 
 No benchmark contra o Multi-Zones, isso abre a primeira página 27% mais rápido que o Next e troca de rota 4,5 vezes mais rápido. Veja [Benchmark](./benchmark#contra-o-next-js-multi-zones).

@@ -52,14 +52,10 @@ Content-Security-Policy: script-src 'self' https://cdn.empresa.com blob:; connec
 // sw.js do host
 import { remoteWorker } from 'vitral/sw'
 
-remoteWorker(self, { manifests: ['/delivery-remote/vitral.json'] })
+remoteWorker(self, { manifests: ['/conta/vitral.json'] })
 ```
 
-- No `install`, baixa o manifesto e todos os arquivos de cada remote para o cache. O Chrome gera o cache de código completo para scripts guardados no `install`, então a segunda visita compila menos.
-- No Chrome 123+, registra uma rota da Static Routing API para `split/*`: esses arquivos saem do cache sem acordar o service worker.
-- Arquivos com hash (`.js`, `.css`, `.wasm`) saem do cache; se faltam, vão à rede.
-- O manifesto vai sempre à rede primeiro. Sem rede, sai do cache. Quando chega uma versão nova, os arquivos dela entram no cache por trás, e os da versão anterior saem.
-- Se um manifesto não chega, nada sai do cache.
+Ele guarda os arquivos de cada remote no cache ao instalar, e na visita seguinte o remote abre sem rede. O `vitral.json` sempre vai à rede primeiro, então um deploy novo chega na próxima carga, e os arquivos da versão anterior saem do cache.
 
 Opções: `cache` (nome do cache, padrão `vitral-remotes`).
 
@@ -69,7 +65,7 @@ Para montar um worker próprio, `remoteFiles(url)` lista tudo que um remote publ
 import { remoteFiles } from 'vitral/sw'
 
 self.addEventListener('install', (e) => e.waitUntil(
-  remoteFiles('/delivery-remote/vitral.json').then((urls) => caches.open('remotes').then((c) => c.addAll(urls))),
+  remoteFiles('/conta/vitral.json').then((urls) => caches.open('remotes').then((c) => c.addAll(urls))),
 ))
 ```
 
@@ -103,7 +99,7 @@ O `vitral.json` passa a ter:
 "contract": { "version": "2.1.0", "peers": { "react": "^19.0.0" } }
 ```
 
-`peers` entra sozinho com `dedupe`: é a faixa de cada dependência que o remote espera receber do host.
+`peers` entra sozinho com `dedupe`.
 
 No host, declare a faixa aceita, para todos os remotes ou para um só:
 
@@ -117,12 +113,7 @@ configure({
 })
 ```
 
-Antes de executar o remote, o host confere:
-
-- se `contract.version` está na faixa;
-- se cada dependência em `peers` que o host oferece com `dedupe` está na faixa do remote.
-
-Se algo não serve, o remote não monta e o erro é [`CONTRACT_MISMATCH`](/erros/CONTRACT_MISMATCH). O `fallback` e o `error` do componente aparecem como em qualquer outro erro.
+Antes de executar o remote, o host confere a versão do contrato e as dependências de `peers`. Se algo não serve, o remote não monta e o erro é [`CONTRACT_MISMATCH`](/erros/CONTRACT_MISMATCH). O `fallback` e o `error` do componente aparecem como em qualquer outro erro.
 
 Sem `contract` em um dos lados, nada é conferido: manifestos antigos continuam funcionando. Use `contract: '*'` no host para conferir só as dependências.
 

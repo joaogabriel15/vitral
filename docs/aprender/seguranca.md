@@ -68,15 +68,7 @@ Aceita `sha256`, `sha384` e `sha512`.
 
 ### Como o navegador confere
 
-Quando o remote tem `import()`, o plugin publica também um build dividido, e o `vitral.json` traz o hash de cada arquivo em `files`. A lib usa o primeiro caminho que funciona no navegador:
-
-| Caminho | Onde | Como |
-| --- | --- | --- |
-| Import map com `integrity` | Chrome 133+, Safari 18.4+ | Um import map com o hash de todo o JS do remote: entrada, chunks, `import()` e cópias de `dedupe`. O navegador confere cada arquivo, inclusive os `import()` feitos depois |
-| `modulepreload` com `integrity` | Firefox, Chrome 127 a 132 | Cada arquivo entra por um `<link rel="modulepreload" integrity>` antes do `import()` |
-| `blob:` | Os outros, e depois de uma falha | A lib baixa o arquivo único, confere os bytes e executa por `blob:` |
-
-Antes de usar o import map, a lib confere que o hash dele vale: no primeiro mapa vão dois módulos `blob:` de teste com o mesmo hash, e o errado tem de falhar. Um navegador que recusa o mapa sem avisar, ou que aceita sem conferir, cai para o caminho seguinte. A recusa do módulo errado deixa uma linha de erro no console (`Failed to find a valid digest` no Chromium). O resultado fica guardado no `localStorage` (chave `vitral:sri-map`, com o user agent), então essa linha aparece uma vez por navegador, não a cada página. Se a página monta vários remotes juntos, o teste roda uma vez só. O CSS fica fora do mapa: o hash dele vai no `<link integrity>` ou no `fetch` do Shadow DOM.
+A lib usa o melhor caminho que o navegador tem: import map com `integrity` (Chrome 133+, Safari 18.4+), `<link rel="modulepreload" integrity>` (Firefox) ou, nos outros, baixa o arquivo, confere os bytes e executa exatamente o que conferiu. Em todos, chunks e `import()` do remote também são conferidos. Na primeira visita, o Chrome pode mostrar uma linha `Failed to find a valid digest` no console: é o teste que a lib faz para saber se o navegador confere o hash, e não é um erro do seu remote.
 
 ## Assinatura
 
@@ -122,11 +114,7 @@ configure({
 
 No Next, a mesma `keys` vai na entrada do remote no `withVitral`; o `remoteProps` de `vitral/next-server` também confere a assinatura do manifesto no servidor e, se não conferir, devolve `null`.
 
-Como funciona: a lib pede o `vitral.json` com `integrity: 'ed25519-<chave>'` e soma a chave ao hash de cada arquivo (`sha384-… ed25519-…`), no import map, no `modulepreload`, no `<link>` do CSS e no `fetch` do caminho `blob:`. O Chrome 141+ só aceita o arquivo se o hash bater e a assinatura for de uma das chaves. Os outros navegadores ignoram a parte `ed25519-` e conferem só o hash, como antes. Para trocar de chave sem parar o remote, ponha as duas em `keys`, assine com a nova e depois tire a velha.
-
-O Chrome também recusa uma resposta com assinatura inválida mesmo sem `keys` no host. Um arquivo mudado depois de `vitral sign` (por exemplo, um CDN que reescreve o JS) não carrega.
-
-Verificado no Chromium 153: o remote assinado carrega; um `vitral.json` com hashes trocados e um JS trocado não carregam.
+O Chrome 141+ só roda o arquivo se o hash bater e a assinatura for de uma das chaves. Os outros navegadores conferem só o hash. Para trocar de chave sem parar o remote, ponha as duas em `keys`, assine com a nova e depois tire a velha.
 
 ## CSP
 
@@ -138,11 +126,11 @@ Content-Security-Policy: script-src 'self' https://cdn.empresa.com blob:; connec
 
 Se a página tem um `<script nonce>`, a lib usa o mesmo `nonce` no import map do SRI. Sem `nonce`, a CSP bloqueia esse mapa e a lib usa os outros caminhos.
 
-Sem `blob:` e `data:` na CSP, os módulos de teste da página não carregam. O build dividido publica dois módulos de teste junto com o remote (`split/vitral-probe.js` e `split/vitral-probe-x.js`, campo `probe` do `vitral.json`), e a lib testa com eles. Assim o SRI funciona com `script-src 'self'` quando o remote é servido pela mesma origem. Os módulos de teste de outra origem não são usados: um CDN adulterado poderia responder erro ao módulo errado e fazer o teste passar num navegador que não confere o hash. O caminho com `blob:` continua bloqueado; num navegador sem os outros dois, o remote não carrega.
+Com `script-src 'self'` e o remote na mesma origem, o SRI também funciona sem `blob:`.
 
 ## Overrides de desenvolvimento
 
-`?vitral=nome@http://localhost:5174` troca a URL de um remote e descarta a `integrity` do host. Só funciona com a página em `localhost` ou com `configure({ devOverrides })`. Não ligue `devOverrides` em produção, nem na forma `{ preview }`: qualquer link com `?vitral=` executaria código de outra origem. O modelo `preview` não restringe as URLs aceitas, só resolve apelidos.
+`?vitral=nome@http://localhost:5174` troca a URL de um remote e descarta a `integrity` do host. Só funciona com a página em `localhost` ou com `configure({ devOverrides })`. Não ligue `devOverrides` em produção, nem na forma `{ preview }`: qualquer link com `?vitral=` executaria código de outra origem.
 
 ## SBOM
 
@@ -155,23 +143,7 @@ plugins: [react(), vitral({ sbom: true })]
 
 O Cyber Resilience Act (CRA) da UE exige que o fabricante de produtos com software vendidos na UE mantenha um SBOM deles a partir de 11 de dezembro de 2027. Cada remote é publicado sozinho, então cada um tem o seu.
 
-O que entra:
-
-| Campo | Conteúdo |
-| --- | --- |
-| `metadata.component` | O remote: nome, versão, purl e hash SHA-512 do JS publicado |
-| `components` | Cada pacote com código no bundle: nome, versão, licença e purl (`pkg:npm/...`) |
-| `dependencies` | Quem importa quem, entre o remote e esses pacotes |
-
-A lista sai dos módulos do build, não do `package.json`: um pacote instalado que o tree-shaking removeu não aparece, e uma dependência transitiva que entrou aparece. Pacotes do workspace (fora de `node_modules`) entram pelo `package.json` mais próximo. Dependências que vêm do host (`shared`) não entram: estão no SBOM do host. As de `dedupe` entram, porque a cópia própria é publicada com o remote.
-
-O `vitral.json` aponta para o arquivo, com o hash:
-
-```json
-"sbom": { "file": "sbom.cdx.json", "integrity": "sha384-…" }
-```
-
-O runtime não lê o SBOM. Para um build reproduzível, defina `SOURCE_DATE_EPOCH`: o `timestamp` sai dele e o número de série é derivado do conteúdo.
+O SBOM lista os pacotes que de fato entraram no bundle, com versão, licença e quem importa quem. O `vitral.json` aponta para ele com o hash. Para um build reproduzível, defina `SOURCE_DATE_EPOCH`.
 
 ## O que não é isolado
 

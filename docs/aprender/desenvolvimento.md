@@ -47,7 +47,7 @@ configure({
 https://homolog.empresa.com/?vitral=checkout@pr-123
 ```
 
-`checkout` passa a vir de `https://checkout-pr-123.preview.empresa.com/vitral.json`. `{name}` é o nome do remote e `{ref}` é o apelido. Sem `/vitral.json` no fim, o vitral completa. O apelido é qualquer texto só com letras, números, `.`, `-` e `_` (`pr-123`, `main`, `1.4.0`). Qualquer outra coisa é tratada como URL.
+`checkout` passa a vir de `https://checkout-pr-123.preview.empresa.com/vitral.json`. `{name}` é o nome do remote e `{ref}` é o apelido. Sem `/vitral.json` no fim, o vitral completa. O apelido pode ser `pr-123`, `main` ou `1.4.0`.
 
 Mande esse link no PR para quem vai revisar. O resto da página continua vindo de homologação.
 
@@ -99,23 +99,9 @@ npx vitral types
 
 Gera `vitral-env.d.ts` a partir do `remotes.json`. Uma prop errada em `<Remote name="carrinho">` passa a não compilar.
 
-O plugin lê as props com o Oxc (`isolatedDeclaration`), que já vem no Vite 8. No Vite 5 a 7, instale `oxc-transform` para ter o mesmo ganho. O Oxc exige tipo explícito nos exports da entrada:
+Se o remote usa só o TypeScript 7, instale também `typescript@5` como dependência de desenvolvimento: o TypeScript 7 ainda não tem a API que o plugin usa para ler as props.
 
-```tsx
-export default function App(props: Props): JSX.Element { … }
-```
-
-Sem tipo explícito, ou sem Oxc, o plugin usa o TypeScript do projeto, como antes. O resultado é o mesmo, só mais lento.
-
-O TypeScript 7 (nativo, que o `create-vite` instala) ainda não tem API em JavaScript. Com ele, o plugin procura outro TypeScript (5 ou 6) instalado; sem nenhum, o build segue sem `vitral.d.ts`. Para ter os tipos, instale `typescript@5` como dependência de desenvolvimento do remote.
-
-O `vitral-env.d.ts` registra o hash do manifesto de onde veio o tipo de cada remote:
-
-```ts
-// vitral:hash "carrinho" sha384-…
-```
-
-No CI, `npx vitral types --check` sai com erro se algum manifesto mudou desde a última geração. Aí é rodar `npx vitral types` de novo.
+No CI, `npx vitral types --check` falha se algum remote mudou os tipos desde a última geração. Aí é rodar `npx vitral types` de novo.
 
 | Opção | O que faz |
 | --- | --- |

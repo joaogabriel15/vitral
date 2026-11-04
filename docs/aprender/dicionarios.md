@@ -6,36 +6,7 @@ Funciona no Chrome e no Edge 130+. Os outros navegadores recebem o arquivo norma
 
 ## Quanto economiza
 
-Arquivo de entrada de cada remote de `examples/remotes`, em kB. A coluna "delta" é o tamanho com a versão anterior do mesmo remote como dicionário.
-
-| Remote | Sem compressão | brotli 11 | Delta 0.3 → 0.4 | Delta de um patch |
-| --- | --- | --- | --- | --- |
-| angular | 135,5 | 33,4 | 0,1 | 0,3 |
-| intruso | 41,1 | 12,8 | 3,5 | 0,1 |
-| lit | 59,2 | 17,8 | 3,9 | 0,2 |
-| loja | 41,6 | 13,0 | 3,5 | 0,2 |
-| preact | 18,0 | 5,7 | 0,1 | 0,2 |
-| react | 297,2 | 64,1 | 0,1 | 0,1 |
-| solid | 23,3 | 6,7 | 0,1 | 0,1 |
-| svelte | 50,0 | 13,9 | 0,1 | 0,2 |
-| vanilla | 40,7 | 12,8 | 3,5 | 0,1 |
-| vue | 90,9 | 25,8 | 0,1 | 0,2 |
-
-Economia média sobre brotli 11, por arquivo:
-
-| Cenário | dcb (brotli) | dcz (zstd) |
-| --- | --- | --- |
-| Delta entre releases 0.2 → 0.3 | 91% | 91% |
-| Delta entre releases 0.3 → 0.4 | 89% | 88% |
-| Delta de um patch (uma linha a mais no app) | 99% | 99% |
-| Dicionário compartilhado: os outros remotes, sem o próprio | 41% | 40% |
-| Idem, só remotes com framework | 18% | 18% |
-| zstd 19 sem dicionário | -5% | |
-| zstd com dicionário treinado (`zstd --train`) nos outros remotes | 26% | |
-
-Os remotes sem framework (`vanilla`, `loja`, `intruso`) têm quase só o runtime do vitral. Por isso um dicionário com os outros remotes acerta quase tudo neles. Nos remotes com framework, o ganho de um dicionário compartilhado cai para 2% a 16% (10% em média sem o `lit`, que também tem quase só o runtime do vitral). Por isso `vitral dict` faz só o delta entre versões.
-
-O script e o método estão em `bench/dicionarios.mjs` e o resultado completo, arquivo por arquivo, em `bench/dicionarios.json`. Os tamanhos de `dcb` e `dcz` já incluem o cabeçalho (36 e 40 bytes).
+Nos remotes de exemplo, entre duas versões, o arquivo baixado ficou cerca de 90% menor que com brotli. Num deploy pequeno (uma linha mudada), cerca de 99% menor. O método está em `bench/dicionarios.mjs`.
 
 ## 1. Gerar os deltas no build
 
@@ -133,4 +104,3 @@ app.use('/chat', express.static(dist, { immutable: true, maxAge: '1y' }))
 - O dicionário e o arquivo novo precisam ser da mesma origem. Remote em outra origem que o host precisa de CORS (`Access-Control-Allow-Origin`), como já precisa para carregar.
 - `Cache-Control: no-store` desliga o dicionário. Use o cache longo dos arquivos com hash ([Deploy](./deploy)).
 - O CDN na frente precisa respeitar `Vary: Accept-Encoding, Available-Dictionary`, ou desligue o cache dele para esses arquivos.
-- O `match` do `Use-As-Dictionary` troca o hash de 8 caracteres do Vite por `*`: `/chat/remote-*.js`. O deploy seguinte casa com ele.

@@ -4,7 +4,7 @@
 
 # create-vitral
 
-Cria um host ou um remote [vitral](https://joaogabriel15.github.io/vitral/) pronto para rodar.
+Cria um host ou um remote [vitral](https://joaogabriel15.github.io/vitral/) pronto para rodar. O vitral junta micro-frontends de qualquer framework numa página só, sem configurar build no host.
 
 ```bash
 npm create vitral@latest

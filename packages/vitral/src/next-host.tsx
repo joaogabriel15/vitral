@@ -6,9 +6,9 @@
  *   // pages/_app.tsx
  *   <VitralNext />
  *
- *   // pages/delivery/[[...slug]].tsx
+ *   // pages/conta/[[...slug]].tsx
  *   export default function Delivery() {
- *     return <Layout><NextRemote name="delivery" fallback={<Spinner />} /></Layout>
+ *     return <Layout><NextRemote name="conta" fallback={<Spinner />} /></Layout>
  *   }
  *
  * `VitralNext` registra os remotes, oferece as dependências de `share`,

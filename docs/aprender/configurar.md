@@ -91,14 +91,9 @@ Todas as opções: [`vitral/vite`](/referencia/vite).
 | `allowedOrigins` | página e URLs registradas | Origens de onde é permitido carregar código. `['*']` libera tudo |
 | `timeout` | `15000` | Tempo máximo de cada download, em ms |
 | `retries` | `1` | Tentativas extras se o download falhar |
-| `maxStale` | nenhum | Usa o `vitral.json` salvo há até N segundos sem esperar a rede. Veja [Carregamento](/aprender/carregamento#visita-de-volta-sem-esperar-o-manifesto) |
 | `isolate` | `'none'` | `'shadow'` ou `'iframe'` para todos os remotes |
-| `policy` | pelos sinais do visitante | `'all'`, `'critical'` ou `'lazy'`: quanto baixar além do que a página usa. Veja [Carregamento](/aprender/carregamento#rede-lenta-e-aparelho-fraco) |
-| `devOverrides` | `false` | Aceita `?vitral=nome@url` fora de `localhost`. `{ preview }` também resolve `?vitral=nome@pr-123`. Nunca em produção |
-| `onMetric` | nenhum | Recebe `{ name, stage, start, duration }` de cada etapa |
-| `styles` | nenhum | `{ inherit, mirrorTheme }` para o Shadow DOM |
 
-Referência completa: [`configure`](/referencia/vitral/configure).
+Cache do manifesto, métricas, estilos e as outras opções: [`configure`](/referencia/vitral/configure).
 
 ::: tip Nota
 Host e remote não precisam usar o mesmo framework. Um host React mostra um remote Vue.

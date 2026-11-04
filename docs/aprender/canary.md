@@ -146,4 +146,3 @@ Para promover a canary, troque `stable` para `"1.5.0"` e tire `canary`.
 
 - O `integrity` e o `manifest` embutido da entrada do host não valem para canais: a integridade vem do `vitral.json` de cada versão.
 - O canal e as versões passam pela mesma regra de [origens](./seguranca). Versões numa origem diferente da do canal precisam estar em `allowedOrigins`.
-- O código do canal fica num arquivo à parte (cerca de 1 kB), baixado só quando o host encontra um canal. No [`embed.js`](./terceiros) ele já vem junto.
