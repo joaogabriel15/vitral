@@ -1,5 +1,11 @@
 # vitral
 
+## 0.11.5
+
+### Patch Changes
+
+- [#119](https://github.com/joaogabriel15/vitral/pull/119) [`37f37e3`](https://github.com/joaogabriel15/vitral/commit/37f37e37c7c5b1a030861e66b6ef295f48a73fe8) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - README e documentação: nos exemplos "hoje" e "com vitral", os dois lados têm os mesmos arquivos, na mesma ordem, e cada arquivo do vitral diz o que mudou.
+
 ## 0.11.4
 
 ### Patch Changes
