@@ -248,6 +248,31 @@ importers:
         specifier: ~5.9.0
         version: 5.9.3
 
+  examples/hosts/next-pages:
+    dependencies:
+      next:
+        specifier: ^16.0.0
+        version: 16.4.0(@playwright/test@1.56.1)(@types/node@26.6.5)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(sass@1.104.1)
+      react:
+        specifier: ^19.0.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.3.0(react@19.3.0)
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.3.0
+      remote-react-ns:
+        specifier: workspace:*
+        version: link:../../remotes/react-ns
+      typescript:
+        specifier: ~5.9.0
+        version: 5.9.3
+
   examples/hosts/nuxt:
     dependencies:
       nuxt:
@@ -471,6 +496,25 @@ importers:
         version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)(yaml@2.9.1)
 
   examples/remotes/react:
+    dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.3.0
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.3.0(react@19.3.0)
+      vitral:
+        specifier: workspace:*
+        version: link:../../../packages/vitral
+    devDependencies:
+      '@vitejs/plugin-react':
+        specifier: ^6.0.0
+        version: 6.1.2(vite@8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)(yaml@2.9.1))
+      vite:
+        specifier: ^8.0.0
+        version: 8.3.4(@types/node@26.6.5)(esbuild@0.28.2)(jiti@2.7.0)(sass-embedded@1.104.1)(sass@1.104.1)(terser@5.51.2)(yaml@2.9.1)
+
+  examples/remotes/react-ns:
     dependencies:
       react:
         specifier: ^19.0.0
