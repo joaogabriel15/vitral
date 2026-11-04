@@ -1,5 +1,11 @@
 # create-vitral
 
+## 0.11.3
+
+### Patch Changes
+
+- [#114](https://github.com/joaogabriel15/vitral/pull/114) [`d6821b7`](https://github.com/joaogabriel15/vitral/commit/d6821b78eabe8fa48cad2da8746ece88cfc16846) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - README mais curto e direto: o que é, por que usar, comparação e começo rápido no topo, e os detalhes na documentação. Documentação sem detalhes internos que não ajudam a usar.
+
 ## 0.11.2
 
 ## 0.11.1
