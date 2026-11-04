@@ -14,7 +14,7 @@ import { withBase } from 'vitepress'
   <img :src="withBase('/logo.svg')" alt="" width="112" height="112">
   <h1>vitral</h1>
   <p class="vt-tagline">Feito de partes. Visto como um todo.</p>
-  <p class="vt-desc">Junte micro-frontends de qualquer framework numa página só, sem configuração de build no host.</p>
+  <p class="vt-desc">Micro-frontends com qualquer framework, sem configurar build no host.</p>
   <div class="vt-actions">
     <a class="vt-btn primary" :href="withBase('/aprender/configurar')">Começar</a>
     <a class="vt-btn" :href="withBase('/por-que')">Por que o vitral</a>

@@ -39,9 +39,9 @@ O CSS vai inteiro num `@scope`, sem prefixo em cada seletor:
 }
 ```
 
-`:root`, `html` e `body` viram `:scope`. `@keyframes`, `@font-face` e `@property` ficam fora do bloco. No remote de exemplo com Tailwind (`demo/remote-react`), o CSS caiu de 10,0 kB para 7,0 kB sem compressão e de 2,25 kB para 2,15 kB com gzip.
+`:root`, `html` e `body` viram `:scope`. `@keyframes`, `@font-face` e `@property` ficam fora do bloco. O CSS fica menor.
 
-Diferença para o prefixo: o `@scope` não soma especificidade, e o prefixo soma (0,1,0). Uma regra do host com seletor igual, carregada depois, passa a valer dentro do remote. Use quando o CSS do host não tem regras soltas para as mesmas classes do remote. Precisa de navegador com `@scope` (Chrome 118, Safari 17.4, Firefox 146).
+Diferença para o prefixo: uma regra do host com o mesmo seletor, carregada depois, passa a valer dentro do remote. Use quando o host não tem CSS solto para as mesmas classes. Precisa de navegador com `@scope` (Chrome 118, Safari 17.4, Firefox 146).
 
 ## Shadow DOM
 
@@ -125,9 +125,9 @@ configure({ styles: { inherit: ['/assets/base.css'] } })
 
 ## Portais (Radix, Headless UI, MUI)
 
-Com CSS escopado e sem Shadow DOM, um remote React (`reactRemote`) não precisa mudar nada: cada elemento que o React do remote coloca no `document.body` por portal (dialogs, popovers e menus do Radix, por exemplo) ganha o `data-vitral-scope` do remote, e o CSS escopado vale lá também. Isso vale mesmo quando a biblioteca de UI vem do host pelo `dedupe`. Portais de outros frameworks e do Shadow DOM usam o `portalContainer` abaixo.
+Sem Shadow DOM, um remote React não precisa mudar nada: dialogs, popovers e menus que vão para o `document.body` continuam com o CSS do remote.
 
-Popovers, menus e dialogs costumam ir para o `document.body`. No Shadow DOM, isso os tira do shadow root e eles perdem o CSS do remote. Use `ctx.portalContainer`: um elemento dentro do shadow root, com o CSS, as variáveis e o tema (`class` e `data-theme`) do remote. Sem Shadow DOM, ele é o próprio `document.body`.
+No Shadow DOM, um portal no `document.body` sai do remote e perde o CSS dele. Use `ctx.portalContainer`, um elemento dentro do remote com o CSS e o tema dele.
 
 Radix:
 
@@ -150,25 +150,9 @@ function Ajuda() {
 
 O mesmo vale para `Dialog.Portal` e `DropdownMenu.Portal`.
 
-Headless UI (v2) não tem prop de destino. `MenuItems`, `PopoverPanel`, `ListboxOptions` e `ComboboxOptions` vão para o `body` com `portal` ou `anchor` (`anchor` liga `portal`). Sem as duas, ficam no lugar, dentro do shadow root, e você posiciona com CSS:
+Headless UI: `MenuItems`, `PopoverPanel` e afins ficam dentro do remote se você não usar `portal` nem `anchor`. O `Dialog` dele sempre vai para o `document.body`; no Shadow DOM, use outro dialog.
 
-```jsx
-<Menu as="div" className="relative">
-  <MenuButton>Opções</MenuButton>
-  <MenuItems className="absolute right-0 mt-2">…</MenuItems>
-</Menu>
-```
-
-O `Dialog` do Headless UI sempre vai para o `document.body` e não dá para mudar. No Shadow DOM, use outro dialog (o do Radix com `container`, por exemplo).
-
-MUI: `Popover`, `Popper`, `Modal` e os que usam esses (`Menu`, `Dialog`, `Tooltip`) aceitam `container`. Com `disablePortal`, ficam no lugar:
-
-```jsx
-<Menu container={usePortalContainer()} open={aberto} anchorEl={botao}>…</Menu>
-<Popper disablePortal open={aberto} anchorEl={botao}>…</Popper>
-```
-
-Para todos de uma vez, no tema: `components: { MuiPopover: { defaultProps: { container } }, MuiPopper: { … }, MuiModal: { … } }`. O CSS do MUI (Emotion) também precisa ir para o shadow root: `createCache({ key: 'css', container: ctx.shadowRoot })` num `CacheProvider`.
+MUI: passe `container={usePortalContainer()}` para `Menu`, `Dialog`, `Popover` e `Tooltip`, ou ponha esse `container` no tema. O CSS do MUI precisa de `createCache({ key: 'css', container: ctx.shadowRoot })` num `CacheProvider`.
 
 Vue:
 
@@ -189,12 +173,12 @@ Em outros frameworks, use `ctx.portalContainer` direto.
 
 Dois remotes podem usar versões diferentes do mesmo design system, cada uma com o seu `<ds-button>`. No registro global (`customElements`), a segunda definição lança erro e o remote não monta.
 
-No Shadow DOM, cada remote recebe `ctx.customElements`. Em navegadores com Scoped Custom Element Registries (Chrome e Edge 146+, Safari 26+), é um `CustomElementRegistry` só do remote, e o shadow root e o elemento `el` do mount são criados com ele. Defina as tags nele:
+No Shadow DOM, cada remote recebe `ctx.customElements`, um registro só dele nos navegadores que suportam (Chrome e Edge 146+, Safari 26+). Defina as tags nele:
 
 ```js
 export default {
   mount(el, props, ctx) {
-    const registry = ctx.customElements ?? customElements // hosts antigos não mandam
+    const registry = ctx.customElements ?? customElements
     registry.define('ds-button', DsButton)
     el.innerHTML = '<ds-button>Comprar</ds-button>'
     return { unmount: () => el.replaceChildren() }
@@ -202,17 +186,7 @@ export default {
 }
 ```
 
-O que for criado com `innerHTML` dentro de `el` usa o registro do remote. `document.createElement(tag)` usa o global; passe o registro: `document.createElement('ds-button', { customElementRegistry: ctx.customElements })`.
-
-O registro é um por remote e vale para todas as montagens dele. Uma definição não pode ser desfeita, então `define` de uma tag que já existe não lança: fica a definição que já existe.
-
-Sem suporte (Firefox até a 158, navegadores antigos) e fora do Shadow DOM, `ctx.customElements` é o registro global. Quando um remote define uma tag que outro remote já definiu, fica a primeira definição, o remote monta mesmo assim e, em dev, o console mostra:
-
-```
-[vitral] v2: <ds-button> já foi definido por v1; fica essa definição. Sem Scoped Custom Element Registries, os remotes dividem o registro global.
-```
-
-Quem chama `customElements.define` direto, sem passar por `ctx.customElements`, continua no registro global, como antes.
+Nos outros navegadores, os remotes dividem o registro global: fica a primeira definição de cada tag, e o console avisa em dev.
 
 ## CSS extra num remote
 

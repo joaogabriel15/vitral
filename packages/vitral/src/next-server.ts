@@ -2,11 +2,11 @@
  * Lado do servidor do host Next (Pages Router): o `vitral.json` do remote é
  * lido a cada requisição, com cache curto, e vai para a página como prop.
  *
- *   // pages/delivery/[[...slug]].tsx
+ *   // pages/conta/[[...slug]].tsx
  *   import { remoteProps } from 'vitral/next-server'
- *   export const getServerSideProps = async () => ({ props: await remoteProps('delivery') })
+ *   export const getServerSideProps = async () => ({ props: await remoteProps('conta') })
  *   export default function Delivery({ vitral }) {
- *     return <NextRemote name="delivery" manifest={vitral.delivery} />
+ *     return <NextRemote name="conta" manifest={vitral.conta} />
  *   }
  *
  * Com o manifesto nas props, o HTML já sai com o preload da versão publicada
@@ -36,7 +36,7 @@ export interface RemotePropsOptions {
    */
   staleWhileRevalidate?: number
   /**
-   * Origem para o `url` relativo do remote (`/delivery-remote/vitral.json`).
+   * Origem para o `url` relativo do remote (`/conta/vitral.json`).
    * Padrão: `VITRAL_ORIGIN` do ambiente, ou o próprio servidor Next em
    * `http://127.0.0.1:$PORT`. O header `Host` da requisição nunca é usado: um
    * cliente poderia apontar o servidor para outra máquina.

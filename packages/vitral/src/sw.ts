@@ -5,7 +5,7 @@
  *   // sw.js do host
  *   import { remoteFiles } from 'vitral/sw'
  *   self.addEventListener('install', (e) => e.waitUntil(
- *     remoteFiles('/delivery-remote/vitral.json').then((urls) => caches.open('remotes').then((c) => c.addAll(urls))),
+ *     remoteFiles('/conta/vitral.json').then((urls) => caches.open('remotes').then((c) => c.addAll(urls))),
  *   ))
  */
 import type { RemoteManifest } from './core/types'
@@ -68,7 +68,7 @@ const hashed = (u: string, manifests: Set<string>) => !manifests.has(u) && /\.(j
  *
  *   // sw.js do host
  *   import { remoteWorker } from 'vitral/sw'
- *   remoteWorker(self, { manifests: ['/delivery-remote/vitral.json'] })
+ *   remoteWorker(self, { manifests: ['/conta/vitral.json'] })
  */
 export function remoteWorker(self: Scope, o: RemoteWorkerOptions): void {
   const name = o.cache ?? 'vitral-remotes'

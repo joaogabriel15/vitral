@@ -1,28 +1,39 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/banner-escuro-en.png">
-    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/banner-en.png" width="640" alt="vitral">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/banner-en.png" width="640" alt="vitral. Made of parts. Seen as a whole.">
   </picture>
 </p>
 
-<p align="center"><strong>Micro-frontends from any framework on one page. No build config on the host.</strong></p>
-
 <p align="center">
+  <a href="https://github.com/joaogabriel15/vitral/actions/workflows/ci.yml"><img src="https://github.com/joaogabriel15/vitral/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/vitral"><img src="https://img.shields.io/npm/v/vitral" alt="npm"></a>
+  <a href="https://bundlejs.com/?q=vitral"><img src="https://img.shields.io/bundlejs/size/vitral" alt="size"></a>
   <a href="https://github.com/joaogabriel15/vitral/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/vitral" alt="MIT license"></a>
-  · <a href="./README.md">Português</a>
 </p>
 
-Each team ships its own part of the page (a remote) with `vite build`. The host gets the URL of each remote and mounts them in the browser. No plugin on the host, no React version to agree on between teams, and a remote that is down does not take the page down.
+<p align="center">
+  <a href="https://joaogabriel15.github.io/vitral/">Docs (Portuguese)</a> ·
+  <a href="https://joaogabriel15.github.io/vitral/aprender/benchmark">Benchmark</a> ·
+  <a href="./README.md">Português</a>
+</p>
+
+Micro-frontends with any framework, with no build config on the host. React, Next.js, Vue, Nuxt, Angular, Svelte and more on one page.
+
+**What it is:** a micro-frontend is a part of the page that one team builds and ships on its own, like the cart, the search or the account area. vitral puts those parts together on one page, even when each one uses a different framework.
+
+**How it works:** each team builds its part (a *remote*) with `vite build` and deploys it to a CDN. The main page (the *host*) gets the URL of each remote and mounts them in the browser.
 
 **Why use it:**
 
-- **Any framework, both ways:** React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit and plain JS. Host and remote do not need to match.
-- **Scoped CSS:** a remote's CSS (Tailwind included) only applies inside that remote. Shadow DOM is one prop away.
-- **Isolated errors:** each remote shows its own error and can be retried alone.
-- **Integrity:** with a SHA-384 hash, the remote's JS only runs if the hash matches.
-- **Typed props:** the build publishes `vitral.d.ts`; `npx vitral types` makes a wrong prop fail to compile on the host.
-- **Shared state and events** across remotes, keep-alive, lazy loading, prefetch, canary and rollback.
+- **Zero host config.** No build plugin: just `configure({ remotes })` with the URL of each remote.
+- **Any framework.** React, Next, Vue, Nuxt, Angular, Svelte, Solid, Preact, Lit and plain JS on the same page. No React version to agree on between teams.
+- **Independent deploys.** Each team ships when it wants. The host picks up the new version without a new build.
+- **Isolated CSS and errors.** A remote's CSS does not change the rest of the page. A remote that is down shows its own error, and the rest keeps working.
+- **Secure.** The JS only runs if it comes from an allowed origin and its SHA-384 hash matches.
+- **Small and fast.** 5.1 kB of host code. Opens the page in half the time of Module Federation and switches areas 4.5 times faster than Next.js Multi-Zones.
+
+**When to use it:** when several teams work on the same site and each wants to ship at its own pace. With one team and one app, a regular bundle is simpler.
 
 ```bash
 npm install vitral
@@ -35,39 +46,17 @@ npm install vitral
   </picture>
 </p>
 
-## Quick start
+## Comparison
 
-`npm create vitral@latest` scaffolds a host and a remote.
-
-**Remote:** export your component and add the plugin.
-
-```js
-// vite.config.js
-import react from '@vitejs/plugin-react'
-import vitral from 'vitral/vite'
-
-export default { plugins: [react(), vitral()] }
-```
-
-`vite build` outputs the JS, the CSS and a `vitral.json`. Deploy `dist` to any CDN with CORS.
-
-**Host:** register the URL and render.
-
-```jsx
-import { configure } from 'vitral'
-import { Remote } from 'vitral/react'
-
-configure({ remotes: { cart: 'https://cdn.example.com/cart/vitral.json' } })
-
-export const App = () => <Remote name="cart" props={{ userId: 42 }} fallback={<p>Loading…</p>} />
-```
-
-No build at all, in any HTML page:
-
-```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
-<vitral-remote src="https://cdn.example.com/cart/vitral.json"></vitral-remote>
-```
+| | Module Federation | single-spa | Next.js Multi-Zones | vitral |
+|---|---|---|---|---|
+| Host config | Build plugin, matched with each remote | Root config and import map | One Next app per zone, plus rewrites | None. Just `configure()` |
+| Frameworks | Agree on versions in `shared` | One adapter and lifecycle per framework | Next only | Any, no versions to agree on |
+| Splits the page into | Parts | Apps per route | Routes (each zone is a page) | Parts or routes |
+| Switching areas | No reload | No reload | Reloads the page and downloads Next and React again | No reload |
+| CSS isolation | None | None | Per page | Automatic scope or Shadow DOM |
+| Remote is down | An unhandled error takes the page down | The error screen is up to you | The whole zone is down | Only that remote shows an error, with `retry` |
+| Host code (brotli) | 19.4 kB | 5.8 kB | Next runtime in each zone | 5.1 kB |
 
 ## Speed
 
@@ -90,6 +79,66 @@ Measured in Chromium on a slow mobile network (Slow 4G). Median of 7 visits. Low
 | Downloaded to open both areas | **83 kB** | 229 kB |
 
 The minimal host code is 5.1 kB with brotli. [How it was measured](https://joaogabriel15.github.io/vitral/aprender/benchmark): versions, machine and the script to run it again.
+
+## Quick start
+
+`npm create vitral@latest` scaffolds a host and a remote.
+
+**1. In the remote**, export your component and add the plugin:
+
+```jsx
+// src/App.jsx (or .vue, .svelte, .tsx…)
+export default function Cart({ userId }) { … }
+```
+
+```js
+// vite.config.js
+import react from '@vitejs/plugin-react'
+import vitral from 'vitral/vite'
+
+export default { plugins: [react(), vitral()] }
+```
+
+`vite build` outputs the JS, the CSS and a `vitral.json`. Deploy `dist` to any CDN.
+
+**2. In the host**, register the URL and render the remote:
+
+```jsx
+import { configure } from 'vitral'
+import { Remote } from 'vitral/react'
+
+configure({ remotes: { cart: 'https://cdn.example.com/cart/vitral.json' } })
+
+export function App() {
+  return <Remote name="cart" props={{ userId: 42 }} fallback={<p>Loading…</p>} />
+}
+```
+
+That's it. Changing `props` updates the remote without remounting.
+
+In any HTML page, with no build:
+
+```html
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<vitral-remote src="https://cdn.example.com/cart/vitral.json"></vitral-remote>
+```
+
+## Frameworks
+
+| Framework | Remote | Host | Import |
+|---|---|---|---|
+| React 18/19 | `reactRemote(App)` | `<Remote>` | `vitral/react` |
+| Next.js (App and Pages Router) | `reactRemote(App)` | `<Remote>` | `vitral/react` |
+| Vue 3 | `vueRemote(App, { setup })` | `<VitralRemote>` | `vitral/vue` |
+| Nuxt 3/4 | `vueRemote(App, { setup })` | `<VitralRemote>` | `vitral/vue` |
+| Angular 17+ | `angularRemote(Component, { providers })` | `<vitral-remote>` + `provideVitral()` | `vitral/angular` |
+| Svelte 5 | `svelteRemote(App)` | `use:remote` | `vitral/svelte` |
+| Solid | `solidRemote(App)` | `<Remote>` | `vitral/solid` |
+| Preact | `preactRemote(App)` | `<Remote>` | `vitral/preact` |
+| Lit and Web Components | `elementRemote('my-widget')` | `<vitral-remote>` | `vitral/element` |
+| Plain JS and TypeScript | `component({ render })` | `<vitral-remote>` | `vitral` |
+
+Host and remote do not need to use the same framework.
 
 ## Next.js and Nuxt as host
 
@@ -238,7 +287,11 @@ export default function Account() {
 | React and Next | Downloaded again in each area | One copy for the whole page |
 | Main app layout | Each zone repeats its own | The remote sits inside the host layout |
 
-## Shared dependencies
+Full guide, with per-route SSR and prefetch: [Migrate from Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones) (in Portuguese).
+
+## What else comes with it
+
+**Shared dependencies.** With `vitral({ dedupe: ['react'] })`, the remote uses the React already on the page instead of downloading another copy.
 
 <p align="center">
   <picture>
@@ -247,15 +300,7 @@ export default function Account() {
   </picture>
 </p>
 
-To avoid downloading React or Vue more than once, list them in `dedupe` in the remote:
-
-```js
-vitral({ dedupe: ['react'] })
-```
-
-The remote uses the copy already on the page when the version fits (default: `^` of the version installed in the remote) and loads its own only when it doesn't.
-
-## Communication between remotes
+**Communication between remotes.** `events` sends messages between remotes, and `provide` and `shared` hold common state, like the signed-in user.
 
 <p align="center">
   <picture>
@@ -264,19 +309,7 @@ The remote uses the copy already on the page when the version fits (default: `^`
   </picture>
 </p>
 
-```js
-import { events, provide, shared } from 'vitral'
-
-events.emit('cart:total', 120)
-const stop = events.on('cart:total', (total) => console.log(total))
-
-provide('user', { id: 42 })                     // host: creates and owns it
-shared('user').subscribe((user) => console.log(user))
-```
-
-React, Preact, Vue and Solid read it with `useShared('user')`, Angular with `injectShared('user')`. What a remote subscribes to is cancelled when it unmounts.
-
-## Security
+**Security.** The JS only runs if it comes from an allowed origin and, with `integrity`, if the hash matches.
 
 <p align="center">
   <picture>
@@ -285,21 +318,37 @@ React, Preact, Vue and Solid read it with `useShared('user')`, Angular with `inj
   </picture>
 </p>
 
-```js
-configure({
-  allowedOrigins: ['https://cdn.example.com'],
-  remotes: { cart: { url: 'https://cdn.example.com/cart/vitral.json', integrity: 'sha384-…' } },
-})
-```
+Also:
 
-JS only loads from allowed origins. With `integrity`, nothing runs unless the hash matches; the CSS is checked too. No `eval` and no iframes.
+- **CSS and Tailwind:** each remote's CSS only applies inside it, or use Shadow DOM with `isolate="shadow"`.
+- **Loading:** `loading="lazy"`, `prefetch="hover"` and `keepAlive` to open and come back faster.
+- **Errors:** every error has a code and a page with the cause and the fix, and `retry` mounts only that remote again.
+- **Typed props:** `npx vitral types` makes a wrong prop fail to compile on the host.
+- **Routes, SSR and deploys:** app shell per route, the remote's HTML from the server, canary and rollback.
+- **Tests:** `mockRemote` and `failingRemote` test the host without the network.
 
 ## Local and Docker
 
-Locally, each remote runs its own `vite dev` on a port and the host points at those ports. With Docker, each remote is an nginx image and the host reads its remote list from an environment variable, so one image works in every environment. Full example: [`examples/docker`](https://github.com/joaogabriel15/vitral/tree/main/examples/docker).
+Each remote runs its own `vite dev` on a port, and the host points at those ports:
 
-## Docs
+```json
+// shop/public/remotes.json
+{
+  "cart": "http://localhost:5174/vitral.json",
+  "search": "http://localhost:5175/vitral.json"
+}
+```
 
-The full documentation is in Portuguese: https://joaogabriel15.github.io/vitral/. Code samples read the same in any language, and the [API reference](https://joaogabriel15.github.io/vitral/referencia/) is generated from the types.
+```js
+// shop/src/main.jsx
+configure({ remotes: '/remotes.json' })
+```
 
-MIT license. Made by [Pacheco Codes](https://pacheco.dev.br/).
+Editing a remote updates the host without a page reload. With Docker, each remote is an nginx image and the host reads its remote list from an environment variable, so one image works in every environment. Full example: [`examples/docker`](https://github.com/joaogabriel15/vitral/tree/main/examples/docker).
+
+## Links
+
+- [Docs](https://joaogabriel15.github.io/vitral/): guides, reference and error pages, in Portuguese. Code samples read the same in any language.
+- [Examples](https://github.com/joaogabriel15/vitral/tree/main/examples): the same remote in 8 frameworks and 9 hosts.
+- [Contributing](https://github.com/joaogabriel15/vitral/blob/main/CONTRIBUTING.md)
+- [MIT](https://github.com/joaogabriel15/vitral/blob/main/LICENSE) license. Made by [Pacheco Codes](https://pacheco.dev.br/).

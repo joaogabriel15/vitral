@@ -5,8 +5,8 @@
  *   import { snapshots } from 'vitral/snapshot'
  *   snapshots()
  *
- *   <Remote name="delivery" snapshot />            // vitral/react
- *   <vitral-remote name="delivery" snapshot>       // elemento
+ *   <Remote name="conta" snapshot />            // vitral/react
+ *   <vitral-remote name="conta" snapshot>       // elemento
  *
  * Ao sair da página (ou desmontar), o HTML que o remote mostrava fica no
  * `sessionStorage`. Na próxima montagem com as mesmas props, ele aparece na

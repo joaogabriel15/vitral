@@ -71,7 +71,7 @@ import react from '@vitejs/plugin-react'
 import vitral from 'vitral/vite'
 
 export default {
-  plugins: [react(), vitral({ entry: 'src/remote.tsx', name: 'delivery', next: { basePath: '/delivery' }, dedupe: ['react', '@empresa/ui/*'] })],
+  plugins: [react(), vitral({ entry: 'src/remote.tsx', name: 'conta', next: { basePath: '/conta' }, dedupe: ['react'] })],
 }
 ```
 
@@ -80,8 +80,7 @@ export default {
 | `next/link`, `next/image`, `next/head`, `next/dynamic`, `next/router`, `next/navigation` | Vêm de `vitral/next`. Dentro de um host Next (`NextRemote`), usam o roteador do host |
 | `process.env` | `NODE_ENV` e as `NEXT_PUBLIC_*` do ambiente e do `.env` |
 | `paths` do tsconfig | Cada arquivo usa o tsconfig mais próximo, inclusive o de um pacote publicado como código-fonte. Vale também no pré-bundle de `vite dev` |
-| `import Icon from './icon.svg'` | Componente React, com o SVGR do projeto (o mesmo do `@svgr/webpack`). Sem SVGR instalado, continua URL |
-| `NODE_ENV=development` no `.env` | O build continua de produção (o JSX não sai com `jsxDEV`) |
+| `import Icon from './icon.svg'` | Componente React, com o SVGR do projeto. Sem SVGR instalado, continua URL |
 
 | Opção de `next` | Padrão | O que faz |
 | --- | --- | --- |
@@ -106,15 +105,9 @@ const { withVitral } = require('vitral/next-config')
 
 module.exports = withVitral(nextConfig, {
   remotes: {
-    delivery: {
-      url: '/delivery-remote/vitral.json',
-      basePath: '/delivery',
-      routes: [{ public: '/store', zone: '/delivery/store' }],
-      warmRoutes: true,
-      devUrl: 'http://localhost:5173',
-    },
+    conta: { url: 'https://cdn.empresa.com/conta/vitral.json', basePath: '/conta' },
   },
-  share: ['i18next', 'react-i18next', '@tanstack/react-query', '@empresa/ui/*'],
+  share: ['@tanstack/react-query'], // opcional: outras dependências que o host oferece
 })
 ```
 
@@ -128,115 +121,80 @@ export default function App({ Component, pageProps }) {
 ```
 
 ```tsx
-// pages/delivery/[[...slug]].tsx
+// pages/conta/[[...slug]].tsx
 import { NextRemote } from 'vitral/next-host'
 
-export default function Delivery() {
-  return <Layout><NextRemote name="delivery" fallback={<Spinner />} /></Layout>
+export default function Conta() {
+  return <Layout><NextRemote name="conta" fallback={<Spinner />} /></Layout>
 }
 ```
 
-| `withVitral` | O que faz |
-| --- | --- |
-| `rewrites` | Cada rota pública de `routes` abre a página do remote (`basePath`) |
-| `headers` | `vitral.json` com `no-cache`; `remote-*` e `split/*` com cache eterno (remote servido pelo próprio host) |
-| `share` | O host oferece estas dependências com [`dedupe`](/aprender/dedupe). Só baixam quando um remote pede. `pacote/*` oferece o pacote e cada subpath do `exports` |
-| `transpilePackages` | Ganha `vitral`, para o servidor do Next empacotar a configuração gerada |
-
-A configuração gerada fica em `.vitral/host-config.mjs`, na pasta do app (a pasta já se ignora no git). Funciona com webpack e com Turbopack.
+Pronto. Um `<Link href="/conta">` no host abre o remote sem recarregar, e dentro do remote `useRouter`, `<Link>` e `router.push` usam o roteador do host. Um `<a>` comum para uma rota de remote também vira navegação sem recarregar.
 
 | Opção do remote | Padrão | O que faz |
 | --- | --- | --- |
 | `url` | obrigatório | URL do `vitral.json` |
-| `basePath` | obrigatório | Página do host que renderiza o `NextRemote`, e o `basePath` que o remote vê |
-| `routes` | nenhum | `{ public, zone }`, como as rewrites do Multi-Zones |
-| `preload` | `'idle'` | `'idle'`: baixa com o navegador ocioso. `'route'`: só ao abrir uma rota dele. `false`: nunca antes |
-| `warmRoutes` | `false` | Depois do preload, aquece os chunks das rotas do remote (`import()`) |
-| `devUrl` | nenhum | Em `next dev`, o dev server do remote, com HMR. A CSP de dev precisa liberar a origem em `script-src` e `connect-src` (`ws:`) |
-| `integrity` | do manifesto | `false` dispensa a conferência de hash (remote na mesma origem) |
-| `htmlPreload` | ligado | `false` tira do HTML da página do remote os `<link rel="preload">` (veja abaixo) |
-| `manifestFile` | `public/` + `url` | Caminho no disco do `vitral.json`, quando ele não fica em `public/` (remote servido por outro servidor ou por rewrite) |
+| `basePath` | obrigatório | Página do host que mostra o remote |
+| `routes` | nenhum | `{ public, zone }`: outras URLs que abrem o remote, como as rewrites do Multi-Zones |
+| `preload` | `'idle'` | `'idle'` baixa com o navegador ocioso, `'route'` só ao abrir a rota, `false` nunca antes |
+| `devUrl` | nenhum | Em `next dev`, o dev server do remote, com HMR |
+| `manifestFile` | `public/` + `url` | Caminho do `vitral.json` no disco, quando o remote é servido por outro servidor |
 
-`VitralNext` registra os remotes, oferece as dependências de `share`, faz o preload e intercepta navegações de página inteira para uma rota de remote (`location.assign`, `<a>` comum): elas viram `Router.push`, sem recarregar. Com a [Navigation API](https://developer.mozilla.org/docs/Web/API/Navigation_API) vale para `location.assign` e para `<a>`. Sem ela, só os cliques em `<a>` comuns viram `Router.push`; `location.assign` não tem como ser interceptado e recarrega a página como antes.
+`share` oferece outras dependências aos remotes com [`dedupe`](/aprender/dedupe). Elas só baixam quando um remote pede. Funciona com webpack e com Turbopack.
 
 ### Remote no HTML da página
 
-No build do host, o `withVitral` lê o `vitral.json` do remote (em `public/` ou em `manifestFile`). O `NextRemote` põe no `<head>` da página um `<link rel="preload">` para o manifesto, o CSS e o JS da primeira tela (entrada, chunks e as cópias de `dedupe` que o host não oferece). Assim o remote baixa junto com o JS do host, e não depois da hidratação. Quem abre a área do remote direto, como primeira página, é quem mais ganha.
+Quando o `vitral.json` do remote está disponível no build do host, o `NextRemote` põe no HTML da página um preload do JS e do CSS do remote, com o hash de cada arquivo. O remote baixa junto com o JS do host, e não depois.
 
-- O hash de cada arquivo vai no `integrity` do preload, e o `import()` do remote confere de novo. Um arquivo trocado no caminho não roda.
-- Os links vêm na ordem que o build do remote calcula (`split.order` no manifesto): primeiro a entrada e o que ela importa, depois as cópias de `dedupe` e o `import()` do app. Em cada etapa, o arquivo com mais bytes pela frente (ele e a cadeia mais pesada de imports dele) vem antes. Os arquivos dessa cadeia levam `fetchpriority="high"`. Os outros ficam sem o atributo: o remote só roda quando todos chegam, e um `low` deixaria um deles atrás das imagens da página. O `vitral/edge` usa a mesma ordem nos `Link`.
-- O código de SRI e de `dedupe` do vitral vem no bundle do host (cerca de 3 kB), e o manifesto baixa enquanto as ofertas de `share` se registram. Depois da hidratação, nenhum download espera outro.
-- Os links refletem o remote do build do host. Builde o remote antes do host. Se o remote for publicado sem um build novo do host, os links apontam para os arquivos antigos: o navegador baixa à toa (ou mostra 404 no console, se eles já saíram do servidor), e o remote carrega certo pelo manifesto.
-- Com o preload no HTML, `maxStale` não ajuda: o manifesto já baixa em paralelo com o JS do host.
+Builde o remote antes do host. Se o remote publicar sem um build novo do host, o preload aponta para os arquivos antigos e o remote ainda carrega certo, só que um pouco depois. Para evitar isso, leia o manifesto no servidor.
 
 ### Manifesto lido no servidor
 
-Os links do build ficam velhos quando o remote faz deploy sozinho. Com `vitral/next-server`, a página lê o `vitral.json` no servidor, a cada requisição, e passa o manifesto ao `NextRemote`:
+Com `vitral/next-server`, a página lê o `vitral.json` a cada requisição. O preload sempre aponta para a versão publicada agora:
 
 ```tsx
-// pages/delivery/[[...slug]].tsx
+// pages/conta/[[...slug]].tsx
 import { NextRemote } from 'vitral/next-host'
 import { remoteProps } from 'vitral/next-server'
 
-export const getServerSideProps = async () => ({ props: await remoteProps('delivery') })
+export const getServerSideProps = async () => ({ props: await remoteProps('conta') })
 
-export default function Delivery({ vitral }) {
-  return <Layout><NextRemote name="delivery" manifest={vitral.delivery} /></Layout>
+export default function Conta({ vitral }) {
+  return <Layout><NextRemote name="conta" manifest={vitral.conta} /></Layout>
 }
 ```
 
-- O HTML pré-carrega os arquivos da versão publicada agora, e o navegador não pede o manifesto: o remote baixa junto com o JS do host, uma ida e volta antes.
-- O servidor guarda o manifesto em memória: por 5 s responde do cache e, por mais 30 s, responde do cache e renova por trás (`maxAge` e `staleWhileRevalidate`, em segundos). Um pedido que falha mantém a cópia boa.
-- Para `url` relativo, o servidor pede a `VITRAL_ORIGIN`, ou ao próprio Next em `http://127.0.0.1:$PORT`. A opção `origin` troca. O header `Host` da requisição nunca é usado.
-- Sem resposta em 3 s (`timeout`), a prop vem `null` e a página segue como sem ela: o preload do build e o pedido no navegador. Um canal (`{ stable, canary }`) também vem `null`, porque a versão é escolhida por visitante.
-- Funciona em `getStaticProps` com `revalidate` também.
+O servidor guarda o manifesto em cache por alguns segundos. Se o remote não responder, a página segue como sem ele. Também funciona em `getStaticProps` com `revalidate`.
 
 ### SSR do remote
 
-Com `ssr`, o servidor do host também renderiza o remote. O HTML aparece antes de qualquer JS, e o navegador só hidrata:
+Com `ssr`, o servidor do host também renderiza o remote. O conteúdo aparece antes de qualquer JS, e o navegador só hidrata:
 
 ```tsx
-// delivery/src/server.tsx (no remote)
+// conta/src/server.tsx (no remote)
 import { reactRender } from 'vitral/react-server'
-import Delivery from './Delivery'
+import Conta from './Conta'
 
-export const render = reactRender(Delivery, { state: (props) => buscarPedidos(props.loja) })
+export const render = reactRender(Conta, { state: (props) => buscarPedidos(props.usuario) })
 ```
 
 ```tsx
-// pages/delivery/[[...slug]].tsx (no host)
-import { render } from 'delivery/server'
+// pages/conta/[[...slug]].tsx (no host)
+import { render } from 'conta/server'
 
-const props = { loja: 1 }
-export const getServerSideProps = async () => ({ props: await remoteProps('delivery', { ssr: { delivery: { render, props } } }) })
+const props = { usuario: 42 }
+export const getServerSideProps = async () => ({ props: await remoteProps('conta', { ssr: { conta: { render, props } } }) })
 
-export default function Delivery({ vitral, vitralSsr }) {
-  return <NextRemote name="delivery" manifest={vitral.delivery} ssr={vitralSsr?.delivery} props={props} />
+export default function Conta({ vitral, vitralSsr }) {
+  return <NextRemote name="conta" manifest={vitral.conta} ssr={vitralSsr?.conta} props={props} />
 }
 ```
 
-- `state` busca os dados no servidor. Eles vão com o HTML, num `<script type="application/json">`, e o remote lê com `useInitialState()` de `vitral/react` nos dois lados, sem buscar de novo no navegador.
-- O HTML leva o CSS do remote (com `integrity`), para pintar certo antes do JS.
-- Se o `render` falha ou passa de `timeout` (3 s), `vitralSsr[nome]` vem `null` e a página monta no navegador como antes.
-- As `props` do `NextRemote` têm de ser as mesmas do servidor. O `render` não recebe o roteador do Next (`__next`).
-- O `render` vem do código do remote no build do host. Se o remote publicar uma versão nova sem um build novo do host, o React acusa a diferença na hidratação e renderiza de novo no navegador.
-- Com `isolate: 'shadow'`, o HTML do servidor é descartado e o remote monta no navegador.
-- Com `policy` `'lazy'` (2G ou economia de dados), a hidratação espera o remote aparecer na tela.
-- Se o layout do host espera algo do navegador para mostrar a página (por exemplo, a autenticação), o HTML do remote só aparece depois disso, e o ganho no FCP some.
-
-### Ofertas só com os nomes usados
-
-Uma oferta de `share` é um `import()` do pacote. Com o pacote inteiro, o webpack considera usados todos os exports dos barrels dele e deixa de descartar o que a página não usa. Uma página que só importa o layout de uma biblioteca de componentes acaba levando os gráficos, os formulários e o calendário dela.
-
-Quando o build do host acha o `vitral.json` de todos os remotes (em `public/` ou em `manifestFile`), o `withVitral` gera cada oferta com `/* webpackExports: [...] */` e só os nomes que os remotes usam (o campo `uses` do manifesto). Assim o webpack volta a descartar o resto. Se um remote publicado depois usar um nome que a oferta não tem, ele usa a cópia própria daquele grupo e avisa no console, sem quebrar. O React é a exceção: duas cópias na página quebram hooks e contexto, então o remote fica com o React do host e só avisa. Rebuildar o host volta a oferecer tudo o que ele usa.
-
-- Um remote sem manifesto no build (de outra origem, sem `manifestFile`), ou com um manifesto anterior a este campo, faz as ofertas irem inteiras, como antes.
-- Em `next dev` com `devUrl`, as ofertas vão inteiras.
-- Os nomes de `uses` são os do build de produção de cada pacote. O React de dev exporta nomes que o de produção não tem (`act`, `captureOwnerStack`), e um remote com `import * as React` não os pede ao host.
-- Na página de um remote, o host começa o download do chunk de cada oferta que o remote vai pedir antes da hidratação, e não quando o remote pede. O webpack põe cada `import()` da oferta num chunk à parte, que o HTML não pré-carrega.
-- O Turbopack ignora o `webpackExports`. Com ele, a oferta continua trazendo o pacote inteiro.
-
-`NextRemote` passa o roteador do Next ao remote: `useRouter`, `<Link>`, `router.push`, o `Router` padrão de `next/router`, `redirect()` e `router.events` dentro dele usam o do host, com as rotas públicas. O remote vê os caminhos como numa zona com `basePath`.
+- `state` busca os dados no servidor, e o remote lê com `useInitialState()` sem buscar de novo no navegador.
+- Se o `render` falha ou demora mais de 3 s, a página monta o remote no navegador, como sem SSR.
+- As `props` do `NextRemote` têm de ser as mesmas do servidor.
+- O remote não pode usar `window`, `document` ou `localStorage` no primeiro render. Mova esse código para `useEffect`.
+- Se o layout do host só mostra a página depois de algo do navegador (como a autenticação no cliente), o SSR não adianta.
 
 ## Vindo do Multi-Zones
 

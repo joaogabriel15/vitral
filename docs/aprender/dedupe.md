@@ -30,7 +30,7 @@ export default { plugins: [react(), vitral({ dedupe: ['react'] })] }
 - `<Remote>` de `vitral/react` oferece o React do host sem configuração.
 - `['react']` cobre o grupo inteiro: `react`, `react-dom`, `react-dom/client` e o JSX runtime.
 
-- `'pacote/*'` cobre o pacote e cada subpath do `exports` dele. Serve para um pacote publicado como código-fonte (uma biblioteca de componentes da empresa): os imports que chegam a um arquivo do pacote por alias ou `paths` do tsconfig também usam a cópia da página, se o arquivo sai por algum export dele. O build avisa os arquivos que não saem; esses ficam com cópia própria.
+- `'pacote/*'` cobre o pacote e todos os caminhos que ele exporta. Serve para a biblioteca de componentes da empresa.
 
 | Opção | Exemplo | O que faz |
 | --- | --- | --- |
@@ -49,9 +49,7 @@ configure({
 
 Num host Next, `share` do [`withVitral`](/frameworks/next#host-next-no-lugar-das-zonas) gera isso com as versões instaladas.
 
-O manifesto do remote lista, em `uses`, os nomes que ele lê de cada especificador. Os nomes são os do build de produção de cada pacote. Se a oferta do host não tem um deles, o remote usa a cópia própria daquele grupo e avisa no console (`a oferta de X não tem ...`). No grupo do React, o remote só avisa e fica com o React do host, porque duas cópias na página quebram hooks e contexto.
-
-Cuidado com um `import()` do pacote inteiro numa oferta: para o webpack, ele marca como usados todos os exports dos barrels do pacote. Assim, o que a tela não usa (os gráficos de uma biblioteca de componentes, por exemplo) entra nas páginas que importam o pacote. No host Next, o `withVitral` evita isso no build (veja [Ofertas só com os nomes usados](/frameworks/next#ofertas-so-com-os-nomes-usados)).
+Se a oferta do host não tem algo que o remote usa, o remote baixa a própria cópia e avisa no console. O React é a exceção: o remote fica com o do host e só avisa, porque duas cópias na página quebram hooks e contexto.
 
 ## Uma versão para todos os remotes
 
@@ -71,5 +69,5 @@ configure({ dedupePlan: plan })
 
 - `notes` explica, em texto, cada grupo em que as faixas não têm uma versão em comum e quantas cópias a página vai baixar.
 - O plano leva o hash de cada cópia, e o SRI confere como sempre.
-- Cada entrada vale só para a faixa e a versão do build em que foi calculada. Se o remote publica outra versão, ele volta a usar a própria cópia até o plano ser refeito.
+- Se um remote publica outra versão, ele volta a usar a própria cópia até o plano ser refeito.
 - No host Next, o `withVitral` calcula o plano no build, com os manifestos que acha (em `public/` ou `manifestFile`), e avisa os conflitos no terminal.

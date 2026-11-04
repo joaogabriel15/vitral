@@ -32,7 +32,7 @@ import { preload } from 'vitral'
 link.addEventListener('pointerenter', () => preload('checkout'), { once: true })
 ```
 
-`preload('checkout', { routes: true })` também aquece no cache HTTP, com o navegador ocioso, os chunks que o remote só baixa depois (`import()` das rotas). A primeira tela de cada rota abre sem download. São no máximo 3 downloads por vez, e nada com economia de dados (`saveData`) ou 2G.
+`preload('checkout', { routes: true })` também baixa, com o navegador ocioso, o código das outras rotas do remote.
 
 | Opção | Valores | O que faz |
 | --- | --- | --- |
@@ -53,25 +53,15 @@ import { prefetch } from 'vitral/prefetch'
 prefetch()
 ```
 
-Conta as navegações no navegador do usuário e, no tempo ocioso, baixa o manifesto e o JS da rota mais provável, sem executar e com o SRI conferido. Veja [vitral/prefetch](/referencia/prefetch).
+Aprende com as navegações do próprio usuário e, com o navegador ocioso, baixa o remote da rota mais provável, sem executar. Veja [vitral/prefetch](/referencia/prefetch).
 
 ## Rede lenta e aparelho fraco
 
-O vitral escolhe quanto baixar além do que a página usa agora pelos sinais do navegador: `saveData`, `effectiveType` (o tipo de rede que o navegador calcula com o RTT e a banda medidos) e `deviceMemory`.
-
-| Sinal | Política | O que muda |
-| --- | --- | --- |
-| `saveData`, ou rede `slow-2g` / `2g` | `'lazy'` | Só o que a página usa. Sem prefetch previsto, sem `prefetch="idle"`. O `<vitral-remote>` que já veio com HTML do servidor só hidrata quando aparece na tela |
-| rede `3g`, ou até 2 GB de memória | `'critical'` | Sem o preload ocioso dos outros remotes (`VitralNext`) e sem `warmRoutes`. O prefetch previsto continua: na rede lenta é onde ele economiza mais tempo |
-| o resto, ou sem sinal | `'all'` | Tudo que o host pediu |
-
-Safari e Firefox não dão esses sinais; lá vale `'all'`. Para fixar uma política:
+Com economia de dados ligada ou rede 2G, o vitral baixa só o que a página usa agora e deixa de pré-carregar. Em 3G ou em aparelhos com pouca memória, ele corta o pré-carregamento dos outros remotes. Safari e Firefox não informam esses sinais, então lá tudo é baixado como pedido. Para fixar o comportamento:
 
 ```ts
-configure({ policy: 'critical' })
+configure({ policy: 'critical' }) // 'all', 'critical' ou 'lazy'
 ```
-
-No servidor, `choose(signalsFrom(request.headers))` faz a mesma conta com os Client Hints (`Save-Data`, `ECT`, `Device-Memory`). O Chrome só manda `ECT` e `Device-Memory` depois de um `Accept-CH: ECT, Device-Memory` na resposta.
 
 ## Última tela na visita de volta
 
@@ -88,11 +78,7 @@ snapshots()
 <vitral-remote name="pedidos" snapshot></vitral-remote>
 ```
 
-- A tela guardada é inerte: não recebe clique nem foco, e sai dela qualquer `<script>`, `<iframe>` e atributo `on*`.
-- Ela fica no `sessionStorage` e some ao fechar a aba, porque pode ter dados do usuário. `clearSnapshots()` apaga tudo, por exemplo no logout.
-- O CSS do remote vem junto, para a tela não aparecer sem estilo.
-- Só sem Shadow DOM, e até 100 kB de HTML por remote.
-- O código fica em `vitral/snapshot`: quem não chama `snapshots()` não leva nada.
+A tela guardada não responde a clique, fica no `sessionStorage` (some ao fechar a aba) e vem com o CSS do remote. Chame `clearSnapshots()` no logout. Não funciona com Shadow DOM.
 
 ## Keep-alive
 
@@ -120,40 +106,21 @@ configure({ timeout: 15000, retries: 1 })
 
 ## Visita de volta sem esperar o manifesto
 
-O `vitral.json` é o único arquivo sem hash no nome, então o host sempre o revalida: na visita de volta, cada remote espera uma ida e volta antes de rodar, mesmo com o JS no cache. Com `maxStale`, o host usa o manifesto salvo na última visita, se ele tiver até N segundos, e baixa o novo por trás para a visita seguinte.
+Na visita de volta, cada remote espera o `vitral.json` chegar da rede antes de rodar, mesmo com o JS no cache. Com `maxStale`, o host usa o manifesto salvo na última visita, se ele tiver até N segundos, e baixa o novo por trás:
 
 ```ts
 configure({ maxStale: 300 }) // 5 minutos
 ```
 
-| Situação | O que acontece |
-| --- | --- |
-| Cópia salva com até `maxStale` segundos | Monta com ela, sem esperar a rede. O manifesto novo baixa ao mesmo tempo e fica salvo |
-| Cópia mais velha, corrompida ou ausente | Espera o manifesto da rede, como sem `maxStale` |
-| `localStorage` bloqueado | Igual a sem `maxStale` |
+O custo: um deploy novo, ou um [rollback](/aprender/canary), chega uma visita depois para quem tinha a cópia salva.
 
-O custo: um deploy novo, ou um [rollback](/aprender/canary), chega uma visita depois para quem tinha a cópia salva. Os arquivos antigos continuam no CDN (nomes com hash), então a versão velha monta inteira. Use um valor que caiba no tempo que você aceita para um rollback chegar a todos. Medição em [Benchmark](/aprender/benchmark#visita-de-volta-com-maxstale).
-
-## Compile hints do V8
+## Compilar de uma vez (Chrome)
 
 ```ts
 vitral({ compileHints: true })
 ```
 
-O plugin põe `//# allFunctionsCalledOnLoad` no topo da entrada do remote, dos chunks que ela importa e das cópias do [dedupe](/aprender/dedupe). O Chrome 136+ compila esses arquivos inteiros de uma vez, numa thread de fundo, em vez de compilar cada função quando ela roda pela primeira vez ([V8](https://v8.dev/blog/explicit-compile-hints)). Os `import()` do app ficam de fora. Firefox e Safari ignoram o comentário.
-
-Medição com 4 remotes (3 React e 1 Vue), Slow 4G, mediana de 9 visitas alternadas:
-
-| | Sem hint | Com hint |
-| --- | --: | --: |
-| CPU 4x mais lenta, sem dedupe: 1ª visita | 2684 ms | 2548 ms (-5%) |
-| CPU 4x mais lenta, sem dedupe: visita de volta | 1388 ms | 1192 ms (-14%) |
-| CPU 4x mais lenta, com dedupe: 1ª visita | 1968 ms | 1878 ms (-5%) |
-| CPU 4x mais lenta, com dedupe: visita de volta | 1320 ms | 1188 ms (-10%) |
-| CPU normal, 1ª visita | sem diferença medida | |
-| Heap JS depois de montar | 2,18–2,39 MB | 2,62–3,05 MB (+20% a +28%) |
-
-Ligue quando o público usa celulares com CPU fraca e o remote roda logo ao abrir a página. Deixe desligado (o padrão) quando memória pesa mais que tempo de CPU.
+O Chrome compila o JS do remote de uma vez, numa thread de fundo, em vez de função por função. Em celulares com CPU fraca, a visita de volta ficou 10% a 14% mais rápida no nosso teste, com cerca de 25% mais memória. Ligue quando o público usa celulares fracos e o remote aparece logo ao abrir a página.
 
 ## Métricas
 
