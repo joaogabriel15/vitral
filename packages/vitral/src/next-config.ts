@@ -190,6 +190,8 @@ export interface HtmlHints {
   manifest: string
   css: [string, string?][]
   js: [string, string?][]
+  /** Grupos de `share` que o remote vai pedir: o host começa o download deles antes da hidratação. */
+  offers?: string[]
 }
 
 /**
@@ -206,11 +208,14 @@ export function htmlHints(dir: string, r: NextRemoteConfig, offered: Record<stri
     return u.origin === 'http://host.invalid' ? u.pathname + u.search : u.href
   }
   const hint = (f: string): [string, string?] => (r.integrity !== false && m.files?.[f] ? [at(f), m.files[f]] : [at(f)])
-  const own = (m.dedupe ?? []).filter((d) => !(offered[d.name] && satisfies(offered[d.name], d.range))).flatMap((d) => [...(d.chunks ?? []), d.file])
+  const served = (d: { name: string; range: string }) => !!offered[d.name] && satisfies(offered[d.name], d.range)
+  const own = (m.dedupe ?? []).filter((d) => !served(d)).flatMap((d) => [...(d.chunks ?? []), d.file])
+  const offers = m.split ? (m.dedupe ?? []).filter((d) => d.name !== 'react' && served(d)).map((d) => d.name) : []
   return {
     manifest: at(r.url),
     css: (m.css ?? []).map(hint),
     js: (m.split ? [...own, ...(m.split.chunks ?? []), m.split.entry] : [m.entry]).map(hint),
+    ...(offers.length && { offers }),
   }
 }
 

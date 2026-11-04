@@ -8,6 +8,7 @@
  * do remote viram módulos síncronos que leem o que já foi resolvido; por isso
  * `require('react')` de pacotes CommonJS continua funcionando.
  */
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -102,6 +103,7 @@ export async function groups(list: string[], root: string, entry: string, resolv
     byName.set(g, [...new Set([...(byName.get(g) ?? []), ...(g === 'react' ? REACT : [spec.endsWith('/*') ? g : spec])])])
   }
   const out: Group[] = []
+  const files: [Group, string, string][] = []
   for (const [name, list] of byName) {
     const group: Group = { name, range: '', version: '', keys: [], names: {}, pkgs: name === 'react' ? ['react', 'react-dom', 'scheduler'] : [name] }
     let specs = list
@@ -121,21 +123,68 @@ export async function groups(list: string[], root: string, entry: string, resolv
           specs = [...new Set([...specs, ...subpaths(name, pkg.data)])]
         }
       }
-      try {
-        const mod = await import(pathToFileURL(found.id.split('?')[0]).href)
-        // CommonJS: os nomes ficam no `module.exports`, que pode ser uma função (o `axios` é).
-        const extra = mod.default && (typeof mod.default === 'object' || typeof mod.default === 'function') ? Object.keys(mod.default) : []
-        group.names[spec] = [...new Set([...Object.keys(mod), ...extra])].filter((n) => n !== 'default' && ident.test(n))
-      } catch {
-        // Código-fonte (TypeScript, aliases): os nomes saem do build.
-      }
+      files.push([group, spec, found.id.split('?')[0]])
       group.keys.push(spec)
     }
     // Svelte e Angular dependem de internos do runtime: só a versão exata.
     group.range = name === 'svelte' || name.startsWith('@angular/') ? group.version : `^${group.version}`
     out.push(group)
   }
+  const names = exportNames(files.map(([, , f]) => f))
+  files.forEach(([g, spec], i) => names[i] && (g.names[spec] = names[i]!))
   return out
+}
+
+const MARK = '@@vitral-names@@'
+
+/** O Node carrega o arquivo como CommonJS? (extensão e `type` do package.json mais próximo) */
+function isCommonJs(file: string): boolean {
+  if (/\.cjs$/.test(file)) return true
+  if (!/\.js$/.test(file)) return false
+  for (let dir = dirname(file); dir !== dirname(dir); dir = dirname(dir)) {
+    const json = join(dir, 'package.json')
+    if (existsSync(json)) {
+      try {
+        return JSON.parse(readFileSync(json, 'utf8')).type !== 'module'
+      } catch {
+        return false
+      }
+    }
+  }
+  return true
+}
+
+/**
+ * Nomes exportados de cada arquivo, como o build de produção os vê. Num
+ * processo à parte com `NODE_ENV=production`: o React de dev exporta nomes
+ * que o de produção não tem (`act`, `captureOwnerStack`), e o processo do
+ * build pode já ter carregado a versão de dev. Em CommonJS, só os nomes que
+ * existem no `module.exports`: a análise estática do Node junta os dois ramos
+ * do `if (NODE_ENV === 'production')`. `null`: o Node não importa o arquivo
+ * (código-fonte TypeScript, aliases), e os nomes saem do build.
+ */
+export function exportNames(files: string[]): (string[] | null)[] {
+  if (!files.length) return []
+  const code = `const out = []
+for (const [f, cjs] of JSON.parse(process.argv[1])) {
+  try {
+    const mod = await import(f)
+    // CommonJS: os nomes ficam no module.exports, que pode ser uma função (o axios é).
+    const obj = mod.default && (typeof mod.default === "object" || typeof mod.default === "function") ? mod.default : undefined
+    const all = cjs ? Object.keys(obj ?? {}) : [...new Set([...Object.keys(mod), ...Object.keys(obj ?? {})])]
+    out.push(all.filter((n) => n !== "default" && ${ident}.test(n)))
+  } catch {
+    out.push(null)
+  }
+}
+process.stdout.write("\\n${MARK}" + JSON.stringify(out))`
+  const env = { ...process.env, NODE_ENV: process.env.NODE_ENV === 'development' ? 'development' : 'production' }
+  try {
+    const out = execFileSync(process.execPath, ['--input-type=module', '-e', code, JSON.stringify(files.map((f) => [pathToFileURL(f).href, isCommonJs(f)]))], { env, encoding: 'utf8', maxBuffer: 64 << 20, stdio: ['ignore', 'pipe', 'ignore'] })
+    return JSON.parse(out.slice(out.lastIndexOf(MARK) + MARK.length))
+  } catch {
+    return files.map(() => null)
+  }
 }
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\0/g, '\\x00')
@@ -289,9 +338,14 @@ async function need(name, range, version, keys, load) {
   let m = shared && (await p.dedupe(name, range, { version, load }))
   // A oferta pode ter só os nomes que o remote usa (host Next): confere cada um.
   const has = (o, n) => n === "default" || (o != null && (n in o || (o.default != null && n in Object(o.default))))
-  const missing = m ? keys.flatMap((k) => (!(k in m) ? [k] : (uses[name]?.[k] || []).filter((n) => !has(m[k], n)).map((n) => k + " " + n))) : []
-  if (missing.length) console.warn("[vitral] dedupe: a oferta de " + name + " não tem " + missing.join(", ") + "; o remote usa a cópia própria inteira")
-  if (!m || missing.length) m = await load()
+  const lacks = m ? keys.filter((k) => !(k in m)) : []
+  const names = m ? keys.flatMap((k) => (k in m ? (uses[name]?.[k] || []).filter((n) => !has(m[k], n)).map((n) => k + " " + n) : [])) : []
+  // React e React DOM nunca têm duas cópias na página (hooks e contexto
+  // quebram): um nome que falta só gera aviso, e o remote fica com a oferta.
+  const keep = name === "react" && !lacks.length
+  if (lacks.length || names.length)
+    console.warn("[vitral] dedupe: a oferta de " + name + " não tem " + [...lacks, ...names].join(", ") + (keep ? "; o remote usa a oferta do host mesmo assim" : "; o remote usa a cópia própria inteira"))
+  if (!m || ((lacks.length || names.length) && !keep)) m = await load()
   Object.assign(deps, m)
 }
 await Promise.all([${calls.join(', ')}])

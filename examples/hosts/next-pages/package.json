@@ -1,0 +1,19 @@
+{
+  "name": "host-next-pages",
+  "private": true,
+  "scripts": {
+    "build": "node -e \"require('fs').cpSync('../../remotes/react-ns/dist','public/ns-remote',{recursive:true})\" && next build --webpack",
+    "start": "next start -p 4211"
+  },
+  "dependencies": {
+    "vitral": "workspace:*",
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "remote-react-ns": "workspace:*",
+    "@types/react": "^19.0.0",
+    "typescript": "~5.9.0"
+  }
+}
