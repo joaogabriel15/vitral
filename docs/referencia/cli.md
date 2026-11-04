@@ -275,3 +275,20 @@ npx vitral dict dist --from ../dist-anterior
 
 Grava `<arquivo>.<hash>.dcz` (zstd do Node, 22.19+ ou 24.6+) e, com o binário `brotli`, `<arquivo>.<hash>.dcb`. Termina com código `1` se faltar `--from`, uma pasta não existir ou o Node não tiver zstd com dicionário.
 
+## vitral sign
+
+Assina o `vitral.json`, o JS e o CSS do dist com Ed25519, para o host que fixa a chave do remote em `keys`. Receita completa em [Segurança](/aprender/seguranca#assinatura).
+
+```bash
+npx vitral sign --keygen
+VITRAL_SIGNING_KEY="$(cat chave.pem)" npx vitral sign dist --base /carrinho/
+```
+
+| Opção | O que faz |
+| --- | --- |
+| `--keygen` | Cria o par de chaves e mostra as duas |
+| `--key-file arquivo` | Chave privada em PEM. Sem ela, usa `VITRAL_SIGNING_KEY` |
+| `--base caminho` | Caminho público da pasta no servidor. Padrão: `/` |
+| `--no-headers` | Grava só `vitral-signatures.json`, sem `_headers` |
+
+Rode por último: qualquer mudança num arquivo depois disso invalida a assinatura. Termina com código `1` sem a chave privada.

@@ -77,7 +77,7 @@ function setup() {
   bundled.sri = sri
   bundled.dedupe = dedupe
   configure({
-    remotes: Object.fromEntries(Object.entries(remotes).map(([name, r]) => [name, { url: r.url, ...(r.integrity === false && { integrity: false as const }) }])),
+    remotes: Object.fromEntries(Object.entries(remotes).map(([name, r]) => [name, { url: r.url, ...(r.integrity === false && { integrity: false as const }), ...(r.keys && { keys: r.keys }) }])),
     dedupe: offers,
     // Uma cópia de cada dependência para todos os remotes, escolhida no build.
     ...(plan && Object.keys(plan).length && { dedupePlan: plan }),
@@ -169,7 +169,7 @@ function seed(name: string, m: RemoteManifest): void {
   const r = remotes[name]
   if (!r || typeof window === 'undefined' || seeded.get(name) === m) return
   seeded.set(name, m)
-  register(name, { url: r.url, manifest: m, ...(r.integrity === false && { integrity: false as const }) })
+  register(name, { url: r.url, manifest: m, ...(r.integrity === false && { integrity: false as const }), ...(r.keys && { keys: r.keys }) })
 }
 
 const push: HostRouter['push'] = (url, options) => void Router.push(url, undefined, options)
@@ -188,7 +188,7 @@ function hints(h: HtmlHints | undefined, shadow: boolean): ReactNode {
   return createElement(
     Head,
     null,
-    ...(h.manifest ? [link('fetch', [h.manifest])] : []),
+    ...(h.manifest ? [link('fetch', [h.manifest, h.signed])] : []),
     // Com Shadow DOM o CSS vem por fetch: o preload de estilo não serviria.
     ...(shadow ? [] : h.css.map((c) => link('style', c))),
     ...h.js.map((j) => link('script', j)),
@@ -208,7 +208,7 @@ export function NextRemote({ name, props, fallback = null, manifest, ...rest }: 
   const host = useMemo<HostRouter>(() => ({ asPath: router.asPath, basePath: r?.basePath, routes: r?.routes, push, replace, events: Router.events }), [router.asPath, r])
   const all = useMemo(() => ({ ...props, __next: host }), [props, host])
   const links = useMemo(() => {
-    const h = manifest && r ? hintsOf(manifest, r.url, offered(), r.integrity) : r?.hints
+    const h = manifest && r ? hintsOf(manifest, r.url, offered(), r.integrity, r.keys) : r?.hints
     // Com o manifesto do servidor, o navegador não pede o vitral.json: sem preload dele.
     return hints(manifest && h ? { ...h, manifest: '' } : h, rest.isolate === 'shadow')
   }, [manifest, r, rest.isolate])

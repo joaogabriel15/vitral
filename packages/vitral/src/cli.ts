@@ -7,6 +7,7 @@ import { dict } from './cli/dict'
 import { doctorCli } from './cli/doctor'
 import { migrate, type MigrateSource } from './cli/migrate'
 import { prior } from './cli/prior'
+import { signCli } from './cli/sign'
 import { test } from './cli/test'
 import { flag, types } from './cli/types'
 
@@ -24,6 +25,8 @@ const AJUDA = `Uso:
               [--types vitral.d.ts]
   vitral dict <dist> --from <dist-anterior> [--from ...] [--level n] [--no-dcb]
   vitral prior <sessoes.jsonl> [--out prior.json] [--min-count n] [--min-row n] [--top n]
+  vitral sign --keygen
+  vitral sign <dist> [--key-file chave.pem] [--base /caminho/] [--no-headers]
 
   types     Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
             --check só confere se o hash de cada manifesto ainda é o
@@ -58,7 +61,12 @@ const AJUDA = `Uso:
   prior     Gera as transições da população para o prefetch (prior de
             vitral/prefetch), de sessões agregadas: uma por linha, array
             JSON de rotas. Tira transições com menos de --min-count (5) e
-            rotas com menos de --min-row (20) transições.`
+            rotas com menos de --min-row (20) transições.
+  sign      Assina o vitral.json, o JS e o CSS do dist com Ed25519 e grava os
+            headers em vitral-signatures.json e _headers. O host que põe a
+            chave pública em keys só roda arquivos assinados (Chrome 141+).
+            Chave privada em --key-file ou VITRAL_SIGNING_KEY. --keygen cria
+            o par de chaves. Rode por último, depois de vitral dict.`
 
 const falhou = (err: Error) => {
   console.error(err.message)
@@ -159,6 +167,16 @@ if (command === 'types') {
     const out = flag(args, '--out')
     const o = { minCount: num('--min-count'), minRow: num('--min-row'), top: num('--top') }
     prior(args[0], out, o)
+  } catch (err) {
+    falhou(err as Error)
+  }
+} else if (command === 'sign' && args.length) {
+  try {
+    const keygen = bool(args, '--keygen')
+    const noHeaders = bool(args, '--no-headers')
+    const keyFile = flag(args, '--key-file')
+    const base = flag(args, '--base')
+    signCli(args[0], { keygen, keyFile, base, noHeaders })
   } catch (err) {
     falhou(err as Error)
   }

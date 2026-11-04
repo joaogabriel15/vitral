@@ -75,7 +75,7 @@ export async function importVerified(name: string, r: Verifiable, run: (url: str
   // Caminho 3: executa exatamente os bytes verificados.
   // Depois de uma falha, sem esperar pela requisição anterior que pode
   // continuar presa no cache HTTP do navegador.
-  const bytes = await fetchBytes(entry, timeout, name, failed.has(entry) ? { priority, cache: 'reload' } : { priority })
+  const bytes = await fetchBytes(entry, timeout, name, { priority, ...(failed.has(entry) && { cache: 'reload' }), ...signature(integrity) })
   await verifyIntegrity(name, bytes, integrity)
   const url = URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }))
   try {
@@ -85,10 +85,14 @@ export async function importVerified(name: string, r: Verifiable, run: (url: str
   }
 }
 
+/** Com chave do remote, o `fetch` do caminho 3 também confere a assinatura. */
+export const signature = (integrity: string): RequestInit => (/ed25519-/.test(integrity) ? { integrity } : {})
+
 // Só hashes no formato que todo navegador entende. Um token que o navegador
 // não reconhecesse seria tratado como "sem integrity", e o módulo rodaria sem
 // conferência; nesse caso o caminho 3 confere os bytes.
-const STRICT = /^(sha(256|384|512)-[A-Za-z0-9+/]+={0,2}( +|$))+$/
+// As assinaturas (`ed25519-`) vêm depois dos hashes: quem não as entende confere o hash.
+const STRICT = /^(sha(256|384|512)-[A-Za-z0-9+/]+={0,2}( +|$))+(ed25519-[A-Za-z0-9+/]+={0,2}( +|$))*$/
 
 const PROBE = 'data:text/javascript,export{}'
 const PROBE_SRI = 'sha256-d3bjIZdvLjBurwdLwkSVOnEBPFFly+T1SR9r3VVHBGg='
