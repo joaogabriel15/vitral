@@ -22,7 +22,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
-import { satisfies } from './core/semver'
+import { hintsOf, type HtmlHints } from './core/next-hints'
 import type { RemoteManifest } from './core/types'
 import type { ZoneRoute } from './next'
 import { subpaths } from './vite/dedupe'
@@ -185,14 +185,7 @@ export function hostModule(
 /** Pasta do `vitral.json` de um remote servido pelo próprio host, ou nada. */
 const localDir = (url: string) => (url.startsWith('/') && !url.startsWith('//') ? url.slice(0, url.lastIndexOf('/') + 1) : undefined)
 
-/** `[href, integrity]` de cada arquivo que o HTML da página do remote pré-carrega. */
-export interface HtmlHints {
-  manifest: string
-  css: [string, string?][]
-  js: [string, string?][]
-  /** Grupos de `share` que o remote vai pedir: o host começa o download deles antes da hidratação. */
-  offers?: string[]
-}
+export type { HtmlHints }
 
 /**
  * Lê o `vitral.json` no build e lista o que a primeira tela do remote baixa: o
@@ -201,22 +194,7 @@ export interface HtmlHints {
  */
 export function htmlHints(dir: string, r: NextRemoteConfig, offered: Record<string, string>): HtmlHints | undefined {
   const m = r.htmlPreload === false ? undefined : readManifest(dir, r)
-  if (!m) return
-  const base = new URL(r.url, 'http://host.invalid/')
-  const at = (f: string) => {
-    const u = new URL(f, base)
-    return u.origin === 'http://host.invalid' ? u.pathname + u.search : u.href
-  }
-  const hint = (f: string): [string, string?] => (r.integrity !== false && m.files?.[f] ? [at(f), m.files[f]] : [at(f)])
-  const served = (d: { name: string; range: string }) => !!offered[d.name] && satisfies(offered[d.name], d.range)
-  const own = (m.dedupe ?? []).filter((d) => !served(d)).flatMap((d) => [...(d.chunks ?? []), d.file])
-  const offers = m.split ? (m.dedupe ?? []).filter((d) => d.name !== 'react' && served(d)).map((d) => d.name) : []
-  return {
-    manifest: at(r.url),
-    css: (m.css ?? []).map(hint),
-    js: (m.split ? [...own, ...(m.split.chunks ?? []), m.split.entry] : [m.entry]).map(hint),
-    ...(offers.length && { offers }),
-  }
+  return m && hintsOf(m, r.url, offered, r.integrity)
 }
 
 /** O `vitral.json` do remote no disco (em `public/` ou `manifestFile`), ou nada. */

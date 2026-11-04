@@ -144,6 +144,10 @@
       "types": "./dist/next-config.d.ts",
       "default": "./dist/next-config.js"
     },
+    "./next-server": {
+      "types": "./dist/next-server.d.ts",
+      "default": "./dist/next-server.js"
+    },
     "./sw": {
       "types": "./dist/sw.d.ts",
       "import": "./dist/sw.js"

@@ -4,6 +4,8 @@ import { withVitral } from 'vitral/next-config'
 // (copiado no prebuild): o build lê o vitral.json para o preload no HTML.
 export default withVitral({}, {
   remotes: {
-    ns: { url: '/ns-remote/vitral.json', basePath: '/ns' },
+    ns: { url: '/ns-remote/vitral.json', basePath: '/ns', preload: 'route' },
+    // O mesmo remote, com o manifesto lido no servidor a cada requisição (vitral/next-server).
+    'ns-servidor': { url: '/ns-remote/vitral.json', basePath: '/ns-servidor' },
   },
 })

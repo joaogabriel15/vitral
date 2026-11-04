@@ -38,4 +38,17 @@ test.describe('host Next (Pages Router) em produção', () => {
     await expect(page.locator('.ns .versao')).toContainText('React 19')
     expect(await page.evaluate(() => (window as any).__marca)).toBe(1)
   })
+
+  test('manifesto do servidor: o HTML pré-carrega a entrada e o navegador não pede o vitral.json', async ({ page, request }) => {
+    const html = await (await request.get(HOST + '/ns-servidor')).text()
+    expect(html).toMatch(/<link[^>]+rel="preload"[^>]+as="script"[^>]+integrity="sha384-/)
+    expect(html).not.toMatch(/rel="preload"[^>]+href="\/ns-remote\/vitral\.json"/)
+    const pedidos: string[] = []
+    page.on('request', (r) => /vitral\.json/.test(r.url()) && pedidos.push(r.url()))
+    await page.goto(HOST + '/ns-servidor')
+    const remote = page.locator('.ns')
+    await remote.locator('.ping').click()
+    await expect(remote.locator('.cliques')).toHaveText('1')
+    expect(pedidos).toEqual([])
+  })
 })
