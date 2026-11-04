@@ -52,12 +52,21 @@ Cada equipe publica o próprio pedaço da página com `vite build`. O host receb
 
 ## <span class="vt-dot" style="background:var(--vt-cobalto)"></span>O host só precisa da URL
 
-Registre a URL do `vitral.json` de cada remote e renderize. Nenhum plugin no build do host.
+Hoje, com Module Federation, o host tem um plugin no build com `remotes` e `shared`. Com vitral, registre a URL do `vitral.json` de cada remote e renderize. Nenhum plugin no build do host.
 
 </div>
 <div>
 
+```js
+// Hoje, com Module Federation: webpack.config.js do host
+new ModuleFederationPlugin({
+  remotes: { carrinho: 'carrinho@https://cdn.empresa.com/carrinho/remoteEntry.js' },
+  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+})
+```
+
 ```jsx
+// Com vitral: sem plugin no build
 import { configure } from 'vitral'
 import { Remote } from 'vitral/react'
 

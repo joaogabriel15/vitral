@@ -2,6 +2,75 @@
 
 Svelte 5 e SvelteKit. Import: `vitral/svelte`.
 
+## Hoje e com vitral
+
+Exemplo: uma loja em Svelte que mostra o carrinho de outra equipe.
+
+### Hoje, com Module Federation
+
+O Module Federation não tem adaptador para Svelte. O carrinho expõe uma função que monta o componente, e a loja chama essa função.
+
+```js
+// carrinho/src/montar.js
+import { mount, unmount } from 'svelte'
+import Carrinho from './Carrinho.svelte'
+
+export function montar(el, props) {
+  const app = mount(Carrinho, { target: el, props })
+  return () => unmount(app)
+}
+```
+
+```js
+// carrinho/vite.config.js
+federation({
+  name: 'carrinho',
+  filename: 'remoteEntry.js',
+  exposes: { './montar': './src/montar.js' },
+  shared: { svelte: { singleton: true } },
+})
+```
+
+```svelte
+<!-- loja/src/Pagina.svelte (a loja também tem o federation() com remotes) -->
+<script>
+  import { onMount } from 'svelte'
+  let el
+
+  onMount(() => {
+    let desmontar
+    import('carrinho/montar').then(({ montar }) => (desmontar = montar(el, { userId: 42 })))
+    return () => desmontar?.()
+  })
+</script>
+
+<div bind:this={el}></div>
+```
+
+### Com vitral
+
+```js
+// carrinho/vite.config.js (sem montar.js e sem federation)
+import { svelte } from '@sveltejs/vite-plugin-svelte'
+import vitral from 'vitral/vite'
+
+export default { plugins: [svelte(), vitral({ entry: 'src/Carrinho.svelte' })] }
+```
+
+```svelte
+<!-- loja/src/Pagina.svelte (sem plugin no build da loja) -->
+<script>
+  import { configure } from 'vitral'
+  import { remote } from 'vitral/svelte'
+
+  configure({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })
+</script>
+
+<div use:remote={{ name: 'carrinho', props: { userId: 42 } }}></div>
+```
+
+Mudar `props` atualiza o carrinho sem remontar. Carregando e erro em [Host](#host).
+
 ## Host
 
 Use a action `remote`:

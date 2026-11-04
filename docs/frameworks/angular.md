@@ -2,6 +2,79 @@
 
 Angular 17 ou mais novo. Import: `vitral/angular`.
 
+## Hoje e com vitral
+
+Exemplo: uma loja em Angular que mostra o carrinho de outra equipe.
+
+### Hoje, com Native Federation
+
+```js
+// carrinho/federation.config.js
+const { withNativeFederation, shareAll } = require('@angular-architects/native-federation/config')
+
+module.exports = withNativeFederation({
+  name: 'carrinho',
+  exposes: { './Carrinho': './src/app/carrinho.component.ts' },
+  shared: { ...shareAll({ singleton: true, strictVersion: true, requiredVersion: 'auto' }) },
+})
+```
+
+```ts
+// loja/src/main.ts
+import { initFederation } from '@angular-architects/native-federation'
+
+initFederation({ carrinho: 'https://cdn.empresa.com/carrinho/remoteEntry.json' })
+  .then(() => import('./bootstrap'))
+```
+
+```ts
+// loja/src/app/app.routes.ts
+import { loadRemoteModule } from '@angular-architects/native-federation'
+
+export const routes = [
+  {
+    path: 'carrinho',
+    loadComponent: () => loadRemoteModule('carrinho', './Carrinho').then((m) => m.CarrinhoComponent),
+  },
+]
+```
+
+Loja e carrinho precisam da mesma versão do Angular, e a loja também tem um `federation.config.js`.
+
+### Com vitral
+
+```ts
+// carrinho/src/remote.ts
+import { angularRemote } from 'vitral/angular'
+import { CarrinhoComponent } from './app/carrinho.component'
+
+export default angularRemote(CarrinhoComponent)
+```
+
+```js
+// carrinho/vite.config.js (no lugar do federation.config.js)
+import angular from '@analogjs/vite-plugin-angular'
+import vitral from 'vitral/vite'
+
+export default { plugins: [angular(), vitral({ entry: 'src/remote.ts' })] }
+```
+
+```ts
+// loja/src/main.ts (sem initFederation)
+bootstrapApplication(App, {
+  providers: [provideVitral({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })],
+})
+```
+
+```html
+<!-- loja: qualquer template -->
+<vitral-remote name="carrinho" [props]="{ userId: 42 }">
+  <p slot="fallback">Carregando…</p>
+</vitral-remote>
+```
+
+O carrinho pode usar outra versão do Angular, ou outro framework. Detalhes em [Host](#host) e [Remote](#remote).
+
 ## Host
 
 Registre os remotes no bootstrap. `provideVitral` chama `configure` e registra o elemento `<vitral-remote>`:

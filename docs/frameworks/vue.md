@@ -2,6 +2,80 @@
 
 Vue 3.3 ou mais novo. Import: `vitral/vue`.
 
+## Hoje e com vitral
+
+Exemplo: uma loja em Vue que mostra o catálogo de outra equipe.
+
+### Hoje, com Module Federation
+
+```js
+// catalogo/vite.config.js
+import vue from '@vitejs/plugin-vue'
+import { federation } from '@module-federation/vite'
+
+export default {
+  plugins: [vue(), federation({
+    name: 'catalogo',
+    filename: 'remoteEntry.js',
+    exposes: { './Catalogo': './src/Catalogo.vue' },
+    shared: { vue: { singleton: true } },
+  })],
+}
+```
+
+```js
+// loja/vite.config.js
+export default {
+  plugins: [vue(), federation({
+    name: 'loja',
+    remotes: {
+      catalogo: { type: 'module', name: 'catalogo', entry: 'https://cdn.empresa.com/catalogo/remoteEntry.js' },
+    },
+    shared: { vue: { singleton: true } },
+  })],
+}
+```
+
+```vue
+<!-- loja/src/App.vue -->
+<script setup>
+import { defineAsyncComponent } from 'vue'
+const Catalogo = defineAsyncComponent(() => import('catalogo/Catalogo'))
+</script>
+
+<template>
+  <Catalogo :user-id="42" />
+</template>
+```
+
+### Com vitral
+
+```js
+// catalogo/vite.config.js (no lugar do federation)
+import vue from '@vitejs/plugin-vue'
+import vitral from 'vitral/vite'
+
+export default { plugins: [vue(), vitral({ entry: 'src/Catalogo.vue' })] }
+```
+
+```vue
+<!-- loja/src/App.vue (sem plugin no build da loja) -->
+<script setup>
+import { configure } from 'vitral'
+import { VitralRemote } from 'vitral/vue'
+
+configure({ remotes: { catalogo: 'https://cdn.empresa.com/catalogo/vitral.json' } })
+</script>
+
+<template>
+  <VitralRemote name="catalogo" :props="{ userId: 42 }">
+    <template #fallback>Carregando…</template>
+  </VitralRemote>
+</template>
+```
+
+O componente `Catalogo.vue` não muda. Guia completo: [Migrar do Module Federation](/migracao/module-federation).
+
 ## Host
 
 ```vue
