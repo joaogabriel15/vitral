@@ -55,6 +55,24 @@ prefetch()
 
 Conta as navegações no navegador do usuário e, no tempo ocioso, baixa o manifesto e o JS da rota mais provável, sem executar e com o SRI conferido. Veja [vitral/prefetch](/referencia/prefetch).
 
+## Rede lenta e aparelho fraco
+
+O vitral escolhe quanto baixar além do que a página usa agora pelos sinais do navegador: `saveData`, `effectiveType` (o tipo de rede que o navegador calcula com o RTT e a banda medidos) e `deviceMemory`.
+
+| Sinal | Política | O que muda |
+| --- | --- | --- |
+| `saveData`, ou rede `slow-2g` / `2g` | `'lazy'` | Só o que a página usa. Sem prefetch previsto, sem `prefetch="idle"`. O `<vitral-remote>` que já veio com HTML do servidor só hidrata quando aparece na tela |
+| rede `3g`, ou até 2 GB de memória | `'critical'` | Sem o preload ocioso dos outros remotes (`VitralNext`) e sem `warmRoutes`. O prefetch previsto continua: na rede lenta é onde ele economiza mais tempo |
+| o resto, ou sem sinal | `'all'` | Tudo que o host pediu |
+
+Safari e Firefox não dão esses sinais; lá vale `'all'`. Para fixar uma política:
+
+```ts
+configure({ policy: 'critical' })
+```
+
+No servidor, `choose(signalsFrom(request.headers))` faz a mesma conta com os Client Hints (`Save-Data`, `ECT`, `Device-Memory`). O Chrome só manda `ECT` e `Device-Memory` depois de um `Accept-CH: ECT, Device-Memory` na resposta.
+
 ## Keep-alive
 
 Com keep-alive, pause timers quando o remote sai da tela:

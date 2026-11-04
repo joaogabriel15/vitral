@@ -4,6 +4,7 @@
  * O `<vitral-remote>` e os componentes de cada framework usam `hostSlot()`.
  */
 import { preload } from './loader'
+import { policy } from './policy'
 import { registerSrc } from './registry'
 import { createSlot, type RemoteSlot, type SlotOptions, type SlotStatus } from './slot'
 import type { Props } from './types'
@@ -150,7 +151,8 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
     status = s
     options.onStatus?.(s, e)
   }
-  const cancelPrefetch = options.prefetch ? when(target, options.prefetch, () => preload(name)) : noop
+  // `prefetch="idle"`: com economia de dados ou 2G, fica para a montagem.
+  const cancelPrefetch = options.prefetch && (options.prefetch !== 'idle' || policy() !== 'lazy') ? when(target, options.prefetch, () => preload(name)) : noop
   const cancel = when(target, options.loading, () => {
     cancelPrefetch()
     const found = keepAlive ? kept.get(name) : undefined

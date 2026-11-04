@@ -1,6 +1,7 @@
 import { dedupeModule, sriModule } from './bundled'
 import { prefetchCss } from './css'
 import { fail, isRemoteError, RemoteError, report } from './errors'
+import { policy } from './policy'
 import { checkOrigin } from './registry'
 import type { SplitBuild, Verifiable } from './sri'
 import { protocol, type LoadedRemote } from './state'
@@ -54,9 +55,8 @@ export function routeChunks(r: LoadedRemote & { split?: SplitBuild }): string[] 
 }
 
 export function warmRoutes(r: LoadedRemote): void {
-  // Economia de dados ou 2G: não baixa o que talvez nem seja usado.
-  const c = (navigator as any).connection
-  if (c?.saveData || /2g/.test(c?.effectiveType)) return
+  // Rede lenta, economia de dados ou aparelho fraco: não baixa o que talvez nem seja usado.
+  if (policy() !== 'all') return
   const queue = routeChunks(r).slice()
   // O corpo precisa ser lido: resposta grande largada no meio não fica no cache HTTP.
   const next = (): unknown => queue.length && fetch(queue.shift()!, { priority: 'low' } as RequestInit).then((res) => res.arrayBuffer()).catch(() => {}).then(next)
