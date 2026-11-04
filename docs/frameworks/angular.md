@@ -4,9 +4,22 @@ Angular 17 ou mais novo. Import: `vitral/angular`.
 
 ## Hoje e com vitral
 
-Exemplo: uma loja em Angular que mostra o carrinho de outra equipe.
+Exemplo: uma loja em Angular mostra o carrinho, feito por outra equipe. Os dois lados têm os mesmos arquivos, na mesma ordem.
 
 ### Hoje, com Native Federation
+
+```ts
+// carrinho/src/app/carrinho.component.ts
+import { Component, input } from '@angular/core'
+
+@Component({
+  selector: 'app-carrinho',
+  template: `<p>Carrinho do usuário {{ userId() }}</p>`,
+})
+export default class CarrinhoComponent {
+  userId = input(0)
+}
+```
 
 ```js
 // carrinho/federation.config.js
@@ -15,6 +28,15 @@ const { withNativeFederation, shareAll } = require('@angular-architects/native-f
 module.exports = withNativeFederation({
   name: 'carrinho',
   exposes: { './Carrinho': './src/app/carrinho.component.ts' },
+  shared: { ...shareAll({ singleton: true, strictVersion: true, requiredVersion: 'auto' }) },
+})
+```
+
+```js
+// loja/federation.config.js
+const { withNativeFederation, shareAll } = require('@angular-architects/native-federation/config')
+
+module.exports = withNativeFederation({
   shared: { ...shareAll({ singleton: true, strictVersion: true, requiredVersion: 'auto' }) },
 })
 ```
@@ -34,21 +56,24 @@ import { loadRemoteModule } from '@angular-architects/native-federation'
 export const routes = [
   {
     path: 'carrinho',
-    loadComponent: () => loadRemoteModule('carrinho', './Carrinho').then((m) => m.CarrinhoComponent),
+    loadComponent: () => loadRemoteModule('carrinho', './Carrinho').then((m) => m.default),
   },
 ]
 ```
 
-Loja e carrinho precisam da mesma versão do Angular, e a loja também tem um `federation.config.js`.
-
 ### Com vitral
 
 ```ts
-// carrinho/src/remote.ts
-import { angularRemote } from 'vitral/angular'
-import { CarrinhoComponent } from './app/carrinho.component'
+// carrinho/src/app/carrinho.component.ts (igual)
+import { Component, input } from '@angular/core'
 
-export default angularRemote(CarrinhoComponent)
+@Component({
+  selector: 'app-carrinho',
+  template: `<p>Carrinho do usuário {{ userId() }}</p>`,
+})
+export default class CarrinhoComponent {
+  userId = input(0)
+}
 ```
 
 ```js
@@ -56,24 +81,47 @@ export default angularRemote(CarrinhoComponent)
 import angular from '@analogjs/vite-plugin-angular'
 import vitral from 'vitral/vite'
 
-export default { plugins: [angular(), vitral({ entry: 'src/remote.ts' })] }
+export default {
+  plugins: [
+    angular(),
+    vitral({ name: 'carrinho', entry: 'src/app/carrinho.component.ts' }),
+  ],
+}
+```
+
+```js
+// loja/federation.config.js (não precisa mais)
 ```
 
 ```ts
-// loja/src/main.ts (sem initFederation)
+// loja/src/main.ts (provideVitral no lugar do initFederation)
+import { bootstrapApplication } from '@angular/platform-browser'
+import { provideVitral } from 'vitral/angular'
+import { App } from './app'
+
 bootstrapApplication(App, {
   providers: [provideVitral({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })],
 })
 ```
 
-```html
-<!-- loja: qualquer template -->
-<vitral-remote name="carrinho" [props]="{ userId: 42 }">
-  <p slot="fallback">Carregando…</p>
-</vitral-remote>
+```ts
+// loja/src/app/app.routes.ts
+import { CUSTOM_ELEMENTS_SCHEMA, Component } from '@angular/core'
+
+@Component({
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `
+    <vitral-remote name="carrinho" [props]="{ userId: 42 }">
+      <p slot="fallback">Carregando…</p>
+    </vitral-remote>
+  `,
+})
+class PaginaCarrinho {}
+
+export const routes = [{ path: 'carrinho', component: PaginaCarrinho }]
 ```
 
-O carrinho pode usar outra versão do Angular, ou outro framework. Detalhes em [Host](#host) e [Remote](#remote).
+Com vitral, o carrinho pode usar outra versão do Angular, ou outro framework.
 
 ## Host
 

@@ -10,7 +10,7 @@ App Router e Pages Router. Import: `vitral/react`.
 
 Num app Next (Pages Router) como host, `vitral/next-config` e `vitral/next-host` fazem o que as rewrites do Multi-Zones faziam, sem recarregar a página ao trocar de área.
 
-Exemplo: uma loja em Next.js com a área "Minha conta", feita por outra equipe.
+Exemplo: uma loja em Next.js com a área "Minha conta", feita por outra equipe. Os dois lados têm os mesmos arquivos, na mesma ordem. Com vitral, a loja ganha um arquivo novo no fim.
 
 <picture class="vt-diagrama">
   <img class="so-claro" :src="withBase('/marca/multizonas.png')" alt="À esquerda, Multi-Zones: dois apps Next, rewrites e a página recarrega ao trocar de área (0,8 s). À direita, vitral: um app Next com withVitral, a conta é um remote dentro do layout e a troca é sem recarregar (0,2 s).">
@@ -19,7 +19,17 @@ Exemplo: uma loja em Next.js com a área "Minha conta", feita por outra equipe.
 
 ### Hoje, com Multi-Zones
 
-São dois apps Next. A loja repassa as URLs de `/conta` para o app da conta.
+```
+loja/    app Next principal
+conta/   segundo app Next (a zona)
+```
+
+```tsx
+// conta/pages/index.tsx
+export default function Conta() {
+  return <h1>Minha conta</h1>
+}
+```
 
 ```js
 // conta/next.config.js
@@ -43,6 +53,13 @@ module.exports = {
 ```
 
 ```tsx
+// loja/pages/_app.tsx
+export default function App({ Component, pageProps }) {
+  return <Component {...pageProps} />
+}
+```
+
+```tsx
 // loja/components/Menu.tsx
 // <a>, não <Link>: a página recarrega e baixa Next e React de novo.
 <a href="/conta">Minha conta</a>
@@ -50,32 +67,44 @@ module.exports = {
 
 ### Com vitral
 
-A loja continua sendo o único app Next. A conta vira um remote: um projeto Vite com o mesmo código (veja [Código escrito para Next](#codigo-escrito-para-next)).
+```
+loja/    app Next (o host)
+conta/   o mesmo código, buildado com Vite (o remote)
+```
 
-```js
-// conta/vite.config.js (no lugar do next.config.js da zona; o código da conta não muda)
-import react from '@vitejs/plugin-react'
-import vitral from 'vitral/vite'
-
-export default {
-  plugins: [react(), vitral({ entry: 'src/remote.tsx', name: 'conta', next: { basePath: '/conta' }, dedupe: ['react'] })],
+```tsx
+// conta/pages/index.tsx (igual)
+export default function Conta() {
+  return <h1>Minha conta</h1>
 }
 ```
 
 ```js
-// loja/next.config.js (no lugar das rewrites)
+// conta/vite.config.js (no lugar do next.config.js)
+import react from '@vitejs/plugin-react'
+import vitral from 'vitral/vite'
+
+export default {
+  plugins: [
+    react(),
+    vitral({ name: 'conta', entry: 'pages/index.tsx', next: { basePath: '/conta' }, dedupe: ['react'] }),
+  ],
+}
+```
+
+```js
+// loja/next.config.js (withVitral no lugar das rewrites)
 const { withVitral } = require('vitral/next-config')
 
-module.exports = withVitral(nextConfig, {
+module.exports = withVitral({}, {
   remotes: {
     conta: { url: 'https://cdn.empresa.com/conta/vitral.json', basePath: '/conta' },
   },
-  share: ['@tanstack/react-query'], // opcional: outras dependências que o host oferece
 })
 ```
 
 ```tsx
-// loja/pages/_app.tsx
+// loja/pages/_app.tsx (mais o <VitralNext />)
 import { VitralNext } from 'vitral/next-host'
 
 export default function App({ Component, pageProps }) {
@@ -84,13 +113,21 @@ export default function App({ Component, pageProps }) {
 ```
 
 ```tsx
-// loja/pages/conta/[[...slug]].tsx (arquivo novo)
+// loja/components/Menu.tsx
+// <Link>: a troca é sem recarregar, e o React não baixa de novo.
+<Link href="/conta">Minha conta</Link>
+```
+
+```tsx
+// loja/pages/conta/[[...slug]].tsx (arquivo novo: a página da loja que mostra a conta)
 import { NextRemote } from 'vitral/next-host'
 
 export default function Conta() {
-  return <Layout><NextRemote name="conta" fallback={<Spinner />} /></Layout>
+  return <NextRemote name="conta" fallback={<p>Carregando…</p>} />
 }
 ```
+
+Com `next: { basePath }`, o código da conta pode continuar usando `next/link` e `useRouter`.
 
 Pronto. Um `<Link href="/conta">` na loja abre o remote sem recarregar, e dentro do remote `useRouter`, `<Link>` e `router.push` usam o roteador do host. Um `<a>` comum para uma rota de remote também vira navegação sem recarregar.
 

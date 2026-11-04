@@ -4,11 +4,18 @@ Preact 10 ou mais novo. Import: `vitral/preact`.
 
 ## Hoje e com vitral
 
-Exemplo: uma loja em Preact que mostra o carrinho de outra equipe.
+Exemplo: uma loja em Preact mostra o carrinho, feito por outra equipe. Os dois lados têm os mesmos arquivos, na mesma ordem.
 
 ### Hoje, com Module Federation
 
-O Module Federation não tem adaptador para Preact. O carrinho expõe uma função que monta o componente, e a loja chama essa função.
+O Module Federation não tem adaptador para Preact, então o carrinho expõe uma função que monta o componente.
+
+```jsx
+// carrinho/src/Carrinho.jsx
+export default function Carrinho({ userId }) {
+  return <p>Carrinho do usuário {userId}</p>
+}
+```
 
 ```jsx
 // carrinho/src/montar.jsx
@@ -23,16 +30,43 @@ export function montar(el, props) {
 
 ```js
 // carrinho/vite.config.js
-federation({
-  name: 'carrinho',
-  filename: 'remoteEntry.js',
-  exposes: { './montar': './src/montar.jsx' },
-  shared: { preact: { singleton: true } },
-})
+import preact from '@preact/preset-vite'
+import { federation } from '@module-federation/vite'
+
+export default {
+  plugins: [
+    preact(),
+    federation({
+      name: 'carrinho',
+      filename: 'remoteEntry.js',
+      exposes: { './montar': './src/montar.jsx' },
+      shared: { 'preact': { singleton: true } },
+    }),
+  ],
+}
+```
+
+```js
+// loja/vite.config.js
+import preact from '@preact/preset-vite'
+import { federation } from '@module-federation/vite'
+
+export default {
+  plugins: [
+    preact(),
+    federation({
+      name: 'loja',
+      remotes: {
+        carrinho: { type: 'module', name: 'carrinho', entry: 'https://cdn.empresa.com/carrinho/remoteEntry.js' },
+      },
+      shared: { 'preact': { singleton: true } },
+    }),
+  ],
+}
 ```
 
 ```jsx
-// loja/src/Pagina.jsx (a loja também tem o federation() com remotes)
+// loja/src/Pagina.jsx
 import { useEffect, useRef } from 'preact/hooks'
 
 export function Pagina() {
@@ -49,23 +83,40 @@ export function Pagina() {
 ### Com vitral
 
 ```jsx
-// carrinho/src/remote.jsx (no lugar do montar.jsx)
-import { preactRemote } from 'vitral/preact'
-import Carrinho from './Carrinho'
-
-export default preactRemote(Carrinho)
-```
-
-```js
-// carrinho/vite.config.js (sem federation)
-import preact from '@preact/preset-vite'
-import vitral from 'vitral/vite'
-
-export default { plugins: [preact(), vitral({ entry: 'src/remote.jsx' })] }
+// carrinho/src/Carrinho.jsx (igual)
+export default function Carrinho({ userId }) {
+  return <p>Carrinho do usuário {userId}</p>
+}
 ```
 
 ```jsx
-// loja/src/Pagina.jsx (sem plugin no build da loja)
+// carrinho/src/montar.jsx (não precisa mais: o plugin monta o componente)
+```
+
+```js
+// carrinho/vite.config.js (vitral no lugar do federation)
+import preact from '@preact/preset-vite'
+import vitral from 'vitral/vite'
+
+export default {
+  plugins: [
+    preact(),
+    vitral({ name: 'carrinho', entry: 'src/Carrinho.jsx' }),
+  ],
+}
+```
+
+```js
+// loja/vite.config.js (sem o federation)
+import preact from '@preact/preset-vite'
+
+export default {
+  plugins: [preact()],
+}
+```
+
+```jsx
+// loja/src/Pagina.jsx
 import { configure } from 'vitral'
 import { Remote } from 'vitral/preact'
 
@@ -75,6 +126,8 @@ export function Pagina() {
   return <Remote name="carrinho" props={{ userId: 42 }} fallback={<p>Carregando…</p>} />
 }
 ```
+
+Mudar `props` atualiza o carrinho sem remontar. Carregando e erro em [Host](#host).
 
 ## Host
 

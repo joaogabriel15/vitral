@@ -4,15 +4,20 @@ Nuxt 3 e 4. Import: `vitral/vue`.
 
 ## Hoje e com vitral
 
-Exemplo: uma loja em Nuxt com a área "Catálogo", feita por outra equipe.
+Exemplo: uma loja em Nuxt com a área "Catálogo", feita por outra equipe. Os dois lados abaixo têm os mesmos arquivos, na mesma ordem. Com vitral, a loja ganha dois arquivos novos no fim.
 
 ### Hoje, com dois apps Nuxt
-
-A loja repassa as URLs de `/catalogo` para o app do catálogo.
 
 ```
 loja/       app Nuxt principal
 catalogo/   segundo app Nuxt
+```
+
+```vue
+<!-- catalogo/app/pages/index.vue -->
+<template>
+  <h1>Catálogo</h1>
+</template>
 ```
 
 ```ts
@@ -20,11 +25,6 @@ catalogo/   segundo app Nuxt
 export default defineNuxtConfig({
   app: { baseURL: '/catalogo/' },
 })
-```
-
-```vue
-<!-- catalogo/app/pages/index.vue -->
-<template><h1>Catálogo</h1></template>
 ```
 
 ```ts
@@ -44,28 +44,44 @@ export default defineNuxtConfig({
 
 ### O mesmo app com vitral
 
-A loja continua sendo o único app Nuxt. O catálogo vira um remote: um projeto Vite com o mesmo componente.
-
 ```
 loja/       app Nuxt (o host)
-catalogo/   projeto Vite (o remote)
-```
-
-```js
-// catalogo/vite.config.js (no lugar do app Nuxt do catálogo)
-import vue from '@vitejs/plugin-vue'
-import vitral from 'vitral/vite'
-
-export default { plugins: [vue(), vitral({ name: 'catalogo', dedupe: ['vue'] })] }
+catalogo/   o mesmo componente, buildado com Vite (o remote)
 ```
 
 ```vue
-<!-- catalogo/src/App.vue (o mesmo componente da página) -->
-<template><h1>Catálogo</h1></template>
+<!-- catalogo/app/pages/index.vue (igual) -->
+<template>
+  <h1>Catálogo</h1>
+</template>
+```
+
+```js
+// catalogo/vite.config.js (no lugar do nuxt.config.ts)
+import vue from '@vitejs/plugin-vue'
+import vitral from 'vitral/vite'
+
+export default {
+  plugins: [
+    vue(),
+    vitral({ name: 'catalogo', entry: 'app/pages/index.vue', dedupe: ['vue'] }),
+  ],
+}
 ```
 
 ```ts
-// loja/app/plugins/vitral.client.ts (no lugar do proxy)
+// loja/nuxt.config.ts (sem o proxy)
+export default defineNuxtConfig({})
+```
+
+```vue
+<!-- loja/app/components/Menu.vue -->
+<!-- <NuxtLink>: a troca é sem recarregar. -->
+<NuxtLink to="/catalogo">Catálogo</NuxtLink>
+```
+
+```ts
+// loja/app/plugins/vitral.client.ts (arquivo novo: registra o catálogo)
 import * as Vue from 'vue'
 import { configure } from 'vitral'
 
@@ -78,7 +94,7 @@ export default defineNuxtPlugin(() => {
 ```
 
 ```vue
-<!-- loja/app/pages/catalogo.vue (arquivo novo: a página que mostra o catálogo) -->
+<!-- loja/app/pages/catalogo/[...slug].vue (arquivo novo: a página da loja que mostra o catálogo) -->
 <script setup lang="ts">
 import { VitralRemote } from 'vitral/vue'
 </script>
@@ -88,12 +104,6 @@ import { VitralRemote } from 'vitral/vue'
     <template #fallback><p>Carregando…</p></template>
   </VitralRemote>
 </template>
-```
-
-```vue
-<!-- loja/app/components/Menu.vue -->
-<!-- <NuxtLink> normal: a troca é sem recarregar. -->
-<NuxtLink to="/catalogo">Catálogo</NuxtLink>
 ```
 
 O servidor renderiza o `fallback` e o catálogo monta no navegador. Não precisa de `<ClientOnly>`.
