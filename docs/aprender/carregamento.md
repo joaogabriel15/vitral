@@ -73,6 +73,27 @@ configure({ policy: 'critical' })
 
 No servidor, `choose(signalsFrom(request.headers))` faz a mesma conta com os Client Hints (`Save-Data`, `ECT`, `Device-Memory`). O Chrome só manda `ECT` e `Device-Memory` depois de um `Accept-CH: ECT, Device-Memory` na resposta.
 
+## Última tela na visita de volta
+
+Com `snapshot`, o remote guarda a tela que mostrava ao sair. Na próxima vez que monta com as mesmas props, essa tela aparece na hora, no lugar do "carregando", enquanto o JS baixa. Ela sai quando o remote monta.
+
+```ts
+import { snapshots } from 'vitral/snapshot'
+
+snapshots()
+```
+
+```tsx
+<Remote name="pedidos" snapshot />                 // vitral/react
+<vitral-remote name="pedidos" snapshot></vitral-remote>
+```
+
+- A tela guardada é inerte: não recebe clique nem foco, e sai dela qualquer `<script>`, `<iframe>` e atributo `on*`.
+- Ela fica no `sessionStorage` e some ao fechar a aba, porque pode ter dados do usuário. `clearSnapshots()` apaga tudo, por exemplo no logout.
+- O CSS do remote vem junto, para a tela não aparecer sem estilo.
+- Só sem Shadow DOM, e até 100 kB de HTML por remote.
+- O código fica em `vitral/snapshot`: quem não chama `snapshots()` não leva nada.
+
 ## Keep-alive
 
 Com keep-alive, pause timers quando o remote sai da tela:

@@ -167,6 +167,7 @@ exports[`exports públicos > react 1`] = `
   "reactRemote",
   "useEvent",
   "useEventValue",
+  "useInitialState",
   "usePortalContainer",
   "useShared",
   "useVitral",
@@ -197,6 +198,13 @@ exports[`exports públicos > sentry 1`] = `
 exports[`exports públicos > single-spa 1`] = `
 [
   "singleSpaRemote",
+]
+`;
+
+exports[`exports públicos > snapshot 1`] = `
+[
+  "clearSnapshots",
+  "snapshots",
 ]
 `;
 

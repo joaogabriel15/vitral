@@ -3,6 +3,7 @@
  * sob demanda (`loading`), download antecipado (`prefetch`) e keep-alive.
  * O `<vitral-remote>` e os componentes de cada framework usam `hostSlot()`.
  */
+import { ctxHooks } from './hooks'
 import { preload } from './loader'
 import { policy } from './policy'
 import { registerSrc } from './registry'
@@ -24,6 +25,15 @@ export interface HostSlotOptions<P extends Props = Props> extends SlotOptions<P>
    * remotes (LRU); um número muda esse máximo.
    */
   keepAlive?: boolean | number
+  /**
+   * Visita de volta: guarda a última tela do remote (no `sessionStorage`) e,
+   * na próxima montagem com as mesmas props, mostra ela na hora, inerte,
+   * até o remote montar. Só sem Shadow DOM, e só depois de `snapshots()` de
+   * `vitral/snapshot` (o código fica fora do bundle de quem não usa).
+   */
+  snapshot?: boolean
+  /** Chamado quando o snapshot aparece (`true`) e quando sai (`false`): o componente esconde o fallback. */
+  onSnapshot?: (shown: boolean) => void
 }
 
 const noop = () => {}
@@ -147,8 +157,11 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
   let name = key(options)
   let status: SlotStatus = 'loading'
   let item: Kept | null = null
+  // Snapshot (`vitral/snapshot`, só no bundle de quem liga).
+  const snap = options.snapshot ? ctxHooks.snapshot?.(target, name, () => props, () => item?.box, options.onSnapshot) : undefined
   const onStatus = (s: SlotStatus, e: RemoteError | null) => {
     status = s
+    snap?.(s)
     options.onStatus?.(s, e)
   }
   // `prefetch="idle"`: com economia de dados ou 2G, fica para a montagem.
@@ -189,6 +202,7 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
     destroy() {
       cancel()
       cancelPrefetch()
+      snap?.()
       if (!item) return
       if (keepAlive && status === 'ready') park(name, item, keepAlive === true ? 5 : keepAlive)
       else {

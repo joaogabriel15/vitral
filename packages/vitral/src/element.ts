@@ -76,6 +76,9 @@ export class VitralRemoteElement extends Base {
       prefetch: this.getAttribute('prefetch') as Prefetch | null,
       priority: (this.getAttribute('priority') as RequestPriority) || undefined,
       keepAlive: keep === null ? false : Number(keep) || true,
+      snapshot: this.hasAttribute('snapshot'),
+      // A última tela no lugar do "carregando".
+      onSnapshot: (shown) => (this.#snapped = shown),
       styles: { inherit: this.getAttribute('inherit-styles')?.split(/\s+/).filter(Boolean) },
       onStatus: (status, error) => {
         this.setAttribute('data-vitral-status', status)
@@ -83,14 +86,14 @@ export class VitralRemoteElement extends Base {
         else this.removeAttribute('aria-busy')
         const has = (slot: string) => {
           const els = this.querySelectorAll<HTMLElement>(`:scope > [slot="${slot}"]`)
-          for (const el of els) el.hidden = status !== (slot === 'fallback' ? 'loading' : 'error')
+          for (const el of els) el.hidden = status !== (slot === 'fallback' ? 'loading' : 'error') || (slot === 'fallback' && this.#snapped)
           return els.length > 0
         }
         // Numa microtask: o parser pode ainda não ter posto os slots próprios.
         queueMicrotask(() => {
           if (this.#slot?.status !== status) return
           const custom = { loading: has('fallback'), error: has('error'), ready: true }
-          this.#showDefault(custom[status] ? null : status)
+          this.#showDefault(custom[status] || (status === 'loading' && this.#snapped) ? null : status)
         })
         if (status === 'ready') this.dispatchEvent(new CustomEvent('vitral-ready', { bubbles: true, detail: { timings: timings(name) } }))
         if (status === 'error') this.dispatchEvent(new CustomEvent('vitral-error', { bubbles: true, detail: { error } }))
@@ -118,6 +121,7 @@ export class VitralRemoteElement extends Base {
   }
 
   #default: HTMLElement | null = null
+  #snapped = false
 
   /** Carregando e erro padrão, só quando não há slot próprio. */
   #showDefault(status: SlotStatus | null) {

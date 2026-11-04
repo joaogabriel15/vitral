@@ -172,6 +172,8 @@ export interface RemoteProps<P extends Props = Props> {
    * em vez de montar. As `props` têm de ser as mesmas do servidor.
    */
   ssr?: string | null
+  /** Mostra a última tela do remote na visita de volta (`snapshots()` de `vitral/snapshot`). */
+  snapshot?: boolean
 }
 
 let offeredTo: object | undefined
@@ -227,6 +229,7 @@ export function Remote<P extends Props = Props, N extends string = string>({
   priority,
   keepAlive,
   ssr,
+  snapshot,
 }: RemoteProps<P> & CheckedProps<N>) {
   const target = useRef<HTMLDivElement>(null)
   const slot = useRef<RemoteSlot<P> | null>(null)
@@ -235,6 +238,7 @@ export function Remote<P extends Props = Props, N extends string = string>({
   onErrorRef.current = onError
   // O HTML do servidor só entra no primeiro render: o React não mexe mais nele.
   const [html] = useState(() => ssr || null)
+  const [snapped, setSnapped] = useState(false)
   const latest = useRef(props)
   latest.current = props
 
@@ -249,6 +253,8 @@ export function Remote<P extends Props = Props, N extends string = string>({
       prefetch,
       priority,
       keepAlive,
+      snapshot,
+      onSnapshot: setSnapped,
       onStatus(status: SlotStatus, e: RemoteError | null) {
         setState({ status, error: e })
         if (e) {
@@ -290,7 +296,7 @@ export function Remote<P extends Props = Props, N extends string = string>({
 
   return (
     <div className={className} data-vitral={name ?? src} data-vitral-status={status}>
-      {status === 'loading' && !html && fallback}
+      {status === 'loading' && !html && !snapped && fallback}
       {status === 'error' && err && (typeof error === 'function' ? error(err, retry) : (error ?? null))}
       {/* O React nunca coloca filhos neste div: ele pertence ao remote. */}
       {html ? <div ref={target} dangerouslySetInnerHTML={{ __html: html }} suppressHydrationWarning /> : <div ref={target} />}

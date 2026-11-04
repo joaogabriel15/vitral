@@ -1,5 +1,6 @@
 import type { RemoteError } from './errors'
 import type { SharedApi } from './shared'
+import type { SlotStatus } from './slot'
 
 /**
  * Partes opcionais que se ligam ao `ctx` do remote só quando entram no
@@ -13,4 +14,6 @@ export const ctxHooks: {
    * erro entregue ao `onError`, para contar os erros da versão canary.
    */
   watch?: (name: string, error?: RemoteError) => void
+  /** Snapshot da última tela (`vitral/snapshot`), ligado por `snapshots()`. */
+  snapshot?: (target: HTMLElement, name: string, props: () => unknown, box: () => HTMLElement | undefined, onSnapshot?: (shown: boolean) => void) => (status?: SlotStatus) => void
 } = {}

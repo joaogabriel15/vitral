@@ -152,6 +152,10 @@
       "types": "./dist/sw.d.ts",
       "import": "./dist/sw.js"
     },
+    "./snapshot": {
+      "types": "./dist/snapshot.d.ts",
+      "import": "./dist/snapshot.js"
+    },
     "./vitals": {
       "types": "./dist/vitals.d.ts",
       "import": "./dist/vitals.js"
@@ -282,7 +286,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.02 kB"
+      "limit": "5.04 kB"
     },
     {
       "name": "núcleo",
@@ -325,7 +329,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.03 kB"
+      "limit": "1.05 kB"
     },
     {
       "name": "host mínimo + store",
@@ -382,7 +386,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.72 kB"
+      "limit": "1.74 kB"
     },
     {
       "name": "hidratação do SSR do gateway (sob demanda)",
@@ -390,7 +394,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.5 kB"
+      "limit": "1.52 kB"
     },
     {
       "name": "react",
@@ -412,7 +416,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.6 kB"
+      "limit": "6.89 kB"
     },
     {
       "name": "vue",
@@ -433,7 +437,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.4 kB"
+      "limit": "6.44 kB"
     },
     {
       "name": "element",
@@ -453,7 +457,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.77 kB"
+      "limit": "6.86 kB"
     },
     {
       "name": "devtools",
@@ -464,7 +468,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.95 kB",
+      "limit": "7.03 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -484,7 +488,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.88 kB",
+      "limit": "9.9 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -510,7 +514,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "3.35 kB",
+      "limit": "3.36 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -540,7 +544,13 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "12.9 kB"
+      "limit": "12.96 kB"
+    },
+    {
+      "name": "snapshot (última tela na visita de volta)",
+      "path": "dist/snapshot.js",
+      "import": "{ snapshots }",
+      "limit": "1.26 kB"
     },
     {
       "name": "vitals (Web Vitals por remote)",
