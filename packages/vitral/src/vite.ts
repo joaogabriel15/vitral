@@ -57,9 +57,11 @@ export interface VitralViteOptions extends CssBuildOptions {
   shared?: string[]
   /**
    * Prefixa todo o CSS do remote para valer só dentro dele (inclusive o
-   * preflight/tema do Tailwind). Padrão: true.
+   * preflight/tema do Tailwind). Padrão: true. `'native'` usa `@scope` no
+   * lugar do prefixo: CSS menor, mas sem a especificidade a mais (0,1,0)
+   * do prefixo, então uma regra igual do host pode valer dentro do remote.
    */
-  scopeCss?: boolean
+  scopeCss?: boolean | 'native'
   /**
    * Outros componentes e módulos do remote, por nome. O host usa
    * `carrinho/MiniCarrinho` ou `loadModule('carrinho/api')`.
@@ -317,7 +319,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     transform: {
       filter: { id: DEV_CSS },
       handler(code, id) {
-        if (serve && options.scopeCss !== false) return scopeDevCss(code, id, scopeName())
+        if (serve && options.scopeCss !== false) return scopeDevCss(code, id, scopeName(), options.scopeCss === 'native')
       },
     },
     writeBundle(_, bundle) {
