@@ -6,10 +6,10 @@
  *   const { withVitral } = require('vitral/next-config')
  *   module.exports = withVitral(nextConfig, {
  *     remotes: {
- *       delivery: {
- *         url: '/delivery-remote/vitral.json',
- *         basePath: '/delivery',
- *         routes: [{ public: '/store', zone: '/delivery/store' }],
+ *       conta: {
+ *         url: '/conta/vitral.json',
+ *         basePath: '/conta',
+ *         routes: [{ public: '/minha-conta', zone: '/conta' }],
  *       },
  *     },
  *     share: ['i18next', 'react-i18next', '@empresa/ui/*'],
