@@ -35,6 +35,29 @@ export function remoteFor(path: string): string | undefined {
   for (const [name, r] of Object.entries(remotes)) if (under(path, r.basePath) || r.routes?.some((x) => under(path, x.public))) return name
 }
 
+/**
+ * Ofertas de `share` com o download guardado: o aquecimento abaixo e o pedido
+ * do remote usam o mesmo `import()`. Uma falha libera um novo pedido.
+ */
+const offers: typeof shared = Object.fromEntries(
+  Object.entries(shared).map(([k, g]) => {
+    let p: Promise<Record<string, unknown>> | undefined
+    return [k, typeof g.modules === 'function' ? { ...g, modules: () => (p ??= g.modules().catch((e) => ((p = undefined), Promise.reject(e)))) } : g]
+  }),
+)
+
+/**
+ * Na página de um remote, começa já o download das ofertas que ele vai pedir.
+ * O webpack põe cada `import()` da oferta num chunk à parte, que o HTML não
+ * pré-carrega: sem isto, ele só começaria depois da hidratação, quando o
+ * remote pede a oferta. Roda quando o `_app` é avaliado, antes da hidratação.
+ */
+function warmOffers(path: string): void {
+  const name = remoteFor(path)
+  for (const g of (name && remotes[name].hints?.offers) || []) offers[g]?.modules().catch(() => {})
+}
+if (typeof window !== 'undefined') warmOffers(location.pathname)
+
 let configured = false
 function setup() {
   if (configured || typeof window === 'undefined') return
@@ -45,7 +68,7 @@ function setup() {
   bundled.dedupe = dedupe
   configure({
     remotes: Object.fromEntries(Object.entries(remotes).map(([name, r]) => [name, { url: r.url, ...(r.integrity === false && { integrity: false as const }) }])),
-    dedupe: shared,
+    dedupe: offers,
   })
 }
 
