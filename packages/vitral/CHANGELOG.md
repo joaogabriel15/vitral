@@ -1,5 +1,35 @@
 # vitral
 
+## 0.11.0
+
+### Minor Changes
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`0ecb3da`](https://github.com/joaogabriel15/vitral/commit/0ecb3da897d28917c8f9e09a0911675cbc2c14b3) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Assinatura dos arquivos do remote com Ed25519: `vitral sign` grava os headers de assinatura (`_headers` e `vitral-signatures.json`), e o host fixa a chave pública em `keys`. O Chrome 141+ só roda o `vitral.json`, o JS e o CSS assinados por ela; os outros navegadores continuam conferindo o hash. `vitral/sign` exporta `keygen`, `signBody`, `verifyBody` e `signDir`, e o `remoteProps` do Next confere a assinatura do manifesto no servidor.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`fa57a2b`](https://github.com/joaogabriel15/vitral/commit/fa57a2b79ad97a159a9ae166c1d81519838e23fb) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `planDedupe` e `configure({ dedupePlan })`: com os manifestos de todos os remotes, cada grupo de `dedupe` fica com o menor conjunto de versões que atende todas as faixas (a oferta do host primeiro, depois as mais novas), e cada remote usa essa cópia, mesmo que venha de outro remote. Conflitos saem explicados em texto. O `withVitral` do host Next calcula o plano no build.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`cab5008`](https://github.com/joaogabriel15/vitral/commit/cab50080fc5d996bc8e390edc1b0d80d86e50a99) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral doctor --stats <stats.json> --route <rota>`: bytes do host numa rota do Next, por pacote e por módulo, com avisos (traduções grandes, módulos sem uso, ofertas de pacote inteiro). Com `--remote <vitral.json>`, mostra os pacotes que o host e o remote baixam em dobro.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`cab5008`](https://github.com/joaogabriel15/vitral/commit/cab50080fc5d996bc8e390edc1b0d80d86e50a99) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral/next-server`: `remoteProps(nome)` lê o `vitral.json` do remote no servidor a cada requisição, com cache curto. Passado ao `NextRemote` em `manifest`, o HTML já sai com o preload da versão publicada agora e o navegador não pede o manifesto.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`91f25b3`](https://github.com/joaogabriel15/vitral/commit/91f25b3a1987142facb34d595eb3fd0a25e87d07) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - O build do remote grava em `split.order` a ordem de download do que roda ao montar, pelo caminho mais longo em bytes, e em `split.critical` os arquivos desse caminho. O `NextRemote`, o `vitral/next-server` e o `vitral/edge` pré-carregam nessa ordem, com `fetchpriority="high"` no caminho crítico.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`2de6185`](https://github.com/joaogabriel15/vitral/commit/2de6185b6d3540703f17605a2336008065ae9dde) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Política adaptativa por rede e aparelho (`configure({ policy })`, `policy()`, `choose()`, `signalsFrom()`). Com 2G ou economia de dados (`'lazy'`), só baixa o que a página usa e o `<vitral-remote>` com HTML do servidor hidrata ao aparecer na tela. Com 3G ou até 2 GB de memória (`'critical'`), corta o preload ocioso dos outros remotes e o `warmRoutes`; o prefetch previsto continua.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`5cf14d6`](https://github.com/joaogabriel15/vitral/commit/5cf14d6413fff784cd2fdf746ddb6d27e0357825) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral/prefetch`: cadeia de Markov de ordens 1 a 3 (usa o contexto mais longo com suporte e confiança); `prior` com as transições da população para a primeira visita (`vitral prior` gera de sessões agregadas); prefetch só quando probabilidade × tempo poupado passa o custo dos bytes na rede de agora (`byteCost`); `pointerdown` em link baixa os remotes da rota na hora; `speculate` põe Speculation Rules na rota prevista sem remote. O `threshold` padrão passa de 0.4 para 0.1, porque a conta de custo decide.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`6cb1ecf`](https://github.com/joaogabriel15/vitral/commit/6cb1ecf19dcc793346468eaf40b6a0a6f2dea78c) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral({ scopeCss: 'native' })`: o CSS do remote vai num `@scope ([data-vitral-scope="nome"])` em vez de prefixar cada seletor. O CSS fica menor; em troca, os seletores não ganham a especificidade do prefixo.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`b42a838`](https://github.com/joaogabriel15/vitral/commit/b42a83889345b42338dfc8f5b63a80ab339624c3) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral/snapshot`: com `snapshots()` e `snapshot` no `<Remote>` ou no `<vitral-remote>`, a última tela do remote fica no `sessionStorage` e aparece na hora na visita de volta, inerte, até o remote montar.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`5ace019`](https://github.com/joaogabriel15/vitral/commit/5ace019be84144f1652d1b5db9edf23ead9f5e40) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - SSR do remote dentro do `NextRemote`: `remoteProps(nome, { ssr: { nome: { render, props } } })` devolve `vitralSsr[nome]`, que vai no `ssr` do `NextRemote` (e do `<Remote>` de `vitral/react`). O HTML aparece antes do JS e o remote hidrata. `reactRender(C, { state })` busca o estado no servidor; ele vai com o HTML e chega em `useInitialState()` e em `ctx.initialState`, também no `vitral/edge`.
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`cab5008`](https://github.com/joaogabriel15/vitral/commit/cab50080fc5d996bc8e390edc1b0d80d86e50a99) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `remoteWorker` em `vitral/sw`: service worker pronto que guarda os remotes no cache durante o `install` (o Chrome gera o cache de código completo), usa a Static Routing API para `split/*` no Chrome 123+, busca o manifesto na rede primeiro e tira do cache as versões antigas. `filesOf(manifesto, url)` lista os arquivos de um manifesto já lido.
+
+### Patch Changes
+
+- [#108](https://github.com/joaogabriel15/vitral/pull/108) [`c5b9b9d`](https://github.com/joaogabriel15/vitral/commit/c5b9b9d0ab754f3b5993326b6f21bfaf85906584) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - `vitral/edge` no Node: o rewriter de HTML ficou cerca de 1,8 vez mais rápido (de 27 para 50 MB/s numa página de 358 kB), com a mesma saída.
+
 ## 0.10.1
 
 ### Patch Changes
