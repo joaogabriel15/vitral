@@ -196,6 +196,13 @@ Nos dois, o servidor renderiza o `fallback` e o remote monta no navegador. Não 
 
 O mesmo app Next dividido em duas áreas: a loja (app principal) e a conta, de outra equipe.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/multizonas-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/multizonas.png" width="900" alt="À esquerda, Multi-Zones: dois apps Next, rewrites e a página recarrega ao trocar de área (0,8 s). À direita, vitral: um app Next com withVitral, a conta é um remote dentro do layout e a troca é sem recarregar (0,2 s).">
+  </picture>
+</p>
+
 **Com Multi-Zones**, a conta é um segundo app Next, e o app principal repassa as URLs para ele:
 
 ```js
@@ -404,6 +411,13 @@ O que entra em `${}` é escapado. Mudar `state` ou as props atualiza a tela.
 
 ## Comunicação entre remotes
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/comunicacao-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/comunicacao.png" width="900" alt="Três remotes em React, Vue e Angular. O carrinho emite um evento, a busca recebe pelo mesmo barramento, e a conta lê o usuário que o host criou com provide.">
+  </picture>
+</p>
+
 ```js
 import { events } from 'vitral'
 
@@ -557,6 +571,13 @@ Um remote local (`module`) só mede `css` e `mount`. Erros dentro do
 
 Para não baixar React ou Vue mais de uma vez, liste-os em `dedupe` no remote:
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/dedupe-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/dedupe.png" width="900" alt="Sem dedupe, cada remote baixa o próprio React. Com dedupe, os remotes usam o React que já está na página quando a versão serve; o que não serve baixa o próprio.">
+  </picture>
+</p>
+
 ```js
 vitral({ dedupe: ['react'] })
 ```
@@ -572,6 +593,13 @@ página (`watchUpdates()` e `refresh('carrinho')`) e app shell por rota
 [Exposes](https://joaogabriel15.github.io/vitral/aprender/exposes), [Atualização sem reload](https://joaogabriel15.github.io/vitral/aprender/atualizacoes) e [Rotas](https://joaogabriel15.github.io/vitral/aprender/rotas).
 
 ## Segurança
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/seguranca-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/seguranca.png" width="900" alt="O host configura allowedOrigins e integrity. Antes de rodar, a lib confere a origem e o SHA-384. Se um dos dois falha, nada executa e o erro aparece no lugar do remote.">
+  </picture>
+</p>
 
 - Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra. O `src` de um componente de host entra na allowlist; o atributo `src` do `<vitral-remote>` não entra quando há `allowedOrigins`.
 - Com `integrity`, nada roda sem o hash conferir. A lib usa o primeiro caminho que o navegador garante: import map com `integrity` (Chrome 133+, Safari 18.4+), `<link rel="modulepreload" integrity>` (Firefox 115+) ou, nos outros, baixa, confere e executa exatamente os bytes conferidos via `blob:`. Aceita `sha256`, `sha384` e `sha512`, e vários hashes separados por espaço (vale o mais forte). O CSS do manifesto também é conferido.

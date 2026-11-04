@@ -1,6 +1,15 @@
+<script setup>
+import { withBase } from 'vitepress'
+</script>
+
 # SRI e origens permitidas
 
 Antes de executar o JS de um remote, a lib confere a origem. Se o remote tem hash (`integrity`), confere também os bytes. A checagem de origem vem ligada; a de hash depende de existir um hash.
+
+<picture class="vt-diagrama">
+  <img class="so-claro" :src="withBase('/marca/seguranca.png')" alt="O host configura allowedOrigins e integrity. Antes de rodar, a lib confere a origem e o SHA-384. Se um dos dois falha, nada executa e o erro aparece no lugar do remote.">
+  <img class="so-escuro" :src="withBase('/marca/seguranca-escuro.png')" alt="">
+</picture>
 
 ## Quando usar
 

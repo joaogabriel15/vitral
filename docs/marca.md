@@ -61,6 +61,10 @@ As quatro cores aparecem juntas, nesta ordem, na faixa sob a barra do site e no 
 | [`og.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/og.png) | 1200x630 | Prévia de links (site, GitHub, redes sociais) |
 | [`banner.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/banner.png) e [`banner-escuro.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/banner-escuro.png) | 2560x640 | Topo de README e de posts |
 | [`como-funciona.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/como-funciona.png) e [`como-funciona-escuro.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/como-funciona-escuro.png) | 2400x986 | Diagrama de equipes, CDN e host |
+| [`multizonas.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/multizonas.png) e [`multizonas-escuro.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/multizonas-escuro.png) | 2400 de largura | Multi-Zones e vitral lado a lado |
+| [`dedupe.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/dedupe.png) e [`dedupe-escuro.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/dedupe-escuro.png) | 2400 de largura | Dependências compartilhadas |
+| [`comunicacao.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/comunicacao.png) e [`comunicacao-escuro.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/comunicacao-escuro.png) | 2400 de largura | Eventos e contexto entre remotes |
+| [`seguranca.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/seguranca.png) e [`seguranca-escuro.png`](https://github.com/joaogabriel15/vitral/blob/main/docs/public/marca/seguranca-escuro.png) | 2400 de largura | Origem, hash e bloqueio |
 
 <img :src="withBase('/marca/og.png')" alt="Imagem de compartilhamento do vitral" style="border-radius:8px;margin-top:16px">
 
