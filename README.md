@@ -86,17 +86,57 @@ Os 10 frameworks têm testes de ponta a ponta no CI, com host e remote de framew
 
 ## Começo rápido
 
-Para gerar host e remote prontos: `npm create vitral@latest`.
+Exemplo: uma loja em React que mostra o carrinho, feito por outra equipe.
 
-**1. No remote**, exporte o componente e ligue o plugin:
+### Hoje, com Module Federation
+
+Loja e carrinho combinam a configuração no build dos dois: o que cada um expõe, o que pega do outro e quais versões dividem.
+
+```js
+// carrinho/webpack.config.js
+new ModuleFederationPlugin({
+  name: 'carrinho',
+  filename: 'remoteEntry.js',
+  exposes: { './Carrinho': './src/Carrinho' },
+  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+})
+```
+
+```js
+// loja/webpack.config.js
+new ModuleFederationPlugin({
+  name: 'loja',
+  remotes: { carrinho: 'carrinho@https://cdn.empresa.com/carrinho/remoteEntry.js' },
+  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+})
+```
 
 ```jsx
-// src/App.jsx (ou .vue, .svelte, .tsx…)
+// loja/src/App.jsx
+const Carrinho = React.lazy(() => import('carrinho/Carrinho'))
+
+export function App() {
+  return (
+    <ErrorBoundary fallback={<p>Erro</p>}>
+      <Suspense fallback={<p>Carregando…</p>}>
+        <Carrinho userId={42} />
+      </Suspense>
+    </ErrorBoundary>
+  )
+}
+```
+
+### O mesmo app com vitral
+
+Só o carrinho tem plugin. O build da loja não muda.
+
+```jsx
+// carrinho/src/App.jsx (o mesmo componente)
 export default function Carrinho({ userId }) { … }
 ```
 
 ```js
-// vite.config.js
+// carrinho/vite.config.js (no lugar do ModuleFederationPlugin)
 import react from '@vitejs/plugin-react'
 import vitral from 'vitral/vite'
 
@@ -105,9 +145,8 @@ export default { plugins: [react(), vitral()] }
 
 `vite build` gera o JS, o CSS e um `vitral.json`. Publique a pasta `dist` em qualquer CDN.
 
-**2. No host**, registre a URL e mostre o remote:
-
 ```jsx
+// loja/src/App.jsx (sem plugin no build da loja)
 import { configure } from 'vitral'
 import { Remote } from 'vitral/react'
 
@@ -118,7 +157,16 @@ export function App() {
 }
 ```
 
-Pronto. Mudar `props` atualiza o remote sem remontar.
+Pronto. Mudar `props` atualiza o remote sem remontar. Para gerar loja e carrinho prontos: `npm create vitral@latest`.
+
+### O que muda
+
+| | Module Federation | vitral |
+|---|---|---|
+| Build da loja | Plugin com `remotes` e `shared` | Não muda |
+| Versão do React | Combinada entre as equipes (`singleton`) | Cada um usa a sua. Uma cópia só com [`dedupe`](https://joaogabriel15.github.io/vitral/aprender/dedupe) |
+| Carregando e erro | `Suspense` e `ErrorBoundary` | `fallback` e `error` do `<Remote>` |
+| Framework | O mesmo nos dois lados | Qualquer um. A loja em React pode mostrar um carrinho em Vue |
 
 Numa página HTML qualquer, sem build:
 
@@ -126,6 +174,8 @@ Numa página HTML qualquer, sem build:
 <script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
 <vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json"></vitral-remote>
 ```
+
+Guia completo: [Migrar do Module Federation](https://joaogabriel15.github.io/vitral/migracao/module-federation).
 
 ## Frameworks
 
@@ -144,63 +194,7 @@ Numa página HTML qualquer, sem build:
 
 Host e remote não precisam ser do mesmo framework. Cada um tem uma página com exemplo completo em [Frameworks](https://joaogabriel15.github.io/vitral/frameworks/react).
 
-## Next.js e Nuxt como host
-
-O remote é sempre um projeto Vite (React, Vue ou outro), como no Começo rápido acima. O host pode ser um app Next ou Nuxt.
-
-**Next.js (App Router):**
-
-```tsx
-// app/carrinho.tsx
-'use client'
-import { configure } from 'vitral'
-import { Remote } from 'vitral/react'
-
-if (typeof window !== 'undefined') {
-  configure({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })
-}
-
-export function Carrinho({ userId }: { userId: number }) {
-  return <Remote name="carrinho" props={{ userId }} fallback={<p>Carregando…</p>} />
-}
-```
-
-```tsx
-// app/page.tsx
-import { Carrinho } from './carrinho'
-
-export default function Page() {
-  return <main><Carrinho userId={42} /></main>
-}
-```
-
-**Nuxt 3 e 4:**
-
-```ts
-// app/plugins/vitral.client.ts
-import { configure } from 'vitral'
-
-export default defineNuxtPlugin(() => {
-  configure({ remotes: { catalogo: 'https://cdn.empresa.com/catalogo/vitral.json' } })
-})
-```
-
-```vue
-<!-- app/pages/index.vue -->
-<script setup lang="ts">
-import { VitralRemote } from 'vitral/vue'
-</script>
-
-<template>
-  <VitralRemote name="catalogo" :props="{ userId: 42 }">
-    <template #fallback><p>Carregando…</p></template>
-  </VitralRemote>
-</template>
-```
-
-Nos dois, o servidor renderiza o `fallback` e o remote monta no navegador. Não precisa de `dynamic(..., { ssr: false })` nem de `<ClientOnly>`.
-
-## Multi-Zones ou vitral
+## Next.js como host
 
 Exemplo: uma loja em Next.js com a área "Minha conta", feita por outra equipe.
 
@@ -326,6 +320,114 @@ Se o código da conta já usa `next/link` ou `useRouter`, não precisa reescreve
 | Layout da loja | Cada zona repete o seu | A conta fica dentro do layout da loja |
 
 Guia completo, com SSR por rota e prefetch: [Migrar do Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones).
+
+No App Router, o host usa `<Remote>` de `vitral/react` num componente `'use client'`. Exemplo em [Next.js](https://joaogabriel15.github.io/vitral/frameworks/next#host-com-app-router).
+
+## Nuxt como host
+
+Exemplo: uma loja em Nuxt com a área "Catálogo", feita por outra equipe.
+
+### Hoje, com dois apps Nuxt
+
+A loja repassa as URLs de `/catalogo` para o app do catálogo.
+
+```
+loja/       app Nuxt principal
+catalogo/   segundo app Nuxt
+```
+
+```ts
+// catalogo/nuxt.config.ts
+export default defineNuxtConfig({
+  app: { baseURL: '/catalogo/' },
+})
+```
+
+```vue
+<!-- catalogo/app/pages/index.vue -->
+<template><h1>Catálogo</h1></template>
+```
+
+```ts
+// loja/nuxt.config.ts
+export default defineNuxtConfig({
+  routeRules: {
+    '/catalogo/**': { proxy: `${process.env.CATALOGO_URL}/catalogo/**` },
+  },
+})
+```
+
+```vue
+<!-- loja/app/components/Menu.vue -->
+<!-- <a>, não <NuxtLink>: a página recarrega e baixa Nuxt e Vue de novo. -->
+<a href="/catalogo">Catálogo</a>
+```
+
+### O mesmo app com vitral
+
+A loja continua sendo o único app Nuxt. O catálogo vira um remote: um projeto Vite com o mesmo componente.
+
+```
+loja/       app Nuxt (o host)
+catalogo/   projeto Vite (o remote)
+```
+
+```js
+// catalogo/vite.config.js (no lugar do app Nuxt do catálogo)
+import vue from '@vitejs/plugin-vue'
+import vitral from 'vitral/vite'
+
+export default { plugins: [vue(), vitral({ name: 'catalogo', dedupe: ['vue'] })] }
+```
+
+```vue
+<!-- catalogo/src/App.vue (o mesmo componente da página) -->
+<template><h1>Catálogo</h1></template>
+```
+
+```ts
+// loja/app/plugins/vitral.client.ts (no lugar do proxy)
+import * as Vue from 'vue'
+import { configure } from 'vitral'
+
+export default defineNuxtPlugin(() => {
+  configure({
+    remotes: { catalogo: 'https://cdn.empresa.com/catalogo/vitral.json' },
+    dedupe: { vue: { version: Vue.version, modules: { vue: Vue } } }, // o catálogo usa este Vue
+  })
+})
+```
+
+```vue
+<!-- loja/app/pages/catalogo.vue (arquivo novo: a página que mostra o catálogo) -->
+<script setup lang="ts">
+import { VitralRemote } from 'vitral/vue'
+</script>
+
+<template>
+  <VitralRemote name="catalogo">
+    <template #fallback><p>Carregando…</p></template>
+  </VitralRemote>
+</template>
+```
+
+```vue
+<!-- loja/app/components/Menu.vue -->
+<!-- <NuxtLink> normal: a troca é sem recarregar. -->
+<NuxtLink to="/catalogo">Catálogo</NuxtLink>
+```
+
+O servidor renderiza o `fallback` e o catálogo monta no navegador. Não precisa de `<ClientOnly>`.
+
+### O que muda
+
+| | Dois apps Nuxt | vitral |
+|---|---|---|
+| Apps Nuxt | Um por área | Só a loja |
+| Configuração | `baseURL` no catálogo, `proxy` na loja | Plugin no catálogo, `configure()` na loja |
+| Trocar de área | Recarrega a página | Sem recarregar |
+| Vue e Nuxt | Baixados de novo em cada área | Uma cópia do Vue para a página toda |
+| Layout da loja | Cada app repete o seu | O catálogo fica dentro do layout da loja |
 
 ## O que mais vem junto
 

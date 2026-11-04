@@ -2,6 +2,64 @@
 
 React 18 e 19. Import: `vitral/react`.
 
+## Hoje e com vitral
+
+Exemplo: uma loja em React que mostra o carrinho de outra equipe.
+
+### Hoje, com Module Federation
+
+```js
+// carrinho/webpack.config.js
+new ModuleFederationPlugin({
+  name: 'carrinho',
+  filename: 'remoteEntry.js',
+  exposes: { './Carrinho': './src/Carrinho' },
+  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+})
+```
+
+```js
+// loja/webpack.config.js
+new ModuleFederationPlugin({
+  name: 'loja',
+  remotes: { carrinho: 'carrinho@https://cdn.empresa.com/carrinho/remoteEntry.js' },
+  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+})
+```
+
+```jsx
+// loja/src/App.jsx
+const Carrinho = React.lazy(() => import('carrinho/Carrinho'))
+
+<ErrorBoundary fallback={<p>Erro</p>}>
+  <Suspense fallback={<p>Carregando…</p>}>
+    <Carrinho userId={42} />
+  </Suspense>
+</ErrorBoundary>
+```
+
+### Com vitral
+
+```js
+// carrinho/vite.config.js (no lugar do ModuleFederationPlugin)
+import react from '@vitejs/plugin-react'
+import vitral from 'vitral/vite'
+
+export default { plugins: [react(), vitral({ entry: 'src/Carrinho.jsx' })] }
+```
+
+```jsx
+// loja/src/App.jsx (sem plugin no build da loja)
+import { configure } from 'vitral'
+import { Remote } from 'vitral/react'
+
+configure({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })
+
+<Remote name="carrinho" props={{ userId: 42 }} fallback={<p>Carregando…</p>} error={<p>Erro</p>} />
+```
+
+O componente `Carrinho` não muda. Guia completo: [Migrar do Module Federation](/migracao/module-federation).
+
 ## Host
 
 ```jsx
