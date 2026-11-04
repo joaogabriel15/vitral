@@ -514,6 +514,18 @@ export function format(r: DoctorReport): string {
 export async function doctorCli(argv: string[], options: Pick<DoctorOptions, 'cwd' | 'fetch'> = {}, log: (msg: string) => void = console.log): Promise<number> {
   const args = [...argv]
   const json = args.includes('--json')
+  const stats = flag(args, '--stats')
+  if (stats) {
+    // Bytes do host numa rota, dos stats do webpack (e os pacotes em dobro com cada --remote).
+    const { routeReport, formatRoute } = await import('./route')
+    const route = flag(args, '--route') ?? '/'
+    const remotes: string[] = []
+    for (let r = flag(args, '--remote'); r !== undefined; r = flag(args, '--remote')) remotes.push(r)
+    const top = flag(args, '--top')
+    const r = routeReport({ stats, route, remotes, cwd: options.cwd, top: top === undefined ? undefined : Number(top) })
+    log(json ? JSON.stringify(r, null, 2) : formatRoute(r))
+    return r.checks.some((c) => c.status === 'error') ? 1 : 0
+  }
   const maxKb = flag(args, '--max-kb')
   const r = await doctor({
     ...options,

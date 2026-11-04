@@ -16,6 +16,7 @@ const AJUDA = `Uso:
   vitral mcp [--registry url|arquivo]
   vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url]
                 [--contract faixa] [--max-kb n] [--json]
+  vitral doctor --stats stats.json [--route /pagina] [--remote dist ...] [--top n] [--json]
   vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
   vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
   vitral test [--contract arquivo|pasta ...] [--since url|arquivo] [--dir dist] [--entry arquivo]
@@ -33,6 +34,10 @@ const AJUDA = `Uso:
   doctor    Confere cada remote como o host faria (manifesto, CORS, CSP, mount,
             integrity, contrato, dedupe, tamanho) e explica o que fazer.
             Sai com erro se alguma conferência falhar (útil no CI).
+            Com --stats (stats do webpack do host): soma o que a rota carrega
+            por pacote e aponta traduções inteiras no bundle, módulos sem
+            export usado, ofertas de share com o pacote inteiro e, com
+            --remote, pacotes que o host e o remote levam em dobro.
   migrate   Converte um app do single-spa ou um remote do Module Federation num
             remote vitral. Mostra o diff de cada arquivo.
             --dry-run só mostra o que mudaria, sem escrever.
