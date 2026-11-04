@@ -1,5 +1,11 @@
 # vitral
 
+## 0.11.2
+
+### Patch Changes
+
+- [#112](https://github.com/joaogabriel15/vitral/pull/112) [`7b9bb00`](https://github.com/joaogabriel15/vitral/commit/7b9bb00fc31cff943bd3d299acc8348287115b85) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - README com exemplos de host Next.js e Nuxt, a configuração do Multi-Zones lado a lado com a do vitral e diagramas de Multi-Zones, dependências compartilhadas, comunicação e segurança. README em inglês com as mesmas seções e imagens em inglês.
+
 ## 0.11.1
 
 ### Patch Changes
