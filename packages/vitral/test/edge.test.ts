@@ -261,6 +261,16 @@ describe('gateway: rotas no <vitral-outlet>', () => {
     expect(await handler.hints(new Request('https://edge.exemplo.com/sobre'))).toEqual([])
   })
 
+  it('hints na ordem do build, com fetchpriority=high no caminho crítico', async () => {
+    const m = { ...MANIFEST, split: { ...MANIFEST.split, order: ['split/entry.js', 'split/react.js', `${CDN}split/chunk.js`], critical: [0, 1] }, dedupe: [{ name: 'react', range: '^19.0.0', version: '19.0.0', file: 'split/react.js' }] }
+    const { handler } = setup({ routes }, { ...pages, [`${CDN}vitral.json`]: JSON.stringify(m) })
+    expect((await handler.hints(new Request('https://edge.exemplo.com/carrinho/itens'))).slice(0, 3)).toEqual([
+      '</_vitral/carrinho/split/entry.js>; rel=preload; as=fetch; crossorigin=anonymous; fetchpriority=high',
+      '</_vitral/carrinho/split/react.js>; rel=preload; as=fetch; crossorigin=anonymous; fetchpriority=high',
+      '</_vitral/carrinho/split/chunk.js>; rel=preload; as=fetch; crossorigin=anonymous',
+    ])
+  })
+
   it('o manifesto no HTML não fecha o <script>', async () => {
     const m = { ...MANIFEST, name: '</script><script>alert(1)</script>' }
     const { get } = setup({ remotes: { carrinho: { url: `${CDN}vitral.json`, render } }, routes }, { ...pages, [`${CDN}vitral.json`]: JSON.stringify(m) })

@@ -339,7 +339,18 @@ export interface RemoteManifest {
    * continuam apontando para o arquivo único, usado por hosts antigos e
    * quando o navegador não confere o hash por módulo.
    */
-  split?: { entry: string; chunks?: string[]; lazy?: string[] }
+  split?: {
+    entry: string
+    chunks?: string[]
+    lazy?: string[]
+    /**
+     * O JS que roda ao montar (entrada, chunks e cópias de `dedupe`), na
+     * ordem de download: o caminho mais longo em bytes primeiro.
+     */
+    order?: string[]
+    /** Posições em `order` do caminho crítico: esses vão com `fetchpriority="high"`. */
+    critical?: number[]
+  }
   /**
    * Dois módulos de teste do build dividido (`export{}` e um com hash errado),
    * servidos junto com o remote. O runtime testa com eles se o navegador

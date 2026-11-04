@@ -178,8 +178,8 @@ const replace: HostRouter['replace'] = (url, options) => void Router.replace(url
  */
 function hints(h: HtmlHints | undefined, shadow: boolean): ReactNode {
   if (!h) return null
-  const link = (as: string, [href, integrity]: [string, string?]) =>
-    createElement('link', { key: `vitral:${href}`, rel: 'preload', as, href, crossOrigin: 'anonymous', ...(integrity && { integrity }) })
+  const link = (as: string, [href, integrity, fetchPriority]: [string, string?, 'high'?]) =>
+    createElement('link', { key: `vitral:${href}`, rel: 'preload', as, href, crossOrigin: 'anonymous', ...(integrity && { integrity }), ...(fetchPriority && { fetchPriority }) })
   return createElement(
     Head,
     null,

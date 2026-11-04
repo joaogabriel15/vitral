@@ -25,6 +25,7 @@
  * rewriter próprio em streaming. No Node, `toNodeListener(handler)`.
  */
 import { matchRoute, type Routes } from './core/match'
+import { critical, ordered } from './core/order'
 import type { Props, RemoteManifest } from './core/types'
 import { decodeEntities, escapeAttr, rewrite, type EdgeElement } from './edge/rewriter'
 
@@ -159,11 +160,12 @@ export function gateway(options: GatewayOptions): Gateway {
     // Com dedupe, a cópia própria das dependências também: na primeira visita,
     // é ela que a página usa (a menos que o host já ofereça uma).
     const own = (m.dedupe ?? []).flatMap((d) => [...(d.chunks ?? []), d.file])
-    const js = m.split ? [...new Set([m.split.entry, ...(m.split.chunks ?? []), ...own])] : [m.entry]
+    const js = m.split ? ordered([...new Set([m.split.entry, ...(m.split.chunks ?? []), ...own])], m.split.order) : [m.entry]
+    const crit = critical(m)
     // Remote com hash: só aquece o cache HTTP. Um modulepreload sem integrity
     // poria o módulo no mapa de módulos sem conferência.
     const hashed = !!m.integrity || Object.keys(m.files ?? {}).length > 0
-    const out = js.map((u) => `<${local(r, abs(u))}>; ${hashed ? 'rel=preload; as=fetch; crossorigin=anonymous' : 'rel=modulepreload'}`)
+    const out = js.map((u) => `<${local(r, abs(u))}>; ${hashed ? 'rel=preload; as=fetch; crossorigin=anonymous' : 'rel=modulepreload'}${crit.has(u) ? '; fetchpriority=high' : ''}`)
     for (const u of m.css ?? []) out.push(`<${local(r, abs(u))}>; rel=preload; as=${isolate === 'shadow' ? 'fetch' : 'style'}; crossorigin=anonymous`)
     return out
   }

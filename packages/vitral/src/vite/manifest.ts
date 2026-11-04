@@ -7,7 +7,7 @@
  * arquivo, CSS incluído) e `split` (entrada e chunks que ela usa logo).
  */
 import { createHash } from 'node:crypto'
-import { readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, posix } from 'node:path'
 import type { RemoteManifest } from '../core/types'
 import { usedNames, type Group } from './dedupe'
@@ -42,6 +42,49 @@ export interface Split {
   lazy: string[]
   /** Nomes que o remote lê de cada especificador de `dedupe`. */
   uses: Record<string, string[]>
+  /** Os JS da montagem na ordem de download: ver `criticalOrder`. */
+  order: string[]
+  /** Posições em `order` dos arquivos do caminho crítico. */
+  critical: number[]
+}
+
+/**
+ * Ordem de download do que roda ao montar, pelo caminho mais longo em bytes
+ * (Polaris, Klotski). Primeiro a entrada e o que ela importa estaticamente:
+ * nada roda antes de todos chegarem. Depois o que a inicialização pede
+ * (cópias de `dedupe` e o `import()` do app). Em cada etapa, quem tem mais
+ * bytes pela frente (ele e a cadeia mais pesada de imports dele) vem antes.
+ * O caminho crítico é a cadeia mais pesada de cada etapa.
+ */
+export function criticalOrder(entry: string, mount: Iterable<string>, imports: (f: string) => string[], size: (f: string) => number): { order: string[]; critical: number[] } {
+  const all = new Set(mount)
+  all.add(entry)
+  const edges = (f: string) => imports(f).filter((d) => all.has(d))
+  const memo = new Map<string, number>()
+  const rank = (f: string): number => {
+    const known = memo.get(f)
+    if (known !== undefined) return known
+    // Ciclo entre chunks: o arquivo conta só o próprio peso.
+    memo.set(f, size(f))
+    const r = size(f) + Math.max(0, ...edges(f).map(rank))
+    memo.set(f, r)
+    return r
+  }
+  const first = new Set([entry])
+  for (const f of first) for (const d of edges(f)) first.add(d)
+  const byRank = (l: string[]) => l.map((f, i) => [f, rank(f), i] as const).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(([f]) => f)
+  const later = byRank([...all].filter((f) => !first.has(f)))
+  const order = [...byRank([...first]), ...later]
+  const path = new Set<string>()
+  const walk = (f: string | undefined) => {
+    while (f && !path.has(f)) {
+      path.add(f)
+      f = byRank(edges(f).filter((d) => !path.has(d)))[0]
+    }
+  }
+  walk(entry)
+  walk(later[0])
+  return { order, critical: order.flatMap((f, i) => (path.has(f) ? [i] : [])) }
 }
 
 export const sri = (file: string): string => 'sha384-' + createHash('sha384').update(readFileSync(file)).digest('base64')
@@ -132,7 +175,11 @@ export function collect(outDir: string, bundle: Bundle): Split | undefined {
   const lazy = [...app].filter((n) => n !== entry && !soon.has(n))
   // Só o código do app: a cópia própria importa o pacote inteiro.
   const uses = usedNames([...app, entry].flatMap((n) => Object.entries(byName.get(n)?.modules ?? {})))
-  return { entry, chunks: [...soon], files: [...used], own, lazy, uses }
+  const mount = [...soon, ...Object.values(own).flatMap((o) => [o.file, ...o.chunks])]
+  const { order, critical } = criticalOrder(entry, mount, (f) => byName.get(f)?.imports ?? [], (f) => statSync(join(outDir, f)).size)
+  const at = new Map(order.map((f, i) => [f, i]))
+  const first = [...soon].sort((a, b) => at.get(a)! - at.get(b)!)
+  return { entry, chunks: first, files: [...used], own, lazy, uses, order, critical }
 }
 
 /** Troca os `import()` de `c` pelo helper. Devolve os chunks importados assim. */
@@ -179,5 +226,5 @@ export function withSplit(m: RemoteManifest, outDir: string, s?: Split, groups: 
     })
   // Módulos de teste do SRI: o navegador confere o hash sem `data:` nem `blob:`.
   if (s) for (const [file, code] of PROBES) writeFileSync(join(outDir, file), code)
-  return { ...m, files, ...(s && { split: { entry: s.entry, chunks: s.chunks, ...(s.lazy.length && { lazy: s.lazy }) }, probe: PROBES.map(([f]) => f) as [string, string] }), ...(dedupe.length && { dedupe }) }
+  return { ...m, files, ...(s && { split: { entry: s.entry, chunks: s.chunks, ...(s.lazy.length && { lazy: s.lazy }), order: s.order, critical: s.critical }, probe: PROBES.map(([f]) => f) as [string, string] }), ...(dedupe.length && { dedupe }) }
 }
