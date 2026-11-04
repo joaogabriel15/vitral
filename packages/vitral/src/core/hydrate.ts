@@ -158,6 +158,11 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
     onDeactivate: on('vitral:deactivate'),
   }
   if (ctxHooks.shared) ctx.shared = ctxHooks.shared(name, scoped.track)
+  const state = holder.querySelector(':scope>script[data-vitral-state]')
+  if (state)
+    try {
+      ctx.initialState = JSON.parse(state.textContent ?? '')
+    } catch {}
   let mounted: MountedRemote<P>
   try {
     mounted = await mod.hydrate(el, props as never, ctx) as MountedRemote<P>

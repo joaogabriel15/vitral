@@ -19,11 +19,14 @@
  */
 import Head from 'next/head'
 import Router, { useRouter } from 'next/router'
-import { createElement, Fragment, useEffect, useMemo, type ReactNode } from 'react'
-import { remotes, shared } from 'vitral-next-host-config'
+import { createElement, Fragment, useEffect, useMemo, version as reactVersion, type ReactNode } from 'react'
+import { plan, remotes, shared } from 'vitral-next-host-config'
 import { bundled } from './core/bundled'
 import * as dedupe from './core/dedupe'
-import { configure } from './core/registry'
+import { hintsOf, type HtmlHints } from './core/next-hints'
+import { policy } from './core/policy'
+import { configure, register } from './core/registry'
+import type { RemoteManifest } from './core/types'
 import * as sri from './core/sri'
 import type { HostRouter } from './next'
 import { preload, Remote, type RemoteProps } from './react'
@@ -34,6 +37,9 @@ const under = (path: string, prefix: string) => path === prefix || path.startsWi
 export function remoteFor(path: string): string | undefined {
   for (const [name, r] of Object.entries(remotes)) if (under(path, r.basePath) || r.routes?.some((x) => under(path, x.public))) return name
 }
+
+/** Versão de cada grupo que o host oferece: o React do bundle e os de `share`. */
+const offered = (): Record<string, string> => ({ react: reactVersion, ...Object.fromEntries(Object.entries(shared).map(([k, g]) => [k, g.version])) })
 
 /**
  * Ofertas de `share` com o download guardado: o aquecimento abaixo e o pedido
@@ -54,7 +60,11 @@ const offers: typeof shared = Object.fromEntries(
  */
 function warmOffers(path: string): void {
   const name = remoteFor(path)
-  for (const g of (name && remotes[name].hints?.offers) || []) offers[g]?.modules().catch(() => {})
+  if (!name) return
+  // O manifesto do servidor (props da página, no __NEXT_DATA__) vale mais que o do build.
+  const m: RemoteManifest | undefined = (window as any).__NEXT_DATA__?.props?.pageProps?.vitral?.[name]
+  const list = m ? hintsOf(m, remotes[name].url, offered()).offers : remotes[name].hints?.offers
+  for (const g of list ?? []) offers[g]?.modules().catch(() => {})
 }
 if (typeof window !== 'undefined') warmOffers(location.pathname)
 
@@ -67,8 +77,10 @@ function setup() {
   bundled.sri = sri
   bundled.dedupe = dedupe
   configure({
-    remotes: Object.fromEntries(Object.entries(remotes).map(([name, r]) => [name, { url: r.url, ...(r.integrity === false && { integrity: false as const }) }])),
+    remotes: Object.fromEntries(Object.entries(remotes).map(([name, r]) => [name, { url: r.url, ...(r.integrity === false && { integrity: false as const }), ...(r.keys && { keys: r.keys }) }])),
     dedupe: offers,
+    // Uma cópia de cada dependência para todos os remotes, escolhida no build.
+    ...(plan && Object.keys(plan).length && { dedupePlan: plan }),
   })
 }
 
@@ -127,8 +139,10 @@ export function VitralNext(): null {
     const go = (name: string) => preload(name, { routes: !!remotes[name].warmRoutes })
     if (here) go(here)
     const idle: number[] = []
+    // Rede lenta ou aparelho fraco: só o remote da página.
+    const all = policy() === 'all'
     for (const [name, r] of Object.entries(remotes))
-      if (name !== here && (r.preload ?? 'idle') === 'idle')
+      if (all && name !== here && (r.preload ?? 'idle') === 'idle')
         idle.push(typeof requestIdleCallback === 'function' ? requestIdleCallback(() => go(name), { timeout: 5000 }) : window.setTimeout(() => go(name), 2000))
     const stop = interceptNavigation()
     return () => {
@@ -139,7 +153,24 @@ export function VitralNext(): null {
   return null
 }
 
-export type NextRemoteProps = Omit<RemoteProps, 'name' | 'src'> & { name: string }
+export type NextRemoteProps = Omit<RemoteProps, 'name' | 'src'> & {
+  name: string
+  /**
+   * O `vitral.json` lido no servidor (`remoteProps` de `vitral/next-server`).
+   * Com ele, o HTML pré-carrega a versão publicada agora e o navegador não
+   * pede o manifesto. `null` ou ausente: o preload do build e o pedido de sempre.
+   */
+  manifest?: RemoteManifest | null
+}
+
+/** O manifesto do servidor vira o registro do remote: o loader não pede de novo. */
+const seeded = new Map<string, RemoteManifest>()
+function seed(name: string, m: RemoteManifest): void {
+  const r = remotes[name]
+  if (!r || typeof window === 'undefined' || seeded.get(name) === m) return
+  seeded.set(name, m)
+  register(name, { url: r.url, manifest: m, ...(r.integrity === false && { integrity: false as const }), ...(r.keys && { keys: r.keys }) })
+}
 
 const push: HostRouter['push'] = (url, options) => void Router.push(url, undefined, options)
 const replace: HostRouter['replace'] = (url, options) => void Router.replace(url, undefined, options)
@@ -150,15 +181,14 @@ const replace: HostRouter['replace'] = (url, options) => void Router.replace(url
  * JS do host, e não depois da hidratação. O hash vai no `integrity`: o
  * navegador confere o preload, e o `import()` do remote confere de novo.
  */
-function hints(name: string, shadow: boolean): ReactNode {
-  const h = remotes[name]?.hints
+function hints(h: HtmlHints | undefined, shadow: boolean): ReactNode {
   if (!h) return null
-  const link = (as: string, [href, integrity]: [string, string?]) =>
-    createElement('link', { key: `vitral:${href}`, rel: 'preload', as, href, crossOrigin: 'anonymous', ...(integrity && { integrity }) })
+  const link = (as: string, [href, integrity, fetchPriority]: [string, string?, 'high'?]) =>
+    createElement('link', { key: `vitral:${href}`, rel: 'preload', as, href, crossOrigin: 'anonymous', ...(integrity && { integrity }), ...(fetchPriority && { fetchPriority }) })
   return createElement(
     Head,
     null,
-    link('fetch', [h.manifest]),
+    ...(h.manifest ? [link('fetch', [h.manifest, h.signed])] : []),
     // Com Shadow DOM o CSS vem por fetch: o preload de estilo não serviria.
     ...(shadow ? [] : h.css.map((c) => link('style', c))),
     ...h.js.map((j) => link('script', j)),
@@ -170,12 +200,17 @@ function hints(name: string, shadow: boolean): ReactNode {
  * `__next`, lida pelo plugin no modo `next`): `useRouter`, `<Link>` e
  * `router.push` do remote usam o do host, com as rotas públicas.
  */
-export function NextRemote({ name, props, fallback = null, ...rest }: NextRemoteProps): ReactNode {
+export function NextRemote({ name, props, fallback = null, manifest, ...rest }: NextRemoteProps): ReactNode {
   setup()
+  if (manifest) seed(name, manifest)
   const router = useRouter()
   const r = remotes[name]
   const host = useMemo<HostRouter>(() => ({ asPath: router.asPath, basePath: r?.basePath, routes: r?.routes, push, replace, events: Router.events }), [router.asPath, r])
   const all = useMemo(() => ({ ...props, __next: host }), [props, host])
-  const links = useMemo(() => hints(name, rest.isolate === 'shadow'), [name, rest.isolate])
+  const links = useMemo(() => {
+    const h = manifest && r ? hintsOf(manifest, r.url, offered(), r.integrity, r.keys) : r?.hints
+    // Com o manifesto do servidor, o navegador não pede o vitral.json: sem preload dele.
+    return hints(manifest && h ? { ...h, manifest: '' } : h, rest.isolate === 'shadow')
+  }, [manifest, r, rest.isolate])
   return createElement(Fragment, null, links, router.isReady ? createElement(Remote, { ...rest, name, fallback, props: all }) : fallback)
 }

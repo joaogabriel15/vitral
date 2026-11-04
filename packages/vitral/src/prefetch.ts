@@ -4,23 +4,45 @@
  *   import { prefetch } from 'vitral/prefetch'
  *   prefetch()
  *
- * Conta as transições entre rotas (cadeia de Markov de primeira ordem) e quais
+ * Conta as transições entre rotas (cadeia de Markov de ordens 1 a 3) e quais
  * remotes cada rota monta, no localStorage. No tempo ocioso, baixa o manifesto
  * e os arquivos dos remotes da rota seguinte mais provável, sem executar nada
- * e com o SRI do vitral (`core/sri.ts`).
+ * e com o SRI do vitral (`core/sri.ts`), quando vale a pena: a probabilidade
+ * vezes o tempo poupado tem de passar o custo dos bytes na rede de agora.
+ * Num `pointerdown` em link para outra rota, baixa os remotes dela na hora.
  */
 import { resolveEntry } from './core/loader'
-import { empty, parse, predict, record, remember, type Chain } from './core/markov'
+import { empty, parse, predictNext, recordPath, remember, type Chain, type Prior } from './core/markov'
 import type { Verifiable } from './core/sri'
+import { policy } from './core/policy'
 import { protocol } from './core/state'
 import type { RemoteEntry } from './core/types'
 import { addLink } from './core/util'
 
 export interface PrefetchOptions {
-  /** Probabilidade mínima da rota seguinte para baixar os remotes dela. Padrão: 0.4. */
+  /** Probabilidade mínima da rota seguinte, antes da conta de custo. Padrão: 0.1. */
   threshold?: number
-  /** Transições contadas a partir da rota atual antes de prever. Padrão: 2. */
+  /** Transições contadas a partir da rota atual (ou do contexto) antes de prever. Padrão: 2. */
   min?: number
+  /**
+   * Transições da população, para a primeira visita: o objeto ou a URL do
+   * JSON (`vitral prior` gera a partir de sessões agregadas). Mistura com as
+   * contagens do usuário: usuário + `alpha` × população.
+   */
+  prior?: Prior | string
+  /** Peso da população, em transições. Padrão: 5. */
+  alpha?: number
+  /**
+   * Custo de cada byte baixado à toa, em ms de espera do usuário. Prefetch só
+   * quando probabilidade × tempo poupado > custo × bytes. Padrão: 0.0005
+   * (100 kB valem 50 ms). `0` desliga a conta.
+   */
+  byteCost?: number
+  /**
+   * Speculation Rules (Chrome 121+) para a rota prevista quando ela não tem
+   * remote: o navegador baixa o documento dela. Só com a chave padrão (`pathname`). Padrão: false.
+   */
+  speculate?: boolean
   /** Onde guardar as contagens. `null` guarda só na memória. Padrão: localStorage. */
   storage?: Pick<Storage, 'getItem' | 'setItem'> | null
   /** Chave da rota. Padrão: `url.pathname`. */
@@ -31,11 +53,11 @@ export interface PrefetchOptions {
 
 const KEY = 'vitral:prefetch'
 
-/** Conexão com economia de dados ou 2G: não baixa nada a mais. */
-function slow(): boolean {
-  const c = (navigator as any).connection
-  return !!c?.saveData || /2g/.test(c?.effectiveType ?? '')
-}
+/**
+ * Economia de dados ou 2G: não baixa nada a mais. Em 3G o prefetch previsto
+ * continua: é onde ele economiza mais tempo.
+ */
+const slow = (): boolean => policy() === 'lazy'
 
 const idle = (fn: () => void) =>
   typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 300)
@@ -46,7 +68,13 @@ const idle = (fn: () => void) =>
  */
 export function prefetch(options: PrefetchOptions = {}): () => void {
   if (typeof window === 'undefined') return () => {}
-  const { threshold = 0.4, min = 2, key = (u: URL) => u.pathname, onPrefetch } = options
+  const { threshold = 0.1, min = 2, alpha = 5, byteCost = 0.0005, key = (u: URL) => u.pathname, onPrefetch } = options
+  let prior: Prior | null = typeof options.prior === 'object' ? options.prior : null
+  if (typeof options.prior === 'string')
+    fetch(options.prior, { priority: 'low' } as RequestInit)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((p) => p && typeof p.t === 'object' && ((prior = p), schedule()))
+      .catch(() => {})
   let storage = options.storage
   if (storage === undefined)
     try {
@@ -65,6 +93,19 @@ export function prefetch(options: PrefetchOptions = {}): () => void {
   }
   const here = () => key(new URL(location.href))
   let current = here()
+  // As últimas rotas, para os contextos de ordem 2 e 3.
+  const history = [current]
+  const remotesOf = (route: string) => chain.r[route] ?? prior?.r?.[route] ?? []
+  /** Baixa os remotes de `route` que ainda não vieram. */
+  const fetchFor = (route: string) => {
+    const names = remotesOf(route).filter((n) => !loaded.has(n))
+    if (!names.length) return
+    for (const n of names) loaded.add(n)
+    Promise.all(names.map(warm)).then((ok) => {
+      const done = names.filter((_, i) => ok[i])
+      if (done.length) onPrefetch?.(done, route)
+    })
+  }
   // Remotes já baixados nesta página (montados ou pré-carregados).
   const loaded = new Set<string>()
   let seq = 0
@@ -73,23 +114,25 @@ export function prefetch(options: PrefetchOptions = {}): () => void {
     const id = ++seq
     if (slow()) return
     idle(() => {
-      const next = id === seq && predict(chain, current, threshold, min)
-      if (!next) return
-      const names = (chain.r[next] ?? []).filter((n) => !loaded.has(n))
-      if (!names.length) return
-      for (const n of names) loaded.add(n)
-      Promise.all(names.map(warm)).then((ok) => {
-        const done = names.filter((_, i) => ok[i])
-        if (done.length) onPrefetch?.(done, next)
-      })
+      const guess = id === seq && predictNext(chain, history, { threshold, min, prior, alpha })
+      if (!guess) return
+      const names = remotesOf(guess.to)
+      if (!names.length) {
+        if (options.speculate && !options.key && guess.to.startsWith('/')) speculate(guess.to)
+        return
+      }
+      const bytes = names.reduce((a, n) => a + (chain.b?.[n] ?? 150_000), 0)
+      if (worth(guess.p, bytes, byteCost)) fetchFor(guess.to)
     })
   }
 
   const visit = () => {
     const next = here()
     if (next === current) return
-    record(chain, current, next)
+    recordPath(chain, history, next)
     current = next
+    history.push(next)
+    if (history.length > 3) history.shift()
     save()
     schedule()
   }
@@ -106,6 +149,8 @@ export function prefetch(options: PrefetchOptions = {}): () => void {
         if (!m) continue
         loaded.add(m[1])
         changed = remember(chain, current, m[1]) || changed
+        const b = bytesOf(m[1])
+        if (b) ((chain.b ??= {})[m[1]] = b), (changed = true)
       }
       if (changed) save()
     })
@@ -117,12 +162,55 @@ export function prefetch(options: PrefetchOptions = {}): () => void {
   const event = nav ? 'currententrychange' : 'popstate'
   const target: EventTarget = nav ?? window
   target.addEventListener(event, visit)
+  // `pointerdown` vem cerca de 100 ms antes do clique: os remotes da rota do link já começam a baixar.
+  const down = (e: Event) => {
+    if (slow()) return
+    const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null
+    if (!a) return
+    const url = new URL(a.href, location.href)
+    if (url.origin === location.origin) fetchFor(key(url))
+  }
+  document.addEventListener('pointerdown', down, { passive: true })
   schedule()
   return () => {
     seq++
     observer?.disconnect()
     target.removeEventListener(event, visit)
+    document.removeEventListener('pointerdown', down)
   }
+}
+
+/**
+ * Vale baixar agora? Probabilidade × tempo poupado (duas idas e voltas e o
+ * download, pela rede estimada pelo navegador) contra o custo dos bytes
+ * (Padmanabhan e Mogul, 1996).
+ */
+export function worth(p: number, bytes: number, byteCost = 0.0005, net: { rtt?: number; downlink?: number } | undefined = (navigator as any).connection): boolean {
+  const rtt = net?.rtt || 100
+  const mbps = net?.downlink || 10
+  const saved = 2 * rtt + (bytes * 8) / (mbps * 1000)
+  return p * saved > byteCost * bytes
+}
+
+/** Bytes que o remote `name` baixou (Resource Timing), pela pasta do manifesto. */
+function bytesOf(name: string): number {
+  const url = protocol().entry(name)?.url
+  if (!url || typeof performance === 'undefined') return 0
+  const dir = url.slice(0, url.lastIndexOf('/') + 1)
+  let total = 0
+  for (const e of performance.getEntriesByType('resource') as PerformanceResourceTiming[]) if (e.name.startsWith(dir)) total += e.encodedBodySize || 0
+  return total
+}
+
+const speculated = new Set<string>()
+/** `<script type="speculationrules">` para o documento de `path`. */
+function speculate(path: string): void {
+  if (speculated.has(path) || !HTMLScriptElement.supports?.('speculationrules')) return
+  speculated.add(path)
+  const s = document.createElement('script')
+  s.type = 'speculationrules'
+  s.textContent = JSON.stringify({ prefetch: [{ source: 'list', urls: [path], eagerness: 'immediate' }] })
+  document.head.append(s)
 }
 
 const heat = (u: string) => fetch(u, { priority: 'low' }).then((res) => res.arrayBuffer())

@@ -30,7 +30,8 @@
  * Stencil, vanilla) como remote.
  */
 import { defineRemote, shared, type Isolation, type Props, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus } from './index'
-import { hostSlot, timings, type HostSlotOptions, type Loading, type Prefetch } from './core/host-slot'
+import { hostSlot, timings, when, type HostSlotOptions, type Loading, type Prefetch } from './core/host-slot'
+import { policy } from './core/policy'
 import { memoSelect, same } from './core/shared'
 import { registerSrc } from './core/registry'
 import { warmSsr } from './core/loader'
@@ -75,6 +76,9 @@ export class VitralRemoteElement extends Base {
       prefetch: this.getAttribute('prefetch') as Prefetch | null,
       priority: (this.getAttribute('priority') as RequestPriority) || undefined,
       keepAlive: keep === null ? false : Number(keep) || true,
+      snapshot: this.hasAttribute('snapshot'),
+      // A última tela no lugar do "carregando".
+      onSnapshot: (shown) => (this.#snapped = shown),
       styles: { inherit: this.getAttribute('inherit-styles')?.split(/\s+/).filter(Boolean) },
       onStatus: (status, error) => {
         this.setAttribute('data-vitral-status', status)
@@ -82,14 +86,14 @@ export class VitralRemoteElement extends Base {
         else this.removeAttribute('aria-busy')
         const has = (slot: string) => {
           const els = this.querySelectorAll<HTMLElement>(`:scope > [slot="${slot}"]`)
-          for (const el of els) el.hidden = status !== (slot === 'fallback' ? 'loading' : 'error')
+          for (const el of els) el.hidden = status !== (slot === 'fallback' ? 'loading' : 'error') || (slot === 'fallback' && this.#snapped)
           return els.length > 0
         }
         // Numa microtask: o parser pode ainda não ter posto os slots próprios.
         queueMicrotask(() => {
           if (this.#slot?.status !== status) return
           const custom = { loading: has('fallback'), error: has('error'), ready: true }
-          this.#showDefault(custom[status] ? null : status)
+          this.#showDefault(custom[status] || (status === 'loading' && this.#snapped) ? null : status)
         })
         if (status === 'ready') this.dispatchEvent(new CustomEvent('vitral-ready', { bubbles: true, detail: { timings: timings(name) } }))
         if (status === 'error') this.dispatchEvent(new CustomEvent('vitral-error', { bubbles: true, detail: { error } }))
@@ -98,8 +102,12 @@ export class VitralRemoteElement extends Base {
     // HTML renderizado pelo gateway (`vitral/edge`): hidrata, sob demanda.
     // `typeof` duas vezes: o build do embed apaga o ramo inteiro.
     const ssr = typeof __VITRAL_EMBED__ === 'undefined' ? this.querySelector<HTMLElement>(':scope>[data-vitral-ssr]') : null
-    if (typeof __VITRAL_EMBED__ === 'undefined' && ssr) warmSsr(ssr), import('./core/hydrate').then((m) => this.isConnected && !this.#slot && (this.#slot = m.hydrateSlot(this, ssr, { ...options, props: this.#props })))
-    else this.#slot = hostSlot(this, options)
+    if (typeof __VITRAL_EMBED__ === 'undefined' && ssr) {
+      const go = () => (warmSsr(ssr), import('./core/hydrate').then((m) => this.isConnected && !this.#slot && (this.#slot = m.hydrateSlot(this, ssr, { ...options, props: this.#props }))))
+      // Rede 2G ou economia de dados: o HTML do servidor já está na tela; o JS só vem quando ele aparece.
+      if (policy() === 'lazy') when(this, 'visible', go)
+      else go()
+    } else this.#slot = hostSlot(this, options)
   }
 
   /**
@@ -113,6 +121,7 @@ export class VitralRemoteElement extends Base {
   }
 
   #default: HTMLElement | null = null
+  #snapped = false
 
   /** Carregando e erro padrão, só quando não há slot próprio. */
   #showDefault(status: SlotStatus | null) {

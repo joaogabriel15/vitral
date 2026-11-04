@@ -1,18 +1,35 @@
 /**
- * Cadeia de Markov de primeira ordem das rotas (`vitral/prefetch`): conta as
- * transições `de → para` e guarda quais remotes cada rota monta. Tudo em
- * objetos simples, para caber no localStorage como JSON.
+ * Cadeia de Markov das rotas (`vitral/prefetch`): conta as transições
+ * `de → para` e guarda quais remotes cada rota monta. Tudo em objetos
+ * simples, para caber no localStorage como JSON.
+ *
+ * As ordens 1 a 3 ficam na mesma tabela: a chave de ordem 2 é `a\nb` (as
+ * duas últimas rotas). A previsão usa a ordem mais alta com suporte e
+ * confiança suficientes e, sem elas, cai para a de baixo (Selective Markov
+ * Models, Deshpande e Karypis, TOIT 2004).
  */
 export interface Chain {
-  /** Transições: rota de origem → rota seguinte → contagem. */
+  /** Transições: rota (ou contexto) de origem → rota seguinte → contagem. */
   t: Record<string, Record<string, number>>
   /** Remotes montados em cada rota. */
   r: Record<string, string[]>
+  /** Bytes que cada remote baixou da última vez (para o custo do prefetch). */
+  b?: Record<string, number>
 }
 
-/** Limites de tamanho: rotas guardadas, destinos por rota, remotes por rota e contagem por rota. */
-export const LIMITS = { routes: 50, next: 10, remotes: 8, total: 1000, key: 200 }
+/**
+ * Transições da população (dados agregados de muitos usuários), no mesmo
+ * formato: ajuda na primeira visita, quando o usuário ainda não tem contagens.
+ */
+export interface Prior {
+  t: Record<string, Record<string, number>>
+  r?: Record<string, string[]>
+}
 
+/** Limites de tamanho: contextos guardados, destinos por contexto, remotes por rota e contagem por contexto. */
+export const LIMITS = { routes: 150, next: 10, remotes: 8, total: 1000, key: 200 }
+
+const own = <T>(o: Record<string, T> | undefined, k: string): T | undefined => (o && Object.prototype.hasOwnProperty.call(o, k) ? o[k] : undefined)
 const ok = (k: string) => typeof k === 'string' && k.length <= LIMITS.key && k !== '__proto__'
 const sum = (row: Record<string, number>) => Object.values(row).reduce((a, b) => a + b, 0)
 const smallest = (o: Record<string, number>, keep: string) =>
@@ -28,6 +45,7 @@ export function parse(text: string | null | undefined): Chain {
     const c = JSON.parse(text ?? '')
     const rows = Object.values(c.t).every((row: any) => row && typeof row === 'object' && Object.values(row).every((n) => Number.isFinite(n)))
     const lists = Object.values(c.r).every((l) => Array.isArray(l) && l.every((n) => typeof n === 'string'))
+    if (c.b && !Object.values(c.b).every((n) => Number.isFinite(n))) delete c.b
     if (rows && lists) return c
   } catch {}
   return empty()
@@ -70,4 +88,49 @@ export function predict(c: Chain, from: string, threshold: number, min = 1): str
   let best: string | null = null
   for (const k in row) if (best === null || row[k] > row[best]) best = k
   return best !== null && total >= min && row[best] / total >= threshold ? best : null
+}
+
+/** Conta `history → to` nas ordens 1 a `orders`. `history` termina na rota atual. */
+export function recordPath(c: Chain, history: string[], to: string, orders = 3): void {
+  if (history[history.length - 1] === to) return
+  for (let k = 1; k <= orders && k <= history.length; k++) record(c, history.slice(-k).join('\n'), to)
+}
+
+export interface PredictOptions {
+  /** Probabilidade mínima (confiança). Padrão 0. */
+  threshold?: number
+  /** Transições contadas no contexto antes de usá-lo (suporte). Padrão 2. */
+  min?: number
+  prior?: Prior | null
+  /** Peso da população, em transições: contagens do usuário + `alpha` × população. Padrão 5. */
+  alpha?: number
+  /** Ordem máxima. Padrão 3. */
+  orders?: number
+}
+
+/**
+ * Rota seguinte mais provável e a probabilidade dela. Tenta da ordem mais
+ * alta para a mais baixa; um contexto entra só com `min` transições (ou,
+ * na ordem 1, com dados da população) e uma previsão só com `threshold`.
+ */
+export function predictNext(c: Chain, history: string[], o: PredictOptions = {}): { to: string; p: number } | null {
+  const { threshold = 0, min = 2, prior, alpha = 5, orders = 3 } = o
+  for (let k = Math.min(orders, history.length); k >= 1; k--) {
+    const key = history.slice(-k).join('\n')
+    const row = own(c.t, key) ?? {}
+    const pop = k === 1 ? own(prior?.t, key) : undefined
+    const n = sum(row)
+    const total = pop ? sum(pop) : 0
+    if (n < min && !total) continue
+    const a = total ? alpha : 0
+    let best: string | null = null
+    let bp = 0
+    for (const to of new Set([...Object.keys(row), ...Object.keys(pop ?? {})])) {
+      if (!ok(to)) continue
+      const p = ((own(row, to) ?? 0) + (a * (own(pop, to) ?? 0)) / (total || 1)) / (n + a)
+      if (p > bp) (best = to), (bp = p)
+    }
+    if (best !== null && bp >= threshold) return { to: best, p: bp }
+  }
+  return null
 }

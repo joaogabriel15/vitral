@@ -144,9 +144,21 @@
       "types": "./dist/next-config.d.ts",
       "default": "./dist/next-config.js"
     },
+    "./next-server": {
+      "types": "./dist/next-server.d.ts",
+      "default": "./dist/next-server.js"
+    },
     "./sw": {
       "types": "./dist/sw.d.ts",
       "import": "./dist/sw.js"
+    },
+    "./snapshot": {
+      "types": "./dist/snapshot.d.ts",
+      "import": "./dist/snapshot.js"
+    },
+    "./sign": {
+      "types": "./dist/sign.d.ts",
+      "import": "./dist/sign.js"
     },
     "./vitals": {
       "types": "./dist/vitals.d.ts",
@@ -278,7 +290,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.02 kB"
+      "limit": "5.11 kB"
     },
     {
       "name": "núcleo",
@@ -298,17 +310,17 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.96 kB"
+      "limit": "6.10 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.96 kB"
+      "limit": "3.19 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
       "path": "dist/dedupe-*.js",
-      "limit": "760 B"
+      "limit": "0.94 kB"
     },
     {
       "name": "overrides (sob demanda)",
@@ -321,7 +333,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.03 kB"
+      "limit": "1.05 kB"
     },
     {
       "name": "host mínimo + store",
@@ -341,7 +353,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.71 kB"
+      "limit": "5.79 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -361,7 +373,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.94 kB"
+      "limit": "6.01 kB"
     },
     {
       "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
@@ -370,7 +382,7 @@
         "./chunk-*",
         "./shadow-*"
       ],
-      "limit": "2.8 kB"
+      "limit": "2.83 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -378,7 +390,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.72 kB"
+      "limit": "1.74 kB"
     },
     {
       "name": "hidratação do SSR do gateway (sob demanda)",
@@ -386,7 +398,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.5 kB"
+      "limit": "1.52 kB"
     },
     {
       "name": "react",
@@ -408,7 +420,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.51 kB"
+      "limit": "6.95 kB"
     },
     {
       "name": "vue",
@@ -429,7 +441,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.31 kB"
+      "limit": "6.51 kB"
     },
     {
       "name": "element",
@@ -449,7 +461,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.66 kB"
+      "limit": "6.93 kB"
     },
     {
       "name": "devtools",
@@ -460,7 +472,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.84 kB",
+      "limit": "7.10 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -480,7 +492,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.88 kB",
+      "limit": "10.17 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -506,7 +518,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "3.29 kB",
+      "limit": "4.16 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -523,7 +535,7 @@
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
-      "limit": "6 kB",
+      "limit": "6.12 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -536,7 +548,13 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "12.81 kB"
+      "limit": "13.26 kB"
+    },
+    {
+      "name": "snapshot (última tela na visita de volta)",
+      "path": "dist/snapshot.js",
+      "import": "{ snapshots }",
+      "limit": "1.26 kB"
     },
     {
       "name": "vitals (Web Vitals por remote)",

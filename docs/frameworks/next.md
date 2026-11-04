@@ -155,9 +155,65 @@ A configuração gerada fica em `.vitral/host-config.mjs`, na pasta do app (a pa
 No build do host, o `withVitral` lê o `vitral.json` do remote (em `public/` ou em `manifestFile`). O `NextRemote` põe no `<head>` da página um `<link rel="preload">` para o manifesto, o CSS e o JS da primeira tela (entrada, chunks e as cópias de `dedupe` que o host não oferece). Assim o remote baixa junto com o JS do host, e não depois da hidratação. Quem abre a área do remote direto, como primeira página, é quem mais ganha.
 
 - O hash de cada arquivo vai no `integrity` do preload, e o `import()` do remote confere de novo. Um arquivo trocado no caminho não roda.
+- Os links vêm na ordem que o build do remote calcula (`split.order` no manifesto): primeiro a entrada e o que ela importa, depois as cópias de `dedupe` e o `import()` do app. Em cada etapa, o arquivo com mais bytes pela frente (ele e a cadeia mais pesada de imports dele) vem antes. Os arquivos dessa cadeia levam `fetchpriority="high"`. Os outros ficam sem o atributo: o remote só roda quando todos chegam, e um `low` deixaria um deles atrás das imagens da página. O `vitral/edge` usa a mesma ordem nos `Link`.
 - O código de SRI e de `dedupe` do vitral vem no bundle do host (cerca de 3 kB), e o manifesto baixa enquanto as ofertas de `share` se registram. Depois da hidratação, nenhum download espera outro.
 - Os links refletem o remote do build do host. Builde o remote antes do host. Se o remote for publicado sem um build novo do host, os links apontam para os arquivos antigos: o navegador baixa à toa (ou mostra 404 no console, se eles já saíram do servidor), e o remote carrega certo pelo manifesto.
 - Com o preload no HTML, `maxStale` não ajuda: o manifesto já baixa em paralelo com o JS do host.
+
+### Manifesto lido no servidor
+
+Os links do build ficam velhos quando o remote faz deploy sozinho. Com `vitral/next-server`, a página lê o `vitral.json` no servidor, a cada requisição, e passa o manifesto ao `NextRemote`:
+
+```tsx
+// pages/delivery/[[...slug]].tsx
+import { NextRemote } from 'vitral/next-host'
+import { remoteProps } from 'vitral/next-server'
+
+export const getServerSideProps = async () => ({ props: await remoteProps('delivery') })
+
+export default function Delivery({ vitral }) {
+  return <Layout><NextRemote name="delivery" manifest={vitral.delivery} /></Layout>
+}
+```
+
+- O HTML pré-carrega os arquivos da versão publicada agora, e o navegador não pede o manifesto: o remote baixa junto com o JS do host, uma ida e volta antes.
+- O servidor guarda o manifesto em memória: por 5 s responde do cache e, por mais 30 s, responde do cache e renova por trás (`maxAge` e `staleWhileRevalidate`, em segundos). Um pedido que falha mantém a cópia boa.
+- Para `url` relativo, o servidor pede a `VITRAL_ORIGIN`, ou ao próprio Next em `http://127.0.0.1:$PORT`. A opção `origin` troca. O header `Host` da requisição nunca é usado.
+- Sem resposta em 3 s (`timeout`), a prop vem `null` e a página segue como sem ela: o preload do build e o pedido no navegador. Um canal (`{ stable, canary }`) também vem `null`, porque a versão é escolhida por visitante.
+- Funciona em `getStaticProps` com `revalidate` também.
+
+### SSR do remote
+
+Com `ssr`, o servidor do host também renderiza o remote. O HTML aparece antes de qualquer JS, e o navegador só hidrata:
+
+```tsx
+// delivery/src/server.tsx (no remote)
+import { reactRender } from 'vitral/react-server'
+import Delivery from './Delivery'
+
+export const render = reactRender(Delivery, { state: (props) => buscarPedidos(props.loja) })
+```
+
+```tsx
+// pages/delivery/[[...slug]].tsx (no host)
+import { render } from 'delivery/server'
+
+const props = { loja: 1 }
+export const getServerSideProps = async () => ({ props: await remoteProps('delivery', { ssr: { delivery: { render, props } } }) })
+
+export default function Delivery({ vitral, vitralSsr }) {
+  return <NextRemote name="delivery" manifest={vitral.delivery} ssr={vitralSsr?.delivery} props={props} />
+}
+```
+
+- `state` busca os dados no servidor. Eles vão com o HTML, num `<script type="application/json">`, e o remote lê com `useInitialState()` de `vitral/react` nos dois lados, sem buscar de novo no navegador.
+- O HTML leva o CSS do remote (com `integrity`), para pintar certo antes do JS.
+- Se o `render` falha ou passa de `timeout` (3 s), `vitralSsr[nome]` vem `null` e a página monta no navegador como antes.
+- As `props` do `NextRemote` têm de ser as mesmas do servidor. O `render` não recebe o roteador do Next (`__next`).
+- O `render` vem do código do remote no build do host. Se o remote publicar uma versão nova sem um build novo do host, o React acusa a diferença na hidratação e renderiza de novo no navegador.
+- Com `isolate: 'shadow'`, o HTML do servidor é descartado e o remote monta no navegador.
+- Com `policy` `'lazy'` (2G ou economia de dados), a hidratação espera o remote aparecer na tela.
+- Se o layout do host espera algo do navegador para mostrar a página (por exemplo, a autenticação), o HTML do remote só aparece depois disso, e o ganho no FCP some.
 
 ### Ofertas só com os nomes usados
 

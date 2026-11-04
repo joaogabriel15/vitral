@@ -7,6 +7,8 @@
  * A primeira cópia a carregar instala o objeto; as outras usam os métodos
  * que conhecem. Mudanças futuras só acrescentam métodos e sobem `protocol`.
  */
+import type { DedupePlan } from './dedupe-plan'
+import type { Policy } from './policy'
 import { createEventBus } from './bus'
 import type { EventBus, Isolation, RemoteEntry, RemoteMetric, RemoteModule, RollbackInfo, ShadowCss, SharedModules, StyleOptions } from './types'
 import type { SharedStore } from './store'
@@ -15,6 +17,10 @@ import type { RemoteError } from './errors'
 export const PROTOCOL = 1
 
 export interface Settings {
+  /** Quanto baixar além do que a página usa (`core/policy.ts`). */
+  policy?: Policy
+  /** Cópia de `dedupe` que cada remote usa (`planDedupe`). */
+  dedupePlan?: DedupePlan
   timeout: number
   retries: number
   isolate: Isolation

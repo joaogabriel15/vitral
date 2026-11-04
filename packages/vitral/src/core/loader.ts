@@ -1,6 +1,7 @@
 import { dedupeModule, sriModule } from './bundled'
 import { prefetchCss } from './css'
 import { fail, isRemoteError, RemoteError, report } from './errors'
+import { policy } from './policy'
 import { checkOrigin } from './registry'
 import type { SplitBuild, Verifiable } from './sri'
 import { protocol, type LoadedRemote } from './state'
@@ -54,9 +55,8 @@ export function routeChunks(r: LoadedRemote & { split?: SplitBuild }): string[] 
 }
 
 export function warmRoutes(r: LoadedRemote): void {
-  // Economia de dados ou 2G: não baixa o que talvez nem seja usado.
-  const c = (navigator as any).connection
-  if (c?.saveData || /2g/.test(c?.effectiveType)) return
+  // Rede lenta, economia de dados ou aparelho fraco: não baixa o que talvez nem seja usado.
+  if (policy() !== 'all') return
   const queue = routeChunks(r).slice()
   // O corpo precisa ser lido: resposta grande largada no meio não fica no cache HTTP.
   const next = (): unknown => queue.length && fetch(queue.shift()!, { priority: 'low' } as RequestInit).then((res) => res.arrayBuffer()).catch(() => {}).then(next)
@@ -113,7 +113,7 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
     try {
       // O manifesto já baixa enquanto as ofertas de dedupe se registram.
       const known = p.entry(name)
-      const early = known?.url && !known.module && !known.manifest && !overrides() ? prefetchManifest(known.url, name, priority) : undefined
+      const early = known?.url && !known.module && !known.manifest && !overrides() ? prefetchManifest(known.url, name, priority, signed(known)) : undefined
       await p.pending()
       // Override troca a URL e descarta a integrity do host; o isolamento continua.
       const override = await devOverride(name)
@@ -167,10 +167,11 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
   // O manifesto é o único arquivo sem hash no nome: sempre revalida, para
   // nunca usar um deploy velho (o resto pode ter cache eterno). Um manifesto
   // embutido no registro do host poupa essa ida e volta.
+  const keys = signed(entry)
   const m: RemoteManifest =
     entry.manifest ??
     (new URL(entry.url).pathname.endsWith('.json')
-      ? await (early ?? manifestOf(entry.url, name, priority))
+      ? await (early ?? manifestOf(entry.url, name, priority, keys))
       : { name, entry: entry.url })
   // Canal (`{ stable, canary }`): escolhe a versão e segue pelo manifesto dela.
   if ((m as any)?.stable) return resolveEntry(name, await (await import('./channel')).pick(name, entry, m as any), priority)
@@ -182,14 +183,15 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
   }
   const abs = (u: string) => absolute(u, entry.url)
   const sri: Record<string, string> = {}
-  for (const file in m.files ?? {}) sri[abs(file)] = m.files![file]
+  // Com `keys`, cada arquivo também precisa da assinatura do remote (Chrome 141+; os outros navegadores ignoram).
+  for (const file in m.files ?? {}) sri[abs(file)] = m.files![file] + keys
   const resolved: Resolved = {
     entry: abs(m.entry),
     css: [...(m.css ?? []), ...(entry.css ?? [])].map(abs),
     shadow: m.shadow,
     // A integridade declarada pelo host vence a do manifesto, e aí só o
     // arquivo único (o que ela descreve) é usado.
-    integrity: entry.integrity === false ? undefined : (entry.integrity ?? m.integrity),
+    integrity: entry.integrity === false ? undefined : (entry.integrity ?? (m.integrity && m.integrity + keys)),
     isolate: entry.isolate,
     scope: m.scope,
     version: m.version,
@@ -220,15 +222,18 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
   return resolved
 }
 
+/** ` ed25519-…` de cada chave pública do remote, para somar aos hashes. */
+const signed = (e: RemoteEntry): string => (e.keys ?? []).map((k) => ' ed25519-' + k).join('')
+
 /** Pede o manifesto antes das ofertas de dedupe; nada se a origem não é permitida. */
-function prefetchManifest(url: string, name: string, priority?: RequestPriority): Promise<RemoteManifest> | undefined {
+function prefetchManifest(url: string, name: string, priority: RequestPriority | undefined, keys: string): Promise<RemoteManifest> | undefined {
   try {
     if (!new URL(url).pathname.endsWith('.json')) return
     checkOrigin(name, url)
   } catch {
     return
   }
-  const f = manifestOf(url, name, priority)
+  const f = manifestOf(url, name, priority, keys)
   f.catch(() => {})
   return f
 }
@@ -237,12 +242,12 @@ function prefetchManifest(url: string, name: string, priority?: RequestPriority)
  * Com `maxStale`, a cópia salva do manifesto pode valer sem esperar a rede
  * (`./stale`, um módulo à parte que baixa junto com o manifesto).
  */
-function manifestOf(url: string, name: string, priority?: RequestPriority): Promise<RemoteManifest> {
+function manifestOf(url: string, name: string, priority: RequestPriority | undefined, keys: string): Promise<RemoteManifest> {
   const { timeout, maxStale } = protocol().settings()
   // `same-origin`, o modo do `<link rel="preload" crossorigin>` que o host põe
   // no HTML: sem ele o navegador baixa o manifesto de novo. Para outra origem
-  // continua sem cookies.
-  const fresh = fetchJson<RemoteManifest>(url, timeout, name, { cache: 'no-cache', credentials: 'same-origin', priority })
+  // continua sem cookies. Com `keys`, o navegador confere a assinatura do manifesto.
+  const fresh = fetchJson<RemoteManifest>(url, timeout, name, { cache: 'no-cache', credentials: 'same-origin', priority, integrity: keys.slice(1) })
   return maxStale ? import('./stale').then((m) => m.stale(url, fresh, maxStale), () => fresh) : fresh
 }
 
@@ -258,8 +263,8 @@ async function importModule(name: string, r: Resolved): Promise<any> {
   if (!r.integrity) {
     if (!r.split) return run(r.entry)
     if (r.split.dedupe?.length) {
-      const { shared } = await dedupeModule()
-      for (const d of r.split.dedupe)
+      const { shared, planned } = await dedupeModule()
+      for (const d of planned(name, r.split).dedupe!)
         shared(protocol())(d.name, d.range, { version: d.version, url: d.file, load: async () => (await run(d.file)).default })
     }
     return run(r.split.entry)

@@ -4,7 +4,8 @@ import { act, createElement as h, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { register } from '../src/index'
-import { preload, reactRemote, Remote, usePortalContainer, useVitral } from '../src/react'
+import { preload, reactRemote, Remote, useInitialState, usePortalContainer, useVitral } from '../src/react'
+import { ssrHolder } from '../src/core/ssr-markup'
 import { reactRender } from '../src/react-server'
 import { failingRemote, mockRemote } from '../src/testing'
 import { cleanup, flush, serveManifest } from './helpers'
@@ -181,6 +182,32 @@ describe('React: SSR (reactRender + hydrate)', () => {
     expect(button.textContent).toBe('cliques: 3')
     await act(async () => handle.unmount())
     expect(el.innerHTML).toBe('')
+  })
+
+  it('<Remote ssr>: o HTML aparece antes do JS, hidrata no mesmo nó e o estado do servidor chega aos dois lados', async () => {
+    function Lista({ id }: { id: number }) {
+      const itens = useInitialState<string[]>() ?? ['buscando']
+      const [n, setN] = useState(0)
+      return h('button', { onClick: () => setN((x) => x + 1) }, `${id}: ${itens.join(',')} ${n}`)
+    }
+    const rendered = await reactRender(Lista, { state: async ({ id }) => [`a${id}`, `b${id}`] })({ id: 7 })
+    expect(rendered).toEqual({ html: '<button>7: a7,b7 0</button>', state: ['a7', 'b7'] })
+    const markup = ssrHolder('lista', { scope: 'lista' }, rendered, [['/lista/s.css', 'sha384-x']])
+    expect(markup).toContain('<script type="application/json" data-vitral-state>["a7","b7"]</script>')
+    expect(markup).toContain('<link rel="stylesheet" href="/lista/s.css" crossorigin="anonymous" integrity="sha384-x">')
+    const mod = reactRemote(Lista)
+    const hydrate = vi.spyOn(mod, 'hydrate')
+    register('lista', { module: mod })
+    const { div } = await render(h(Remote, { name: 'lista', props: { id: 7 }, ssr: ssrHolder('lista', { scope: 'lista' }, rendered, []), fallback: h('p', null, 'Carregando') }))
+    const button = div.querySelector('button')!
+    expect(div.textContent).not.toContain('Carregando')
+    await vi.waitFor(() => expect(hydrate).toHaveBeenCalled())
+    expect(hydrate.mock.calls[0][2].initialState).toEqual(['a7', 'b7'])
+    await act(flush)
+    expect(div.querySelector('button')).toBe(button)
+    await act(async () => button.click())
+    expect(button.textContent).toBe('7: a7,b7 1')
+    expect(div.querySelector('[data-vitral-root]')!.getAttribute('data-vitral-scope')).toBe('lista')
   })
 
   it('no servidor, useVitral() devolve null', () => {

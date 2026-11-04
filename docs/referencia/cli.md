@@ -6,6 +6,7 @@ npx vitral registry [remotes.json | nome=url ...] [--base url] [--out arquivo] [
 npx vitral add <remote ...> [--registry url|arquivo] [--to remotes.json] [--base url] [--out arquivo] [--force] [--no-types]
 npx vitral mcp [--registry url|arquivo]
 npx vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url] [--contract faixa] [--max-kb n] [--json]
+npx vitral doctor --stats stats.json [--route /pagina] [--remote dist ...] [--top n] [--json]
 npx vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
 npx vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
 npx vitral dict <dist> --from <dist-anterior> [--from ...] [--level n] [--no-dcb]
@@ -158,6 +159,25 @@ Termina com código `1` se houver algum `✗`. Avisos não mudam o código.
 - run: npx vitral doctor https://staging.empresa.com/remotes.json --host https://staging.empresa.com --max-kb 200
 ```
 
+### Bytes do host numa rota
+
+```bash
+npx vitral doctor --stats .next/stats.json --route /loja --remote ../loja/dist
+```
+
+Com `--stats`, o `doctor` lê os stats do webpack do host e soma o que uma rota carrega: o código comum do Next, o `_app` e a página. Os stats podem vir de `stats.toJson()`, do `webpack --json` ou do `@next/bundle-analyzer` com `generateStatsFile`. Nada roda: é análise estática.
+
+A saída lista os pacotes e os módulos que mais pesam, e aponta:
+
+| Aviso | O que costuma ser |
+| --- | --- |
+| Traduções no JS da rota | Todas as línguas e namespaces no bundle. Carregue a língua ativa sob demanda |
+| Módulos sem nenhum export usado | Barrel sem `"sideEffects": false`: o webpack mantém o arquivo inteiro |
+| Ofertas de `share` com todos os exports | O build do host não achou o `vitral.json` de algum remote, ou o remote é anterior à 0.10 |
+| Pacotes em dobro com um `--remote` | O host e o remote levam cada um a sua cópia. Com o mesmo major, é candidato a `share` no host e `dedupe` no remote |
+
+`--remote` aceita a pasta `dist` do remote ou o `vitral.json`. Para cruzar os pacotes, o remote precisa do SBOM (`vitral({ sbom: true })`). `--route` aceita `/loja`, `pages/loja/[[...slug]]` ou `/` para a página inicial. `--top n` muda quantos pacotes e módulos aparecem (15 por padrão).
+
 ## vitral migrate
 
 Converte um app do single-spa ou um remote do Module Federation num remote vitral. Rode na pasta do projeto:
@@ -255,3 +275,20 @@ npx vitral dict dist --from ../dist-anterior
 
 Grava `<arquivo>.<hash>.dcz` (zstd do Node, 22.19+ ou 24.6+) e, com o binário `brotli`, `<arquivo>.<hash>.dcb`. Termina com código `1` se faltar `--from`, uma pasta não existir ou o Node não tiver zstd com dicionário.
 
+## vitral sign
+
+Assina o `vitral.json`, o JS e o CSS do dist com Ed25519, para o host que fixa a chave do remote em `keys`. Receita completa em [Segurança](/aprender/seguranca#assinatura).
+
+```bash
+npx vitral sign --keygen
+VITRAL_SIGNING_KEY="$(cat chave.pem)" npx vitral sign dist --base /carrinho/
+```
+
+| Opção | O que faz |
+| --- | --- |
+| `--keygen` | Cria o par de chaves e mostra as duas |
+| `--key-file arquivo` | Chave privada em PEM. Sem ela, usa `VITRAL_SIGNING_KEY` |
+| `--base caminho` | Caminho público da pasta no servidor. Padrão: `/` |
+| `--no-headers` | Grava só `vitral-signatures.json`, sem `_headers` |
+
+Rode por último: qualquer mudança num arquivo depois disso invalida a assinatura. Termina com código `1` sem a chave privada.

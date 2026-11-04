@@ -2,7 +2,7 @@
 // Hidratação do HTML que o gateway (`vitral/edge`) renderizou no servidor.
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { defineVitralElement } from '../src/element'
-import { refresh, register, type MountedRemote, type RemoteContext, type RemoteModule } from '../src/index'
+import { configure, refresh, register, type MountedRemote, type RemoteContext, type RemoteModule } from '../src/index'
 import { cleanup, flush } from './helpers'
 
 beforeAll(async () => {
@@ -115,6 +115,28 @@ describe('hidratação do SSR', () => {
     document.body.append(el)
     await flush(10)
     expect(r.mod.hydrate).toHaveBeenCalledWith(root, { n: 1 }, expect.objectContaining({ shadowRoot: null, portalContainer: document.body }))
+  })
+
+  it('política "lazy" (2G, economia de dados): só hidrata quando aparece na tela', async () => {
+    let seen: (entries: { isIntersecting: boolean }[]) => void = () => {}
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(fn: typeof seen) {
+        seen = fn
+      }
+      observe() {}
+      disconnect() {}
+    })
+    configure({ policy: 'lazy' })
+    const r = remote()
+    register('carrinho', { module: r.mod })
+    const { el, button } = ssrElement('carrinho', { isolate: '' })
+    document.body.append(el)
+    await flush(10)
+    expect(r.mod.hydrate).not.toHaveBeenCalled()
+    expect(el.contains(button)).toBe(true)
+    seen([{ isIntersecting: true }])
+    await flush(10)
+    expect(r.mod.hydrate).toHaveBeenCalled()
   })
 
   it('remote sem hydrate: monta do jeito normal e tira o HTML do servidor depois', async () => {

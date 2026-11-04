@@ -97,82 +97,90 @@ export function rewrite(body: ReadableStream<Uint8Array>, tags: string | string[
   async function process(out: TransformStreamDefaultController<Uint8Array>, end: boolean) {
     let text = ''
     let i = 0
+    // O que vem como veio entra em `text` em pedaços grandes, de `from` até a próxima tag trocada.
+    let from = 0
+    const take = (to: number) => {
+      if (to > from) text += buf.slice(from, to)
+      from = to
+    }
     const flush = () => text && (out.enqueue(encoder.encode(text)), (text = ''))
     for (;;) {
+      if (raw) {
+        // Dentro de script/style/textarea/title, só o fechamento conta.
+        const re = rawEnd(raw)
+        re.lastIndex = i
+        const found = re.exec(buf)
+        if (found) (raw = null), (i = found.index)
+        else {
+          // Um `</scri` partido no fim do pedaço: espera o resto.
+          const last = buf.lastIndexOf('<')
+          i = !end && last >= i && buf.length - last < raw.length + 2 ? last : buf.length
+          break
+        }
+      }
       const lt = buf.indexOf('<', i)
       if (lt < 0) {
-        text += buf.slice(i)
         i = buf.length
         break
       }
-      text += buf.slice(i, lt)
       i = lt
-      if (raw) {
-        const close = buf.slice(lt, lt + raw.length + 2).toLowerCase()
-        if (close.length < raw.length + 2 && !end) break
-        if (close === `</${raw}`) raw = null
-        else {
-          text += '<'
-          i = lt + 1
-          continue
-        }
-      }
       // `<!-` partido no fim do pedaço: espera o resto.
       if (!end && buf.length - lt < 4 && '<!--'.startsWith(buf.slice(lt))) break
       if (buf.startsWith('<!--', lt)) {
         const stop = buf.indexOf('-->', lt + 4)
         if (stop < 0) {
-          if (!end) break
-          text += buf.slice(lt)
-          i = buf.length
+          if (end) i = buf.length
           break
         }
-        text += buf.slice(lt, stop + 3)
         i = stop + 3
         continue
       }
-      const m = /^<(\/?)([a-zA-Z][^\s/>]*)/.exec(buf.slice(lt, lt + 64))
-      if (!m) {
+      // Nome da tag: `<` ou `</`, uma letra, e até espaço, `/` ou `>`.
+      const closing = buf.charCodeAt(lt + 1) === 47
+      const at = lt + (closing ? 2 : 1)
+      if (!letter(buf.charCodeAt(at))) {
         // `</` partido: ainda pode virar tag de fechamento.
         if (buf.length - lt < 3 && !end) break
-        text += '<'
         i = lt + 1
         continue
       }
-      const close = findTagEnd(buf, lt)
+      let k = at + 1
+      while (k < buf.length && !nameEnd(buf.charCodeAt(k))) k++
+      const close = tagEnd(buf, k)
       if (close < 0) {
-        if (!end) break
-        text += buf.slice(lt)
-        i = buf.length
+        if (end) i = buf.length
         break
       }
-      const source = buf.slice(lt, close + 1)
       i = close + 1
-      const name = m[2].toLowerCase()
-      if (m[1]) {
+      const name = buf.slice(at, k).toLowerCase()
+      if (closing) {
         if (depth > 0 && !VOID.has(name)) depth--
         else if (depth === 0 && name === tag) depth = -1
-        text += source
         continue
       }
       if (RAW.has(name)) raw = name
-      const selfClosing = source.endsWith('/>') || VOID.has(name)
+      const selfClosing = buf.charCodeAt(close - 1) === 47 /* / */ || VOID.has(name)
       if (depth < 0 && wanted.has(name)) {
         tag = name
-        const el = new Tag(name, source)
+        const el = new Tag(name, buf.slice(lt, close + 1))
         const r = handlers.element(el)
+        take(lt)
         if (r) flush(), await r
         text += el
+        from = i
         if (!selfClosing) depth = 0
         continue
       }
       if (depth === 0 && handlers.child) {
-        const el = new Tag(name, source)
+        const el = new Tag(name, buf.slice(lt, close + 1))
         handlers.child(el)
+        take(lt)
         text += el
-      } else text += source
+        from = i
+      }
       if (depth >= 0 && !selfClosing) depth++
     }
+    take(i)
     buf = buf.slice(i)
     flush()
   }
@@ -192,15 +200,26 @@ export function rewrite(body: ReadableStream<Uint8Array>, tags: string | string[
   )
 }
 
-/** Fim da tag que começa em `start` (o `>` fora de aspas), ou -1 se ainda não chegou. */
-function findTagEnd(s: string, start: number): number {
-  let quote = ''
-  for (let i = start + 1; i < s.length; i++) {
-    const c = s[i]
-    if (quote) {
-      if (c === quote) quote = ''
-    } else if (c === '"' || c === "'") quote = c
-    else if (c === '>') return i
+const letter = (c: number) => (c | 32) >= 97 && (c | 32) <= 122
+/** Espaço (como o `\s` dos atributos), `/` ou `>`. */
+const nameEnd = (c: number) => c === 62 || c === 47 || c === 32 || (c >= 9 && c <= 13) || c === 160 || c === 0x1680 || c === 0xfeff || (c > 0x1fff && /\s/.test(String.fromCharCode(c)))
+
+/** O `>` que fecha a tag, fora de aspas, a partir de `from`; -1 se ainda não chegou. */
+function tagEnd(s: string, from: number): number {
+  for (let i = from; i < s.length; i++) {
+    const c = s.charCodeAt(i)
+    if (c === 62) return i
+    if (c === 34 || c === 39) {
+      i = s.indexOf(c === 34 ? '"' : "'", i + 1)
+      if (i < 0) return -1
+    }
   }
   return -1
+}
+const ends = new Map<string, RegExp>()
+/** Fechamento de um elemento de texto cru (`</script`, sem diferenciar maiúsculas). */
+const rawEnd = (name: string): RegExp => {
+  let re = ends.get(name)
+  if (!re) ends.set(name, (re = new RegExp(`</${name}`, 'gi')))
+  return re
 }

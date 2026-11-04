@@ -1,3 +1,5 @@
+import type { DedupePlan } from './dedupe-plan'
+import type { Policy } from './policy'
 import type { RemoteError } from './errors'
 import type { SharedApi } from './shared'
 
@@ -22,6 +24,11 @@ export type CheckedProps<N extends string> = N extends keyof Remotes ? { name?: 
 export interface RemoteContext {
   /** Nome com que o host registrou este remote. */
   name: string
+  /**
+   * Estado que o `render` do servidor devolveu com o HTML (`{ html, state }`),
+   * só na hidratação. O remote começa dele em vez de buscar os dados de novo.
+   */
+  initialState?: unknown
   /** URL base de onde o remote foi carregado (útil para assets). */
   baseUrl: string
   /**
@@ -123,6 +130,13 @@ export interface RemoteEntry {
    * nem `blob:` em `script-src`, onde a conferência não tem como rodar.
    */
   integrity?: string | false
+  /**
+   * Chaves públicas Ed25519 do remote (base64, sem `ed25519-`), de
+   * `vitral sign --keygen`. O Chrome 141+ só aceita o `vitral.json`, o JS e o
+   * CSS do remote assinados por uma delas (`vitral sign`), além do hash. Os
+   * outros navegadores ignoram e conferem só o hash.
+   */
+  keys?: string[]
   /** CSS extra para carregar junto. */
   css?: string[]
   /** Isolamento padrão para este remote. */
@@ -246,6 +260,21 @@ export interface VitralConfig {
   /** Isolamento padrão para todos os remotes. Padrão `'none'`. */
   isolate?: Isolation
   /**
+   * Quanto baixar além do que a página usa agora. Padrão: escolhida pelos
+   * sinais do visitante (`saveData`, `effectiveType`, `deviceMemory`).
+   * `'all'`: tudo. `'critical'` (3G, até 2 GB de memória): sem o preload
+   * ocioso dos outros remotes e sem `warmRoutes`. `'lazy'` (2G, economia de
+   * dados): só o que a página usa, e o remote com HTML do servidor só
+   * hidrata ao aparecer na tela.
+   */
+  policy?: Policy
+  /**
+   * Cópia de `dedupe` que cada remote usa, calculada com os manifestos de
+   * todos (`planDedupe`). O `withVitral` do host Next preenche sozinho.
+   * Assim dois remotes com faixas que se cruzam baixam uma cópia só.
+   */
+  dedupePlan?: DedupePlan
+  /**
    * Liga os overrides de desenvolvimento (`?vitral=nome@url` e
    * `localStorage['vitral:overrides']`) fora de localhost. Em localhost já
    * valem. Nunca ligue em produção: um link com `?vitral=` executaria código
@@ -339,7 +368,18 @@ export interface RemoteManifest {
    * continuam apontando para o arquivo único, usado por hosts antigos e
    * quando o navegador não confere o hash por módulo.
    */
-  split?: { entry: string; chunks?: string[]; lazy?: string[] }
+  split?: {
+    entry: string
+    chunks?: string[]
+    lazy?: string[]
+    /**
+     * O JS que roda ao montar (entrada, chunks e cópias de `dedupe`), na
+     * ordem de download: o caminho mais longo em bytes primeiro.
+     */
+    order?: string[]
+    /** Posições em `order` do caminho crítico: esses vão com `fetchpriority="high"`. */
+    critical?: number[]
+  }
   /**
    * Dois módulos de teste do build dividido (`export{}` e um com hash errado),
    * servidos junto com o remote. O runtime testa com eles se o navegador
