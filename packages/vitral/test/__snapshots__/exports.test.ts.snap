@@ -217,7 +217,9 @@ exports[`exports públicos > svelte 1`] = `
 
 exports[`exports públicos > sw 1`] = `
 [
+  "filesOf",
   "remoteFiles",
+  "remoteWorker",
 ]
 `;
 

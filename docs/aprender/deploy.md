@@ -44,12 +44,28 @@ Inclua a origem dos remotes em `script-src` e `connect-src`, e `blob:` em `scrip
 Content-Security-Policy: script-src 'self' https://cdn.empresa.com blob:; connect-src 'self' https://cdn.empresa.com
 ```
 
-## Offline
+## Service worker
 
-`remoteFiles` de `vitral/sw` lista tudo que um remote publica, para o service worker do host guardar no cache:
+`remoteWorker` de `vitral/sw` é um service worker pronto para os remotes:
 
 ```js
 // sw.js do host
+import { remoteWorker } from 'vitral/sw'
+
+remoteWorker(self, { manifests: ['/delivery-remote/vitral.json'] })
+```
+
+- No `install`, baixa o manifesto e todos os arquivos de cada remote para o cache. O Chrome gera o cache de código completo para scripts guardados no `install`, então a segunda visita compila menos.
+- No Chrome 123+, registra uma rota da Static Routing API para `split/*`: esses arquivos saem do cache sem acordar o service worker.
+- Arquivos com hash (`.js`, `.css`, `.wasm`) saem do cache; se faltam, vão à rede.
+- O manifesto vai sempre à rede primeiro. Sem rede, sai do cache. Quando chega uma versão nova, os arquivos dela entram no cache por trás, e os da versão anterior saem.
+- Se um manifesto não chega, nada sai do cache.
+
+Opções: `cache` (nome do cache, padrão `vitral-remotes`).
+
+Para montar um worker próprio, `remoteFiles(url)` lista tudo que um remote publica, e `filesOf(manifesto, url)` faz o mesmo para um manifesto já lido:
+
+```js
 import { remoteFiles } from 'vitral/sw'
 
 self.addEventListener('install', (e) => e.waitUntil(
