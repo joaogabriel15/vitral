@@ -86,67 +86,94 @@ Os 10 frameworks têm testes de ponta a ponta no CI, com host e remote de framew
 
 ## Começo rápido
 
-Exemplo: uma loja em React que mostra o carrinho, feito por outra equipe.
+Exemplo: uma loja em React mostra o carrinho, feito por outra equipe. Os dois lados abaixo têm os mesmos arquivos, na mesma ordem.
 
 ### Hoje, com Module Federation
 
-Loja e carrinho combinam a configuração no build dos dois: o que cada um expõe, o que pega do outro e quais versões dividem.
+```jsx
+// carrinho/src/Carrinho.jsx
+export default function Carrinho({ userId }) {
+  return <p>Carrinho do usuário {userId}</p>
+}
+```
 
 ```js
 // carrinho/webpack.config.js
-new ModuleFederationPlugin({
-  name: 'carrinho',
-  filename: 'remoteEntry.js',
-  exposes: { './Carrinho': './src/Carrinho' },
-  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
-})
+const { ModuleFederationPlugin } = require('webpack').container
+
+module.exports = {
+  plugins: [
+    new ModuleFederationPlugin({
+      name: 'carrinho',
+      filename: 'remoteEntry.js',
+      exposes: { './Carrinho': './src/Carrinho.jsx' },
+      shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+    }),
+  ],
+}
 ```
 
 ```js
 // loja/webpack.config.js
-new ModuleFederationPlugin({
-  name: 'loja',
-  remotes: { carrinho: 'carrinho@https://cdn.empresa.com/carrinho/remoteEntry.js' },
-  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
-})
+const { ModuleFederationPlugin } = require('webpack').container
+
+module.exports = {
+  plugins: [
+    new ModuleFederationPlugin({
+      name: 'loja',
+      remotes: { carrinho: 'carrinho@https://cdn.empresa.com/carrinho/remoteEntry.js' },
+      shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+    }),
+  ],
+}
 ```
 
 ```jsx
 // loja/src/App.jsx
-const Carrinho = React.lazy(() => import('carrinho/Carrinho'))
+import { lazy, Suspense } from 'react'
+
+const Carrinho = lazy(() => import('carrinho/Carrinho'))
 
 export function App() {
   return (
-    <ErrorBoundary fallback={<p>Erro</p>}>
-      <Suspense fallback={<p>Carregando…</p>}>
-        <Carrinho userId={42} />
-      </Suspense>
-    </ErrorBoundary>
+    <Suspense fallback={<p>Carregando…</p>}>
+      <Carrinho userId={42} />
+    </Suspense>
   )
 }
 ```
 
 ### O mesmo app com vitral
 
-Só o carrinho tem plugin. O build da loja não muda.
-
 ```jsx
-// carrinho/src/App.jsx (o mesmo componente)
-export default function Carrinho({ userId }) { … }
+// carrinho/src/Carrinho.jsx (igual)
+export default function Carrinho({ userId }) {
+  return <p>Carrinho do usuário {userId}</p>
+}
 ```
 
 ```js
-// carrinho/vite.config.js (no lugar do ModuleFederationPlugin)
+// carrinho/vite.config.js (no lugar do webpack.config.js)
 import react from '@vitejs/plugin-react'
 import vitral from 'vitral/vite'
 
-export default { plugins: [react(), vitral()] }
+export default {
+  plugins: [
+    react(),
+    vitral({ name: 'carrinho', entry: 'src/Carrinho.jsx', dedupe: ['react'] }),
+  ],
+}
 ```
 
-`vite build` gera o JS, o CSS e um `vitral.json`. Publique a pasta `dist` em qualquer CDN.
+```js
+// loja/webpack.config.js (sem o ModuleFederationPlugin)
+module.exports = {
+  plugins: [],
+}
+```
 
 ```jsx
-// loja/src/App.jsx (sem plugin no build da loja)
+// loja/src/App.jsx
 import { configure } from 'vitral'
 import { Remote } from 'vitral/react'
 
@@ -157,22 +184,21 @@ export function App() {
 }
 ```
 
-Pronto. Mudar `props` atualiza o remote sem remontar. Para gerar loja e carrinho prontos: `npm create vitral@latest`.
+`vite build` no carrinho gera o JS, o CSS e o `vitral.json`. Publique a pasta `dist` em qualquer CDN. Para gerar loja e carrinho prontos: `npm create vitral@latest`.
 
 ### O que muda
 
 | | Module Federation | vitral |
 |---|---|---|
-| Build da loja | Plugin com `remotes` e `shared` | Não muda |
-| Versão do React | Combinada entre as equipes (`singleton`) | Cada um usa a sua. Uma cópia só com [`dedupe`](https://joaogabriel15.github.io/vitral/aprender/dedupe) |
-| Carregando e erro | `Suspense` e `ErrorBoundary` | `fallback` e `error` do `<Remote>` |
+| Build da loja | Plugin com `remotes` e `shared` | Sem plugin |
+| Versão do React | Combinada entre as equipes (`singleton`) | O carrinho usa o React da loja quando a versão serve (`dedupe`), senão o próprio |
 | Framework | O mesmo nos dois lados | Qualquer um. A loja em React pode mostrar um carrinho em Vue |
 
 Numa página HTML qualquer, sem build:
 
 ```html
 <script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
-<vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json"></vitral-remote>
+<vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json" props='{"userId": 42}'></vitral-remote>
 ```
 
 Guia completo: [Migrar do Module Federation](https://joaogabriel15.github.io/vitral/migracao/module-federation).
@@ -196,7 +222,7 @@ Host e remote não precisam ser do mesmo framework. Cada um tem uma página com 
 
 ## Next.js como host
 
-Exemplo: uma loja em Next.js com a área "Minha conta", feita por outra equipe.
+Exemplo: uma loja em Next.js com a área "Minha conta", feita por outra equipe. Os dois lados abaixo têm os mesmos arquivos, na mesma ordem. Com vitral, a loja ganha um arquivo novo no fim.
 
 <p align="center">
   <picture>
@@ -207,11 +233,16 @@ Exemplo: uma loja em Next.js com a área "Minha conta", feita por outra equipe.
 
 ### Hoje, com Multi-Zones
 
-São dois apps Next. A loja repassa as URLs de `/conta` para o app da conta.
-
 ```
 loja/    app Next principal
 conta/   segundo app Next (a zona)
+```
+
+```tsx
+// conta/pages/index.tsx
+export default function Conta() {
+  return <h1>Minha conta</h1>
+}
 ```
 
 ```js
@@ -219,13 +250,6 @@ conta/   segundo app Next (a zona)
 module.exports = {
   basePath: '/conta',
   assetPrefix: '/conta-static',
-}
-```
-
-```tsx
-// conta/pages/index.tsx
-export default function Conta() {
-  return <h1>Minha conta</h1>
 }
 ```
 
@@ -243,6 +267,13 @@ module.exports = {
 ```
 
 ```tsx
+// loja/pages/_app.tsx
+export default function App({ Component, pageProps }) {
+  return <Component {...pageProps} />
+}
+```
+
+```tsx
 // loja/components/Menu.tsx
 // <a>, não <Link>: a página recarrega e baixa Next e React de novo.
 <a href="/conta">Minha conta</a>
@@ -250,30 +281,33 @@ module.exports = {
 
 ### O mesmo app com vitral
 
-A loja continua sendo o único app Next. A conta vira um remote: um projeto Vite com o mesmo componente.
-
 ```
 loja/    app Next (o host)
-conta/   projeto Vite (o remote)
-```
-
-```js
-// conta/vite.config.js (no lugar do next.config.js da zona)
-import react from '@vitejs/plugin-react'
-import vitral from 'vitral/vite'
-
-export default { plugins: [react(), vitral({ name: 'conta', dedupe: ['react'] })] }
+conta/   o mesmo código, buildado com Vite (o remote)
 ```
 
 ```tsx
-// conta/src/App.tsx (o mesmo componente da página)
+// conta/pages/index.tsx (igual)
 export default function Conta() {
   return <h1>Minha conta</h1>
 }
 ```
 
 ```js
-// loja/next.config.js (no lugar das rewrites)
+// conta/vite.config.js (no lugar do next.config.js)
+import react from '@vitejs/plugin-react'
+import vitral from 'vitral/vite'
+
+export default {
+  plugins: [
+    react(),
+    vitral({ name: 'conta', entry: 'pages/index.tsx', next: { basePath: '/conta' }, dedupe: ['react'] }),
+  ],
+}
+```
+
+```js
+// loja/next.config.js (withVitral no lugar das rewrites)
 const { withVitral } = require('vitral/next-config')
 
 module.exports = withVitral({}, {
@@ -284,7 +318,7 @@ module.exports = withVitral({}, {
 ```
 
 ```tsx
-// loja/pages/_app.tsx (só acrescenta <VitralNext />)
+// loja/pages/_app.tsx (mais o <VitralNext />)
 import { VitralNext } from 'vitral/next-host'
 
 export default function App({ Component, pageProps }) {
@@ -293,47 +327,50 @@ export default function App({ Component, pageProps }) {
 ```
 
 ```tsx
-// loja/pages/conta/[[...slug]].tsx (arquivo novo: a página que mostra a conta)
-import { NextRemote } from 'vitral/next-host'
-
-export default function Conta() {
-  return <Layout><NextRemote name="conta" fallback={<p>Carregando…</p>} /></Layout>
-}
-```
-
-```tsx
 // loja/components/Menu.tsx
-// <Link> normal: a troca é sem recarregar, e o React não baixa de novo.
+// <Link>: a troca é sem recarregar, e o React não baixa de novo.
 <Link href="/conta">Minha conta</Link>
 ```
 
-Se o código da conta já usa `next/link` ou `useRouter`, não precisa reescrever: `vitral({ name: 'conta', next: { basePath: '/conta' } })` builda esse código com o Vite.
+```tsx
+// loja/pages/conta/[[...slug]].tsx (arquivo novo: a página da loja que mostra a conta)
+import { NextRemote } from 'vitral/next-host'
+
+export default function Conta() {
+  return <NextRemote name="conta" fallback={<p>Carregando…</p>} />
+}
+```
+
+Com `next: { basePath }`, o código da conta pode continuar usando `next/link` e `useRouter`.
 
 ### O que muda
 
 | | Multi-Zones | vitral |
 |---|---|---|
 | Apps Next | Um por área | Só a loja |
-| Configuração | `basePath` e `assetPrefix` na zona, `rewrites` na loja | `withVitral` na loja, plugin na conta |
+| Configuração | `basePath` e `assetPrefix` na zona, `rewrites` na loja | Plugin na conta, `withVitral` na loja |
 | Trocar de área | Recarrega a página (0,8 s no benchmark) | Sem recarregar (0,2 s) |
 | React e Next | Baixados de novo em cada área | Uma cópia para a página toda |
 | Layout da loja | Cada zona repete o seu | A conta fica dentro do layout da loja |
 
-Guia completo, com SSR por rota e prefetch: [Migrar do Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones).
-
-No App Router, o host usa `<Remote>` de `vitral/react` num componente `'use client'`. Exemplo em [Next.js](https://joaogabriel15.github.io/vitral/frameworks/next#host-com-app-router).
+Guia completo, com SSR por rota e prefetch: [Migrar do Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones). No App Router, o host usa `<Remote>` de `vitral/react` num componente `'use client'`: veja [Next.js](https://joaogabriel15.github.io/vitral/frameworks/next#host-com-app-router).
 
 ## Nuxt como host
 
-Exemplo: uma loja em Nuxt com a área "Catálogo", feita por outra equipe.
+Exemplo: uma loja em Nuxt com a área "Catálogo", feita por outra equipe. Os dois lados abaixo têm os mesmos arquivos, na mesma ordem. Com vitral, a loja ganha dois arquivos novos no fim.
 
 ### Hoje, com dois apps Nuxt
-
-A loja repassa as URLs de `/catalogo` para o app do catálogo.
 
 ```
 loja/       app Nuxt principal
 catalogo/   segundo app Nuxt
+```
+
+```vue
+<!-- catalogo/app/pages/index.vue -->
+<template>
+  <h1>Catálogo</h1>
+</template>
 ```
 
 ```ts
@@ -341,11 +378,6 @@ catalogo/   segundo app Nuxt
 export default defineNuxtConfig({
   app: { baseURL: '/catalogo/' },
 })
-```
-
-```vue
-<!-- catalogo/app/pages/index.vue -->
-<template><h1>Catálogo</h1></template>
 ```
 
 ```ts
@@ -365,28 +397,44 @@ export default defineNuxtConfig({
 
 ### O mesmo app com vitral
 
-A loja continua sendo o único app Nuxt. O catálogo vira um remote: um projeto Vite com o mesmo componente.
-
 ```
 loja/       app Nuxt (o host)
-catalogo/   projeto Vite (o remote)
-```
-
-```js
-// catalogo/vite.config.js (no lugar do app Nuxt do catálogo)
-import vue from '@vitejs/plugin-vue'
-import vitral from 'vitral/vite'
-
-export default { plugins: [vue(), vitral({ name: 'catalogo', dedupe: ['vue'] })] }
+catalogo/   o mesmo componente, buildado com Vite (o remote)
 ```
 
 ```vue
-<!-- catalogo/src/App.vue (o mesmo componente da página) -->
-<template><h1>Catálogo</h1></template>
+<!-- catalogo/app/pages/index.vue (igual) -->
+<template>
+  <h1>Catálogo</h1>
+</template>
+```
+
+```js
+// catalogo/vite.config.js (no lugar do nuxt.config.ts)
+import vue from '@vitejs/plugin-vue'
+import vitral from 'vitral/vite'
+
+export default {
+  plugins: [
+    vue(),
+    vitral({ name: 'catalogo', entry: 'app/pages/index.vue', dedupe: ['vue'] }),
+  ],
+}
 ```
 
 ```ts
-// loja/app/plugins/vitral.client.ts (no lugar do proxy)
+// loja/nuxt.config.ts (sem o proxy)
+export default defineNuxtConfig({})
+```
+
+```vue
+<!-- loja/app/components/Menu.vue -->
+<!-- <NuxtLink>: a troca é sem recarregar. -->
+<NuxtLink to="/catalogo">Catálogo</NuxtLink>
+```
+
+```ts
+// loja/app/plugins/vitral.client.ts (arquivo novo: registra o catálogo)
 import * as Vue from 'vue'
 import { configure } from 'vitral'
 
@@ -399,7 +447,7 @@ export default defineNuxtPlugin(() => {
 ```
 
 ```vue
-<!-- loja/app/pages/catalogo.vue (arquivo novo: a página que mostra o catálogo) -->
+<!-- loja/app/pages/catalogo/[...slug].vue (arquivo novo: a página da loja que mostra o catálogo) -->
 <script setup lang="ts">
 import { VitralRemote } from 'vitral/vue'
 </script>
@@ -409,12 +457,6 @@ import { VitralRemote } from 'vitral/vue'
     <template #fallback><p>Carregando…</p></template>
   </VitralRemote>
 </template>
-```
-
-```vue
-<!-- loja/app/components/Menu.vue -->
-<!-- <NuxtLink> normal: a troca é sem recarregar. -->
-<NuxtLink to="/catalogo">Catálogo</NuxtLink>
 ```
 
 O servidor renderiza o `fallback` e o catálogo monta no navegador. Não precisa de `<ClientOnly>`.

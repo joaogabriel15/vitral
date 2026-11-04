@@ -4,11 +4,20 @@ Svelte 5 e SvelteKit. Import: `vitral/svelte`.
 
 ## Hoje e com vitral
 
-Exemplo: uma loja em Svelte que mostra o carrinho de outra equipe.
+Exemplo: uma loja em Svelte mostra o carrinho, feito por outra equipe. Os dois lados têm os mesmos arquivos, na mesma ordem.
 
 ### Hoje, com Module Federation
 
-O Module Federation não tem adaptador para Svelte. O carrinho expõe uma função que monta o componente, e a loja chama essa função.
+O Module Federation não tem adaptador para Svelte, então o carrinho expõe uma função que monta o componente.
+
+```svelte
+<!-- carrinho/src/Carrinho.svelte -->
+<script>
+  let { userId } = $props()
+</script>
+
+<p>Carrinho do usuário {userId}</p>
+```
 
 ```js
 // carrinho/src/montar.js
@@ -23,20 +32,47 @@ export function montar(el, props) {
 
 ```js
 // carrinho/vite.config.js
-federation({
-  name: 'carrinho',
-  filename: 'remoteEntry.js',
-  exposes: { './montar': './src/montar.js' },
-  shared: { svelte: { singleton: true } },
-})
+import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { federation } from '@module-federation/vite'
+
+export default {
+  plugins: [
+    svelte(),
+    federation({
+      name: 'carrinho',
+      filename: 'remoteEntry.js',
+      exposes: { './montar': './src/montar.js' },
+      shared: { 'svelte': { singleton: true } },
+    }),
+  ],
+}
+```
+
+```js
+// loja/vite.config.js
+import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { federation } from '@module-federation/vite'
+
+export default {
+  plugins: [
+    svelte(),
+    federation({
+      name: 'loja',
+      remotes: {
+        carrinho: { type: 'module', name: 'carrinho', entry: 'https://cdn.empresa.com/carrinho/remoteEntry.js' },
+      },
+      shared: { 'svelte': { singleton: true } },
+    }),
+  ],
+}
 ```
 
 ```svelte
-<!-- loja/src/Pagina.svelte (a loja também tem o federation() com remotes) -->
+<!-- loja/src/Pagina.svelte -->
 <script>
   import { onMount } from 'svelte'
-  let el
 
+  let el
   onMount(() => {
     let desmontar
     import('carrinho/montar').then(({ montar }) => (desmontar = montar(el, { userId: 42 })))
@@ -49,16 +85,43 @@ federation({
 
 ### Com vitral
 
+```svelte
+<!-- carrinho/src/Carrinho.svelte (igual) -->
+<script>
+  let { userId } = $props()
+</script>
+
+<p>Carrinho do usuário {userId}</p>
+```
+
 ```js
-// carrinho/vite.config.js (sem montar.js e sem federation)
+// carrinho/src/montar.js (não precisa mais: o plugin monta o componente)
+```
+
+```js
+// carrinho/vite.config.js (vitral no lugar do federation)
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import vitral from 'vitral/vite'
 
-export default { plugins: [svelte(), vitral({ entry: 'src/Carrinho.svelte' })] }
+export default {
+  plugins: [
+    svelte(),
+    vitral({ name: 'carrinho', entry: 'src/Carrinho.svelte' }),
+  ],
+}
+```
+
+```js
+// loja/vite.config.js (sem o federation)
+import { svelte } from '@sveltejs/vite-plugin-svelte'
+
+export default {
+  plugins: [svelte()],
+}
 ```
 
 ```svelte
-<!-- loja/src/Pagina.svelte (sem plugin no build da loja) -->
+<!-- loja/src/Pagina.svelte -->
 <script>
   import { configure } from 'vitral'
   import { remote } from 'vitral/svelte'

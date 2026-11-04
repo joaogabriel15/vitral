@@ -4,61 +4,105 @@ React 18 e 19. Import: `vitral/react`.
 
 ## Hoje e com vitral
 
-Exemplo: uma loja em React que mostra o carrinho de outra equipe.
+Exemplo: uma loja em React mostra o carrinho, feito por outra equipe. Os dois lados têm os mesmos arquivos, na mesma ordem.
 
 ### Hoje, com Module Federation
 
+```jsx
+// carrinho/src/Carrinho.jsx
+export default function Carrinho({ userId }) {
+  return <p>Carrinho do usuário {userId}</p>
+}
+```
+
 ```js
 // carrinho/webpack.config.js
-new ModuleFederationPlugin({
-  name: 'carrinho',
-  filename: 'remoteEntry.js',
-  exposes: { './Carrinho': './src/Carrinho' },
-  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
-})
+const { ModuleFederationPlugin } = require('webpack').container
+
+module.exports = {
+  plugins: [
+    new ModuleFederationPlugin({
+      name: 'carrinho',
+      filename: 'remoteEntry.js',
+      exposes: { './Carrinho': './src/Carrinho.jsx' },
+      shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+    }),
+  ],
+}
 ```
 
 ```js
 // loja/webpack.config.js
-new ModuleFederationPlugin({
-  name: 'loja',
-  remotes: { carrinho: 'carrinho@https://cdn.empresa.com/carrinho/remoteEntry.js' },
-  shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
-})
+const { ModuleFederationPlugin } = require('webpack').container
+
+module.exports = {
+  plugins: [
+    new ModuleFederationPlugin({
+      name: 'loja',
+      remotes: { carrinho: 'carrinho@https://cdn.empresa.com/carrinho/remoteEntry.js' },
+      shared: { react: { singleton: true }, 'react-dom': { singleton: true } },
+    }),
+  ],
+}
 ```
 
 ```jsx
 // loja/src/App.jsx
-const Carrinho = React.lazy(() => import('carrinho/Carrinho'))
+import { lazy, Suspense } from 'react'
 
-<ErrorBoundary fallback={<p>Erro</p>}>
-  <Suspense fallback={<p>Carregando…</p>}>
-    <Carrinho userId={42} />
-  </Suspense>
-</ErrorBoundary>
+const Carrinho = lazy(() => import('carrinho/Carrinho'))
+
+export function App() {
+  return (
+    <Suspense fallback={<p>Carregando…</p>}>
+      <Carrinho userId={42} />
+    </Suspense>
+  )
+}
 ```
 
 ### Com vitral
 
+```jsx
+// carrinho/src/Carrinho.jsx (igual)
+export default function Carrinho({ userId }) {
+  return <p>Carrinho do usuário {userId}</p>
+}
+```
+
 ```js
-// carrinho/vite.config.js (no lugar do ModuleFederationPlugin)
+// carrinho/vite.config.js (no lugar do webpack.config.js)
 import react from '@vitejs/plugin-react'
 import vitral from 'vitral/vite'
 
-export default { plugins: [react(), vitral({ entry: 'src/Carrinho.jsx' })] }
+export default {
+  plugins: [
+    react(),
+    vitral({ name: 'carrinho', entry: 'src/Carrinho.jsx', dedupe: ['react'] }),
+  ],
+}
+```
+
+```js
+// loja/webpack.config.js (sem o ModuleFederationPlugin)
+module.exports = {
+  plugins: [],
+}
 ```
 
 ```jsx
-// loja/src/App.jsx (sem plugin no build da loja)
+// loja/src/App.jsx
 import { configure } from 'vitral'
 import { Remote } from 'vitral/react'
 
 configure({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })
 
-<Remote name="carrinho" props={{ userId: 42 }} fallback={<p>Carregando…</p>} error={<p>Erro</p>} />
+export function App() {
+  return <Remote name="carrinho" props={{ userId: 42 }} fallback={<p>Carregando…</p>} />
+}
 ```
 
-O componente `Carrinho` não muda. Guia completo: [Migrar do Module Federation](/migracao/module-federation).
+Guia completo: [Migrar do Module Federation](/migracao/module-federation).
 
 ## Host
 
