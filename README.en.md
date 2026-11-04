@@ -71,8 +71,8 @@ No build at all, in any HTML page:
 From the [public benchmark](https://joaogabriel15.github.io/vitral/aprender/benchmark) (Chromium, Slow 4G, median of 7 visits):
 
 - **3.4 kB** minimal host code, brotli. Module Federation's host is 19.4 kB.
-- **57% faster** first visit than Module Federation with shared React (1157 ms vs 2673 ms, 1 remote).
-- **4.6× faster** switching areas than Next.js Multi-Zones (184 ms vs 850 ms).
+- **58% faster** first visit than Module Federation with shared React (1104 ms vs 2605 ms, 1 remote).
+- **4.5× faster** switching areas than Next.js Multi-Zones (187 ms vs 839 ms).
 
 The benchmark page has the method and the versions used.
 
