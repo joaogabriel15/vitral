@@ -42,7 +42,11 @@ declare const __VITRAL_EMBED__: true | undefined
 const Base: typeof HTMLElement = typeof HTMLElement === 'undefined' ? (class {} as typeof HTMLElement) : HTMLElement
 
 export class VitralRemoteElement extends Base {
-  static observedAttributes = ['name', 'src', 'props', 'isolate']
+  // Getter, e não campo estático: o campo vira um bloco `static {}`, e o
+  // bundler do remote mantém a classe (e o loader do host) por causa dele.
+  static get observedAttributes(): string[] {
+    return ['name', 'src', 'props', 'isolate']
+  }
   #slot: RemoteSlot | null = null
   #props: Props = {}
 

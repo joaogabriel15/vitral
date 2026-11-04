@@ -44,6 +44,7 @@ import {
   type Shared,
   type SlotStatus,
 } from './index'
+import { scopePortals } from './core/portals'
 import { memoSelect, same } from './core/shared'
 
 // ---------------------------------------------------------------------------
@@ -60,10 +61,9 @@ export function reactRemote<P extends Props>(Component: ComponentType<P>): Remot
     const options = { onUncaughtError: (e: unknown) => ctx.reportError(e) }
     // Com CSS escopado e portais no `body` (fora do Shadow DOM), os portais ganham o escopo do remote.
     const scope = ctx.portalContainer === document.body && el.closest('[data-vitral-scope]')?.getAttribute('data-vitral-scope')
-    // Num chunk à parte: o host que só usa `<Remote>` não leva esse código.
-    let stop: (() => void) | undefined
-    let gone = false
-    if (scope) void import('./core/portals').then((m) => gone || (stop = m.scopePortals(el, scope)))
+    // Import estático: um chunk à parte custava um pedido a mais por remote. O
+    // host que só usa `<Remote>` continua sem esse código (tree-shaking).
+    const stop = scope ? scopePortals(el, scope) : undefined
     const root = hydrate ? hydrateRoot(el, tree(props), options) : createRoot(el, options)
     const render = (p: P) => root.render(tree(p))
     if (!hydrate) render(props)
@@ -71,7 +71,6 @@ export function reactRemote<P extends Props>(Component: ComponentType<P>): Remot
       update: render,
       unmount: () => {
         root.unmount()
-        gone = true
         stop?.()
       },
     }
