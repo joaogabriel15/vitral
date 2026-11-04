@@ -159,6 +159,28 @@ No build do host, o `withVitral` lê o `vitral.json` do remote (em `public/` ou 
 - Os links refletem o remote do build do host. Builde o remote antes do host. Se o remote for publicado sem um build novo do host, os links apontam para os arquivos antigos: o navegador baixa à toa (ou mostra 404 no console, se eles já saíram do servidor), e o remote carrega certo pelo manifesto.
 - Com o preload no HTML, `maxStale` não ajuda: o manifesto já baixa em paralelo com o JS do host.
 
+### Manifesto lido no servidor
+
+Os links do build ficam velhos quando o remote faz deploy sozinho. Com `vitral/next-server`, a página lê o `vitral.json` no servidor, a cada requisição, e passa o manifesto ao `NextRemote`:
+
+```tsx
+// pages/delivery/[[...slug]].tsx
+import { NextRemote } from 'vitral/next-host'
+import { remoteProps } from 'vitral/next-server'
+
+export const getServerSideProps = async () => ({ props: await remoteProps('delivery') })
+
+export default function Delivery({ vitral }) {
+  return <Layout><NextRemote name="delivery" manifest={vitral.delivery} /></Layout>
+}
+```
+
+- O HTML pré-carrega os arquivos da versão publicada agora, e o navegador não pede o manifesto: o remote baixa junto com o JS do host, uma ida e volta antes.
+- O servidor guarda o manifesto em memória: por 5 s responde do cache e, por mais 30 s, responde do cache e renova por trás (`maxAge` e `staleWhileRevalidate`, em segundos). Um pedido que falha mantém a cópia boa.
+- Para `url` relativo, o servidor pede a `VITRAL_ORIGIN`, ou ao próprio Next em `http://127.0.0.1:$PORT`. A opção `origin` troca. O header `Host` da requisição nunca é usado.
+- Sem resposta em 3 s (`timeout`), a prop vem `null` e a página segue como sem ela: o preload do build e o pedido no navegador. Um canal (`{ stable, canary }`) também vem `null`, porque a versão é escolhida por visitante.
+- Funciona em `getStaticProps` com `revalidate` também.
+
 ### Ofertas só com os nomes usados
 
 Uma oferta de `share` é um `import()` do pacote. Com o pacote inteiro, o webpack considera usados todos os exports dos barrels dele e deixa de descartar o que a página não usa. Uma página que só importa o layout de uma biblioteca de componentes acaba levando os gráficos, os formulários e o calendário dela.
