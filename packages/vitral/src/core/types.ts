@@ -1,3 +1,4 @@
+import type { Policy } from './policy'
 import type { RemoteError } from './errors'
 import type { SharedApi } from './shared'
 
@@ -245,6 +246,15 @@ export interface VitralConfig {
   maxStale?: number
   /** Isolamento padrão para todos os remotes. Padrão `'none'`. */
   isolate?: Isolation
+  /**
+   * Quanto baixar além do que a página usa agora. Padrão: escolhida pelos
+   * sinais do visitante (`saveData`, `effectiveType`, `deviceMemory`).
+   * `'all'`: tudo. `'critical'` (3G, até 2 GB de memória): sem o preload
+   * ocioso dos outros remotes e sem `warmRoutes`. `'lazy'` (2G, economia de
+   * dados): só o que a página usa, e o remote com HTML do servidor só
+   * hidrata ao aparecer na tela.
+   */
+  policy?: Policy
   /**
    * Liga os overrides de desenvolvimento (`?vitral=nome@url` e
    * `localStorage['vitral:overrides']`) fora de localhost. Em localhost já

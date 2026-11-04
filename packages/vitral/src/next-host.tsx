@@ -24,6 +24,7 @@ import { remotes, shared } from 'vitral-next-host-config'
 import { bundled } from './core/bundled'
 import * as dedupe from './core/dedupe'
 import { hintsOf, type HtmlHints } from './core/next-hints'
+import { policy } from './core/policy'
 import { configure, register } from './core/registry'
 import type { RemoteManifest } from './core/types'
 import * as sri from './core/sri'
@@ -136,8 +137,10 @@ export function VitralNext(): null {
     const go = (name: string) => preload(name, { routes: !!remotes[name].warmRoutes })
     if (here) go(here)
     const idle: number[] = []
+    // Rede lenta ou aparelho fraco: só o remote da página.
+    const all = policy() === 'all'
     for (const [name, r] of Object.entries(remotes))
-      if (name !== here && (r.preload ?? 'idle') === 'idle')
+      if (all && name !== here && (r.preload ?? 'idle') === 'idle')
         idle.push(typeof requestIdleCallback === 'function' ? requestIdleCallback(() => go(name), { timeout: 5000 }) : window.setTimeout(() => go(name), 2000))
     const stop = interceptNavigation()
     return () => {

@@ -12,6 +12,7 @@
 import { resolveEntry } from './core/loader'
 import { empty, parse, predict, record, remember, type Chain } from './core/markov'
 import type { Verifiable } from './core/sri'
+import { policy } from './core/policy'
 import { protocol } from './core/state'
 import type { RemoteEntry } from './core/types'
 import { addLink } from './core/util'
@@ -31,11 +32,11 @@ export interface PrefetchOptions {
 
 const KEY = 'vitral:prefetch'
 
-/** Conexão com economia de dados ou 2G: não baixa nada a mais. */
-function slow(): boolean {
-  const c = (navigator as any).connection
-  return !!c?.saveData || /2g/.test(c?.effectiveType ?? '')
-}
+/**
+ * Economia de dados ou 2G: não baixa nada a mais. Em 3G o prefetch previsto
+ * continua: é onde ele economiza mais tempo.
+ */
+const slow = (): boolean => policy() === 'lazy'
 
 const idle = (fn: () => void) =>
   typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 300)

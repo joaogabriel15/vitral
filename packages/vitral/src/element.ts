@@ -30,7 +30,8 @@
  * Stencil, vanilla) como remote.
  */
 import { defineRemote, shared, type Isolation, type Props, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus } from './index'
-import { hostSlot, timings, type HostSlotOptions, type Loading, type Prefetch } from './core/host-slot'
+import { hostSlot, timings, when, type HostSlotOptions, type Loading, type Prefetch } from './core/host-slot'
+import { policy } from './core/policy'
 import { memoSelect, same } from './core/shared'
 import { registerSrc } from './core/registry'
 import { warmSsr } from './core/loader'
@@ -98,8 +99,12 @@ export class VitralRemoteElement extends Base {
     // HTML renderizado pelo gateway (`vitral/edge`): hidrata, sob demanda.
     // `typeof` duas vezes: o build do embed apaga o ramo inteiro.
     const ssr = typeof __VITRAL_EMBED__ === 'undefined' ? this.querySelector<HTMLElement>(':scope>[data-vitral-ssr]') : null
-    if (typeof __VITRAL_EMBED__ === 'undefined' && ssr) warmSsr(ssr), import('./core/hydrate').then((m) => this.isConnected && !this.#slot && (this.#slot = m.hydrateSlot(this, ssr, { ...options, props: this.#props })))
-    else this.#slot = hostSlot(this, options)
+    if (typeof __VITRAL_EMBED__ === 'undefined' && ssr) {
+      const go = () => (warmSsr(ssr), import('./core/hydrate').then((m) => this.isConnected && !this.#slot && (this.#slot = m.hydrateSlot(this, ssr, { ...options, props: this.#props }))))
+      // Rede 2G ou economia de dados: o HTML do servidor já está na tela; o JS só vem quando ele aparece.
+      if (policy() === 'lazy') when(this, 'visible', go)
+      else go()
+    } else this.#slot = hostSlot(this, options)
   }
 
   /**

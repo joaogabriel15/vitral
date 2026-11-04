@@ -302,7 +302,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.96 kB"
+      "limit": "6.03 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -345,7 +345,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "5.71 kB"
+      "limit": "5.72 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -412,7 +412,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.51 kB"
+      "limit": "6.6 kB"
     },
     {
       "name": "vue",
@@ -433,7 +433,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.31 kB"
+      "limit": "6.4 kB"
     },
     {
       "name": "element",
@@ -453,7 +453,7 @@
         "./hydrate-*",
         "./portals-*"
       ],
-      "limit": "6.66 kB"
+      "limit": "6.77 kB"
     },
     {
       "name": "devtools",
@@ -464,7 +464,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "6.84 kB",
+      "limit": "6.95 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -510,7 +510,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "3.29 kB",
+      "limit": "3.35 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -540,7 +540,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "12.81 kB"
+      "limit": "12.9 kB"
     },
     {
       "name": "vitals (Web Vitals por remote)",

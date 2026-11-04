@@ -93,6 +93,7 @@ Todas as opções: [`vitral/vite`](/referencia/vite).
 | `retries` | `1` | Tentativas extras se o download falhar |
 | `maxStale` | nenhum | Usa o `vitral.json` salvo há até N segundos sem esperar a rede. Veja [Carregamento](/aprender/carregamento#visita-de-volta-sem-esperar-o-manifesto) |
 | `isolate` | `'none'` | `'shadow'` ou `'iframe'` para todos os remotes |
+| `policy` | pelos sinais do visitante | `'all'`, `'critical'` ou `'lazy'`: quanto baixar além do que a página usa. Veja [Carregamento](/aprender/carregamento#rede-lenta-e-aparelho-fraco) |
 | `devOverrides` | `false` | Aceita `?vitral=nome@url` fora de `localhost`. `{ preview }` também resolve `?vitral=nome@pr-123`. Nunca em produção |
 | `onMetric` | nenhum | Recebe `{ name, stage, start, duration }` de cada etapa |
 | `styles` | nenhum | `{ inherit, mirrorTheme }` para o Shadow DOM |
