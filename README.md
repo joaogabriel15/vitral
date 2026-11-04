@@ -136,6 +136,148 @@ Sem build no host, numa página HTML qualquer:
 
 Todos os componentes de host aceitam `src` no lugar de `name`.
 
+## Next.js e Nuxt como host
+
+O remote é sempre um projeto Vite (React, Vue ou outro), como no Começo rápido acima. O host pode ser um app Next ou Nuxt.
+
+**Next.js (App Router):**
+
+```tsx
+// app/carrinho.tsx
+'use client'
+import { configure } from 'vitral'
+import { Remote } from 'vitral/react'
+
+if (typeof window !== 'undefined') {
+  configure({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })
+}
+
+export function Carrinho({ userId }: { userId: number }) {
+  return <Remote name="carrinho" props={{ userId }} fallback={<p>Carregando…</p>} />
+}
+```
+
+```tsx
+// app/page.tsx
+import { Carrinho } from './carrinho'
+
+export default function Page() {
+  return <main><Carrinho userId={42} /></main>
+}
+```
+
+**Nuxt 3 e 4:**
+
+```ts
+// app/plugins/vitral.client.ts
+import { configure } from 'vitral'
+
+export default defineNuxtPlugin(() => {
+  configure({ remotes: { catalogo: 'https://cdn.empresa.com/catalogo/vitral.json' } })
+})
+```
+
+```vue
+<!-- app/pages/index.vue -->
+<script setup lang="ts">
+import { VitralRemote } from 'vitral/vue'
+</script>
+
+<template>
+  <VitralRemote name="catalogo" :props="{ userId: 42 }">
+    <template #fallback><p>Carregando…</p></template>
+  </VitralRemote>
+</template>
+```
+
+Nos dois, o servidor renderiza o `fallback` e o remote monta no navegador. Não precisa de `dynamic(..., { ssr: false })` nem de `<ClientOnly>`.
+
+## Multi-Zones ou vitral
+
+O mesmo app Next dividido em duas áreas: a loja (app principal) e a conta, de outra equipe.
+
+**Com Multi-Zones**, a conta é um segundo app Next, e o app principal repassa as URLs para ele:
+
+```js
+// conta/next.config.js (a zona)
+module.exports = {
+  basePath: '/conta',
+  assetPrefix: '/conta-static',
+}
+```
+
+```js
+// loja/next.config.js (o app principal)
+module.exports = {
+  async rewrites() {
+    return [
+      { source: '/conta', destination: `${process.env.CONTA_URL}/conta` },
+      { source: '/conta/:path+', destination: `${process.env.CONTA_URL}/conta/:path+` },
+      { source: '/conta-static/:path+', destination: `${process.env.CONTA_URL}/conta-static/:path+` },
+    ]
+  },
+}
+```
+
+```tsx
+// links entre zonas: <a>, não <Link>. A página recarrega e baixa Next e React de novo.
+<a href="/conta">Minha conta</a>
+```
+
+**Com vitral**, a conta é um remote (projeto Vite) e a loja continua sendo o único app Next:
+
+```js
+// conta/vite.config.js (o remote)
+import react from '@vitejs/plugin-react'
+import vitral from 'vitral/vite'
+
+export default { plugins: [react(), vitral({ name: 'conta', dedupe: ['react'] })] }
+```
+
+```js
+// loja/next.config.js (o host)
+const { withVitral } = require('vitral/next-config')
+
+module.exports = withVitral({}, {
+  remotes: {
+    conta: { url: 'https://cdn.empresa.com/conta/vitral.json', basePath: '/conta' },
+  },
+})
+```
+
+```tsx
+// loja/pages/_app.tsx
+import { VitralNext } from 'vitral/next-host'
+
+export default function App({ Component, pageProps }) {
+  return <><VitralNext /><Component {...pageProps} /></>
+}
+```
+
+```tsx
+// loja/pages/conta/[[...slug]].tsx
+import { NextRemote } from 'vitral/next-host'
+
+export default function Conta() {
+  return <Layout><NextRemote name="conta" fallback={<p>Carregando…</p>} /></Layout>
+}
+```
+
+```tsx
+// links: <Link> normal. A troca é sem recarregar, e o React não baixa de novo.
+<Link href="/conta">Minha conta</Link>
+```
+
+| | Multi-Zones | vitral |
+|---|---|---|
+| Apps Next | Um por área | Só o host |
+| Configuração | `basePath` e `assetPrefix` na zona, `rewrites` no app principal | `withVitral` no host, plugin no remote |
+| Trocar de área | Recarrega a página (0,8 s no benchmark) | Sem recarregar (0,2 s) |
+| React e Next | Baixados de novo em cada área | Uma cópia para a página toda |
+| Layout do app principal | Cada zona repete o seu | O remote fica dentro do layout do host |
+
+Guia completo, com SSR por rota e prefetch: [Migrar do Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones).
+
 ## Rodar local
 
 Cada remote roda no próprio `vite dev`, numa porta. O host aponta para essas portas:
