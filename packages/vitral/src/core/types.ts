@@ -130,6 +130,13 @@ export interface RemoteEntry {
    * nem `blob:` em `script-src`, onde a conferência não tem como rodar.
    */
   integrity?: string | false
+  /**
+   * Chaves públicas Ed25519 do remote (base64, sem `ed25519-`), de
+   * `vitral sign --keygen`. O Chrome 141+ só aceita o `vitral.json`, o JS e o
+   * CSS do remote assinados por uma delas (`vitral sign`), além do hash. Os
+   * outros navegadores ignoram e conferem só o hash.
+   */
+  keys?: string[]
   /** CSS extra para carregar junto. */
   css?: string[]
   /** Isolamento padrão para este remote. */

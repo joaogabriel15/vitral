@@ -19,10 +19,17 @@ export interface HtmlHints {
   js: Hint[]
   /** Grupos de `share` que o remote vai pedir: o host começa o download deles antes da hidratação. */
   offers?: string[]
+  /** Com `keys`: o `integrity` do preload do manifesto (só as assinaturas). */
+  signed?: string
 }
 
-/** `offered`: versão de cada grupo que o host oferece. `integrity: false` tira os hashes. */
-export function hintsOf(m: RemoteManifest, url: string, offered: Record<string, string>, integrity?: false): HtmlHints {
+/**
+ * `offered`: versão de cada grupo que o host oferece. `integrity: false` tira
+ * os hashes. `keys`: as assinaturas vão junto, igual ao que o loader pede, para
+ * o navegador reaproveitar o preload.
+ */
+export function hintsOf(m: RemoteManifest, url: string, offered: Record<string, string>, integrity?: false, keys?: string[]): HtmlHints {
+  const k = (keys ?? []).map((x) => ' ed25519-' + x.replace(/^ed25519-/, '')).join('')
   const base = new URL(url, 'http://host.invalid/')
   const at = (f: string) => {
     const u = new URL(f, base)
@@ -30,7 +37,7 @@ export function hintsOf(m: RemoteManifest, url: string, offered: Record<string, 
   }
   const crit = critical(m)
   const hint = (f: string): Hint => {
-    const h: Hint = integrity !== false && m.files?.[f] ? [at(f), m.files[f]] : [at(f)]
+    const h: Hint = integrity !== false && m.files?.[f] ? [at(f), m.files[f] + k] : [at(f)]
     if (crit.has(f)) h[1] ??= undefined, (h[2] = 'high')
     return h
   }
@@ -42,6 +49,7 @@ export function hintsOf(m: RemoteManifest, url: string, offered: Record<string, 
     css: (m.css ?? []).map(hint),
     js: (m.split ? ordered([...own, ...(m.split.chunks ?? []), m.split.entry], m.split.order) : [m.entry]).map(hint),
     ...(offers.length && { offers }),
+    ...(k && { signed: k.trim() }),
   }
 }
 

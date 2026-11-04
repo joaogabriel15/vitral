@@ -72,12 +72,18 @@ function absolute(url: string, origin?: string): string {
   return new URL(url, base.endsWith('/') ? base : base + '/').href
 }
 
-async function get(url: string, o: RemotePropsOptions): Promise<RemoteManifest | null> {
+async function get(url: string, o: RemotePropsOptions, keys?: string[]): Promise<RemoteManifest | null> {
   const f = o.fetch ?? fetch
   try {
     const res = await f(url, { signal: AbortSignal.timeout(o.timeout ?? 3000), headers: { accept: 'application/json' } })
     if (!res.ok) return null
-    const m = await res.json()
+    const body = new Uint8Array(await res.arrayBuffer())
+    // Com `keys`, só vale o manifesto assinado por uma delas: senão, o navegador pede e confere.
+    if (keys?.length && !(await import('./sign')).verifyBody(body, res.headers, keys)) {
+      console.error(`[vitral] a assinatura do manifesto em ${url} não confere com keys`)
+      return null
+    }
+    const m = JSON.parse(new TextDecoder().decode(body))
     // Canal (`{ stable, canary }`): a versão é escolhida no navegador, por visitante.
     return typeof m?.entry === 'string' ? m : null
   } catch {
@@ -101,7 +107,7 @@ export async function remoteManifest(name: string, o: RemotePropsOptions = {}): 
   const c = cache.get(url)
   const renew = () => {
     const entry = cache.get(url) ?? { at: 0, m: null }
-    entry.pending ??= get(url, o).then((m) => {
+    entry.pending ??= get(url, o, r.keys).then((m) => {
       cache.set(url, m ? { at: Date.now(), m } : { ...entry, pending: undefined })
       return m ?? entry.m
     })

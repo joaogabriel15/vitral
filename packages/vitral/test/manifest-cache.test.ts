@@ -72,3 +72,16 @@ describe('maxStale', () => {
     expect(JSON.parse(localStorage[KEY]).m.version).toBe('2')
   })
 })
+
+describe('keys', () => {
+  it('o manifesto é pedido com as assinaturas no integrity, e os hashes ganham as chaves', async () => {
+    const fetch = vi.fn(async () => new Response(JSON.stringify({ name: 'carrinho', entry: 'remote.js', integrity: 'sha384-A', files: { 'remote.css': 'sha384-B' } })))
+    vi.stubGlobal('fetch', fetch)
+    configure({ allowedOrigins: ['*'], retries: 0 })
+    const { resolveEntry } = await import('../src/core/loader')
+    const r = await resolveEntry('carrinho', { url: URL_M, keys: ['K1', 'K2'] })
+    expect((fetch.mock.calls[0] as unknown[])[1]).toMatchObject({ integrity: 'ed25519-K1 ed25519-K2' })
+    expect(r.integrity).toBe('sha384-A ed25519-K1 ed25519-K2')
+    expect(r.sri!['https://cdn.empresa.com/carrinho/remote.css']).toBe('sha384-B ed25519-K1 ed25519-K2')
+  })
+})

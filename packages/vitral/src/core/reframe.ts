@@ -80,7 +80,8 @@ export async function load(name: string, _isolate?: unknown, priority?: RequestP
     const bytes =
       integrity &&
       (await withRetry(retries, async () => {
-        const b = await fetchBytes(r.entry, timeout, name, { priority })
+        // Com chave do remote, o fetch também confere a assinatura.
+        const b = await fetchBytes(r.entry, timeout, name, { priority, ...(/ed25519-/.test(integrity) && { integrity }) })
         await verifyIntegrity(name, b, integrity)
         return b
       }))

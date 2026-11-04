@@ -57,6 +57,12 @@ export interface NextRemoteConfig {
    */
   integrity?: false
   /**
+   * Chaves públicas Ed25519 do remote (`vitral sign --keygen`). O navegador
+   * (Chrome 141+) e o `remoteProps` do servidor só aceitam arquivos assinados
+   * por uma delas. Veja `RemoteEntry.keys`.
+   */
+  keys?: string[]
+  /**
    * `false` não põe no HTML da página do remote os `<link rel="preload">` do
    * `vitral.json`, do CSS e do JS da primeira tela. Padrão: põe, quando o
    * `withVitral` acha o `vitral.json` no build (em `public/` ou em
@@ -196,7 +202,7 @@ export type { HtmlHints }
  */
 export function htmlHints(dir: string, r: NextRemoteConfig, offered: Record<string, string>): HtmlHints | undefined {
   const m = r.htmlPreload === false ? undefined : readManifest(dir, r)
-  return m && hintsOf(m, r.url, offered, r.integrity)
+  return m && hintsOf(m, r.url, offered, r.integrity, r.keys)
 }
 
 /** O `vitral.json` do remote no disco (em `public/` ou `manifestFile`), ou nada. */

@@ -20,7 +20,7 @@ declare module 'next/head' {
 declare module 'vitral-next-host-config' {
   export const remotes: Record<
     string,
-    { url: string; basePath: string; routes?: { public: string; zone: string }[]; preload?: 'idle' | 'route' | false; warmRoutes?: boolean; integrity?: false; devUrl?: string; hints?: { manifest: string; css: [string, string?][]; js: [string, string?, 'high'?][]; offers?: string[] } }
+    { url: string; basePath: string; routes?: { public: string; zone: string }[]; preload?: 'idle' | 'route' | false; warmRoutes?: boolean; integrity?: false; keys?: string[]; devUrl?: string; hints?: { manifest: string; css: [string, string?, 'high'?][]; js: [string, string?, 'high'?][]; offers?: string[]; signed?: string } }
   >
   export const shared: Record<string, { version: string; modules: () => Promise<Record<string, unknown>> }>
   export const plan: Record<string, Record<string, { for?: string; version: string; file: string; chunks?: string[]; sri?: Record<string, string> }>>

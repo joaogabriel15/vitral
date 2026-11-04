@@ -1,14 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+const k = vi.hoisted(() => {
+  const { generateKeyPairSync } = require('node:crypto')
+  const { privateKey, publicKey } = generateKeyPairSync('ed25519')
+  return { privateKey: privateKey.export({ format: 'pem', type: 'pkcs8' }) as string, publicKey: Buffer.from(publicKey.export({ format: 'jwk' }).x, 'base64url').toString('base64') }
+})
+
 vi.mock('vitral-next-host-config', () => ({
   remotes: {
     loja: { url: '/loja-remote/vitral.json', basePath: '/loja' },
+    assinado: { url: 'https://cdn.x/assinado/vitral.json', basePath: '/assinado', keys: [k.publicKey] },
     fora: { url: 'https://cdn.x/fora/vitral.json', basePath: '/fora' },
   },
   shared: {},
 }))
 
 import { clearRemoteCache, remoteManifest, remoteProps } from '../src/next-server'
+import { keygen, signBody } from '../src/sign'
 
 const manifest = (v: string) => ({ name: 'loja', entry: `remote-${v}.js`, version: v })
 afterEach(() => {
@@ -17,6 +25,21 @@ afterEach(() => {
 })
 
 describe('vitral/next-server', () => {
+  it('com keys, só aceita o manifesto assinado por uma delas', async () => {
+    const body = JSON.stringify(manifest('1'))
+    const bytes = new TextEncoder().encode(body)
+    const ok = vi.fn(async () => new Response(body, { headers: signBody(bytes, k.privateKey) }))
+    expect(await remoteManifest('assinado', { fetch: ok })).toEqual(manifest('1'))
+    clearRemoteCache()
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const outra = vi.fn(async () => new Response(body, { headers: signBody(bytes, keygen().privateKey) }))
+    expect(await remoteManifest('assinado', { fetch: outra })).toBeNull()
+    clearRemoteCache()
+    expect(await remoteManifest('assinado', { fetch: vi.fn(async () => new Response(body)) })).toBeNull()
+    expect(err).toHaveBeenCalledWith(expect.stringContaining('assinatura do manifesto'))
+    err.mockRestore()
+  })
+
   it('URL relativa: a origem da opção (nunca o Host da requisição); props por nome', async () => {
     const f = vi.fn(async () => Response.json(manifest('1')))
     expect(await remoteProps('loja', { origin: 'http://interno:3000', fetch: f })).toEqual({ vitral: { loja: manifest('1') } })

@@ -46,13 +46,14 @@ configure({
 })
 ```
 
-Ou embuta o manifesto inteiro com `{ url, manifest }`.
+Ou embuta o manifesto inteiro com `{ url, manifest }`, ou fixe a chave do remote (abaixo).
 
 | Opção | Onde | O que faz |
 | --- | --- | --- |
 | `allowedOrigins` | `configure` | Origens de onde é permitido carregar código |
 | `integrity` | entrada do remote | Hash do JS. Vence o do `vitral.json` |
 | `manifest` | entrada do remote | `vitral.json` embutido no host |
+| `keys` | entrada do remote | Chaves públicas Ed25519 do remote. Veja [Assinatura](#assinatura) |
 
 Aceita `sha256`, `sha384` e `sha512`.
 
@@ -67,6 +68,56 @@ Quando o remote tem `import()`, o plugin publica também um build dividido, e o 
 | `blob:` | Os outros, e depois de uma falha | A lib baixa o arquivo único, confere os bytes e executa por `blob:` |
 
 Antes de usar o import map, a lib confere que o hash dele vale: no primeiro mapa vão dois módulos `blob:` de teste com o mesmo hash, e o errado tem de falhar. Um navegador que recusa o mapa sem avisar, ou que aceita sem conferir, cai para o caminho seguinte. A recusa do módulo errado deixa uma linha de erro no console (`Failed to find a valid digest` no Chromium). O resultado fica guardado no `localStorage` (chave `vitral:sri-map`, com o user agent), então essa linha aparece uma vez por navegador, não a cada página. Se a página monta vários remotes juntos, o teste roda uma vez só. O CSS fica fora do mapa: o hash dele vai no `<link integrity>` ou no `fetch` do Shadow DOM.
+
+## Assinatura
+
+Fixar o hash no host obriga a mudar o host a cada deploy do remote. Com a assinatura, o host fixa a chave pública do remote, e o remote continua publicando sozinho. Quem troca o JS e o `vitral.json` no CDN sem a chave privada não consegue fazer o arquivo rodar.
+
+No remote, crie o par de chaves uma vez e guarde a privada como segredo do CI:
+
+```bash
+npx vitral sign --keygen
+```
+
+No CI, depois do build (e de `vitral dict`, se usar):
+
+```bash
+VITRAL_SIGNING_KEY="$(cat chave.pem)" npx vitral sign dist --base /carrinho/
+```
+
+O comando grava, para o `vitral.json`, cada `.js` e cada `.css`, os headers `Unencoded-Digest`, `Signature-Input` e `Signature`, em dois formatos:
+
+- `dist/_headers`, que o Netlify e o Cloudflare Pages já leem. Se o arquivo existir, o resto dele fica como estava.
+- `dist/vitral-signatures.json`, caminho público → headers, para outro servidor:
+
+```ts
+import signatures from './dist/vitral-signatures.json' with { type: 'json' }
+app.use((req, res, next) => {
+  const h = signatures[req.path]
+  if (h) res.set(h)
+  next()
+})
+```
+
+`--base` é o caminho público da pasta no servidor (padrão: `/`). A assinatura cobre o hash do conteúdo sem compressão: gzip, brotli e os dicionários do `vitral dict` não a invalidam. Qualquer mudança no arquivo depois de `vitral sign` invalida.
+
+No host:
+
+```ts
+configure({
+  remotes: {
+    carrinho: { url: 'https://cdn.empresa.com/carrinho/vitral.json', keys: ['<chave pública do vitral sign --keygen>'] },
+  },
+})
+```
+
+No Next, a mesma `keys` vai na entrada do remote no `withVitral`; o `remoteProps` de `vitral/next-server` também confere a assinatura do manifesto no servidor e, se não conferir, devolve `null`.
+
+Como funciona: a lib pede o `vitral.json` com `integrity: 'ed25519-<chave>'` e soma a chave ao hash de cada arquivo (`sha384-… ed25519-…`), no import map, no `modulepreload`, no `<link>` do CSS e no `fetch` do caminho `blob:`. O Chrome 141+ só aceita o arquivo se o hash bater e a assinatura for de uma das chaves. Os outros navegadores ignoram a parte `ed25519-` e conferem só o hash, como antes. Para trocar de chave sem parar o remote, ponha as duas em `keys`, assine com a nova e depois tire a velha.
+
+O Chrome também recusa uma resposta com assinatura inválida mesmo sem `keys` no host. Um arquivo mudado depois de `vitral sign` (por exemplo, um CDN que reescreve o JS) não carrega.
+
+Verificado no Chromium 153: o remote assinado carrega; um `vitral.json` com hashes trocados e um JS trocado não carregam.
 
 ## CSP
 
