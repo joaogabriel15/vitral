@@ -202,7 +202,7 @@ Nos dois, o servidor renderiza o `fallback` e o remote monta no navegador. Não 
 
 ## Multi-Zones ou vitral
 
-O mesmo app Next dividido em duas áreas: a loja (app principal) e a conta, de outra equipe.
+Exemplo: uma loja em Next.js com a área "Minha conta", feita por outra equipe.
 
 <p align="center">
   <picture>
@@ -211,18 +211,32 @@ O mesmo app Next dividido em duas áreas: a loja (app principal) e a conta, de o
   </picture>
 </p>
 
-**Com Multi-Zones**, a conta é um segundo app Next, e o app principal repassa as URLs para ele:
+### Hoje, com Multi-Zones
+
+São dois apps Next. A loja repassa as URLs de `/conta` para o app da conta.
+
+```
+loja/    app Next principal
+conta/   segundo app Next (a zona)
+```
 
 ```js
-// conta/next.config.js (a zona)
+// conta/next.config.js
 module.exports = {
   basePath: '/conta',
   assetPrefix: '/conta-static',
 }
 ```
 
+```tsx
+// conta/pages/index.tsx
+export default function Conta() {
+  return <h1>Minha conta</h1>
+}
+```
+
 ```js
-// loja/next.config.js (o app principal)
+// loja/next.config.js
 module.exports = {
   async rewrites() {
     return [
@@ -235,22 +249,37 @@ module.exports = {
 ```
 
 ```tsx
-// links entre zonas: <a>, não <Link>. A página recarrega e baixa Next e React de novo.
+// loja/components/Menu.tsx
+// <a>, não <Link>: a página recarrega e baixa Next e React de novo.
 <a href="/conta">Minha conta</a>
 ```
 
-**Com vitral**, a conta é um remote (projeto Vite) e a loja continua sendo o único app Next:
+### O mesmo app com vitral
+
+A loja continua sendo o único app Next. A conta vira um remote: um projeto Vite com o mesmo componente.
+
+```
+loja/    app Next (o host)
+conta/   projeto Vite (o remote)
+```
 
 ```js
-// conta/vite.config.js (o remote)
+// conta/vite.config.js (no lugar do next.config.js da zona)
 import react from '@vitejs/plugin-react'
 import vitral from 'vitral/vite'
 
 export default { plugins: [react(), vitral({ name: 'conta', dedupe: ['react'] })] }
 ```
 
+```tsx
+// conta/src/App.tsx (o mesmo componente da página)
+export default function Conta() {
+  return <h1>Minha conta</h1>
+}
+```
+
 ```js
-// loja/next.config.js (o host)
+// loja/next.config.js (no lugar das rewrites)
 const { withVitral } = require('vitral/next-config')
 
 module.exports = withVitral({}, {
@@ -261,7 +290,7 @@ module.exports = withVitral({}, {
 ```
 
 ```tsx
-// loja/pages/_app.tsx
+// loja/pages/_app.tsx (só acrescenta <VitralNext />)
 import { VitralNext } from 'vitral/next-host'
 
 export default function App({ Component, pageProps }) {
@@ -270,7 +299,7 @@ export default function App({ Component, pageProps }) {
 ```
 
 ```tsx
-// loja/pages/conta/[[...slug]].tsx
+// loja/pages/conta/[[...slug]].tsx (arquivo novo: a página que mostra a conta)
 import { NextRemote } from 'vitral/next-host'
 
 export default function Conta() {
@@ -279,17 +308,22 @@ export default function Conta() {
 ```
 
 ```tsx
-// links: <Link> normal. A troca é sem recarregar, e o React não baixa de novo.
+// loja/components/Menu.tsx
+// <Link> normal: a troca é sem recarregar, e o React não baixa de novo.
 <Link href="/conta">Minha conta</Link>
 ```
 
+Se o código da conta já usa `next/link` ou `useRouter`, não precisa reescrever: `vitral({ name: 'conta', next: { basePath: '/conta' } })` builda esse código com o Vite.
+
+### O que muda
+
 | | Multi-Zones | vitral |
 |---|---|---|
-| Apps Next | Um por área | Só o host |
-| Configuração | `basePath` e `assetPrefix` na zona, `rewrites` no app principal | `withVitral` no host, plugin no remote |
+| Apps Next | Um por área | Só a loja |
+| Configuração | `basePath` e `assetPrefix` na zona, `rewrites` na loja | `withVitral` na loja, plugin na conta |
 | Trocar de área | Recarrega a página (0,8 s no benchmark) | Sem recarregar (0,2 s) |
 | React e Next | Baixados de novo em cada área | Uma cópia para a página toda |
-| Layout do app principal | Cada zona repete o seu | O remote fica dentro do layout do host |
+| Layout da loja | Cada zona repete o seu | A conta fica dentro do layout da loja |
 
 Guia completo, com SSR por rota e prefetch: [Migrar do Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones).
 

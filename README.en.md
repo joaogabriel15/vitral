@@ -198,7 +198,7 @@ In both, the server renders the `fallback` and the remote mounts in the browser.
 
 ## Multi-Zones or vitral
 
-The same Next app split into two areas: the shop (main app) and the account area, owned by another team.
+Example: a Next.js shop with a "My account" area built by another team.
 
 <p align="center">
   <picture>
@@ -207,18 +207,32 @@ The same Next app split into two areas: the shop (main app) and the account area
   </picture>
 </p>
 
-**With Multi-Zones**, the account area is a second Next app, and the main app proxies its URLs to it:
+### Today, with Multi-Zones
+
+Two Next apps. The shop proxies the `/account` URLs to the account app.
+
+```
+shop/      main Next app
+account/   second Next app (the zone)
+```
 
 ```js
-// account/next.config.js (the zone)
+// account/next.config.js
 module.exports = {
   basePath: '/account',
   assetPrefix: '/account-static',
 }
 ```
 
+```tsx
+// account/pages/index.tsx
+export default function Account() {
+  return <h1>My account</h1>
+}
+```
+
 ```js
-// shop/next.config.js (the main app)
+// shop/next.config.js
 module.exports = {
   async rewrites() {
     return [
@@ -231,22 +245,37 @@ module.exports = {
 ```
 
 ```tsx
-// links between zones: <a>, not <Link>. The page reloads and downloads Next and React again.
+// shop/components/Menu.tsx
+// <a>, not <Link>: the page reloads and downloads Next and React again.
 <a href="/account">My account</a>
 ```
 
-**With vitral**, the account area is a remote (a Vite project) and the shop stays the only Next app:
+### The same app with vitral
+
+The shop stays the only Next app. The account area becomes a remote: a Vite project with the same component.
+
+```
+shop/      Next app (the host)
+account/   Vite project (the remote)
+```
 
 ```js
-// account/vite.config.js (the remote)
+// account/vite.config.js (replaces the zone's next.config.js)
 import react from '@vitejs/plugin-react'
 import vitral from 'vitral/vite'
 
 export default { plugins: [react(), vitral({ name: 'account', dedupe: ['react'] })] }
 ```
 
+```tsx
+// account/src/App.tsx (the same page component)
+export default function Account() {
+  return <h1>My account</h1>
+}
+```
+
 ```js
-// shop/next.config.js (the host)
+// shop/next.config.js (replaces the rewrites)
 const { withVitral } = require('vitral/next-config')
 
 module.exports = withVitral({}, {
@@ -257,7 +286,7 @@ module.exports = withVitral({}, {
 ```
 
 ```tsx
-// shop/pages/_app.tsx
+// shop/pages/_app.tsx (just adds <VitralNext />)
 import { VitralNext } from 'vitral/next-host'
 
 export default function App({ Component, pageProps }) {
@@ -266,7 +295,7 @@ export default function App({ Component, pageProps }) {
 ```
 
 ```tsx
-// shop/pages/account/[[...slug]].tsx
+// shop/pages/account/[[...slug]].tsx (new file: the page that shows the account area)
 import { NextRemote } from 'vitral/next-host'
 
 export default function Account() {
@@ -275,17 +304,22 @@ export default function Account() {
 ```
 
 ```tsx
-// links: a regular <Link>. No reload, and React is not downloaded again.
+// shop/components/Menu.tsx
+// A regular <Link>: no reload, and React is not downloaded again.
 <Link href="/account">My account</Link>
 ```
 
+If the account code already uses `next/link` or `useRouter`, no rewrite needed: `vitral({ name: 'account', next: { basePath: '/account' } })` builds that code with Vite.
+
+### What changes
+
 | | Multi-Zones | vitral |
 |---|---|---|
-| Next apps | One per area | Only the host |
-| Config | `basePath` and `assetPrefix` in the zone, `rewrites` in the main app | `withVitral` in the host, plugin in the remote |
+| Next apps | One per area | Only the shop |
+| Config | `basePath` and `assetPrefix` in the zone, `rewrites` in the shop | `withVitral` in the shop, plugin in the account app |
 | Switch areas | Reloads the page (0.8 s in the benchmark) | No reload (0.2 s) |
 | React and Next | Downloaded again in each area | One copy for the whole page |
-| Main app layout | Each zone repeats its own | The remote sits inside the host layout |
+| Shop layout | Each zone repeats its own | The account area sits inside the shop layout |
 
 Full guide, with per-route SSR and prefetch: [Migrate from Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones) (in Portuguese).
 
