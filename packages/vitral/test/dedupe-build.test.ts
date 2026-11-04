@@ -59,6 +59,18 @@ describe('build com dedupe', () => {
     expect(m.contract).toEqual({ peers: { react: `^${RealReact.version}` } })
   })
 
+  it('ordem de download: a entrada e o que ela importa, depois a cópia própria; o React no caminho crítico', () => {
+    const { order = [], critical = [] } = m.split!
+    expect(order[0]).toBe(m.split!.entry)
+    expect(new Set(order)).toEqual(new Set([m.split!.entry, ...m.split!.chunks!, m.dedupe![0].file]))
+    expect(order.indexOf(m.dedupe![0].file)).toBeGreaterThan(0)
+    const path = critical.map((i) => order[i])
+    expect(path).toContain(m.split!.entry)
+    expect(path).toContain(m.dedupe![0].file)
+    // `chunks` sai na mesma ordem.
+    expect(m.split!.chunks).toEqual(order.filter((f) => m.split!.chunks!.includes(f)))
+  })
+
   it('o React fica só na cópia própria; o remote e a entrada não o carregam', () => {
     expect(read(m.dedupe![0].file)).toContain('react.transitional.element')
     for (const f of [m.split!.entry, ...m.split!.chunks!]) expect(read(f)).not.toContain('react.transitional.element')

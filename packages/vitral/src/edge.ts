@@ -25,13 +25,16 @@
  * rewriter próprio em streaming. No Node, `toNodeListener(handler)`.
  */
 import { matchRoute, type Routes } from './core/match'
+import { critical, ordered } from './core/order'
+import { htmlOf, inlineJson, ssrHolder, stateScript, type ServerRendered } from './core/ssr-markup'
 import type { Props, RemoteManifest } from './core/types'
 import { decodeEntities, escapeAttr, rewrite, type EdgeElement } from './edge/rewriter'
 
 export type { EdgeElement } from './edge/rewriter'
 
 /** HTML do remote para estas props, no servidor. */
-export type ServerRender = (props: Props) => string | Promise<string>
+/** HTML do remote, ou `{ html, state }`: o estado vai junto e chega em `ctx.initialState`. */
+export type ServerRender = (props: Props) => ServerRendered | Promise<ServerRendered>
 
 /** Isolamento do remote na página (o mesmo de `isolate` no cliente). */
 export type EdgeIsolation = 'shadow' | 'none'
@@ -159,11 +162,12 @@ export function gateway(options: GatewayOptions): Gateway {
     // Com dedupe, a cópia própria das dependências também: na primeira visita,
     // é ela que a página usa (a menos que o host já ofereça uma).
     const own = (m.dedupe ?? []).flatMap((d) => [...(d.chunks ?? []), d.file])
-    const js = m.split ? [...new Set([m.split.entry, ...(m.split.chunks ?? []), ...own])] : [m.entry]
+    const js = m.split ? ordered([...new Set([m.split.entry, ...(m.split.chunks ?? []), ...own])], m.split.order) : [m.entry]
+    const crit = critical(m)
     // Remote com hash: só aquece o cache HTTP. Um modulepreload sem integrity
     // poria o módulo no mapa de módulos sem conferência.
     const hashed = !!m.integrity || Object.keys(m.files ?? {}).length > 0
-    const out = js.map((u) => `<${local(r, abs(u))}>; ${hashed ? 'rel=preload; as=fetch; crossorigin=anonymous' : 'rel=modulepreload'}`)
+    const out = js.map((u) => `<${local(r, abs(u))}>; ${hashed ? 'rel=preload; as=fetch; crossorigin=anonymous' : 'rel=modulepreload'}${crit.has(u) ? '; fetchpriority=high' : ''}`)
     for (const u of m.css ?? []) out.push(`<${local(r, abs(u))}>; rel=preload; as=${isolate === 'shadow' ? 'fetch' : 'style'}; crossorigin=anonymous`)
     return out
   }
@@ -239,17 +243,17 @@ export function gateway(options: GatewayOptions): Gateway {
     return new Response(body, { status: res.status, statusText: res.statusText, headers })
   }
 
-  async function markup(r: Remote, m: RemoteManifest, label: string, html: string, isolate: EdgeIsolation): Promise<string> {
+  async function markup(r: Remote, m: RemoteManifest, label: string, rendered: ServerRendered, isolate: EdgeIsolation): Promise<string> {
     const { abs, sri } = paths(r, m)
     const name = escapeAttr(label)
     const scope = m.scope ? ` data-vitral-scope="${escapeAttr(m.scope)}"` : ''
-    const root = `<div data-vitral-root="${name}"${scope} style="display:contents">${html}</div>`
+    const root = `<div data-vitral-root="${name}"${scope} style="display:contents">${htmlOf(rendered)}</div>`
     // O manifesto vai junto (o mesmo que o SSR usou): o cliente não busca de novo.
-    const json = JSON.stringify(relocate(m, (u) => (/^https?:\/\//.test(u) ? local(r, u) : u))).replace(/</g, '\\u003c')
-    const seed = `<script type="application/json" data-vitral-manifest="${escapeAttr(local(r, r.url))}">${json}</script>`
+    const relocated = relocate(m, (u) => (/^https?:\/\//.test(u) ? local(r, u) : u))
+    const seed = `<script type="application/json" data-vitral-manifest="${escapeAttr(local(r, r.url))}">${inlineJson(relocated)}</script>${stateScript(rendered)}`
     const css = (m.css ?? []).map(abs)
     const link = (u: string) => `<link rel="stylesheet" href="${escapeAttr(local(r, u))}" crossorigin="anonymous"${sri[u] ? ` integrity="${escapeAttr(sri[u])}"` : ''}>`
-    if (isolate === 'none') return `<div data-vitral-ssr data-vitral-slot="${name}">${seed}${css.map(link).join('')}${root}</div>`
+    if (isolate === 'none') return ssrHolder(label, m, rendered, css.map((u) => [local(r, u), sri[u]]), [local(r, r.url), relocated])
     // No Shadow DOM: o CSS preparado no build, quando há, senão o do manifesto.
     const s = m.shadow
     const files = s && css[0] ? s.css.map((u) => new URL(u, css[0]).href) : css

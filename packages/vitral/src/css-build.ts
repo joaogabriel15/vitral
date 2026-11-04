@@ -28,12 +28,12 @@ export interface CssBuildOptions {
   renameRegisteredProperties?: boolean
 }
 
-export function transformCss(css: string, options: CssBuildOptions & { scopeCss?: boolean }, scope: string): string {
+export function transformCss(css: string, options: CssBuildOptions & { scopeCss?: boolean | 'native' }, scope: string): string {
   const root = postcss.parse(css)
   if (options.theme === 'host') hostTheme(root)
   if (options.layers === 'flatten') flattenLayers(root)
   if (options.renameRegisteredProperties) renameRegisteredProperties(root, scope)
-  if (options.scopeCss !== false) scopeRoot(root, scope)
+  if (options.scopeCss !== false) scopeRoot(root, scope, options.scopeCss === 'native')
   return root.toString()
 }
 

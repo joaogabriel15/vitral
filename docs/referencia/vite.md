@@ -24,7 +24,7 @@ export default { plugins: [react(), vitral({ entry: 'src/remote.tsx', dedupe: ['
 | `adapter` | descoberto pelos plugins do Vite | `react`, `vue`, `svelte`, `solid`, `preact`, `angular`, `element`, ou `false` |
 | `name` | `name` do `package.json` | Nome no `vitral.json` |
 | `version` | `version` do `package.json` | Versão no `vitral.json` |
-| `scopeCss` | `true` | Prefixa o CSS |
+| `scopeCss` | `true` | Prefixa o CSS. `'native'` usa `@scope`. Veja [Estilos](/aprender/estilos#com-scope) |
 | `theme` | nenhum | `'host'`. Veja [Estilos](/aprender/estilos) |
 | `layers` | nenhum | `'flatten'`. Veja [Estilos](/aprender/estilos) |
 | `renameRegisteredProperties` | `false` | Veja [Estilos](/aprender/estilos) |

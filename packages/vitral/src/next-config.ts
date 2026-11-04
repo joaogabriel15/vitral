@@ -22,7 +22,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
-import { satisfies } from './core/semver'
+import { planDedupe, type DedupePlan } from './core/dedupe-plan'
+import { hintsOf, type HtmlHints } from './core/next-hints'
 import type { RemoteManifest } from './core/types'
 import type { ZoneRoute } from './next'
 import { subpaths } from './vite/dedupe'
@@ -55,6 +56,12 @@ export interface NextRemoteConfig {
    * remote servido pela mesma origem do host.
    */
   integrity?: false
+  /**
+   * Chaves públicas Ed25519 do remote (`vitral sign --keygen`). O navegador
+   * (Chrome 141+) e o `remoteProps` do servidor só aceitam arquivos assinados
+   * por uma delas. Veja `RemoteEntry.keys`.
+   */
+  keys?: string[]
   /**
    * `false` não põe no HTML da página do remote os `<link rel="preload">` do
    * `vitral.json`, do CSS e do JS da primeira tela. Padrão: põe, quando o
@@ -162,6 +169,7 @@ export function hostModule(
   alias?: Record<string, unknown>,
   from?: string,
   names?: Record<string, Record<string, string[]>>,
+  plan: DedupePlan = {},
 ): string {
   // Caminho relativo ao módulo gerado: o Turbopack não aceita caminho absoluto em import().
   const spec = (s: string) => {
@@ -179,20 +187,13 @@ export function hostModule(
     const modules = g.specs.map((s, i) => `${JSON.stringify(s)}: m[${i}]`).join(', ')
     return `  ${JSON.stringify(name)}: { version: ${JSON.stringify(g.version)}, modules: () => Promise.all([${imports}]).then((m) => ({ ${modules} })) },`
   })
-  return `export const remotes = ${JSON.stringify(remotes, null, 2)}\nexport const shared = {\n${shared.join('\n')}\n}\n`
+  return `export const remotes = ${JSON.stringify(remotes, null, 2)}\nexport const shared = {\n${shared.join('\n')}\n}\nexport const plan = ${JSON.stringify(plan)}\n`
 }
 
 /** Pasta do `vitral.json` de um remote servido pelo próprio host, ou nada. */
 const localDir = (url: string) => (url.startsWith('/') && !url.startsWith('//') ? url.slice(0, url.lastIndexOf('/') + 1) : undefined)
 
-/** `[href, integrity]` de cada arquivo que o HTML da página do remote pré-carrega. */
-export interface HtmlHints {
-  manifest: string
-  css: [string, string?][]
-  js: [string, string?][]
-  /** Grupos de `share` que o remote vai pedir: o host começa o download deles antes da hidratação. */
-  offers?: string[]
-}
+export type { HtmlHints }
 
 /**
  * Lê o `vitral.json` no build e lista o que a primeira tela do remote baixa: o
@@ -201,22 +202,7 @@ export interface HtmlHints {
  */
 export function htmlHints(dir: string, r: NextRemoteConfig, offered: Record<string, string>): HtmlHints | undefined {
   const m = r.htmlPreload === false ? undefined : readManifest(dir, r)
-  if (!m) return
-  const base = new URL(r.url, 'http://host.invalid/')
-  const at = (f: string) => {
-    const u = new URL(f, base)
-    return u.origin === 'http://host.invalid' ? u.pathname + u.search : u.href
-  }
-  const hint = (f: string): [string, string?] => (r.integrity !== false && m.files?.[f] ? [at(f), m.files[f]] : [at(f)])
-  const served = (d: { name: string; range: string }) => !!offered[d.name] && satisfies(offered[d.name], d.range)
-  const own = (m.dedupe ?? []).filter((d) => !served(d)).flatMap((d) => [...(d.chunks ?? []), d.file])
-  const offers = m.split ? (m.dedupe ?? []).filter((d) => d.name !== 'react' && served(d)).map((d) => d.name) : []
-  return {
-    manifest: at(r.url),
-    css: (m.css ?? []).map(hint),
-    js: (m.split ? [...own, ...(m.split.chunks ?? []), m.split.entry] : [m.entry]).map(hint),
-    ...(offers.length && { offers }),
-  }
+  return m && hintsOf(m, r.url, offered, r.integrity, r.keys)
 }
 
 /** O `vitral.json` do remote no disco (em `public/` ou `manifestFile`), ou nada. */
@@ -280,6 +266,27 @@ export function remoteHeaders(remotes: Record<string, NextRemoteConfig>): Header
   })
 }
 
+/**
+ * Cópia de `dedupe` de cada remote, com os manifestos que o build acha (em
+ * `public/` ou `manifestFile`): uma versão para todos onde as faixas deixam.
+ * Avisa no build quando não dá.
+ */
+export function dedupePlanOf(dir: string, remotes: Record<string, NextRemoteConfig>, groups: ReturnType<typeof sharedGroups>): DedupePlan {
+  const found: Record<string, { url: string; manifest: RemoteManifest }> = {}
+  for (const [name, r] of Object.entries(remotes)) {
+    const m = readManifest(dir, r)
+    if (m) found[name] = { url: r.url, manifest: m }
+  }
+  let react: string | undefined
+  try {
+    react = installed(dir, 'react').version
+  } catch {}
+  const host = { ...(react && { react }), ...Object.fromEntries(Object.entries(groups).map(([k, g]) => [k, g.version])) }
+  const { plan, notes } = planDedupe(found, host)
+  for (const n of notes) console.warn(`[vitral] ${n}`)
+  return plan
+}
+
 /** Cada remote com os `hints` do HTML (fora do `next dev` com `devUrl`, que serve outro build). */
 function withHints(dir: string, remotes: Record<string, NextRemoteConfig>, groups: ReturnType<typeof sharedGroups>, dev: boolean): Record<string, Omit<NextRemoteConfig, 'manifestFile' | 'htmlPreload'> & { hints?: HtmlHints }> {
   let react: string | undefined
@@ -317,7 +324,8 @@ export function withVitral(nextConfig: NextConfig, options: WithVitralOptions): 
       const dev = process.env.NODE_ENV === 'development'
       // Em dev com `devUrl`, o remote vem de outro build: ofertas inteiras.
       const names = dev && Object.values(options.remotes).some((r) => r.devUrl) ? undefined : offeredNames(dir, options.remotes, groups)
-      writeChanged(file, hostModule(withHints(dir, devRemotes(options.remotes, dev), groups, dev), groups, alias, dirname(file), names))
+      const plan = dev && Object.values(options.remotes).some((r) => r.devUrl) ? undefined : dedupePlanOf(dir, options.remotes, groups)
+      writeChanged(file, hostModule(withHints(dir, devRemotes(options.remotes, dev), groups, dev), groups, alias, dirname(file), names, plan))
     } catch (e) {
       // `next start` num disco só de leitura: o build já levou o módulo gerado.
       console.warn(`[vitral] não consegui gravar ${file} (${(e as Error).message}). No build ele é necessário; no next start, não.`)

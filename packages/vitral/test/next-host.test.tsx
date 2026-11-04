@@ -35,6 +35,7 @@ vi.mock('vitral-next-host-config', () => ({
     },
   },
   shared: { i18next: { version: '25.0.0', modules: async () => ({ i18next: { ok: true } }) } },
+  plan: {},
 }))
 const remoteProps = vi.hoisted(() => ({ last: undefined as any }))
 vi.mock('../src/react', () => ({
@@ -175,6 +176,12 @@ describe('vitral/next-host', () => {
       // Shadow DOM: o CSS vem por fetch, sem preload de estilo.
       await act(async () => root.render(h(NextRemote, { name: 'hinted', isolate: 'shadow' })))
       expect(links().map((l) => l[0])).toEqual(['fetch', 'script', 'script'])
+      // Manifesto do servidor (remoteProps): preload da versão publicada agora, sem o do vitral.json,
+      // e o registro do remote leva o manifesto (o loader não pede de novo).
+      const manifest = { name: 'hinted', entry: 'remote-2.js', files: { 'split/e2.js': 'sha384-e2' }, split: { entry: 'split/e2.js', chunks: [] } }
+      await act(async () => root.render(h(NextRemote, { name: 'hinted', manifest })))
+      expect(links()).toEqual([['script', '/h/split/e2.js', 'sha384-e2', 'anonymous']])
+      expect(protocol().entry('hinted')).toMatchObject({ manifest })
       // Remote sem hints (manifesto não achado no build): nada no head.
       await act(async () => root.render(h(NextRemote, { name: 'delivery' })))
       expect(links()).toEqual([])

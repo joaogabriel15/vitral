@@ -13,6 +13,7 @@ vi.mock('next/router', () => ({ default: { events: { on() {}, off() {} } }, useR
 vi.mock('vitral-next-host-config', () => ({
   remotes: { loja: { url: '/loja-remote/vitral.json', basePath: '/loja', preload: false, hints: { manifest: '/loja-remote/vitral.json', css: [], js: [], offers: ['ui-kit'] } } },
   shared: { 'ui-kit': { version: '2.1.0', modules }, outro: { version: '1.0.0', modules: vi.fn() } },
+  plan: {},
 }))
 vi.mock('../src/react', () => ({ preload: vi.fn(), Remote: () => null }))
 
