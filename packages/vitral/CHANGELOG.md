@@ -1,5 +1,11 @@
 # vitral
 
+## 0.11.4
+
+### Patch Changes
+
+- [#117](https://github.com/joaogabriel15/vitral/pull/117) [`bc4f058`](https://github.com/joaogabriel15/vitral/commit/bc4f0583066ed0cbcf32ae42d573e2710f0d1578) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - README e documentação: cada exemplo mostra primeiro como é hoje (Module Federation, Multi-Zones, dois apps Nuxt, iframe) e logo embaixo o mesmo app com vitral.
+
 ## 0.11.3
 
 ### Patch Changes
