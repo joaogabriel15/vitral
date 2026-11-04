@@ -52,6 +52,8 @@ const failed = new Set<string>()
 
 /** Importa o remote pelo melhor caminho que confere o hash. */
 export async function importVerified(name: string, r: Verifiable, run: (url: string) => Promise<any>, timeout: number): Promise<any> {
+  // Plano de dedupe: a cópia que serve a todos os remotes, com os hashes dela no mapa.
+  if (r.split?.dedupe?.length && (globalThis as any)[Symbol.for('vitral')]?.settings().dedupePlan?.[name]) r = { ...r, split: (await dedupeModule()).planned(name, r.split) }
   const { entry, integrity, priority } = r
   if (!failed.has(entry)) {
     try {

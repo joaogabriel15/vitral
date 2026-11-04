@@ -20,7 +20,7 @@
 import Head from 'next/head'
 import Router, { useRouter } from 'next/router'
 import { createElement, Fragment, useEffect, useMemo, version as reactVersion, type ReactNode } from 'react'
-import { remotes, shared } from 'vitral-next-host-config'
+import { plan, remotes, shared } from 'vitral-next-host-config'
 import { bundled } from './core/bundled'
 import * as dedupe from './core/dedupe'
 import { hintsOf, type HtmlHints } from './core/next-hints'
@@ -79,6 +79,8 @@ function setup() {
   configure({
     remotes: Object.fromEntries(Object.entries(remotes).map(([name, r]) => [name, { url: r.url, ...(r.integrity === false && { integrity: false as const }) }])),
     dedupe: offers,
+    // Uma cópia de cada dependência para todos os remotes, escolhida no build.
+    ...(plan && Object.keys(plan).length && { dedupePlan: plan }),
   })
 }
 

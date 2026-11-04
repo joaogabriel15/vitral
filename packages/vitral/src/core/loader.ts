@@ -258,8 +258,8 @@ async function importModule(name: string, r: Resolved): Promise<any> {
   if (!r.integrity) {
     if (!r.split) return run(r.entry)
     if (r.split.dedupe?.length) {
-      const { shared } = await dedupeModule()
-      for (const d of r.split.dedupe)
+      const { shared, planned } = await dedupeModule()
+      for (const d of planned(name, r.split).dedupe!)
         shared(protocol())(d.name, d.range, { version: d.version, url: d.file, load: async () => (await run(d.file)).default })
     }
     return run(r.split.entry)

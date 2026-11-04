@@ -1,3 +1,4 @@
+import type { DedupePlan } from './dedupe-plan'
 import type { Policy } from './policy'
 import type { RemoteError } from './errors'
 import type { SharedApi } from './shared'
@@ -260,6 +261,12 @@ export interface VitralConfig {
    * hidrata ao aparecer na tela.
    */
   policy?: Policy
+  /**
+   * Cópia de `dedupe` que cada remote usa, calculada com os manifestos de
+   * todos (`planDedupe`). O `withVitral` do host Next preenche sozinho.
+   * Assim dois remotes com faixas que se cruzam baixam uma cópia só.
+   */
+  dedupePlan?: DedupePlan
   /**
    * Liga os overrides de desenvolvimento (`?vitral=nome@url` e
    * `localStorage['vitral:overrides']`) fora de localhost. Em localhost já
