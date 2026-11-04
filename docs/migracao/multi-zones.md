@@ -96,4 +96,4 @@ Se o app principal já é Next e o SSR das zonas não é necessário, as zonas v
 
 ## Números
 
-No [benchmark](/aprender/benchmark#contra-o-next-js-multi-zones), com duas áreas e rede lenta, o vitral com gateway abre a primeira página mais rápido que o Multi-Zones, troca de área 4,6 vezes mais rápido e baixa 63% menos.
+No [benchmark](/aprender/benchmark#contra-o-next-js-multi-zones), com duas áreas e rede lenta, o vitral com gateway abre a primeira página mais rápido que o Multi-Zones, troca de área 4,5 vezes mais rápido e baixa 64% menos.

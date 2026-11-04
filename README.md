@@ -31,7 +31,7 @@ Cada equipe publica o próprio pedaço da página (um remote) com `vite build`. 
 - **Deploy independente.** Cada equipe publica quando quiser. O host vê a versão nova sem novo build.
 - **CSS e erros isolados.** O CSS de um remote não muda o resto da página. Um remote fora do ar mostra o próprio erro, e o resto continua funcionando.
 - **Seguro.** O JS só roda se vier de uma origem permitida e se o hash SHA-384 bater.
-- **Leve e rápido.** 3,4 kB de host. Primeira visita 57% mais rápida que o Module Federation e troca de área 4,6 vezes mais rápida que o Next.js Multi-Zones.
+- **Leve e rápido.** 3,4 kB de host. Primeira visita 58% mais rápida que o Module Federation e troca de área 4,5 vezes mais rápida que o Next.js Multi-Zones.
 
 ```bash
 npm install vitral
@@ -58,8 +58,8 @@ npm install vitral
 
 Medido no [benchmark público](https://joaogabriel15.github.io/vitral/aprender/benchmark) (Chromium, rede Slow 4G, mediana de 7 visitas):
 
-- **57% menos tempo** na primeira visita que o Module Federation com React compartilhado (1157 ms contra 2673 ms, 1 remote).
-- **4,6 vezes mais rápido** para trocar de área que o Next.js Multi-Zones (184 ms contra 850 ms), com 63% menos bytes para abrir duas áreas.
+- **58% menos tempo** na primeira visita que o Module Federation com React compartilhado (1104 ms contra 2605 ms, 1 remote).
+- **4,5 vezes mais rápido** para trocar de área que o Next.js Multi-Zones (187 ms contra 839 ms), com 64% menos bytes para abrir duas áreas.
 - **10 frameworks** cobertos por testes de ponta a ponta no CI, com host e remote de frameworks diferentes, em Chromium, Firefox, WebKit e mobile.
 
 O método e as versões usadas estão na página do benchmark.

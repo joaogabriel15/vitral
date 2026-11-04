@@ -54,9 +54,9 @@ Do [benchmark público](/aprender/benchmark), no Chromium, com rede Slow 4G, med
 
 <div class="vt-numeros">
   <div><b>3,4 kB</b><span>código de host mínimo, com brotli. O do Module Federation tem 19,4 kB.</span></div>
-  <div><b>-57%</b><span>de tempo na primeira visita contra o Module Federation com React compartilhado.</span></div>
-  <div><b>4,6x</b><span>mais rápido para trocar de área que o Next.js Multi-Zones.</span></div>
-  <div><b>63%</b><span>menos bytes para abrir duas áreas que o Next.js Multi-Zones.</span></div>
+  <div><b>-58%</b><span>de tempo na primeira visita contra o Module Federation com React compartilhado.</span></div>
+  <div><b>4,5x</b><span>mais rápido para trocar de área que o Next.js Multi-Zones.</span></div>
+  <div><b>64%</b><span>menos bytes para abrir duas áreas que o Next.js Multi-Zones.</span></div>
 </div>
 
 A página do [benchmark](/aprender/benchmark) mostra o método e as versões.

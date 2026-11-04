@@ -28,11 +28,11 @@ import { chromium } from 'playwright'
 
 // Versões medidas. Mudou uma, rode de novo e atualize a página de docs.
 const VERSOES = {
-  next: '16.4.2',
-  vite: '8.3.4',
-  '@vitejs/plugin-react': '6.1.2',
-  react: '19.3.0',
-  'react-dom': '19.3.0',
+  next: '16.4.5',
+  vite: '8.3.5',
+  '@vitejs/plugin-react': '6.2.1',
+  react: '19.3.1',
+  'react-dom': '19.3.1',
 }
 
 const REDE = { offline: false, latency: 150, downloadThroughput: (1.6 * 1024 * 1024) / 8, uploadThroughput: (750 * 1024) / 8 }
@@ -406,7 +406,7 @@ if (args.servir) {
   console.log(`${server.url}/v/a?remotes=vitral-dedupe  ${server.url}/a/  ${server.gateway?.url}/g/a`)
   await new Promise(() => {})
 }
-const browser = await chromium.launch({ channel: 'chromium', args: [`--ignore-certificate-errors-spki-list=${certificado().spki}`] })
+const browser = await chromium.launch({ channel: 'chromium', executablePath: process.env.CHROMIUM_PATH, args: [`--ignore-certificate-errors-spki-list=${certificado().spki}`] })
 const chromiumVersao = browser.version()
 let linhas
 try {

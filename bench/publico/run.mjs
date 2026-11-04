@@ -25,14 +25,14 @@ import { cenarios } from './cenarios.mjs'
 
 // Versões medidas. Mudou uma, rode de novo e atualize a página de docs.
 const VERSOES = {
-  vite: '8.3.4',
-  '@vitejs/plugin-react': '6.1.2',
+  vite: '8.3.5',
+  '@vitejs/plugin-react': '6.2.1',
   '@vitejs/plugin-vue': '6.0.10',
-  react: '19.3.0',
-  'react-dom': '19.3.0',
+  react: '19.3.1',
+  'react-dom': '19.3.1',
   vue: '3.5.44',
-  '@module-federation/vite': '1.23.5',
-  '@module-federation/runtime': '2.9.2',
+  '@module-federation/vite': '1.23.9',
+  '@module-federation/runtime': '2.9.3',
 }
 
 // "Slow 4G" do Lighthouse, a mesma rede do bench do CI: 150 ms de RTT,
@@ -281,7 +281,7 @@ if (args.servir) {
   console.log(`${server.url}/host-vitral/?remotes=vitral-dedupe&n=4`)
   await new Promise(() => {})
 }
-const browser = await chromium.launch()
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH })
 const chromiumVersao = browser.version()
 let linhas
 const hosts = {}
