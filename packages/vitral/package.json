@@ -311,12 +311,12 @@
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "2.96 kB"
+      "limit": "3.15 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
       "path": "dist/dedupe-*.js",
-      "limit": "760 B"
+      "limit": "0.94 kB"
     },
     {
       "name": "overrides (sob demanda)",
@@ -488,7 +488,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "9.9 kB",
+      "limit": "10.07 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -531,7 +531,7 @@
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
-      "limit": "6 kB",
+      "limit": "6.06 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -544,7 +544,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "12.96 kB"
+      "limit": "13.13 kB"
     },
     {
       "name": "snapshot (última tela na visita de volta)",

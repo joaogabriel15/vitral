@@ -35,6 +35,7 @@ vi.mock('vitral-next-host-config', () => ({
     },
   },
   shared: { i18next: { version: '25.0.0', modules: async () => ({ i18next: { ok: true } }) } },
+  plan: {},
 }))
 const remoteProps = vi.hoisted(() => ({ last: undefined as any }))
 vi.mock('../src/react', () => ({

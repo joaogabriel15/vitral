@@ -76,3 +76,25 @@ export function offer(p: Protocol, groups: NonNullable<VitralConfig['dedupe']>):
     p.configure({ offered: { ...p.settings().offered, [name]: version } })
   }
 }
+
+/**
+ * O build dividido com as cópias do `dedupePlan`: cada grupo do plano troca
+ * a cópia própria pela que serve a todos os remotes, com os hashes dela. Só
+ * vale para a faixa e a versão do build em que o plano foi feito.
+ */
+type SplitDedupe = { name: string; range: string; version: string; file: string; chunks?: string[] }
+
+export function planned<S extends { dedupe?: SplitDedupe[]; sri: Record<string, string> }>(name: string, split: S): S {
+  // O protocolo da página, sem importar o módulo dele (fica no núcleo).
+  const plan = ((globalThis as any)[Symbol.for('vitral')] as Protocol).settings().dedupePlan?.[name]
+  const absolute = (u: string) => new URL(u, location.href).href
+  if (!plan || !split.dedupe) return split
+  const sri = { ...split.sri }
+  const dedupe = split.dedupe.map((d) => {
+    const c = plan[d.name]
+    if (c?.for !== `${d.range}@${d.version}`) return d
+    for (const u in c.sri) sri[absolute(u)] = c.sri[u]
+    return { ...d, version: c.version, file: absolute(c.file), chunks: c.chunks?.map(absolute) }
+  })
+  return { ...split, dedupe, sri }
+}

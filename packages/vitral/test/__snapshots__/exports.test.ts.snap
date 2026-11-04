@@ -80,6 +80,7 @@ exports[`exports públicos > index 1`] = `
   "mountRemote",
   "navigate",
   "persist",
+  "planDedupe",
   "policy",
   "preload",
   "provide",
@@ -123,6 +124,7 @@ exports[`exports públicos > next 1`] = `
 exports[`exports públicos > next-config 1`] = `
 [
   "HOST_CONFIG",
+  "dedupePlanOf",
   "devRemotes",
   "hostModule",
   "htmlHints",
