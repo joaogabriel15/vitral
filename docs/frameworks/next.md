@@ -1,3 +1,7 @@
+<script setup>
+import { withBase } from 'vitepress'
+</script>
+
 # Next.js
 
 App Router e Pages Router. Import: `vitral/react`.
@@ -90,6 +94,11 @@ O que o modo `next` não cobre: Server Components, Server Actions, `getServerSid
 ## Host Next no lugar das zonas
 
 Num app Next (Pages Router) como host, `vitral/next-config` e `vitral/next-host` fazem o que as rewrites do Multi-Zones faziam, sem recarregar a página ao trocar de área.
+
+<picture class="vt-diagrama">
+  <img class="so-claro" :src="withBase('/marca/multizonas.png')" alt="À esquerda, Multi-Zones: dois apps Next, rewrites e a página recarrega ao trocar de área (0,8 s). À direita, vitral: um app Next com withVitral, a conta é um remote dentro do layout e a troca é sem recarregar (0,2 s).">
+  <img class="so-escuro" :src="withBase('/marca/multizonas-escuro.png')" alt="">
+</picture>
 
 ```js
 // next.config.js

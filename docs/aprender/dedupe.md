@@ -1,6 +1,15 @@
+<script setup>
+import { withBase } from 'vitepress'
+</script>
+
 # Dedupe de dependências
 
 Faz o remote usar o React ou o Vue que já está na página, em vez de baixar outra cópia.
+
+<picture class="vt-diagrama">
+  <img class="so-claro" :src="withBase('/marca/dedupe.png')" alt="Sem dedupe, cada remote baixa o próprio React. Com dedupe, os remotes usam o React que já está na página quando a versão serve; o que não serve baixa o próprio.">
+  <img class="so-escuro" :src="withBase('/marca/dedupe-escuro.png')" alt="">
+</picture>
 
 ## Quando usar
 

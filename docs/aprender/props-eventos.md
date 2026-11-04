@@ -1,6 +1,15 @@
+<script setup>
+import { withBase } from 'vitepress'
+</script>
+
 # Props e eventos
 
 Props levam dados do host para um remote. Eventos levam avisos entre quaisquer partes da página.
+
+<picture class="vt-diagrama">
+  <img class="so-claro" :src="withBase('/marca/comunicacao.png')" alt="Três remotes em React, Vue e Angular. O carrinho emite um evento, a busca recebe pelo mesmo barramento, e a conta lê o usuário que o host criou com provide.">
+  <img class="so-escuro" :src="withBase('/marca/comunicacao-escuro.png')" alt="">
+</picture>
 
 ## Quando usar
 

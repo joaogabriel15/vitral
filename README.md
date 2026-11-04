@@ -20,7 +20,7 @@
   <a href="./README.en.md">English</a>
 </p>
 
-Junte micro-frontends de qualquer framework numa página só, sem configuração de build no host.
+Micro-frontends com qualquer framework, sem configurar build no host. React, Next.js, Vue, Nuxt, Angular, Svelte e outros na mesma página.
 
 Cada equipe publica o próprio pedaço da página (um remote) com `vite build`. O host recebe a URL de cada remote e monta tudo no navegador.
 
@@ -135,6 +135,155 @@ Sem build no host, numa página HTML qualquer:
 ```
 
 Todos os componentes de host aceitam `src` no lugar de `name`.
+
+## Next.js e Nuxt como host
+
+O remote é sempre um projeto Vite (React, Vue ou outro), como no Começo rápido acima. O host pode ser um app Next ou Nuxt.
+
+**Next.js (App Router):**
+
+```tsx
+// app/carrinho.tsx
+'use client'
+import { configure } from 'vitral'
+import { Remote } from 'vitral/react'
+
+if (typeof window !== 'undefined') {
+  configure({ remotes: { carrinho: 'https://cdn.empresa.com/carrinho/vitral.json' } })
+}
+
+export function Carrinho({ userId }: { userId: number }) {
+  return <Remote name="carrinho" props={{ userId }} fallback={<p>Carregando…</p>} />
+}
+```
+
+```tsx
+// app/page.tsx
+import { Carrinho } from './carrinho'
+
+export default function Page() {
+  return <main><Carrinho userId={42} /></main>
+}
+```
+
+**Nuxt 3 e 4:**
+
+```ts
+// app/plugins/vitral.client.ts
+import { configure } from 'vitral'
+
+export default defineNuxtPlugin(() => {
+  configure({ remotes: { catalogo: 'https://cdn.empresa.com/catalogo/vitral.json' } })
+})
+```
+
+```vue
+<!-- app/pages/index.vue -->
+<script setup lang="ts">
+import { VitralRemote } from 'vitral/vue'
+</script>
+
+<template>
+  <VitralRemote name="catalogo" :props="{ userId: 42 }">
+    <template #fallback><p>Carregando…</p></template>
+  </VitralRemote>
+</template>
+```
+
+Nos dois, o servidor renderiza o `fallback` e o remote monta no navegador. Não precisa de `dynamic(..., { ssr: false })` nem de `<ClientOnly>`.
+
+## Multi-Zones ou vitral
+
+O mesmo app Next dividido em duas áreas: a loja (app principal) e a conta, de outra equipe.
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/multizonas-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/multizonas.png" width="900" alt="À esquerda, Multi-Zones: dois apps Next, rewrites e a página recarrega ao trocar de área (0,8 s). À direita, vitral: um app Next com withVitral, a conta é um remote dentro do layout e a troca é sem recarregar (0,2 s).">
+  </picture>
+</p>
+
+**Com Multi-Zones**, a conta é um segundo app Next, e o app principal repassa as URLs para ele:
+
+```js
+// conta/next.config.js (a zona)
+module.exports = {
+  basePath: '/conta',
+  assetPrefix: '/conta-static',
+}
+```
+
+```js
+// loja/next.config.js (o app principal)
+module.exports = {
+  async rewrites() {
+    return [
+      { source: '/conta', destination: `${process.env.CONTA_URL}/conta` },
+      { source: '/conta/:path+', destination: `${process.env.CONTA_URL}/conta/:path+` },
+      { source: '/conta-static/:path+', destination: `${process.env.CONTA_URL}/conta-static/:path+` },
+    ]
+  },
+}
+```
+
+```tsx
+// links entre zonas: <a>, não <Link>. A página recarrega e baixa Next e React de novo.
+<a href="/conta">Minha conta</a>
+```
+
+**Com vitral**, a conta é um remote (projeto Vite) e a loja continua sendo o único app Next:
+
+```js
+// conta/vite.config.js (o remote)
+import react from '@vitejs/plugin-react'
+import vitral from 'vitral/vite'
+
+export default { plugins: [react(), vitral({ name: 'conta', dedupe: ['react'] })] }
+```
+
+```js
+// loja/next.config.js (o host)
+const { withVitral } = require('vitral/next-config')
+
+module.exports = withVitral({}, {
+  remotes: {
+    conta: { url: 'https://cdn.empresa.com/conta/vitral.json', basePath: '/conta' },
+  },
+})
+```
+
+```tsx
+// loja/pages/_app.tsx
+import { VitralNext } from 'vitral/next-host'
+
+export default function App({ Component, pageProps }) {
+  return <><VitralNext /><Component {...pageProps} /></>
+}
+```
+
+```tsx
+// loja/pages/conta/[[...slug]].tsx
+import { NextRemote } from 'vitral/next-host'
+
+export default function Conta() {
+  return <Layout><NextRemote name="conta" fallback={<p>Carregando…</p>} /></Layout>
+}
+```
+
+```tsx
+// links: <Link> normal. A troca é sem recarregar, e o React não baixa de novo.
+<Link href="/conta">Minha conta</Link>
+```
+
+| | Multi-Zones | vitral |
+|---|---|---|
+| Apps Next | Um por área | Só o host |
+| Configuração | `basePath` e `assetPrefix` na zona, `rewrites` no app principal | `withVitral` no host, plugin no remote |
+| Trocar de área | Recarrega a página (0,8 s no benchmark) | Sem recarregar (0,2 s) |
+| React e Next | Baixados de novo em cada área | Uma cópia para a página toda |
+| Layout do app principal | Cada zona repete o seu | O remote fica dentro do layout do host |
+
+Guia completo, com SSR por rota e prefetch: [Migrar do Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones).
 
 ## Rodar local
 
@@ -261,6 +410,13 @@ O que entra em `${}` é escapado. Mudar `state` ou as props atualiza a tela.
 - **Tipos das props:** o build publica `vitral.d.ts`. No host, `npx vitral types` gera `vitral-env.d.ts`, e uma prop errada passa a não compilar.
 
 ## Comunicação entre remotes
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/comunicacao-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/comunicacao.png" width="900" alt="Três remotes em React, Vue e Angular. O carrinho emite um evento, a busca recebe pelo mesmo barramento, e a conta lê o usuário que o host criou com provide.">
+  </picture>
+</p>
 
 ```js
 import { events } from 'vitral'
@@ -415,6 +571,13 @@ Um remote local (`module`) só mede `css` e `mount`. Erros dentro do
 
 Para não baixar React ou Vue mais de uma vez, liste-os em `dedupe` no remote:
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/dedupe-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/dedupe.png" width="900" alt="Sem dedupe, cada remote baixa o próprio React. Com dedupe, os remotes usam o React que já está na página quando a versão serve; o que não serve baixa o próprio.">
+  </picture>
+</p>
+
 ```js
 vitral({ dedupe: ['react'] })
 ```
@@ -430,6 +593,13 @@ página (`watchUpdates()` e `refresh('carrinho')`) e app shell por rota
 [Exposes](https://joaogabriel15.github.io/vitral/aprender/exposes), [Atualização sem reload](https://joaogabriel15.github.io/vitral/aprender/atualizacoes) e [Rotas](https://joaogabriel15.github.io/vitral/aprender/rotas).
 
 ## Segurança
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/seguranca-escuro.png">
+    <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/seguranca.png" width="900" alt="O host configura allowedOrigins e integrity. Antes de rodar, a lib confere a origem e o SHA-384. Se um dos dois falha, nada executa e o erro aparece no lugar do remote.">
+  </picture>
+</p>
 
 - Só importa JS de origens permitidas, mesmo que o `vitral.json` aponte para outra. O `src` de um componente de host entra na allowlist; o atributo `src` do `<vitral-remote>` não entra quando há `allowedOrigins`.
 - Com `integrity`, nada roda sem o hash conferir. A lib usa o primeiro caminho que o navegador garante: import map com `integrity` (Chrome 133+, Safari 18.4+), `<link rel="modulepreload" integrity>` (Firefox 115+) ou, nos outros, baixa, confere e executa exatamente os bytes conferidos via `blob:`. Aceita `sha256`, `sha384` e `sha512`, e vários hashes separados por espaço (vale o mais forte). O CSS do manifesto também é conferido.
