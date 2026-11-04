@@ -25,6 +25,24 @@ O plugin prefixa cada seletor do CSS do remote:
 
 `:root`, `html` e `body` viram a raiz do remote. O preflight do Tailwind do remote não muda o host.
 
+### Com `@scope`
+
+```ts
+vitral({ scopeCss: 'native' })
+```
+
+O CSS vai inteiro num `@scope`, sem prefixo em cada seletor:
+
+```css
+@scope ([data-vitral-scope="carrinho"]) {
+  .botao { color: red }
+}
+```
+
+`:root`, `html` e `body` viram `:scope`. `@keyframes`, `@font-face` e `@property` ficam fora do bloco. No remote de exemplo com Tailwind (`demo/remote-react`), o CSS caiu de 10,0 kB para 7,0 kB sem compressão e de 2,25 kB para 2,15 kB com gzip.
+
+Diferença para o prefixo: o `@scope` não soma especificidade, e o prefixo soma (0,1,0). Uma regra do host com seletor igual, carregada depois, passa a valer dentro do remote. Use quando o CSS do host não tem regras soltas para as mesmas classes do remote. Precisa de navegador com `@scope` (Chrome 118, Safari 17.4, Firefox 146).
+
 ## Shadow DOM
 
 ```jsx
@@ -212,7 +230,7 @@ No plugin (`vitral/vite`):
 
 | Opção | Padrão | O que faz |
 | --- | --- | --- |
-| `scopeCss` | `true` | Prefixa o CSS do remote. `false` desliga |
+| `scopeCss` | `true` | Prefixa o CSS do remote. `'native'` usa `@scope`. `false` desliga |
 | `theme` | nenhum | `'host'`: variáveis do remote viram fallback do valor do host |
 | `layers` | nenhum | `'flatten'`: use quando o host tem CSS sem `@layer` (Tailwind v3, CSS legado) que sobrescreve o remote |
 | `renameRegisteredProperties` | `false` | Use quando o host tem Tailwind v3 e o remote, v4. Evita quebrar os gradientes do host |

@@ -92,9 +92,9 @@ export function devManifest(name: string, scope: string | undefined): RemoteMani
 export const DEV_CSS = { include: /\.(css|less|sass|scss|styl|stylus|pcss|postcss|sss)(\?|$)/, exclude: /[?&](raw|url|inline)\b/ }
 
 /** CSS que o Vite injeta em dev também ganha o escopo, como no build. */
-export function scopeDevCss(code: string, id: string, scope: string): string | undefined {
+export function scopeDevCss(code: string, id: string, scope: string, native = false): string | undefined {
   if (!DEV_CSS.include.test(id) || DEV_CSS.exclude.test(id)) return
-  return scopeCss(code, scope)
+  return scopeCss(code, scope, native)
 }
 
 /**
