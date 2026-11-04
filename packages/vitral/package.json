@@ -514,7 +514,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "3.36 kB",
+      "limit": "4.11 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",

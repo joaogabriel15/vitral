@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { empty, LIMITS, parse, predict, record, remember } from '../src/core/markov'
-import { prefetch } from '../src/prefetch'
+import { empty, LIMITS, parse, predict, predictNext, record, recordPath, remember } from '../src/core/markov'
+import { prefetch, worth } from '../src/prefetch'
 import { configure } from '../src/index'
 import { cleanup, flush } from './helpers'
 
@@ -70,6 +70,45 @@ describe('cadeia de Markov', () => {
   })
 })
 
+describe('ordens 1 a 3, população e custo', () => {
+  it('usa o contexto mais longo com suporte; sem ele, cai para a ordem de baixo', () => {
+    const c = empty()
+    // Depois de /lista → /item, o usuário vai ao /carrinho; vindo de /busca → /item, volta à /busca.
+    for (let i = 0; i < 3; i++) recordPath(c, ['/lista', '/item'], '/carrinho'), recordPath(c, ['/busca', '/item'], '/busca')
+    recordPath(c, ['/busca', '/item'], '/busca')
+    expect(predictNext(c, ['/lista', '/item'])).toEqual({ to: '/carrinho', p: 1 })
+    expect(predictNext(c, ['/busca', '/item'])).toEqual({ to: '/busca', p: 1 })
+    // Contexto que nunca apareceu: a ordem 1 decide (4 × /busca, 3 × /carrinho).
+    expect(predictNext(c, ['/home', '/item'])).toEqual({ to: '/busca', p: 4 / 7 })
+    // Contexto sem suporte (uma transição só): a ordem 1 decide.
+    recordPath(c, ['/y', '/item'], '/z')
+    expect(predictNext(c, ['/y', '/item'])!.to).toBe('/busca')
+    // Sem confiança em nenhuma ordem: nada.
+    recordPath(c, ['/x', '/item'], '/a'), recordPath(c, ['/x', '/item'], '/b')
+    expect(predictNext(c, ['/x', '/item'], { threshold: 0.6 })).toBeNull()
+    expect(predictNext(c, ['/x', '/item'], { threshold: 0.4 })).toEqual({ to: '/a', p: 0.5 })
+  })
+
+  it('primeira visita: a população prevê; depois, contagens do usuário + alpha × população', () => {
+    const prior = { t: { '/a': { '/b': 90, '/c': 10 } } }
+    const c = empty()
+    expect(predictNext(c, ['/a'], { prior })).toEqual({ to: '/b', p: 0.9 })
+    for (let i = 0; i < 5; i++) recordPath(c, ['/a'], '/c')
+    // (5 + 5 × 0.1) / (5 + 5) para /c, (0 + 5 × 0.9) / 10 para /b.
+    expect(predictNext(c, ['/a'], { prior })).toEqual({ to: '/c', p: 0.55 })
+    expect(predictNext(c, ['/a'], { prior, alpha: 50 })!.to).toBe('/b')
+  })
+
+  it('custo: vale com probabilidade alta ou rede lenta; não vale com probabilidade baixa na rede rápida', () => {
+    const fast = { rtt: 50, downlink: 50 }
+    const slow3g = { rtt: 400, downlink: 1 }
+    expect(worth(0.9, 150_000, 0.0005, fast)).toBe(true)
+    expect(worth(0.2, 150_000, 0.0005, fast)).toBe(false)
+    expect(worth(0.2, 150_000, 0.0005, slow3g)).toBe(true)
+    expect(worth(0.01, 1, 0, fast)).toBe(true)
+  })
+})
+
 const CDN = 'https://cdn.empresa.com/'
 let links: MutationObserver
 
@@ -127,7 +166,8 @@ describe('prefetch()', () => {
   it('aprende as transições e os remotes de cada rota, no localStorage', async () => {
     await train(2)
     const c = JSON.parse(localStorage.getItem('vitral:prefetch')!)
-    expect(c.t).toEqual({ '/a': { '/b': 2 }, '/b': { '/a': 2 } })
+    // Ordem 1 e os contextos de ordem 2 e 3 (rotas separadas por \n).
+    expect(c.t).toEqual({ '/a': { '/b': 2 }, '/b': { '/a': 2 }, '/a\n/b': { '/a': 2 }, '/b\n/a': { '/b': 1 }, '/a\n/b\n/a': { '/b': 1 }, '/b\n/a\n/b': { '/a': 1 } })
     expect(c.r).toEqual({ '/b': ['b'] })
   })
 
@@ -163,6 +203,42 @@ describe('prefetch()', () => {
     await idle()
     expect(fetch).not.toHaveBeenCalled()
     again()
+  })
+
+  it('pointerdown num link: baixa na hora os remotes da rota dele', async () => {
+    await train(1)
+    const fetch = cdn({ [CDN + 'b/vitral.json']: { name: 'b', entry: 'remote.js' } })
+    configure({ remotes: { b: CDN + 'b/vitral.json' } })
+    const onPrefetch = vi.fn()
+    // Uma transição só: a previsão não baixa nada.
+    const stop = prefetch({ onPrefetch })
+    await idle()
+    expect(fetch).not.toHaveBeenCalled()
+    const a = document.body.appendChild(document.createElement('a'))
+    a.href = '/b'
+    a.innerHTML = '<span>B</span>'
+    a.firstElementChild!.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await vi.waitFor(() => expect(onPrefetch).toHaveBeenCalledWith(['b'], '/b'))
+    stop()
+  })
+
+  it('população pela URL: prevê na primeira visita, com os remotes da população', async () => {
+    const fetch = cdn({ [CDN + 'b/vitral.json']: { name: 'b', entry: 'remote.js' }, '/prior.json': { t: { '/a': { '/b': 9, '/c': 1 } }, r: { '/b': ['b'] } } })
+    configure({ remotes: { b: CDN + 'b/vitral.json' } })
+    const onPrefetch = vi.fn()
+    const stop = prefetch({ prior: '/prior.json', onPrefetch, storage: null })
+    await vi.waitFor(() => expect(onPrefetch).toHaveBeenCalledWith(['b'], '/b'))
+    expect(urls(fetch)[0]).toBe('/prior.json')
+    stop()
+  })
+
+  it('speculate: rota prevista sem remote ganha Speculation Rules', async () => {
+    vi.stubGlobal('HTMLScriptElement', Object.assign(HTMLScriptElement, { supports: (t: string) => t === 'speculationrules' }))
+    const stop = prefetch({ prior: { t: { '/a': { '/sobre': 1 } } }, speculate: true, storage: null })
+    await idle()
+    const rule = document.head.querySelector('script[type="speculationrules"]')!
+    expect(JSON.parse(rule.textContent!)).toEqual({ prefetch: [{ source: 'list', urls: ['/sobre'], eagerness: 'immediate' }] })
+    stop()
   })
 
   it('pula remote já montado na página', async () => {

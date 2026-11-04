@@ -6,6 +6,7 @@ import { add, registry } from './cli/registry'
 import { dict } from './cli/dict'
 import { doctorCli } from './cli/doctor'
 import { migrate, type MigrateSource } from './cli/migrate'
+import { prior } from './cli/prior'
 import { test } from './cli/test'
 import { flag, types } from './cli/types'
 
@@ -22,6 +23,7 @@ const AJUDA = `Uso:
   vitral test [--contract arquivo|pasta ...] [--since url|arquivo] [--dir dist] [--entry arquivo]
               [--types vitral.d.ts]
   vitral dict <dist> --from <dist-anterior> [--from ...] [--level n] [--no-dcb]
+  vitral prior <sessoes.jsonl> [--out prior.json] [--min-count n] [--min-row n] [--top n]
 
   types     Baixa o vitral.d.ts de cada remote e gera vitral-env.d.ts.
             --check só confere se o hash de cada manifesto ainda é o
@@ -52,7 +54,11 @@ const AJUDA = `Uso:
             quebram o host.
   dict      Pré-comprime cada arquivo do dist com a versão anterior dele
             como dicionário (.dcz e, com o binário brotli, .dcb) e grava
-            vitral-dict.json para o middleware vitral/dict.`
+            vitral-dict.json para o middleware vitral/dict.
+  prior     Gera as transições da população para o prefetch (prior de
+            vitral/prefetch), de sessões agregadas: uma por linha, array
+            JSON de rotas. Tira transições com menos de --min-count (5) e
+            rotas com menos de --min-row (20) transições.`
 
 const falhou = (err: Error) => {
   console.error(err.message)
@@ -141,6 +147,18 @@ if (command === 'types') {
   try {
     if (!from.length) throw new Error('[vitral] dict precisa de --from <dist-anterior>')
     dict({ dist: args[0], from, level: level === undefined ? undefined : Number(level), brotli: noDcb ? false : undefined })
+  } catch (err) {
+    falhou(err as Error)
+  }
+} else if (command === 'prior' && args.length) {
+  const num = (name: string) => {
+    const v = flag(args, name)
+    return v === undefined ? undefined : Number(v)
+  }
+  try {
+    const out = flag(args, '--out')
+    const o = { minCount: num('--min-count'), minRow: num('--min-row'), top: num('--top') }
+    prior(args[0], out, o)
   } catch (err) {
     falhou(err as Error)
   }

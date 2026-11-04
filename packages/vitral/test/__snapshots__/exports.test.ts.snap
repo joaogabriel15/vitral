@@ -156,6 +156,7 @@ exports[`exports públicos > prefetch 1`] = `
 [
   "prefetch",
   "warm",
+  "worth",
 ]
 `;
 
