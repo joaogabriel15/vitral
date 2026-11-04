@@ -2,7 +2,7 @@
 <!--
   Fonte das imagens da marca (docs/public/marca/*.png).
   Gere de novo com: pnpm --dir docs marca
-  ?tema=escuro troca as cores. Cada peça é um elemento com id.
+  ?tema=escuro troca as cores e ?lingua=en gera em inglês. Cada peça é um elemento com id.
 -->
 <html lang="pt-BR">
 <head>
@@ -83,6 +83,73 @@
   .garantias div { border-top: 4px solid var(--cor); padding-top: 10px; }
   .garantias b { font-size: 17px; display: block; }
   .garantias span { font-size: 14.5px; color: var(--texto-2); line-height: 1.45; display: block; margin-top: 4px; }
+
+  /* Diagramas dos cenários: mesma largura e estilo do "como funciona" */
+  .cenario { width: 1200px; padding: 56px 48px 44px; }
+  .cenario .titulo-col { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--texto-2); margin-bottom: 14px; }
+  .cenario .lados { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .cenario .lado { border: 1px solid var(--borda); border-radius: 14px; padding: 20px; background: var(--fundo-2); }
+  .cenario .lado > .titulo-col { margin-bottom: 16px; }
+  .fluxo { display: grid; grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); align-items: center; }
+  .fluxo .seta { font-size: 12.5px; }
+  .mini { border: 2px solid var(--texto); border-radius: 10px; overflow: hidden; background: var(--fundo); }
+  .mini .barra { display: flex; gap: 5px; padding: 8px 10px; border-bottom: 1px solid var(--borda); background: var(--fundo-2); align-items: center; }
+  .mini .barra i { width: 8px; height: 8px; border-radius: 50%; background: var(--borda); display: block; }
+  .mini .barra span { margin-left: 6px; font-size: 12px; color: var(--texto-2); white-space: nowrap; }
+  .mini .corpo { padding: 8px; display: grid; gap: 6px; }
+  .mini .topo { border-radius: 6px; padding: 7px 9px; font-size: 12.5px; font-weight: 600; background: var(--codigo); border: 1px solid var(--borda); }
+  .mini .area { border-radius: 6px; padding: 9px; font-size: 13px; font-weight: 600; color: #fff; background: var(--cor); min-height: 52px; }
+  .mini .area small { display: block; font-weight: 500; opacity: .88; font-size: 11.5px; }
+  .aviso { font-size: 12px; font-weight: 600; color: var(--cor); border: 1px dashed var(--cor); border-radius: 6px; padding: 5px 8px; text-align: center; }
+  .servidores { display: grid; grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); align-items: center; margin-top: 18px; }
+  .caixa { border: 1px solid var(--borda); border-left: 5px solid var(--cor); border-radius: 9px; padding: 10px 12px; background: var(--fundo); }
+  .caixa b { font-size: 15px; display: block; }
+  .caixa span { font-size: 12.5px; color: var(--texto-2); }
+  .caixa code { font-size: 12px; }
+  .resultado { margin-top: 18px; display: grid; gap: 8px; }
+  .resultado p { font-size: 14.5px; padding-left: 14px; border-left: 4px solid var(--cor); line-height: 1.35; }
+  .resultado p b { font-weight: 700; }
+  .nota { font-size: 12.5px; color: var(--texto-2); margin-top: 16px; }
+  .remotes { display: grid; gap: 8px; }
+  .remote { border-radius: 8px; padding: 9px 10px; color: #fff; background: var(--cor); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .remote small { font-weight: 500; font-size: 12px; opacity: .9; }
+  .chip { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 4px 10px; background: #fff; color: var(--chumbo); white-space: nowrap; }
+  .chip.vazio { background: transparent; color: #fff; border: 1.5px dashed rgba(255,255,255,.8); font-weight: 600; }
+  .compartilhado { border: 2px solid var(--cobalto); border-radius: 8px; padding: 9px 10px; font-size: 14px; font-weight: 700; color: var(--cobalto); background: var(--fundo); text-align: center; }
+  .escuro .compartilhado { color: #93b4f8; }
+  pre.linha { font-size: 13.5px; padding: 10px 12px; border-radius: 8px; background: var(--codigo); border: 1px solid var(--borda); margin-bottom: 14px; }
+  .barramento { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 18px; }
+  .barramento .remote { flex-direction: column; align-items: flex-start; padding: 12px 14px; }
+  .barramento .remote b { font-size: 16px; }
+  .barramento pre { font-size: 12.5px; margin-top: 8px; padding: 7px 9px; border-radius: 6px; background: rgba(0,0,0,.22); color: #fff; width: 100%; white-space: pre-wrap; }
+  .vertical { display: flex; justify-content: center; align-items: center; gap: 8px; height: 56px; color: var(--texto-2); font-size: 12.5px; }
+  .vertical svg { width: 20px; height: 44px; }
+  .canal { border-radius: 10px; padding: 12px 16px; border: 2px solid var(--texto); background: var(--fundo-2); }
+  .canal b { font-size: 16px; }
+  .canal span { font-size: 13.5px; color: var(--texto-2); margin-left: 8px; }
+  .canal code { font-size: 13px; }
+  .host-linha { margin-top: 0; border: 2px dashed var(--borda); border-radius: 10px; padding: 10px 14px; font-size: 14px; color: var(--texto-2); }
+  .host-linha code { color: var(--texto); }
+  .passos { display: grid; grid-template-columns: 380px 48px repeat(2, minmax(0, 1fr) 48px) minmax(0, 1fr); grid-template-rows: auto auto auto; align-items: start; }
+  .passos > .host-col { grid-row: 1 / 4; }
+  .passos > .seta { margin-top: 74px; }
+  .passos > .passo { margin-top: 30px; }
+  .passos > .vertical { height: 64px; }
+  .passo { border: 1px solid var(--borda); border-top: 5px solid var(--cor); border-radius: 10px; padding: 14px; background: var(--fundo-2); min-height: 118px; }
+  .passo .num { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--texto-2); }
+  .passo b { font-size: 17px; display: block; margin-top: 4px; }
+  .passo span { font-size: 13.5px; color: var(--texto-2); display: block; margin-top: 6px; line-height: 1.4; }
+  .passo.ok { border-color: var(--esmeralda); border-top-color: var(--esmeralda); }
+  .host-codigo { border: 2px solid var(--texto); border-radius: 12px; overflow: hidden; }
+  .host-codigo .barra { display: flex; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--borda); background: var(--fundo-2); align-items: center; }
+  .host-codigo .barra i { width: 10px; height: 10px; border-radius: 50%; background: var(--borda); display: block; }
+  .host-codigo .barra span { margin-left: 8px; font-size: 13px; color: var(--texto-2); }
+  .host-codigo pre { font-size: 12.5px; line-height: 1.6; padding: 12px 14px; background: var(--codigo); }
+  .falha { grid-column: 3 / 6; grid-row: 3; border: 2px solid var(--rubi); border-radius: 10px; padding: 12px 16px; background: var(--fundo); }
+  .falha b { font-size: 16px; color: var(--rubi); }
+  .escuro .falha b { color: #fb7185; }
+  .falha span { font-size: 13.5px; color: var(--texto-2); display: block; margin-top: 4px; line-height: 1.4; }
+  .falha code { font-size: 12.5px; color: var(--texto); }
 </style>
 </head>
 <body>
@@ -169,8 +236,302 @@
   </div>
 </section>
 
+<section id="multizonas" class="peca cenario">
+  <div class="lados">
+    <div class="lado">
+      <p class="titulo-col">Com Next.js Multi-Zones</p>
+      <div class="fluxo">
+        <div class="mini">
+          <div class="barra"><i></i><i></i><i></i><span>loja.empresa.com</span></div>
+          <div class="corpo"><div class="topo">Layout da loja</div><div class="area" style="--cor: var(--esmeralda)">produtos<small>app loja</small></div></div>
+        </div>
+        <div class="seta"><svg viewBox="0 0 56 20"><path d="M2 10H50M42 3l9 7-9 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><code>&lt;a&gt;</code><br>recarrega</div>
+        <div class="mini">
+          <div class="barra"><i></i><i></i><i></i><span>/conta</span></div>
+          <div class="corpo"><div class="topo">Layout repetido</div><div class="area" style="--cor: var(--rubi)">conta<small>app conta</small></div></div>
+        </div>
+      </div>
+      <div class="servidores">
+        <div class="caixa" style="--cor: var(--esmeralda)"><b>loja · Next</b><span><code>rewrites</code> de /conta/*</span></div>
+        <div class="seta"><svg viewBox="0 0 56 20"><path d="M2 10H50M42 3l9 7-9 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>repassa</div>
+        <div class="caixa" style="--cor: var(--rubi)"><b>conta · Next</b><span><code>basePath</code> e <code>assetPrefix</code></span></div>
+      </div>
+      <div class="resultado">
+        <p style="--cor: var(--borda)">Trocar de área recarrega a página: <b>0,8 s</b></p>
+        <p style="--cor: var(--borda)">Next e React baixados de novo em cada área</p>
+        <p style="--cor: var(--borda)">Um app Next para cada área</p>
+      </div>
+    </div>
+    <div class="lado">
+      <p class="titulo-col">Com vitral</p>
+      <div class="fluxo">
+        <div class="mini">
+          <div class="barra"><i></i><i></i><i></i><span>loja.empresa.com</span></div>
+          <div class="corpo"><div class="topo">Layout da loja</div><div class="area" style="--cor: var(--esmeralda)">produtos<small>host</small></div></div>
+        </div>
+        <div class="seta"><svg viewBox="0 0 56 20"><path d="M2 10H50M42 3l9 7-9 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><code>&lt;Link&gt;</code><br>sem recarregar</div>
+        <div class="mini">
+          <div class="barra"><i></i><i></i><i></i><span>/conta</span></div>
+          <div class="corpo"><div class="topo">Layout da loja</div><div class="area" style="--cor: var(--cobalto)">conta<small>remote no NextRemote</small></div></div>
+        </div>
+      </div>
+      <div class="servidores">
+        <div class="caixa" style="--cor: var(--esmeralda)"><b>loja · Next</b><span><code>withVitral</code> no next.config</span></div>
+        <div class="seta"><svg viewBox="0 0 56 20"><path d="M2 10H50M42 3l9 7-9 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>baixa só<br>o remote</div>
+        <div class="caixa" style="--cor: var(--cobalto)"><b>conta · Vite</b><span>/conta/vitral.json no CDN</span></div>
+      </div>
+      <div class="resultado">
+        <p style="--cor: var(--esmeralda)">Trocar de área sem recarregar: <b>0,2 s</b></p>
+        <p style="--cor: var(--esmeralda)">Uma cópia de Next e React para a página toda</p>
+        <p style="--cor: var(--esmeralda)">Um app Next só. A conta fica dentro do layout dele</p>
+      </div>
+    </div>
+  </div>
+  <p class="nota">Tempo de troca de área no benchmark público: Slow 4G, mediana de 7 execuções.</p>
+</section>
+
+<section id="dedupe" class="peca cenario">
+  <div class="lados">
+    <div class="lado">
+      <p class="titulo-col">Sem dedupe</p>
+      <pre class="linha mono">vitral()</pre>
+      <div class="remotes">
+        <div class="remote" style="--cor: var(--cobalto)"><span>carrinho</span><span class="chip">React próprio</span></div>
+        <div class="remote" style="--cor: var(--violeta)"><span>busca</span><span class="chip">React próprio</span></div>
+        <div class="remote" style="--cor: var(--rubi)"><span>conta</span><span class="chip">React próprio</span></div>
+      </div>
+      <div class="resultado">
+        <p style="--cor: var(--borda)">A página baixa o React três vezes</p>
+        <p style="--cor: var(--borda)">Nunca há conflito de versão</p>
+      </div>
+    </div>
+    <div class="lado">
+      <p class="titulo-col">Com dedupe</p>
+      <pre class="linha mono">vitral({ dedupe: ['react'] })</pre>
+      <div class="remotes">
+        <div class="compartilhado">React 19 que já está na página</div>
+        <div class="remote" style="--cor: var(--cobalto)"><span>carrinho <small>^19.1</small></span><span class="chip vazio">usa o da página</span></div>
+        <div class="remote" style="--cor: var(--violeta)"><span>busca <small>^19.0</small></span><span class="chip vazio">usa o da página</span></div>
+        <div class="remote" style="--cor: var(--rubi)"><span>conta <small>^18.3</small></span><span class="chip">versão não serve: baixa o próprio</span></div>
+      </div>
+      <div class="resultado">
+        <p style="--cor: var(--esmeralda)">O React é baixado uma vez quando a versão serve</p>
+        <p style="--cor: var(--esmeralda)">Quando não serve, o remote baixa o próprio e funciona igual</p>
+      </div>
+    </div>
+  </div>
+  <div class="garantias">
+    <div style="--cor: var(--cobalto)"><b>Versão conferida</b><span>Vale o <code>^</code> da versão instalada no remote.</span></div>
+    <div style="--cor: var(--esmeralda)"><b>Sem config no host</b><span>O <code>&lt;Remote&gt;</code> do React oferece o React do host.</span></div>
+    <div style="--cor: var(--ambar)"><b>Qualquer pacote</b><span>React, Vue ou a biblioteca de UI da empresa (<code>'@empresa/ui/*'</code>).</span></div>
+    <div style="--cor: var(--rubi)"><b>Grupo inteiro</b><span><code>'react'</code> cobre react-dom, o client e o JSX runtime.</span></div>
+  </div>
+</section>
+
+<section id="comunicacao" class="peca cenario">
+  <div class="barramento">
+    <div>
+      <p class="titulo-col">Carrinho · React</p>
+      <div class="remote" style="--cor: var(--cobalto)"><b>publica o total</b><pre class="mono">events.emit('carrinho:total', 120)</pre></div>
+      <div class="vertical"><svg viewBox="0 0 20 44"><path d="M10 2V38M3 30l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>emite</div>
+    </div>
+    <div>
+      <p class="titulo-col">Busca · Vue</p>
+      <div class="remote" style="--cor: var(--esmeralda)"><b>mostra o total</b><pre class="mono">events.on('carrinho:total', …)</pre></div>
+      <div class="vertical"><svg viewBox="0 0 20 44"><path d="M10 42V6M3 14l7-9 7 9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>recebe</div>
+    </div>
+    <div>
+      <p class="titulo-col">Conta · Angular</p>
+      <div class="remote" style="--cor: var(--rubi)"><b>lê o usuário</b><pre class="mono">injectShared('usuario')</pre></div>
+      <div class="vertical"><svg viewBox="0 0 20 44"><path d="M10 42V6M3 14l7-9 7 9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>lê e assina</div>
+    </div>
+    <div class="canal" style="grid-column: 1 / 3"><b>events</b><span>mensagens entre remotes. <code>events.last()</code> devolve a última.</span></div>
+    <div class="canal"><b>shared</b><span>estado do host</span></div>
+    <div style="grid-column: 3"><div class="vertical"><svg viewBox="0 0 20 44"><path d="M10 42V6M3 14l7-9 7 9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>cria</div></div>
+    <div class="host-linha" style="grid-column: 1 / 4">Host: <code>provide('usuario', { id: 42 })</code> e <code>provide('tema', 'claro', { writable: false })</code></div>
+  </div>
+  <div class="garantias">
+    <div style="--cor: var(--cobalto)"><b>Qualquer framework</b><span>React, Vue, Angular, Svelte, Solid e Lit usam o mesmo barramento.</span></div>
+    <div style="--cor: var(--esmeralda)"><b>Limpa sozinho</b><span>O que um remote assina é cancelado quando ele desmonta.</span></div>
+    <div style="--cor: var(--ambar)"><b>Só o dono altera</b><span>Com <code>writable: false</code>, só quem criou muda o valor.</span></div>
+    <div style="--cor: var(--rubi)"><b>Navegação comum</b><span><code>navigate('/pedidos/42')</code> avisa todos os roteadores da página.</span></div>
+  </div>
+</section>
+
+<section id="seguranca" class="peca cenario">
+  <div class="passos">
+    <div class="host-col">
+      <p class="titulo-col">Host</p>
+      <div class="host-codigo">
+        <div class="barra"><i></i><i></i><i></i><span>loja.empresa.com</span></div>
+<pre class="mono">configure({
+  allowedOrigins: ['https://cdn.empresa.com'],
+  remotes: {
+    carrinho: {
+      url: '…/carrinho/vitral.json',
+      integrity: 'sha384-…',
+    },
+  },
+})</pre>
+      </div>
+    </div>
+    <div class="seta"><svg viewBox="0 0 56 20"><path d="M2 10H50M42 3l9 7-9 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="passo" style="--cor: var(--cobalto)"><p class="num">1 · Origem</p><b>Origem permitida?</b><span>O JS e o CSS só vêm das origens da lista.</span></div>
+    <div class="seta"><svg viewBox="0 0 56 20"><path d="M2 10H50M42 3l9 7-9 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>sim</div>
+    <div class="passo" style="--cor: var(--ambar)"><p class="num">2 · Hash</p><b>SHA-384 confere?</b><span>O navegador confere cada arquivo, chunks e <code>import()</code> também.</span></div>
+    <div class="seta"><svg viewBox="0 0 56 20"><path d="M2 10H50M42 3l9 7-9 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>sim</div>
+    <div class="passo ok"><p class="num">3 · Roda</p><b>Monta o remote</b><span>Só os bytes conferidos executam.</span></div>
+    <div class="vertical" style="grid-column: 3; grid-row: 2"><svg viewBox="0 0 20 44"><path d="M10 2V38M3 30l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>não</div>
+    <div class="vertical" style="grid-column: 5; grid-row: 2"><svg viewBox="0 0 20 44"><path d="M10 2V38M3 30l7 9 7-9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>não</div>
+    <div class="falha"><b>Bloqueia e não executa nada</b><span><code>ORIGIN_BLOCKED</code> ou <code>INTEGRITY</code> aparece no lugar do remote. O resto da página funciona.</span></div>
+  </div>
+  <div class="garantias">
+    <div style="--cor: var(--cobalto)"><b>Todo navegador</b><span>Import map com integrity, modulepreload ou bytes conferidos via <code>blob:</code>.</span></div>
+    <div style="--cor: var(--esmeralda)"><b>CSP com nonce</b><span>A lib copia o <code>nonce</code> da página para o import map.</span></div>
+    <div style="--cor: var(--ambar)"><b>Sem eval</b><span>Nem <code>eval</code> nem iframe. O código entra como módulo ES.</span></div>
+    <div style="--cor: var(--rubi)"><b>Assinatura</b><span>Opcional: <code>vitral sign</code> com Ed25519 (Chrome 141+).</span></div>
+  </div>
+</section>
+
 <script>
   if (new URLSearchParams(location.search).get('tema') === 'escuro') document.body.classList.add('escuro')
+
+  // ?lingua=en gera a versão em inglês das imagens.
+  if (new URLSearchParams(location.search).get('lingua') === 'en') {
+    document.documentElement.lang = 'en'
+    const textos = {
+        "Feito de partes. Visto como um todo.": "Made of parts. Seen as a whole.",
+        "Micro-frontends de qualquer framework numa página só.": "Micro-frontends from any framework on one page.",
+        "Cada equipe": "Each team",
+        "Carrinho · React": "Cart · React",
+        "vite build gera vitral.json, JS e CSS": "vite build makes vitral.json, JS, CSS",
+        "Busca · Vue": "Search · Vue",
+        "Conta · Angular": "Account · Angular",
+        "deploy": "own",
+        "próprio": "deploy",
+        "Qualquer CDN": "Any CDN",
+        "baixa em": "loaded at",
+        "runtime": "runtime",
+        "Host em qualquer framework": "Host in any framework",
+        "loja.empresa.com": "shop.example.com",
+        "busca": "search",
+        "conta": "account",
+        "carrinho": "cart",
+        "Sem build no host": "No build on the host",
+        "Só a URL do vitral.json de cada remote.": "Just the vitral.json URL of each remote.",
+        "CSS isolado": "Scoped CSS",
+        "O CSS de um remote não muda o host nem os outros.": "A remote's CSS does not change the host or the others.",
+        "Erro isolado": "Isolated errors",
+        "Um remote fora do ar mostra o próprio erro. O resto da página funciona.": "A remote that is down shows its own error. The rest of the page works.",
+        "Hash conferido": "Checked hash",
+        "Com integrity, o JS só roda se o SHA‑384 bater.": "With integrity, the JS only runs if the SHA‑384 matches.",
+        "Com Next.js Multi-Zones": "With Next.js Multi-Zones",
+        "Layout da loja": "Shop layout",
+        "produtos": "products",
+        "app loja": "shop app",
+        "recarrega": "full reload",
+        "/conta": "/account",
+        "Layout repetido": "Layout repeated",
+        "app conta": "account app",
+        "loja · Next": "shop · Next",
+        "de /conta/*": "for /account/*",
+        "repassa": "proxies",
+        "conta · Next": "account · Next",
+        "e": "and",
+        "Trocar de área recarrega a página:": "Switching areas reloads the page:",
+        "0,8 s": "0.8 s",
+        "Next e React baixados de novo em cada área": "Next and React downloaded again in each area",
+        "Um app Next para cada área": "One Next app per area",
+        "Com vitral": "With vitral",
+        "sem recarregar": "no reload",
+        "remote no NextRemote": "remote in NextRemote",
+        "no next.config": "in next.config",
+        "baixa só": "loads only",
+        "o remote": "the remote",
+        "conta · Vite": "account · Vite",
+        "/conta/vitral.json no CDN": "/account/vitral.json",
+        "Trocar de área sem recarregar:": "Switching areas without a reload:",
+        "0,2 s": "0.2 s",
+        "Uma cópia de Next e React para a página toda": "One copy of Next and React for the whole page",
+        "Um app Next só. A conta fica dentro do layout dele": "A single Next app. The account area sits inside its layout",
+        "Tempo de troca de área no benchmark público: Slow 4G, mediana de 7 execuções.": "Area switch time in the public benchmark: Slow 4G, median of 7 runs.",
+        "Sem dedupe": "Without dedupe",
+        "React próprio": "own React",
+        "A página baixa o React três vezes": "The page downloads React three times",
+        "Nunca há conflito de versão": "Never a version conflict",
+        "Com dedupe": "With dedupe",
+        "React 19 que já está na página": "React 19 already on the page",
+        "usa o da página": "uses the page's",
+        "versão não serve: baixa o próprio": "version doesn't fit: loads its own",
+        "O React é baixado uma vez quando a versão serve": "React is downloaded once when the version fits",
+        "Quando não serve, o remote baixa o próprio e funciona igual": "When it doesn't, the remote loads its own and works the same",
+        "Versão conferida": "Checked version",
+        "Vale o": "Uses the",
+        "da versão instalada no remote.": "range of the version installed in the remote.",
+        "Sem config no host": "No host config",
+        "O": "The",
+        "do React oferece o React do host.": "React component offers the host's React.",
+        "Qualquer pacote": "Any package",
+        "React, Vue ou a biblioteca de UI da empresa (": "React, Vue or your company's UI library (",
+        "Grupo inteiro": "Whole group",
+        "cobre react-dom, o client e o JSX runtime.": "covers react-dom, the client and the JSX runtime.",
+        "publica o total": "publishes the total",
+        "emite": "emits",
+        "mostra o total": "shows the total",
+        "recebe": "receives",
+        "lê o usuário": "reads the user",
+        "lê e assina": "reads and subscribes",
+        "mensagens entre remotes.": "messages between remotes.",
+        "devolve a última.": "returns the latest.",
+        "estado do host": "host state",
+        "cria": "creates",
+        "Host:": "Host:",
+        "Qualquer framework": "Any framework",
+        "React, Vue, Angular, Svelte, Solid e Lit usam o mesmo barramento.": "React, Vue, Angular, Svelte, Solid and Lit use the same bus.",
+        "Limpa sozinho": "Cleans up itself",
+        "O que um remote assina é cancelado quando ele desmonta.": "A remote's subscriptions end when it unmounts.",
+        "Só o dono altera": "Only the owner writes",
+        "Com": "With",
+        ", só quem criou muda o valor.": ", only the creator changes the value.",
+        "Navegação comum": "Shared navigation",
+        "avisa todos os roteadores da página.": "notifies every router on the page.",
+        "1 · Origem": "1 · Origin",
+        "Origem permitida?": "Allowed origin?",
+        "O JS e o CSS só vêm das origens da lista.": "JS and CSS only come from the listed origins.",
+        "sim": "yes",
+        "SHA-384 confere?": "SHA-384 matches?",
+        "O navegador confere cada arquivo, chunks e": "The browser checks every file, chunks and",
+        "também.": "included.",
+        "3 · Roda": "3 · Run",
+        "Monta o remote": "Mounts the remote",
+        "Só os bytes conferidos executam.": "Only the checked bytes run.",
+        "não": "no",
+        "Bloqueia e não executa nada": "Blocks and runs nothing",
+        "ou": "or",
+        "aparece no lugar do remote. O resto da página funciona.": "shows in place of the remote. The rest of the page works.",
+        "Todo navegador": "Every browser",
+        "Import map com integrity, modulepreload ou bytes conferidos via": "Import map with integrity, modulepreload or checked bytes via",
+        "A lib copia o": "The library copies the page's",
+        "da página para o import map.": "to the import map.",
+        "Sem eval": "No eval",
+        "Nem": "No",
+        "nem iframe. O código entra como módulo ES.": "and no iframe. Code loads as ES modules.",
+        "Assinatura": "Signatures",
+        "CSP com nonce": "CSP with nonce",
+        "Opcional:": "Optional:",
+        "com Ed25519 (Chrome 141+).": "with Ed25519 (Chrome 141+)."
+    }
+    const codigo = [["carrinho", "cart"], ["usuario", "user"], ["'tema'", "'theme'"], ["'claro'", "'light'"], ["/conta", "/account"], ["/busca", "/search"], ["pedidos", "orders"], ["cdn.empresa.com", "cdn.example.com"], ["loja.empresa.com", "shop.example.com"], ["@empresa", "@company"]]
+    const andar = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    for (let no; (no = andar.nextNode()); ) {
+      const bruto = no.textContent, limpo = bruto.trim()
+      if (no.parentElement.closest('code, pre, .mono')) {
+        no.textContent = codigo.reduce((t, [de, para]) => t.split(de).join(para), bruto)
+      } else if (limpo in textos) {
+        no.textContent = bruto.replace(limpo, textos[limpo])
+      }
+    }
+  }
   const logo = document.getElementById('logo').content
   for (const slot of document.querySelectorAll('[data-logo]')) slot.replaceWith(logo.cloneNode(true))
 </script>
