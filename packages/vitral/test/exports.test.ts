@@ -27,6 +27,7 @@ const entries = {
   next: () => import('../src/next'),
   'next-config': () => import('../src/next-config'),
   sw: () => import('../src/sw'),
+  snapshot: () => import('../src/snapshot'),
   dict: () => import('../src/dict'),
   prefetch: () => import('../src/prefetch'),
   edge: () => import('../src/edge'),
