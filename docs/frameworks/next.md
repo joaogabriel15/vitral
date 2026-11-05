@@ -144,7 +144,9 @@ Pronto. Um `<Link href="/conta">` na loja abre o remote sem recarregar, e dentro
 
 ### Remote no HTML da página
 
-Quando o `vitral.json` do remote está disponível no build do host, o `NextRemote` põe no HTML da página um preload do JS e do CSS do remote, com o hash de cada arquivo. O remote baixa junto com o JS do host, e não depois.
+Quando o `vitral.json` do remote está disponível no build do host, o HTML da página do remote sai com um preload do JS e do CSS dele, com o hash de cada arquivo. O remote baixa junto com o JS do host, e não depois.
+
+Quem põe o preload é o `<VitralNext />` do `_app`, pela rota aberta. Por isso ele vale também na página que só desenha o `NextRemote` no navegador, depois do login, por exemplo.
 
 Builde o remote antes do host. Se o remote publicar sem um build novo do host, o preload aponta para os arquivos antigos e o remote ainda carrega certo, só que um pouco depois. Para evitar isso, leia o manifesto no servidor.
 
@@ -162,6 +164,13 @@ export const getServerSideProps = async () => ({ props: await remoteProps('conta
 export default function Conta({ vitral }) {
   return <Layout><NextRemote name="conta" manifest={vitral.conta} /></Layout>
 }
+```
+
+Passe também os `pageProps` ao `VitralNext`, para o preload da página que só desenha o remote depois do login vir da versão publicada agora:
+
+```tsx
+// pages/_app.tsx
+<VitralNext pageProps={pageProps} />
 ```
 
 O servidor guarda o manifesto em cache por alguns segundos. Se o remote não responder, a página segue como sem ele. Também funciona em `getStaticProps` com `revalidate`.

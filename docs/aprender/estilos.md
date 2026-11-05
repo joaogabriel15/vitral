@@ -25,6 +25,8 @@ O plugin prefixa cada seletor do CSS do remote:
 
 `:root`, `html` e `body` viram a raiz do remote. O preflight do Tailwind do remote não muda o host.
 
+O `<link>` do CSS fica no documento depois que o remote desmonta. Com o escopo, ele não pega nada fora do remote, e a próxima montagem não baixa nem aplica o CSS de novo.
+
 ### Com `@scope`
 
 ```ts

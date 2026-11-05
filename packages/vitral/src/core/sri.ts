@@ -20,7 +20,7 @@ import { dedupeModule } from './bundled'
 import { verifyIntegrity } from './integrity'
 import type { Protocol } from './state'
 import { RemoteError } from './errors'
-import { addLink, fetchBytes, withTimeout } from './util'
+import { addLink, fetchBytes, retryUrl, withTimeout } from './util'
 
 export interface SplitBuild {
   /** Entrada do build dividido. */
@@ -47,36 +47,62 @@ export interface Verifiable {
   priority?: RequestPriority
 }
 
-/** Arquivos únicos que já falharam: o mapa de módulos pode guardar o erro, então só `blob:`. */
-const failed = new Set<string>()
+/**
+ * Arquivos únicos que já falharam, com o número de tentativas: o mapa de
+ * módulos do navegador guarda o erro da URL e não pede de novo.
+ */
+const failed = new Map<string, number>()
+
+/**
+ * A CSP bloqueia `blob:` (visto no teste do primeiro mapa ou num módulo
+ * bloqueado): o caminho 3 não serve, e as novas tentativas vão pelos caminhos
+ * 1 e 2 com uma URL nova.
+ */
+let noBlob = false
+const onViolation = (e: SecurityPolicyViolationEvent) => e.blockedURI.startsWith('blob') && (noBlob = true)
+let listening = false
+/** O protocolo dono do que este módulo guarda: um protocolo novo (testes) começa do zero. */
+let owner: unknown
 
 /** Importa o remote pelo melhor caminho que confere o hash. */
 export async function importVerified(name: string, r: Verifiable, run: (url: string) => Promise<any>, timeout: number): Promise<any> {
   // Plano de dedupe: a cópia que serve a todos os remotes, com os hashes dela no mapa.
   if (r.split?.dedupe?.length && (globalThis as any)[Symbol.for('vitral')]?.settings().dedupePlan?.[name]) r = { ...r, split: (await dedupeModule()).planned(name, r.split) }
   const { entry, integrity, priority } = r
-  if (!failed.has(entry)) {
+  const p = (globalThis as any)[Symbol.for('vitral')]
+  if (owner !== p) {
+    owner = p
+    failed.clear()
+    mapped.clear()
+    noBlob = false
+    maps = probing = preloads = undefined
+  }
+  const tries = failed.get(entry)
+  if (tries === undefined || noBlob) {
+    // Depois de uma falha, o arquivo único por uma URL nova: o build dividido
+    // pode ter um chunk com o erro guardado no mapa de módulos.
+    const one = retryUrl(entry, tries ?? 0)
     try {
       // Caminhos 1 e 2: o navegador confere o hash e o JS roda da própria URL.
       // O timeout cobre também os modulepreload, que esperam o download.
       const go = async () => {
-        const url = await verified(r.split ?? { entry, chunks: [], sri: { [entry]: integrity }, priority }, run)
+        const url = await verified(tries === undefined && r.split ? r.split : { entry: one, chunks: [], sri: { [one]: integrity }, priority }, run)
         return url && { ns: await run(url) }
       }
       const done = await withTimeout(timeout, name, go())
       if (done) return done.ns
     } catch (e) {
-      // O mapa de módulos guarda a URL que travou: as próximas tentativas
-      // vão pelo caminho 3. Esta já gastou o tempo dela e termina em TIMEOUT.
-      failed.add(entry)
-      if (e instanceof RemoteError && e.code === 'TIMEOUT') throw e
+      // A próxima tentativa usa outra URL. Esta já gastou o tempo dela e termina em TIMEOUT.
+      failed.set(entry, (tries ?? 0) + 1)
+      if ((e instanceof RemoteError && e.code === 'TIMEOUT') || noBlob) throw e
     }
   }
   // Caminho 3: executa exatamente os bytes verificados.
   // Depois de uma falha, sem esperar pela requisição anterior que pode
   // continuar presa no cache HTTP do navegador.
-  const bytes = await fetchBytes(entry, timeout, name, { priority, ...(failed.has(entry) && { cache: 'reload' }), ...signature(integrity) })
+  const bytes = await fetchBytes(entry, timeout, name, { priority, ...(failed.has(entry) && { cache: 'reload' as const }), ...signature(integrity) })
   await verifyIntegrity(name, bytes, integrity)
+  if (!listening && typeof document !== 'undefined') (listening = true), document.addEventListener('securitypolicyviolation', onViolation)
   const url = URL.createObjectURL(new Blob([bytes], { type: 'text/javascript' }))
   try {
     return await run(url)
@@ -199,6 +225,7 @@ async function addMap(sri: Record<string, string>, probe: boolean, own?: [string
     if (ok && probe) {
       let r = await check(load, urls[0], urls[1])
       // CSP sem `blob:`: nem o módulo certo carrega. Testa com os do remote, servidos com ele.
+      if (r === undefined) noBlob = true
       if (r === undefined && own) {
         await map({ [own[0]]: PROBE_SRI, [own[1]]: PROBE_SRI }, fail)
         r = ok && (await check(load, own[0], own[1]))
@@ -229,7 +256,7 @@ function preload(href: string, integrity: string, fetchPriority: RequestPriority
   return new Promise((resolve, reject) => {
     const link = addLink('modulepreload', href, { integrity, fetchPriority })
     link.onload = resolve
-    link.onerror = reject
+    link.onerror = () => reject(new Error(`falha ao baixar ${href}`))
   })
 }
 

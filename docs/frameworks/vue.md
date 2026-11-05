@@ -163,7 +163,7 @@ const falhou = (erro) => console.error(erro.code)
 | Slot ou evento | O que é |
 | --- | --- |
 | `#fallback` | Mostrado enquanto carrega |
-| `#error="{ error, retry }"` | Mostrado se falhar |
+| `#error="{ error, retry }"` | Mostrado se falhar. Sem ele, "Não foi possível carregar." com o botão "Tentar de novo" |
 | `@ready` | Remote montado. Recebe os tempos de carregamento |
 | `@error` | Erro do remote |
 

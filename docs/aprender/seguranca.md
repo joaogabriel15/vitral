@@ -126,7 +126,7 @@ Content-Security-Policy: script-src 'self' https://cdn.empresa.com blob:; connec
 
 Se a página tem um `<script nonce>`, a lib usa o mesmo `nonce` no import map do SRI. Sem `nonce`, a CSP bloqueia esse mapa e a lib usa os outros caminhos.
 
-Com `script-src 'self'` e o remote na mesma origem, o SRI também funciona sem `blob:`.
+Com `script-src 'self'` e o remote na mesma origem, o SRI também funciona sem `blob:`. Nesse caso, na primeira visita o console mostra também as linhas da CSP recusando os dois módulos `blob:` do teste; a lib passa para os módulos de teste do remote (`split/vitral-probe*.js`). Depois de uma falha de rede, a nova tentativa baixa o arquivo de novo por uma URL nova (`?vitral-retry=1`), com o hash conferido pelo navegador.
 
 ## Overrides de desenvolvimento
 

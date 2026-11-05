@@ -33,7 +33,8 @@ export interface RemoteProps<P extends Props = Props> {
   props?: P
   isolate?: Isolation
   fallback?: JSX.Element
-  error?: (error: RemoteError, retry: () => void) => JSX.Element
+  /** Mostrado se o remote falhar. Sem ela, uma mensagem curta com "Tentar de novo"; `null` não mostra nada. */
+  error?: ((error: RemoteError, retry: () => void) => JSX.Element) | null
   class?: string
   /** `'lazy'`: monta perto de aparecer na tela; `'idle'`: com o navegador ocioso. */
   loading?: Loading
@@ -80,9 +81,22 @@ export function Remote<P extends Props = Props, N extends string = string>(p: Re
   const retry = () => slot?.retry()
   return [
     () => (status() === 'loading' ? p.fallback : null),
-    () => (status() === 'error' && error() && p.error ? p.error(error()!, retry) : null),
+    () => (status() === 'error' && error() ? (p.error ? p.error(error()!, retry) : p.error === null ? null : defaultError(retry)) : null),
     (host.appendChild(target), host),
   ] as unknown as JSX.Element
+}
+
+/** Erro padrão, igual ao do `<vitral-remote>` (sem JSX: o arquivo não passa pelo compilador do Solid). */
+function defaultError(retry: () => void): JSX.Element {
+  const box = document.createElement('div')
+  box.setAttribute('role', 'alert')
+  box.setAttribute('data-vitral-default', 'error')
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.textContent = 'Tentar de novo'
+  button.onclick = retry
+  box.append('Não foi possível carregar. ', button)
+  return box as unknown as JSX.Element
 }
 
 /**

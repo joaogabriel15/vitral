@@ -10,6 +10,18 @@ export function absolute(url: string, base?: string): string {
   return new URL(url, base ?? (typeof location !== 'undefined' ? location.href : undefined)).href
 }
 
+/**
+ * A mesma URL com `vitral-retry=n` (`n` 0: a própria). O mapa de módulos do
+ * navegador guarda o erro de uma URL que falhou e não pede de novo; a URL nova
+ * ele baixa.
+ */
+export function retryUrl(url: string, n: number): string {
+  const u = new URL(url)
+  if (!n || !u.protocol.startsWith('http')) return url
+  u.searchParams.set('vitral-retry', String(n))
+  return u.href
+}
+
 export async function withRetry<T>(retries: number, fn: () => Promise<T>): Promise<T> {
   for (let i = 0; ; i++) {
     try {

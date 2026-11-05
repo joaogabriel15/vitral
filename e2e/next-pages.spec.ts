@@ -72,4 +72,33 @@ test.describe('host Next (Pages Router) em produção', () => {
     // Sem diferença entre o HTML do servidor e o do navegador (o teste do SRI deixa a linha dele, que não conta).
     expect(erros.filter((e) => /hydrat|#418|#423|#425|did not match/i.test(e))).toEqual([])
   })
+
+  test('página que só desenha o remote depois do login: o HTML já pré-carrega o manifesto e a entrada', async ({ page, request }) => {
+    const html = await (await request.get(HOST + '/ns-login')).text()
+    expect(html).not.toContain('class="carregando"')
+    expect(html).toMatch(/<link[^>]+rel="preload"[^>]+href="\/ns-remote\/vitral\.json"/)
+    expect(html).toMatch(/<link[^>]+rel="preload"[^>]+as="script"[^>]+integrity="sha384-/)
+    const pedidos: string[] = []
+    page.on('request', (r) => /vitral\.json/.test(r.url()) && pedidos.push(r.url()))
+    await page.goto(HOST + '/ns-login')
+    await expect(page.locator('.ns .versao')).toContainText('React 19')
+    expect(pedidos).toHaveLength(1)
+  })
+
+  test('falha de rede com a CSP sem blob:: "Tentar de novo" baixa de novo e monta', async ({ page, browserName }) => {
+    // Só o Chromium aplica a CSP do header de um fulfill do Playwright do mesmo jeito que a de um servidor.
+    test.skip(browserName !== 'chromium', 'CSP por route só no Chromium')
+    await page.route(HOST + '/ns-erro', async (r) => {
+      const res = await r.fetch()
+      await r.fulfill({ response: res, headers: { ...res.headers(), 'content-security-policy': "script-src 'self' 'unsafe-inline' 'unsafe-eval'" } })
+    })
+    let fora = true
+    await page.route(/\/ns-remote\/.*\.js$/, (r) => (fora ? r.abort('connectionrefused') : r.continue()))
+    await page.goto(HOST + '/ns-erro')
+    const erro = page.locator('.erro')
+    await expect(erro).toContainText('LOAD_FAILED')
+    fora = false
+    await erro.getByRole('button', { name: 'Tentar de novo' }).click()
+    await expect(page.locator('.ns .versao')).toContainText('React 19')
+  })
 })

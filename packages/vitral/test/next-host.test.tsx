@@ -191,6 +191,29 @@ describe('vitral/next-host', () => {
     }
   })
 
+  it('VitralNext põe no HTML as dicas do remote da rota, sem o NextRemote (página que só desenha depois do login)', async () => {
+    const root = createRoot(document.body.appendChild(document.createElement('div')))
+    const links = () => [...document.querySelectorAll('link[rel=preload]')].map((l) => l.getAttribute('href'))
+    const { VitralNext } = await import('../src/next-host')
+    router.asPath = '/h/pedidos?x=1'
+    try {
+      await act(async () => root.render(h(VitralNext)))
+      expect(links()).toEqual(['/h/vitral.json', '/h/a.css', '/h/split/chunk.js', '/h/split/e.js'])
+      // Com os pageProps do remoteProps: o manifesto do servidor, sem o preload do vitral.json.
+      const manifest = { name: 'hinted', entry: 'remote-2.js', files: { 'split/e2.js': 'sha384-e2' }, split: { entry: 'split/e2.js', chunks: [] } }
+      await act(async () => root.render(h(VitralNext, { pageProps: { vitral: { hinted: manifest } } })))
+      expect(links()).toEqual(['/h/split/e2.js'])
+      // Rota que não é de remote: nada.
+      router.asPath = '/conta'
+      await act(async () => root.render(h(VitralNext, {})))
+      expect(links()).toEqual([])
+    } finally {
+      router.asPath = '/store/x'
+      await act(async () => root.unmount())
+      vi.mocked(preload).mockClear()
+    }
+  })
+
   it('preload: a rota aberta já, os outros no ocioso, `route` nunca antes', async () => {
     vi.resetModules()
     history.replaceState(null, '', '/store/1')

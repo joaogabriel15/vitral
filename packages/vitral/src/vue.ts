@@ -200,7 +200,11 @@ export const VitralRemote = /* @__PURE__ */ defineComponent({
     return () =>
       h('div', { 'data-vitral': p.name ?? p.src, 'data-vitral-status': status.value }, [
         status.value === 'loading' ? slots.fallback?.() : null,
-        status.value === 'error' ? slots.error?.({ error: error.value, retry }) : null,
+        status.value === 'error'
+          ? slots.error
+            ? slots.error({ error: error.value, retry })
+            : h('div', { role: 'alert', 'data-vitral-default': 'error' }, ['Não foi possível carregar. ', h('button', { type: 'button', onClick: retry }, 'Tentar de novo')])
+          : null,
         // O Vue nunca coloca filhos neste div: ele pertence ao remote.
         h('div', { ref: target }),
       ])

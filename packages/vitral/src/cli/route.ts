@@ -25,10 +25,12 @@ interface StatsModule {
   reasons?: { moduleName?: string | null }[]
   modules?: StatsModule[]
 }
+type Group = { chunks?: (string | number)[]; assets?: (string | { name: string; size?: number })[] }
 interface Stats {
-  entrypoints?: Record<string, { chunks?: (string | number)[] }>
-  namedChunkGroups?: Record<string, { chunks?: (string | number)[] }>
-  chunks?: { id: string | number; modules?: StatsModule[] }[]
+  entrypoints?: Record<string, Group>
+  namedChunkGroups?: Record<string, Group>
+  chunks?: { id: string | number; size?: number; files?: string[]; modules?: StatsModule[] }[]
+  assets?: { name: string; size?: number }[]
   modules?: StatsModule[]
   children?: Stats[]
 }
@@ -108,10 +110,30 @@ export function routeReport(o: RouteOptions): RouteReport {
     byPkg.set(p, (byPkg.get(p) ?? 0) + m.size!)
   }
   const top = o.top ?? 15
+  const checks: Check[] = []
+
+  // Stats sem os módulos de todos os chunks da rota: a soma sairia baixa sem aviso.
+  const routeChunks = (s.chunks ?? []).filter((c) => ids.has(String(c.id)))
+  const assetSize = new Map((s.assets ?? []).map((a) => [a.name, a.size ?? 0]))
+  const jsFiles = new Set([
+    ...routeChunks.flatMap((c) => c.files ?? []),
+    ...entries.flatMap((n) => (groups[n].assets ?? []).map((a) => (typeof a === 'string' ? a : a.name))),
+  ].filter((f) => /\.m?js$/.test(f)))
+  const groupAssets = new Map(entries.flatMap((n) => (groups[n].assets ?? []).flatMap((a) => (typeof a === 'string' ? [] : [[a.name, a.size ?? 0] as const]))))
+  const shipped = Math.max(
+    routeChunks.reduce((n, c) => n + (c.size ?? 0), 0),
+    [...jsFiles].reduce((n, f) => n + (assetSize.get(f) ?? groupAssets.get(f) ?? 0), 0),
+  )
+  if (shipped > 2 * bytes && shipped - bytes > 50 * 1024)
+    checks.push({
+      status: 'warn',
+      title: `os stats só mostram ${KB(bytes)} dos ${KB(shipped)} que a rota carrega`,
+      cause: 'os stats foram gerados sem os módulos de cada chunk; os números abaixo ficam incompletos',
+      fix: "gere os stats com módulos e chunks: stats.toJson({ all: false, entrypoints: true, chunks: true, chunkModules: true, modules: true, nestedModules: true, assets: true, usedExports: true, providedExports: true, reasons: true })",
+    })
   const packages = [...byPkg].map(([name, b]) => ({ name, bytes: b })).sort((a, b) => b.bytes - a.bytes)
   const short = (n: string) => n.replace(/^(.*?[/\\])?node_modules[/\\](\.pnpm[/\\][^/\\]+[/\\]node_modules[/\\])?/, 'node_modules/')
   const modules = mods.map((m) => ({ name: short(m.name ?? '?'), bytes: m.size! })).sort((a, b) => b.bytes - a.bytes)
-  const checks: Check[] = []
 
   // Traduções: todas as línguas (ou todos os namespaces) no JS da rota.
   const locales = mods.filter((m) => LOCALE.test(m.name ?? ''))

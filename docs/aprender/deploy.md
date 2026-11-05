@@ -57,9 +57,15 @@ remoteWorker(self, { manifests: ['/conta/vitral.json'] })
 
 Ele guarda os arquivos de cada remote no cache ao instalar, e na visita seguinte o remote abre sem rede. O `vitral.json` sempre vai à rede primeiro, então um deploy novo chega na próxima carga, e os arquivos da versão anterior saem do cache.
 
-Opções: `cache` (nome do cache, padrão `vitral-remotes`).
+Ele guarda o que a página usa: o build dividido, o CSS e as rotas. O arquivo único fica de fora, porque só serve a navegador antigo e à nova tentativa depois de uma falha.
 
-Para montar um worker próprio, `remoteFiles(url)` lista tudo que um remote publica, e `filesOf(manifesto, url)` faz o mesmo para um manifesto já lido:
+| Opção | Padrão | O que faz |
+| --- | --- | --- |
+| `cache` | `'vitral-remotes'` | Nome do cache |
+| `offered` | nenhum | Versão de cada grupo de `dedupe` que o host oferece, como `{ react: '19.2.0' }`. A cópia própria do remote para esses grupos fica de fora |
+| `single` | `false` | Guarda também o arquivo único |
+
+Para montar um worker próprio, `remoteFiles(url, opções)` lista os mesmos arquivos, e `filesOf(manifesto, url, opções)` faz o mesmo para um manifesto já lido:
 
 ```js
 import { remoteFiles } from 'vitral/sw'

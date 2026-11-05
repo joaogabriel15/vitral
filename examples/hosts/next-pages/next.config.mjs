@@ -10,5 +10,9 @@ export default withVitral({ transpilePackages: ['remote-react-ns'] }, {
     'ns-servidor': { url: '/ns-remote/vitral.json', basePath: '/ns-servidor', preload: 'route' },
     // E com SSR: o servidor renderiza o remote dentro do NextRemote.
     'ns-ssr': { url: '/ns-remote/vitral.json', basePath: '/ns-ssr', preload: 'route' },
+    // E com a tela de erro do host (falha de rede e "tentar de novo").
+    'ns-erro': { url: '/ns-remote/vitral.json', basePath: '/ns-erro', preload: 'route' },
+    // E com a página que só desenha o remote depois do login.
+    'ns-login': { url: '/ns-remote/vitral.json', basePath: '/ns-login', preload: 'route' },
   },
 })

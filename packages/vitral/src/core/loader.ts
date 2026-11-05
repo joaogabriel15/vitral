@@ -251,6 +251,9 @@ function manifestOf(url: string, name: string, priority: RequestPriority | undef
   return maxStale ? import('./stale').then((m) => m.stale(url, fresh, maxStale), () => fresh) : fresh
 }
 
+/** Arquivos sem integrity que falharam, com o número de tentativas. */
+const plainFailed = new Map<string, number>()
+
 /** Namespace ES do arquivo do remote. */
 async function importModule(name: string, r: Resolved): Promise<any> {
   const { timeout } = protocol().settings()
@@ -261,13 +264,20 @@ async function importModule(name: string, r: Resolved): Promise<any> {
   // Sem hash a conferir, o build dividido baixa só o que a primeira tela usa
   // e pega as dependências de dedupe da página, como no caminho com SRI.
   if (!r.integrity) {
-    if (!r.split) return run(r.entry)
+    // O mapa de módulos guarda o erro de uma URL que falhou: depois de uma
+    // falha, o arquivo único, e depois por uma URL nova.
+    const n = plainFailed.get(r.entry)
+    const again = (e: unknown, next: number) => {
+      plainFailed.set(r.entry, next)
+      throw e
+    }
+    if (n != null || !r.split) return run(n ? r.entry + (r.entry.includes('?') ? '&' : '?') + 'vitral-retry=' + n : r.entry).catch((e) => again(e, (n ?? 0) + 1))
     if (r.split.dedupe?.length) {
       const { shared, planned } = await dedupeModule()
       for (const d of planned(name, r.split).dedupe!)
         shared(protocol())(d.name, d.range, { version: d.version, url: d.file, load: async () => (await run(d.file)).default })
     }
-    return run(r.split.entry)
+    return run(r.split.entry).catch((e) => again(e, 0))
   }
   // Com integrity, a conferência mora no módulo de SRI. Sem ele, nada roda.
   const sri = await paths
