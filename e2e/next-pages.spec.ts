@@ -82,10 +82,12 @@ test.describe('host Next (Pages Router) em produção', () => {
     page.on('request', (r) => /vitral\.json/.test(r.url()) && pedidos.push(r.url()))
     await page.goto(HOST + '/ns-login')
     await expect(page.locator('.ns .versao')).toContainText('React 19')
-    // Um download só: o fetch do manifesto usa o preload do HTML. O Playwright no
-    // WebKit também conta como pedido o que sai do cache em memória, por isso o
-    // Resource Timing, que tem uma entrada por download.
-    expect(await page.evaluate(() => performance.getEntriesByType('resource').filter((e) => /vitral\.json/.test(e.name)).map((e) => (e as PerformanceResourceTiming).initiatorType))).toEqual(['link'])
+    // Chromium e Firefox: um download só, o fetch do manifesto usa o preload do HTML.
+    // O WebKit nunca entrega um preload as=fetch ao fetch() (testado com cada
+    // combinação de crossorigin, credentials, cache e signal): lá o fetch é um
+    // segundo pedido, que o cache HTTP do navegador pode responder.
+    const tipos = await page.evaluate(() => performance.getEntriesByType('resource').filter((e) => /vitral\.json/.test(e.name)).map((e) => (e as PerformanceResourceTiming).initiatorType))
+    expect(tipos).toEqual(browserName === 'webkit' ? ['link', 'fetch'] : ['link'])
     if (browserName !== 'webkit') expect(pedidos).toHaveLength(1)
   })
 

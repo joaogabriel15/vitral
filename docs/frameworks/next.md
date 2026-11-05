@@ -148,6 +148,8 @@ Quando o `vitral.json` do remote está disponível no build do host, o HTML da p
 
 Quem põe o preload é o `<VitralNext />` do `_app`, pela rota aberta. Por isso ele vale também na página que só desenha o `NextRemote` no navegador, depois do login, por exemplo.
 
+No Safari, o `fetch` do manifesto não usa o preload e pede o `vitral.json` de novo, respondido pelo cache HTTP quando o servidor permite. O JS e o CSS usam o preload normalmente.
+
 Builde o remote antes do host. Se o remote publicar sem um build novo do host, o preload aponta para os arquivos antigos e o remote ainda carrega certo, só que um pouco depois. Para evitar isso, leia o manifesto no servidor.
 
 ### Manifesto lido no servidor
