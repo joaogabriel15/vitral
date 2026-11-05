@@ -353,15 +353,51 @@ export function dedupeHooks(entry: () => string, getGroups: () => Group[]) {
 }
 
 /**
+ * Para cada grupo, os outros grupos de que o pacote dele depende (`dependencies`
+ * e `peerDependencies`), já em ordem: cada um vem antes na lista, sem ciclo.
+ */
+export function groupDeps(groups: Group[]): Map<string, string[]> {
+  const names = new Set(groups.map((g) => g.name))
+  const direct = new Map(
+    groups.map((g) => {
+      let data: any = {}
+      try {
+        if (g.dir) data = JSON.parse(readFileSync(join(g.dir, 'package.json'), 'utf8'))
+      } catch {}
+      const deps = Object.keys({ ...data.dependencies, ...data.peerDependencies }).map(groupOf)
+      return [g.name, [...new Set(deps)].filter((d) => d !== g.name && names.has(d))]
+    }),
+  )
+  // Ordem topológica; num ciclo, a aresta que fecha o ciclo sai.
+  const out = new Map<string, string[]>()
+  const visiting = new Set<string>()
+  const visit = (n: string) => {
+    if (out.has(n) || visiting.has(n)) return
+    visiting.add(n)
+    for (const d of direct.get(n) ?? []) visit(d)
+    visiting.delete(n)
+    out.set(n, (direct.get(n) ?? []).filter((d) => out.has(d)))
+  }
+  for (const g of groups) visit(g.name)
+  return out
+}
+
+/**
  * A entrada nova. Só o build dividido usa a versão de fora; o arquivo único
  * (hosts antigos e caminho com `blob:`) fica sempre com a cópia própria.
  */
 function boot(entry: string, groups: Group[]): string {
-  const calls = groups.map(
-    (g) =>
+  // A cópia própria de um grupo que usa outro (`react-i18next` usa `react`) lê o
+  // outro ao rodar: ela só começa depois que o outro entrou em `deps`.
+  const uses = groupDeps(groups)
+  const order = [...uses.keys()]
+  const calls = [...groups].sort((a, b) => order.indexOf(a.name) - order.indexOf(b.name)).map((g) => {
+    const call =
       `need(${JSON.stringify(g.name)}, ${JSON.stringify(g.range)}, ${JSON.stringify(g.version)}, ${JSON.stringify(g.keys)}, ` +
-      `() => import(${JSON.stringify(OWN + g.name)}).then((m) => m.default))`,
-  )
+      `() => import(${JSON.stringify(OWN + g.name)}).then((m) => m.default))`
+    const before = uses.get(g.name) ?? []
+    return `done[${JSON.stringify(g.name)}] = ` + (before.length ? `Promise.all(${JSON.stringify(before)}.map((n) => done[n])).then(() => ${call})` : call)
+  })
   return `const { deps } = await import(${JSON.stringify(DEPS)})
 const p = globalThis[Symbol.for("vitral")]
 const shared = !!(p && p.dedupe) && /\\/split\\/[^/]*$/.test(import.meta.url)
@@ -380,7 +416,9 @@ async function need(name, range, version, keys, load) {
   if (!m || ((lacks.length || names.length) && !keep)) m = await load()
   Object.assign(deps, m)
 }
-await Promise.all([${calls.join(', ')}])
+const done = {}
+${calls.join('\n')}
+await Promise.all(Object.values(done))
 const remote = await import(${JSON.stringify(entry)})
 export default remote.default
 `

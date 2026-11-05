@@ -55,6 +55,7 @@ const aprender: DefaultTheme.SidebarItem[] = [
       { text: 'Widget em site de terceiros', link: '/aprender/terceiros' },
       { text: 'Exposes e loadModule', link: '/aprender/exposes' },
       { text: 'Dedupe de dependências', link: '/aprender/dedupe' },
+      { text: 'Traduções (i18n)', link: '/aprender/traducoes' },
       { text: 'Atualização sem reload', link: '/aprender/atualizacoes' },
       { text: 'Canary e rollback', link: '/aprender/canary' },
       { text: 'Dicionários de compressão', link: '/aprender/dicionarios' },

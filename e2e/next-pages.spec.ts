@@ -91,6 +91,24 @@ test.describe('host Next (Pages Router) em produção', () => {
     if (browserName !== 'webkit') expect(pedidos).toHaveLength(1)
   })
 
+  test('traduções do remote: o HTML pré-carrega só a língua aberta, e a troca de língua baixa a outra', async ({ page, request, browserName }) => {
+    const html = await (await request.get(HOST + '/ns-i18n')).text()
+    expect(html).toMatch(/<link[^>]+rel="preload"[^>]+as="fetch"[^>]+href="\/ns-remote\/i18n\/pt-BR\/ns-[^"]+\.json"/)
+    expect(html).not.toMatch(/\/ns-remote\/i18n\/en\//)
+    const avisos: string[] = []
+    page.on('console', (m) => (m.type() === 'warning' || m.type() === 'error') && /i18n|tradu|preload/i.test(m.text()) && avisos.push(m.text()))
+    await page.goto(HOST + '/ns-i18n')
+    const titulo = page.locator('.ns .titulo')
+    await expect(titulo).toHaveText('Minha conta')
+    // O remote usa o i18next do host: a troca no host vale no remote.
+    await page.locator('.lingua').click()
+    await expect(titulo).toHaveText('My account')
+    const tipos = await page.evaluate(() => performance.getEntriesByType('resource').filter((e) => /\/i18n\//.test(e.name)).map((e) => [e.name.split('/i18n/')[1].split('/')[0], (e as PerformanceResourceTiming).initiatorType]))
+    // Chromium e Firefox usam o preload; o WebKit pede de novo (ver o teste do manifesto).
+    expect(tipos).toEqual(browserName === 'webkit' ? [['pt-BR', 'link'], ['pt-BR', 'fetch'], ['en', 'fetch']] : [['pt-BR', 'link'], ['en', 'fetch']])
+    expect(avisos).toEqual([])
+  })
+
   test('falha de rede com a CSP sem blob:: "Tentar de novo" baixa de novo e monta', async ({ page, browserName }) => {
     // Só o Chromium aplica a CSP do header de um fulfill do Playwright do mesmo jeito que a de um servidor.
     test.skip(browserName !== 'chromium', 'CSP por route só no Chromium')

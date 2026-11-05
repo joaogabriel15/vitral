@@ -262,7 +262,7 @@ function rewrite(file: string, c: Chunk, byName: Map<string, Chunk>, deps: (name
 /** Acrescenta `files`, `split` e `dedupe` ao manifesto. */
 export function withSplit(m: RemoteManifest, outDir: string, s?: Split, groups: Group[] = []): RemoteManifest {
   const files: Record<string, string> = {}
-  for (const f of [m.entry, ...(m.css ?? []), ...(m.shadow?.css ?? []), ...(m.shadow?.global ?? []), ...(s?.files ?? [])]) files[f] = sri(join(outDir, f))
+  for (const f of [m.entry, ...(m.css ?? []), ...(m.shadow?.css ?? []), ...(m.shadow?.global ?? []), ...(s?.files ?? []), ...Object.values(m.i18n ?? {}).flatMap((ns) => Object.values(ns))]) files[f] = sri(join(outDir, f))
   const dedupe = groups
     .filter((g) => s?.own[g.name])
     .map(({ name, range, version, keys }) => {

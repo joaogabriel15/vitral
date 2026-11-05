@@ -31,7 +31,7 @@ vi.mock('vitral-next-host-config', () => ({
       url: '/h/vitral.json',
       basePath: '/h',
       preload: false,
-      hints: { manifest: '/h/vitral.json', css: [['/h/a.css', 'sha384-c']], js: [['/h/split/chunk.js', 'sha384-k'], ['/h/split/e.js']] },
+      hints: { manifest: '/h/vitral.json', css: [['/h/a.css', 'sha384-c']], js: [['/h/split/chunk.js', 'sha384-k'], ['/h/split/e.js']], i18n: { 'pt-BR': [['/h/i18n/pt-BR/h-1.json', 'sha384-t']], en: [['/h/i18n/en/h-2.json']] } },
     },
   },
   shared: { i18next: { version: '25.0.0', modules: async () => ({ i18next: { ok: true } }) } },
@@ -201,6 +201,11 @@ describe('vitral/next-host', () => {
       expect(links()).toEqual(['/h/vitral.json', '/h/a.css', '/h/split/chunk.js', '/h/split/e.js'])
       // O remote ainda não está no HTML: prioridade baixa, para não tirar banda do JS do host.
       expect([...document.querySelectorAll('link[rel=preload]')].map((l) => l.getAttribute('fetchpriority'))).toEqual(['low', 'low', 'low', 'low'])
+      // Com a língua aberta: as traduções do remote nela, e só nela.
+      await act(async () => root.render(h(VitralNext, { lang: 'pt' })))
+      expect(links()).toEqual(['/h/vitral.json', '/h/a.css', '/h/split/chunk.js', '/h/split/e.js', '/h/i18n/pt-BR/h-1.json'])
+      // Preload `as=fetch` sem `integrity` (o navegador não confere); o fetch do vitral confere.
+      expect(document.querySelector('link[href="/h/i18n/pt-BR/h-1.json"]')?.hasAttribute('integrity')).toBe(false)
       // Com os pageProps do remoteProps: o manifesto do servidor, sem o preload do vitral.json.
       const manifest = { name: 'hinted', entry: 'remote-2.js', files: { 'split/e2.js': 'sha384-e2' }, split: { entry: 'split/e2.js', chunks: [] } }
       await act(async () => root.render(h(VitralNext, { pageProps: { vitral: { hinted: manifest } } })))

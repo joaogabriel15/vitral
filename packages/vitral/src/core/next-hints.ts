@@ -21,6 +21,8 @@ export interface HtmlHints {
   offers?: string[]
   /** Com `keys`: o `integrity` do preload do manifesto (só as assinaturas). */
   signed?: string
+  /** Traduções por língua: o HTML pré-carrega só as da língua aberta (`lang` do `VitralNext`). */
+  i18n?: Record<string, Hint[]>
 }
 
 /**
@@ -50,6 +52,7 @@ export function hintsOf(m: RemoteManifest, url: string, offered: Record<string, 
     js: (m.split ? ordered([...own, ...(m.split.chunks ?? []), m.split.entry], m.split.order) : [m.entry]).map(hint),
     ...(offers.length && { offers }),
     ...(k && { signed: k.trim() }),
+    ...(m.i18n && { i18n: Object.fromEntries(Object.entries(m.i18n).map(([lng, ns]) => [lng, Object.values(ns).map((f) => hint(f).slice(0, 2) as Hint)])) }),
   }
 }
 
