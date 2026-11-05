@@ -5,7 +5,7 @@ Cada remote traz as traduções dele, e a página baixa só a língua aberta. O 
 - O plugin grava um arquivo por língua (e por namespace) com hash, listado no `vitral.json`.
 - O remote baixa a língua aberta junto com o JS, e as traduções entram no i18next do host antes de montar.
 - No host Next, o HTML já pré-carrega a tradução da língua aberta, como faz com o JS do remote.
-- Numa troca de língua, os remotes já carregados baixam a língua nova, e a tela desenha de novo.
+- Numa troca de língua, os remotes já carregados baixam a língua nova antes. A tela continua na língua anterior até os arquivos chegarem e troca tudo junto, host e remotes, sem mostrar as chaves.
 - O SRI confere cada arquivo, como confere o JS.
 
 ## Hoje e com vitral
@@ -167,7 +167,7 @@ export default function App({ Component, pageProps }) {
 | --- | --- | --- |
 | Traduções da conta | As duas línguas no JS da zona | Só a língua aberta, num arquivo à parte |
 | i18next | Um por zona | Um só, o da loja |
-| Trocar de língua | Cada app troca a sua | A loja troca, e a conta baixa a língua nova |
+| Trocar de língua | Cada app troca a sua | A loja troca, a conta baixa a língua nova, e as duas mudam juntas |
 | Trocar de área | Recarrega a página | Sem recarregar |
 
 ## Opção do plugin
@@ -184,11 +184,20 @@ Tire do código do remote o import estático das traduções: elas passam a vir 
 - O remote precisa usar o i18next do host: `dedupe: ['i18next', 'react-i18next']` no remote, e `share` no `withVitral` (ou `configure({ dedupe })` em outro host). Com uma cópia própria, o `useTranslation` do remote não veria as traduções.
 - A língua do remote é a aberta, ou a base dela (`pt` para `pt-BR`), ou uma variante (`pt-PT` para `pt`), ou a primeira do `fallbackLng` que o remote tiver.
 - `<VitralNext lang>` e `<NextRemote lang>` dizem ao HTML qual língua pré-carregar. O padrão é o `locale` do roteador do Next.
+- O `i18n.changeLanguage(lng)` de sempre (no botão de língua, por exemplo) espera os arquivos da nova língua dos remotes abertos e só então troca. Se um arquivo não baixa, a troca acontece assim mesmo.
 - Se uma tradução não baixa, o remote monta assim mesmo e avisa no console.
 
-Outra biblioteca de i18n funciona com um objeto no lugar do `i18next(i18n)`:
+Outra biblioteca de i18n funciona com um objeto no lugar do `i18next(i18n)`. Para a troca esperar as traduções dos remotes, chame `languageReady` antes de trocar:
 
 ```ts
+import { configure } from 'vitral'
+import { languageReady } from 'vitral/i18n'
+
+async function trocar(lng: string) {
+  await languageReady(lng) // baixa a língua nova de cada remote aberto
+  idioma.trocar(lng)
+}
+
 configure({
   i18n: {
     language: () => idioma.atual,

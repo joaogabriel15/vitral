@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { configure, loadRemote, register } from '../src/index'
-import { pickLanguage, resetTranslations } from '../src/core/i18n'
+import { languageReady, pickLanguage, resetTranslations } from '../src/core/i18n'
 import { fallbacks, i18next } from '../src/i18n'
 import { cleanup, FIXTURE_REMOTE } from './helpers'
 
@@ -90,19 +90,46 @@ describe('traduções dos remotes', () => {
     expect(Object.keys(i.bundles)).toEqual(['es'])
   })
 
-  it('numa troca de língua, baixa a nova e desenha de novo uma vez', async () => {
+  it('o changeLanguage espera a nova língua dos remotes: a troca já vem com os textos', async () => {
     const fetch = network()
     const i = fakeI18next('pt-BR')
+    const original = i.changeLanguage
     configure({ allowedOrigins: ['*'], retries: 0, i18n: i18next(i) })
     register('conta', BASE + 'vitral.json')
     await loadRemote('conta')
-    i.changeLanguage('en')
+    // Quando a língua troca (o react-i18next desenha de novo), o texto já está lá.
+    const seen: unknown[] = []
+    i.on('languageChanged', (lng) => seen.push([lng, i.bundles.en]))
+    await i.changeLanguage('en')
+    expect(seen).toEqual([['en', { conta: { titulo: 'My account' } }]])
+    // Sem um segundo desenho: nada novo chegou depois da troca.
+    await new Promise((r) => setTimeout(r, 20))
+    expect(original).toHaveBeenCalledTimes(1)
+    expect(fetch.mock.calls.filter((c) => String(c[0]).includes('/i18n/en/'))).toHaveLength(1)
+    // Um segundo adaptador na mesma instância não embrulha de novo.
+    i18next(i)
+    await i.changeLanguage('pt-BR')
+    expect(original).toHaveBeenCalledTimes(2)
+  })
+
+  it('troca de língua por fora do changeLanguage embrulhado: baixa a nova e desenha de novo uma vez', async () => {
+    const fetch = network()
+    const i = fakeI18next('pt-BR')
+    const original = i.changeLanguage
+    configure({ allowedOrigins: ['*'], retries: 0, i18n: i18next(i) })
+    register('conta', BASE + 'vitral.json')
+    await loadRemote('conta')
+    original('en')
     await vi.waitFor(() => expect(i.bundles.en).toEqual({ conta: { titulo: 'My account' } }))
     // A primeira troca é a do app; a segunda, do vitral, para o react-i18next desenhar com as traduções novas.
-    await vi.waitFor(() => expect(i.changeLanguage).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(original).toHaveBeenCalledTimes(2))
     await new Promise((r) => setTimeout(r, 20))
-    expect(i.changeLanguage).toHaveBeenCalledTimes(2)
+    expect(original).toHaveBeenCalledTimes(2)
     expect(fetch.mock.calls.filter((c) => String(c[0]).includes('/i18n/en/'))).toHaveLength(1)
+  })
+
+  it('languageReady sem remotes resolve na hora', async () => {
+    await expect(languageReady('en')).resolves.toBeUndefined()
   })
 
   it('tradução que falha não impede a montagem', async () => {
