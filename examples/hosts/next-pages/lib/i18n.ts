@@ -3,8 +3,9 @@ import { initReactI18next } from 'react-i18next'
 import { configure } from 'vitral'
 import { i18next } from 'vitral/i18n'
 
-// Sem as traduções dos remotes: cada um traz as dele, só na língua aberta.
-if (!i18n.isInitialized) i18n.use(initReactI18next).init({ lng: 'pt-BR', fallbackLng: 'en', resources: {}, react: { useSuspense: false } })
+// Só as traduções do host: cada remote traz as dele, só na língua aberta.
+const resources = { 'pt-BR': { loja: { lingua: 'Trocar língua' } }, en: { loja: { lingua: 'Switch language' } } }
+if (!i18n.isInitialized) i18n.use(initReactI18next).init({ lng: 'pt-BR', fallbackLng: 'en', resources, partialBundledLanguages: true, react: { useSuspense: false } })
 if (typeof window !== 'undefined') configure({ i18n: i18next(i18n) })
 
 export default i18n
