@@ -116,6 +116,31 @@ describe('traduções dos remotes', () => {
     warn.mockRestore()
   })
 
+  it('confere o hash do manifesto, e o fetch vai sem integrity (o mesmo pedido do preload do HTML)', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const body = JSON.stringify(words[BASE + 'i18n/pt-BR/conta-a.json'])
+    const hash = 'sha384-' + btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest('SHA-384', new TextEncoder().encode(body)))))
+    const run = async (sri: string) => {
+      const fetch = vi.fn(async (url: string, _init?: RequestInit) =>
+        url === BASE + 'vitral.json' ? new Response(JSON.stringify({ name: 'conta', entry: FIXTURE_REMOTE, i18n: files, files: { 'i18n/pt-BR/conta-a.json': sri } })) : new Response(body),
+      )
+      vi.stubGlobal('fetch', fetch)
+      const i = fakeI18next('pt-BR')
+      configure({ allowedOrigins: ['*'], retries: 0, i18n: i18next(i) })
+      register('conta', BASE + 'vitral.json')
+      await loadRemote('conta')
+      const call = fetch.mock.calls.find((c) => String(c[0]).includes('/i18n/'))!
+      expect(call[1]?.integrity).toBeUndefined()
+      return i.bundles
+    }
+    expect(await run(hash)).toEqual({ 'pt-BR': { conta: { titulo: 'Minha conta' } } })
+    cleanup()
+    resetTranslations()
+    expect(await run('sha384-' + 'A'.repeat(64))).toEqual({})
+    expect(warn).toHaveBeenCalledWith(expect.stringMatching(/conta: traduções não carregaram/), expect.objectContaining({ code: 'INTEGRITY' }))
+    warn.mockRestore()
+  })
+
   it('sem configure({ i18n }), nada de traduções', async () => {
     const fetch = network()
     configure({ allowedOrigins: ['*'], retries: 0 })

@@ -213,7 +213,7 @@ function hints(h: HtmlHints | undefined, shadow: boolean, replaces?: HtmlHints, 
   const link = (as: string, [href, integrity, high]: [string, string?, 'high'?]) => {
     const fetchPriority = low ? 'low' : high
     // Preload `as=fetch` não confere `integrity` (o Chromium avisa no console); o
-    // `fetch` do vitral confere ao usar o preload.
+    // vitral confere o hash ao usar o preload.
     const sri = as !== 'fetch' && integrity
     return createElement('link', { key: `vitral:${href}`, rel: 'preload', as, href, crossOrigin: 'anonymous', ...(sri && { integrity: sri }), ...(fetchPriority && { fetchPriority }) })
   }

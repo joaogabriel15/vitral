@@ -7,7 +7,9 @@
  * os remotes já carregados baixam a língua nova.
  */
 import type { I18nHost } from './types'
-import { absolute, fetchJson } from './util'
+import { RemoteError } from './errors'
+import { verifyIntegrity } from './integrity'
+import { absolute, fetchBytes } from './util'
 
 type Files = Record<string, Record<string, string>>
 /** `i18n` do manifesto (língua → namespace → arquivo) e a URL do manifesto. */
@@ -56,7 +58,19 @@ function load(name: string, files: Files, sri: Record<string, string>, host: I18
       let p = asked.get(url)
       if (!p) {
         // `same-origin`: o modo do `<link rel="preload" crossorigin>` que o host Next põe no HTML.
-        p = fetchJson(url, timeout, name, { credentials: 'same-origin', priority, ...(sri[url] && { integrity: sri[url] }) }).then((data) => {
+        // O preload sai sem `integrity` (preload as=fetch não confere), e o Firefox só
+        // entrega a um fetch igual: o hash é conferido aqui. Com assinatura (`keys`) ou
+        // sem `crypto.subtle` (http fora do localhost), quem confere é o navegador.
+        const want = sri[url]
+        const here = !!want && !!globalThis.crypto?.subtle && want.split(/\s+/).every((t) => /^sha(256|384|512)-/.test(t))
+        p = fetchBytes(url, timeout, name, { credentials: 'same-origin', priority, ...(want && !here && { integrity: want }) }).then(async (bytes) => {
+          if (here) await verifyIntegrity(name, bytes, want)
+          let data
+          try {
+            data = JSON.parse(new TextDecoder().decode(bytes))
+          } catch (e) {
+            throw new RemoteError('INVALID_MODULE', name, `JSON inválido em ${url}`, e)
+          }
           host.add(pick, ns, data)
           return true
         })
