@@ -85,7 +85,7 @@ test.describe('host Next (Pages Router) em produção', () => {
     // Um download só: o fetch do manifesto usa o preload do HTML. O Playwright no
     // WebKit também conta como pedido o que sai do cache em memória, por isso o
     // Resource Timing, que tem uma entrada por download.
-    expect(await page.evaluate(() => performance.getEntriesByType('resource').filter((e) => /vitral\.json/.test(e.name)).length)).toBe(1)
+    expect(await page.evaluate(() => performance.getEntriesByType('resource').filter((e) => /vitral\.json/.test(e.name)).map((e) => (e as PerformanceResourceTiming).initiatorType))).toEqual(['link'])
     if (browserName !== 'webkit') expect(pedidos).toHaveLength(1)
   })
 
