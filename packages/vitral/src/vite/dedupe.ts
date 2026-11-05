@@ -12,7 +12,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, realpathSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { exportOrigins, type ParseContext, type Parsed } from './exports'
+import { exportOrigins, exportSources, type ParseContext, type Parsed } from './exports'
 
 /** O grupo do React vem inteiro do mesmo lugar: o React DOM exige a mesma versão do React. */
 const REACT = ['react', 'react-dom', 'react-dom/client', 'react/jsx-runtime', 'react/jsx-dev-runtime', 'react/compiler-runtime']
@@ -237,6 +237,32 @@ export function dedupeHooks(entry: () => string, getGroups: () => Group[]) {
       origins = new Map()
       exports.clear()
     },
+    /**
+     * Depois do build dividido: arquivos de um grupo que o código principal
+     * alcança sem passar pela cópia própria. Eles baixam e rodam mesmo com o
+     * pacote oferecido pelo host; o aviso mostra um caminho até cada grupo.
+     */
+    leaks(ctx: { getModuleInfo(id: string): { importedIds: readonly string[]; dynamicallyImportedIds: readonly string[] } | null; warn?(m: string): void }, root: string) {
+      const from = new Map<string, string>()
+      const stack = ['\0' + BOOT]
+      while (stack.length) {
+        const id = stack.pop()!
+        const m = ctx.getModuleInfo(id)
+        for (const d of [...(m?.importedIds ?? []), ...(m?.dynamicallyImportedIds ?? [])]) if (!d.startsWith(OWN) && !from.has(d)) from.set(d, id), stack.push(d)
+      }
+      const r = norm(root) + '/'
+      const show = (id: string): string => {
+        const v = /^\0([\w:-]*?:)(\/.*)$/.exec(id)
+        return v ? v[1] + show(v[2]) : norm(id).startsWith(r) ? norm(id).slice(r.length) : id.replace(/^\0/, '')
+      }
+      for (const g of getGroups()) {
+        const found = [...from.keys()].filter((id) => !id.startsWith('\0') && inside(g, id))
+        if (!found.length) continue
+        const chain = [found[0]]
+        while (from.has(chain[0]) && !chain[0].startsWith('\0' + BOOT)) chain.unshift(from.get(chain[0])!)
+        ctx.warn?.(`dedupe: ${found.length} arquivo(s) de ${g.name} entram no código principal do remote, fora da cópia própria: baixam e rodam mesmo com o pacote oferecido pelo host. Um caminho: ${chain.slice(1).map(show).join(' → ')}`)
+      }
+    },
     /** Algum grupo troca também os imports que chegam a arquivos do pacote? */
     files: () => getGroups().some((g) => g.files),
     resolveId: {
@@ -307,12 +333,18 @@ export function dedupeHooks(entry: () => string, getGroups: () => Group[]) {
           return `export * from ${f}\n` + (own.has('default') ? `export { default } from ${f}\n` : '')
         }
         // Os nomes que saem por um especificador do pacote vêm do objeto do host; só os outros, da cópia própria.
+        // Cada um vem do arquivo que o define, e não deste: reexportar daqui poria
+        // no grafo do remote todos os arquivos que este reexporta, com os efeitos deles.
+        const from = rest.length ? await exportSources(ctx, file, exports) : new Map<string, [string, string]>()
+        const src = (n: string) => from.get(n) ?? [file, n]
+        const rel = (x: string) => x.slice(g.dir!.length + 1)
         if (rest.length)
-          ctx.warn?.(`dedupe: ${file.slice(g.dir!.length + 1)}: ${rest.join(', ')} não sai(em) por nenhum export de ${g.name}: esses nomes vêm de uma cópia própria deste arquivo`)
+          ctx.warn?.(`dedupe: ${rel(file)}: ${rest.join(', ')} não sai(em) por nenhum export de ${g.name}: esses nomes vêm de uma cópia própria de ${[...new Set(rest.map((n) => rel(src(n)[0])))].join(', ')}, que entra no código principal do remote`)
+        const q = (n: string) => (n === 'default' ? 'default' : JSON.stringify(n))
         return (
           `import { deps } from ${JSON.stringify(DEPS)}\n` +
           shared.map(([name, v], i) => `const v${i} = deps[${JSON.stringify(v!.spec)}][${JSON.stringify(v!.name)}]\n` + (name === 'default' ? `export default v${i}\n` : `export { v${i} as ${JSON.stringify(name)} }\n`)).join('') +
-          (rest.length ? `export { ${rest.map((n) => (n === 'default' ? 'default' : JSON.stringify(n))).join(', ')} } from ${f}\n` : '')
+          rest.map((n) => `export { ${q(src(n)[1])} as ${q(n)} } from ${JSON.stringify(src(n)[0])}\n`).join('')
         )
       }
       return null

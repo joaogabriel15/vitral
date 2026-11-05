@@ -36,7 +36,12 @@ beforeAll(async () => {
   write(ui + 'package.json', JSON.stringify({ name: '@acme/ui', version: '1.2.3', exports: { '.': './src/index.ts', './routes': './src/routes/index.ts', './styles/*': './src/styles/*' } }))
   write(ui + 'tsconfig.json', JSON.stringify({ compilerOptions: { paths: { '@/*': ['./src/*'] } } }))
   write(ui + 'src/index.ts', `export * from './components'\nexport { store as useStore } from '@/store/store'\n`)
-  write(ui + 'src/components/index.ts', `export { Button } from './button/button'\nexport { Card } from './card/card'\n`)
+  write(ui + 'src/components/index.ts', `export { Button } from './button/button'\nexport { Card } from './card/card'\nexport { C } from './x/c'\n`)
+  // Barrel interno com nomes que o pacote não publica (A, B) ao lado de um que publica (C).
+  write(ui + 'src/components/x/index.ts', `export { A, B } from './a'\nexport { C } from './c'\n`)
+  write(ui + 'src/components/x/a.ts', `export const A: string = 'a-proprio'\nexport const B: string = 'b-proprio'\n`)
+  write(ui + 'src/components/x/c.ts', `import './side'\nexport const C: string = 'c-proprio'\n`)
+  write(ui + 'src/components/x/side.ts', `;(globalThis as any).vazou = 'efeito-do-pacote'\n`)
   // \`export default\` de um binding público e um nome que o pacote não publica.
   write(ui + 'src/components/card/card.ts', `export const Card: string = 'card-proprio'\nexport const cardPrivate: string = 'card-privado'\nexport default Card\n`)
   write(ui + 'src/components/button/button.ts', `export const Button: string = 'botao-proprio'\n`)
@@ -53,7 +58,8 @@ import { store } from '@/components/ui/../store/store'
 import { hidden } from '@ui-hidden'
 import CardDefault, { Card as CardDeep, cardPrivate } from '@/components/ui/card/card'
 import { local } from '@/local'
-export default { mount() {}, Button, useStore, routes, Deep, store, hidden, local, CardDefault, CardDeep, cardPrivate }
+import { C } from '@/components/ui/x/index'
+export default { mount() {}, Button, useStore, routes, Deep, store, hidden, local, CardDefault, CardDeep, cardPrivate, C }
 `,
   )
   await build({
@@ -94,6 +100,26 @@ describe('dedupe de pacote em código-fonte', () => {
     expect(warnings.join('\n')).toMatch(/hidden\.ts não sai por nenhum export de @acme\/ui/)
     expect(warnings.join('\n')).toMatch(/card\.ts: cardPrivate não sai/)
     expect(warnings.join('\n')).not.toMatch(/card\.ts: .*default/)
+  })
+
+  it('nomes não publicados de um barrel interno vêm do arquivo que os define, sem puxar o resto do barrel', () => {
+    const read = (f: string) => readFileSync(join(out, f), 'utf8')
+    const main = [m.split!.entry, ...m.split!.chunks!].map(read).join('\n')
+    expect(main).not.toContain('efeito-do-pacote')
+    // Depois do build: quantos arquivos do grupo o código principal alcança, com um caminho.
+    expect(warnings.join('\n')).toMatch(/3 arquivo\(s\) de @acme\/ui entram no código principal do remote.*Um caminho: src\/remote\.ts → vitral-deep:node_modules\/@acme\/ui\/src\/components\/x\/index\.ts → node_modules\/@acme\/ui\/src\/components\/x\/a\.ts/)
+    expect(warnings.join('\n')).toMatch(/x\/index\.ts: A, B não sai\(em\) por nenhum export de @acme\/ui: esses nomes vêm de uma cópia própria de .*x\/a\.ts/)
+  })
+
+  it('com o pacote oferecido, o efeito colateral do barrel não roda', async () => {
+    delete (globalThis as any).vazou
+    shared(protocol())('@acme/ui', '1.4.0', {
+      version: '1.4.0',
+      load: async () => ({ '@acme/ui': { Button: 'botao-host', Card: 'card-host', C: 'c-host', useStore: {} }, '@acme/ui/routes': { routes: [] } }),
+    })
+    const r = await importSplit()
+    expect(r.C).toBe('c-host')
+    expect((globalThis as any).vazou).toBeUndefined()
   })
 
   it('sem oferta na página, tudo vem da cópia própria, inclusive pelos aliases', async () => {

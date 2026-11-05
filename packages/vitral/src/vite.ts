@@ -333,6 +333,9 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
         if (serve && options.scopeCss !== false) return scopeDevCss(code, id, scopeName(), options.scopeCss === 'native')
       },
     },
+    generateBundle(_, bundle) {
+      if (dedupe && !serve && isSplit(bundle as any)) hooks.leaks(this as any, root)
+    },
     writeBundle(_, bundle) {
       // As duas saídas têm os mesmos módulos; juntar cobre o que só uma tiver.
       if (options.sbom) bundledFiles(bundle as any, modules)
