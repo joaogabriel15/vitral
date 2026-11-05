@@ -58,6 +58,32 @@ export async function exportOrigins(ctx: ParseContext, file: string, cache: Map<
   return origins(file, parsed, new Map(), [])
 }
 
+/**
+ * Nome exportado → [arquivo, nome] mais fundo que ainda exporta esse valor,
+ * seguindo os reexports. Reexportar dali, e não do barrel, não puxa os outros
+ * arquivos do barrel para o grafo de quem importa.
+ */
+export async function exportSources(ctx: ParseContext, file: string, cache: Map<string, Promise<Parsed>>): Promise<Map<string, [string, string]>> {
+  await exportOrigins(ctx, file, cache)
+  const parsed = new Map<string, Parsed>()
+  for (const [f, p] of cache) parsed.set(f, await p)
+  return sources(file, parsed, new Map(), [])
+}
+
+function sources(file: string, parsed: Map<string, Parsed>, memo: Map<string, Map<string, [string, string]>>, stack: string[]): Map<string, [string, string]> {
+  const p = parsed.get(file)
+  if (!p || stack.includes(file)) return new Map()
+  const known = memo.get(file)
+  if (known) return known
+  const next = [...stack, file]
+  const out = new Map<string, [string, string]>()
+  for (const name of p.local.keys()) out.set(name, [file, name])
+  for (const n of p.named) out.set(n.exported, (n.source && sources(n.source, parsed, memo, next).get(n.name)) || [file, n.exported])
+  for (const s of p.star) for (const [name, v] of sources(s, parsed, memo, next)) if (name !== 'default' && !out.has(name)) out.set(name, v)
+  memo.set(file, out)
+  return out
+}
+
 function origins(file: string, parsed: Map<string, Parsed>, memo: Map<string, Origins>, stack: string[]): Origins {
   // Reexport circular: o arquivo que já está sendo resolvido conta como vazio aqui.
   if (stack.includes(file)) return new Map()
