@@ -10,7 +10,7 @@
     "vitral": "workspace:*",
     "@angular/core": "^22.0.0",
     "@angular/common": "^22.0.0",
-    "@angular/compiler": "^22.0.0",
+    "@angular/compiler": "^22.2.3",
     "@angular/platform-browser": "^22.0.0",
     "rxjs": "^7.8.0",
     "tslib": "^2.8.0"
