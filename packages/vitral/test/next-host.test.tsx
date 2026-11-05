@@ -199,6 +199,8 @@ describe('vitral/next-host', () => {
     try {
       await act(async () => root.render(h(VitralNext)))
       expect(links()).toEqual(['/h/vitral.json', '/h/a.css', '/h/split/chunk.js', '/h/split/e.js'])
+      // O remote ainda não está no HTML: prioridade baixa, para não tirar banda do JS do host.
+      expect([...document.querySelectorAll('link[rel=preload]')].map((l) => l.getAttribute('fetchpriority'))).toEqual(['low', 'low', 'low', 'low'])
       // Com os pageProps do remoteProps: o manifesto do servidor, sem o preload do vitral.json.
       const manifest = { name: 'hinted', entry: 'remote-2.js', files: { 'split/e2.js': 'sha384-e2' }, split: { entry: 'split/e2.js', chunks: [] } }
       await act(async () => root.render(h(VitralNext, { pageProps: { vitral: { hinted: manifest } } })))
