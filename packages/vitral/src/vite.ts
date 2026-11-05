@@ -21,6 +21,7 @@ import { scopeCss } from './css-scope'
 import { EXPOSES_ENTRY, EXPOSES_IDS, exposeKeys, loadExposes, resolveExposesId } from './vite-exposes'
 import { collect, isSplit, outputs, ownApart, sri, userOutputs, withSplit, type ManualChunks, type Split } from './vite/manifest'
 import { bundledFiles, createSbom, SBOM_FILE } from './vite/sbom'
+import { devTranslations, emitTranslations } from './vite/i18n'
 import { BOOT, dedupeHooks, dedupeIds, groups, type Group } from './vite/dedupe'
 import { type CssBuildOptions, splitShadowCss, transformCss } from './css-build'
 import { detectAdapter, ENTRY_ID, entryCode, findEntry, VIRTUAL_ENTRY, type AdapterName } from './vite/adapter'
@@ -120,6 +121,16 @@ export interface VitralViteOptions extends CssBuildOptions {
    * código-fonte sem `sideEffects` no package.json. Ex.: `['@empresa/ui']`.
    */
   sideEffectFree?: string[]
+  /**
+   * Traduções do remote, com `{lng}` (e, se houver, `{ns}`) no caminho:
+   * `'src/locales/{lng}/{ns}.json'` ou `'src/locales/{lng}.json'` (o
+   * namespace é o `name` do remote). Cada arquivo sai com hash em
+   * `i18n/<lng>/`, listado no `vitral.json`. Com `configure({ i18n })` no
+   * host, o remote baixa só a língua aberta, junto com o JS, e as traduções
+   * entram no i18next do host antes de montar. Tire o import estático das
+   * traduções do código do remote. Padrão: nenhum.
+   */
+  i18n?: string
   /**
    * Builda com o Vite um código escrito para Next.js: `next/link`,
    * `next/image`, `next/head`, `next/dynamic`, `next/router` e
@@ -260,7 +271,12 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     // Modo dev: /vitral.json aponta para um módulo com o cliente HMR.
     configureServer(server) {
       const scope = options.scopeCss === false ? undefined : scopeName()
-      serveDevManifest(server, () => devManifest(options.name ?? pkg.name ?? 'remote', scope))
+      const name = () => options.name ?? pkg.name ?? 'remote'
+      serveDevManifest(server, () => {
+        const m = devManifest(name(), scope)
+        const i18n = options.i18n ? devTranslations(root, options.i18n, name()) : undefined
+        return i18n ? { ...m, i18n } : m
+      })
     },
     // Filtros de hook (Rolldown, Vite 6.3+): os módulos que não são do vitral
     // nem chegam ao JS. As checagens nos handlers continuam para Vite 5 e 6.0-6.2.
@@ -382,6 +398,11 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     },
     async closeBundle() {
       if (!manifest) return
+      if (options.i18n) {
+        const i18n = emitTranslations(root, outDir, options.i18n, manifest.name)
+        if (i18n) manifest.i18n = i18n
+        else this.warn(`i18n: nenhum arquivo em '${options.i18n}'`)
+      }
       const done = withSplit(manifest, outDir, split, shared)
       if (options.sbom) {
         const bom = createSbom({ root, name: done.name, version: done.version, files: modules, entry: readFileSync(join(outDir, done.entry)), tool: ownVersion() })

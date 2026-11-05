@@ -19,10 +19,11 @@
  */
 import Head from 'next/head'
 import Router, { useRouter } from 'next/router'
-import { createElement, Fragment, useEffect, useMemo, version as reactVersion, type ReactElement, type ReactNode } from 'react'
+import { createElement, Fragment, useEffect, useMemo, useState, version as reactVersion, type ReactElement, type ReactNode } from 'react'
 import { plan, remotes, shared } from 'vitral-next-host-config'
 import { bundled } from './core/bundled'
 import * as dedupe from './core/dedupe'
+import { pickLanguage } from './core/i18n'
 import { hintsOf, type HtmlHints } from './core/next-hints'
 import { policy } from './core/policy'
 import { configure, register } from './core/registry'
@@ -137,6 +138,11 @@ export interface VitralNextProps {
    * `remoteProps` (`vitral/next-server`) leu no servidor.
    */
   pageProps?: { vitral?: Record<string, RemoteManifest | null> }
+  /**
+   * Língua aberta, para o HTML pré-carregar as traduções do remote nela
+   * (`i18n` do plugin). Padrão: o `locale` do roteador do Next.
+   */
+  lang?: string
 }
 
 /**
@@ -144,11 +150,12 @@ export interface VitralNextProps {
  * dicas de preload dele, mesmo quando a página só desenha o `NextRemote`
  * no navegador (depois do login, por exemplo).
  */
-export function VitralNext({ pageProps }: VitralNextProps = {}): ReactNode {
+export function VitralNext({ pageProps, lang }: VitralNextProps = {}): ReactNode {
   setup()
   const router = useRouter()
   const name = remoteFor((router?.asPath ?? '/').split(/[?#]/)[0])
   useEffect(() => {
+    hydrated = true
     const here = remoteFor(location.pathname)
     const go = (name: string) => preload(name, { routes: !!remotes[name].warmRoutes })
     if (here) go(here)
@@ -165,7 +172,8 @@ export function VitralNext({ pageProps }: VitralNextProps = {}): ReactNode {
     }
   }, [])
   // As mesmas chaves do NextRemote: o next/head junta as duas listas.
-  return useMemo(() => (name ? linksFor(name, pageProps?.vitral?.[name], false) : null), [name, pageProps])
+  const lng = lang ?? router?.locale
+  return useMemo(() => (name ? linksFor(name, pageProps?.vitral?.[name], false, false, true, lng) : null), [name, pageProps, lng])
 }
 
 export type NextRemoteProps = Omit<RemoteProps, 'name' | 'src'> & {
@@ -176,6 +184,8 @@ export type NextRemoteProps = Omit<RemoteProps, 'name' | 'src'> & {
    * pede o manifesto. `null` ou ausente: o preload do build e o pedido de sempre.
    */
   manifest?: RemoteManifest | null
+  /** Língua aberta, para o preload das traduções do remote. Padrão: o `locale` do roteador do Next. */
+  lang?: string
 }
 
 /** O manifesto do servidor vira o registro do remote: o loader não pede de novo. */
@@ -196,15 +206,24 @@ const replace: HostRouter['replace'] = (url, options) => void Router.replace(url
  * JS do host, e não depois da hidratação. O hash vai no `integrity`: o
  * navegador confere o preload, e o `import()` do remote confere de novo.
  */
-function hints(h: HtmlHints | undefined, shadow: boolean, replaces?: HtmlHints): ReactNode {
+function hints(h: HtmlHints | undefined, shadow: boolean, replaces?: HtmlHints, low?: boolean, lang?: string): ReactNode {
   if (!h) return null
-  const link = (as: string, [href, integrity, fetchPriority]: [string, string?, 'high'?]) =>
-    createElement('link', { key: `vitral:${href}`, rel: 'preload', as, href, crossOrigin: 'anonymous', ...(integrity && { integrity }), ...(fetchPriority && { fetchPriority }) })
+  // `low`: só o `VitralNext` pôs as dicas e o remote ainda não está no HTML (a página
+  // o desenha depois, no navegador). Em prioridade baixa, elas não tiram banda do JS do host.
+  const link = (as: string, [href, integrity, high]: [string, string?, 'high'?]) => {
+    const fetchPriority = low ? 'low' : high
+    // Preload `as=fetch` não confere `integrity` (o Chromium avisa no console); o
+    // vitral confere o hash ao usar o preload.
+    const sri = as !== 'fetch' && integrity
+    return createElement('link', { key: `vitral:${href}`, rel: 'preload', as, href, crossOrigin: 'anonymous', ...(sri && { integrity: sri }), ...(fetchPriority && { fetchPriority }) })
+  }
   const out: ReactElement[] = [
     ...(h.manifest ? [link('fetch', [h.manifest, h.signed])] : []),
     // Com Shadow DOM o CSS vem por fetch: o preload de estilo não serviria.
     ...(shadow ? [] : h.css.map((c) => link('style', c))),
     ...h.js.map((j) => link('script', j)),
+    // Traduções da língua aberta, junto com o JS: o remote monta depois que elas entram.
+    ...(lang && h.i18n ? (h.i18n[pickLanguage(lang, Object.keys(h.i18n)) ?? ''] ?? []).map((t) => link('fetch', t)) : []),
   ]
   // O next/head fica com o último elemento de cada chave: as dicas do build que o
   // `VitralNext` pôs e que esta lista não tem (outra versão, CSS no Shadow DOM)
@@ -215,15 +234,18 @@ function hints(h: HtmlHints | undefined, shadow: boolean, replaces?: HtmlHints):
   return createElement(Head, null, ...out)
 }
 
+/** A página já hidratou com o `VitralNext`: as dicas dele (prioridade baixa) já estão no `<head>`. */
+let hydrated = false
+
 /**
  * Dicas do remote `name`: do manifesto do servidor, se houver, ou as do build.
  * `replaces`: no `NextRemote`, cobre as do build que o `VitralNext` pôs.
  */
-function linksFor(name: string, manifest: RemoteManifest | null | undefined, shadow: boolean, replaces?: boolean): ReactNode {
+function linksFor(name: string, manifest: RemoteManifest | null | undefined, shadow: boolean, replaces?: boolean, low?: boolean, lang?: string): ReactNode {
   const r = remotes[name]
   const h = manifest && r ? hintsOf(manifest, r.url, offered(), r.integrity, r.keys) : r?.hints
   // Com o manifesto do servidor, o navegador não pede o vitral.json: sem preload dele.
-  return hints(manifest && h ? { ...h, manifest: '' } : h, shadow, replaces ? r?.hints : undefined)
+  return hints(manifest && h ? { ...h, manifest: '' } : h, shadow, replaces ? r?.hints : undefined, low, lang)
 }
 
 /**
@@ -231,13 +253,18 @@ function linksFor(name: string, manifest: RemoteManifest | null | undefined, sha
  * `__next`, lida pelo plugin no modo `next`): `useRouter`, `<Link>` e
  * `router.push` do remote usam o do host, com as rotas públicas.
  */
-export function NextRemote({ name, props, fallback = null, manifest, ...rest }: NextRemoteProps): ReactNode {
+export function NextRemote({ name, props, fallback = null, manifest, lang, ...rest }: NextRemoteProps): ReactNode {
   setup()
   if (manifest) seed(name, manifest)
   const router = useRouter()
   const r = remotes[name]
   const host = useMemo<HostRouter>(() => ({ asPath: router.asPath, basePath: r?.basePath, routes: r?.routes, push, replace, events: Router.events }), [router.asPath, r])
   const all = useMemo(() => ({ ...props, __next: host }), [props, host])
-  const links = useMemo(() => linksFor(name, manifest, rest.isolate === 'shadow', true), [name, manifest, rest.isolate])
+  const lng = lang ?? router.locale
+  // Montado depois da hidratação (depois do login, numa navegação): as mesmas dicas
+  // do `VitralNext`, em prioridade baixa. Um `<link>` igual fica no `<head>`; um
+  // diferente seria trocado, e o navegador pediria o arquivo de novo.
+  const [late] = useState(() => hydrated)
+  const links = useMemo(() => linksFor(name, manifest, rest.isolate === 'shadow', true, late, lng), [name, manifest, rest.isolate, late, lng])
   return createElement(Fragment, null, links, router.isReady ? createElement(Remote, { ...rest, name, fallback, props: all }) : fallback)
 }

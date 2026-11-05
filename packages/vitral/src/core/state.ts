@@ -10,7 +10,7 @@
 import type { DedupePlan } from './dedupe-plan'
 import type { Policy } from './policy'
 import { createEventBus } from './bus'
-import type { EventBus, Isolation, RemoteEntry, RemoteMetric, RemoteModule, RollbackInfo, ShadowCss, SharedModules, StyleOptions } from './types'
+import type { EventBus, I18nHost, Isolation, RemoteEntry, RemoteMetric, RemoteModule, RollbackInfo, ShadowCss, SharedModules, StyleOptions } from './types'
 import type { SharedStore } from './store'
 import type { RemoteError } from './errors'
 
@@ -45,6 +45,8 @@ export interface Settings {
   onRollback?: (info: RollbackInfo) => void
   /** Idade máxima, em segundos, do manifesto salvo usado sem esperar a rede. */
   maxStale?: number
+  /** Onde entram as traduções dos remotes (`configure({ i18n })`). */
+  i18n?: I18nHost
 }
 
 /** Remote baixado e pronto para montar. Faz parte do protocolo v1. */

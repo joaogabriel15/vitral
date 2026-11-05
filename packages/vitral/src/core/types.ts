@@ -325,6 +325,26 @@ export interface VitralConfig {
    * host volta para a estável (veja `RemoteEntry.rollback`).
    */
   onRollback?: (info: RollbackInfo) => void
+  /**
+   * Onde entram as traduções dos remotes (`i18n` do `vitral.json`). Com
+   * i18next, use `i18next(instancia)` de `vitral/i18n`. Cada remote baixa só a
+   * língua aberta, junto com o JS, e monta depois que ela entra.
+   */
+  i18n?: I18nHost
+}
+
+/** As traduções do host, vistas pelo vitral (`configure({ i18n })`). */
+export interface I18nHost {
+  /** Língua aberta agora (`pt-BR`). */
+  language(): string
+  /** Línguas a tentar quando o remote não tem a aberta, em ordem. */
+  fallback?(): string[]
+  /** Junta as traduções de um namespace (no i18next, `addResourceBundle`). */
+  add(lng: string, ns: string, data: unknown): void
+  /** Avisa cada troca de língua. Devolve a função que para de avisar. */
+  onChange?(fn: (lng: string) => void): () => void
+  /** Chamado quando traduções chegam depois de uma troca de língua, para a tela desenhar de novo. */
+  refresh?(): void
 }
 
 /** Módulos de um grupo de `dedupe`, por especificador (`'react-dom/client'`). */
@@ -362,6 +382,12 @@ export interface RemoteManifest {
    * caminho relativo ao manifesto.
    */
   files?: Record<string, string>
+  /**
+   * Traduções do remote, um arquivo por língua e namespace, pelo caminho
+   * relativo ao manifesto: `{ 'pt-BR': { conta: 'i18n/pt-BR/conta-a1b2.json' } }`.
+   * Com `configure({ i18n })` no host, só a língua aberta baixa, junto com o JS.
+   */
+  i18n?: Record<string, Record<string, string>>
   /**
    * Build dividido, para navegadores que conferem o hash de cada módulo:
    * a entrada e os chunks que ela importa logo. `entry` e `integrity`
