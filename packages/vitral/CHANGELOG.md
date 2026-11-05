@@ -1,5 +1,11 @@
 # vitral
 
+## 0.13.1
+
+### Patch Changes
+
+- [#127](https://github.com/joaogabriel15/vitral/pull/127) [`a26c415`](https://github.com/joaogabriel15/vitral/commit/a26c41585a100be6f6afdfed2c1698c766d4b056) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Troca de língua sem mostrar as chaves: com o adaptador `i18next()`, o `changeLanguage` baixa antes a nova língua de cada remote aberto, e a tela troca tudo junto (host e remotes) quando os textos chegam. Para outras bibliotecas, `languageReady(lng)` de `vitral/i18n` faz o mesmo antes da troca.
+
 ## 0.13.0
 
 ### Minor Changes
