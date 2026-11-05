@@ -73,7 +73,7 @@ test.describe('host Next (Pages Router) em produção', () => {
     expect(erros.filter((e) => /hydrat|#418|#423|#425|did not match/i.test(e))).toEqual([])
   })
 
-  test('página que só desenha o remote depois do login: o HTML já pré-carrega o manifesto e a entrada', async ({ page, request }) => {
+  test('página que só desenha o remote depois do login: o HTML já pré-carrega o manifesto e a entrada', async ({ page, request, browserName }) => {
     const html = await (await request.get(HOST + '/ns-login')).text()
     expect(html).not.toContain('class="carregando"')
     expect(html).toMatch(/<link[^>]+rel="preload"[^>]+href="\/ns-remote\/vitral\.json"/)
@@ -82,7 +82,11 @@ test.describe('host Next (Pages Router) em produção', () => {
     page.on('request', (r) => /vitral\.json/.test(r.url()) && pedidos.push(r.url()))
     await page.goto(HOST + '/ns-login')
     await expect(page.locator('.ns .versao')).toContainText('React 19')
-    expect(pedidos).toHaveLength(1)
+    // Um download só: o fetch do manifesto usa o preload do HTML. O Playwright no
+    // WebKit também conta como pedido o que sai do cache em memória, por isso o
+    // Resource Timing, que tem uma entrada por download.
+    expect(await page.evaluate(() => performance.getEntriesByType('resource').filter((e) => /vitral\.json/.test(e.name)).length)).toBe(1)
+    if (browserName !== 'webkit') expect(pedidos).toHaveLength(1)
   })
 
   test('falha de rede com a CSP sem blob:: "Tentar de novo" baixa de novo e monta', async ({ page, browserName }) => {
