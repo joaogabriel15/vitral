@@ -28,6 +28,7 @@ export interface RemoteProps<P extends Props = Props> {
   props?: P
   isolate?: Isolation
   fallback?: VNode | string | null
+  /** Mostrado se o remote falhar. Sem ela, uma mensagem curta com "Tentar de novo"; `null` não mostra nada. */
   error?: VNode | string | ((error: RemoteError, retry: () => void) => VNode | string | null) | null
   class?: string
   /** `'lazy'`: monta perto de aparecer na tela; `'idle'`: com o navegador ocioso. */
@@ -55,7 +56,13 @@ export function Remote<P extends Props = Props, N extends string = string>({ nam
   const retry = () => slot.current?.retry()
   return h('div', { 'data-vitral': name ?? src, 'data-vitral-status': state.status, class: rest.class }, [
     state.status === 'loading' ? fallback : null,
-    state.status === 'error' && state.error ? (typeof error === 'function' ? error(state.error, retry) : error) : null,
+    state.status === 'error' && state.error
+      ? error === undefined
+        ? h('div', { role: 'alert', 'data-vitral-default': 'error' }, ['Não foi possível carregar. ', h('button', { type: 'button', onClick: retry }, 'Tentar de novo')])
+        : typeof error === 'function'
+          ? error(state.error, retry)
+          : error
+      : null,
     // O Preact nunca coloca filhos neste div: ele pertence ao remote.
     h('div', { ref }),
   ])

@@ -135,7 +135,7 @@ Mudar `props` atualiza o remote. Mudar `name`, `src` ou `isolate` remonta.
 | `props` | `object` | Props do remote. Funções também passam |
 | `isolate` | `'none' \| 'shadow' \| 'iframe'` | Isolamento. Veja [Estilos](/aprender/estilos) e [Iframe](/aprender/iframe) |
 | `fallback` | `ReactNode` | Mostrado enquanto carrega |
-| `error` | `ReactNode` ou `(erro, tentarDeNovo) => ReactNode` | Mostrado se falhar |
+| `error` | `ReactNode` ou `(erro, tentarDeNovo) => ReactNode` | Mostrado se falhar. Sem ela, "Não foi possível carregar." com o botão "Tentar de novo". `null` não mostra nada |
 | `onError` | `(erro) => void` | Chamado em cada erro |
 | `className` | `string` | Classe do elemento que recebe o remote |
 | `loading` | `'lazy' \| 'idle'` | Quando montar. Veja [Carregamento](/aprender/carregamento) |

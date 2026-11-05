@@ -19,7 +19,7 @@
  */
 import Head from 'next/head'
 import Router, { useRouter } from 'next/router'
-import { createElement, Fragment, useEffect, useMemo, version as reactVersion, type ReactNode } from 'react'
+import { createElement, Fragment, useEffect, useMemo, version as reactVersion, type ReactElement, type ReactNode } from 'react'
 import { plan, remotes, shared } from 'vitral-next-host-config'
 import { bundled } from './core/bundled'
 import * as dedupe from './core/dedupe'
@@ -131,9 +131,23 @@ function interceptClicks(): () => void {
   return () => document.removeEventListener('click', on)
 }
 
-/** Coloque uma vez, no `_app`. */
-export function VitralNext(): null {
+export interface VitralNextProps {
+  /**
+   * `pageProps` do `_app`. Com eles, as dicas de preload usam o manifesto que
+   * `remoteProps` (`vitral/next-server`) leu no servidor.
+   */
+  pageProps?: { vitral?: Record<string, RemoteManifest | null> }
+}
+
+/**
+ * Coloque uma vez, no `_app`. Na página de um remote, o HTML já sai com as
+ * dicas de preload dele, mesmo quando a página só desenha o `NextRemote`
+ * no navegador (depois do login, por exemplo).
+ */
+export function VitralNext({ pageProps }: VitralNextProps = {}): ReactNode {
   setup()
+  const router = useRouter()
+  const name = remoteFor((router?.asPath ?? '/').split(/[?#]/)[0])
   useEffect(() => {
     const here = remoteFor(location.pathname)
     const go = (name: string) => preload(name, { routes: !!remotes[name].warmRoutes })
@@ -150,7 +164,8 @@ export function VitralNext(): null {
       for (const id of idle) typeof cancelIdleCallback === 'function' ? cancelIdleCallback(id) : clearTimeout(id)
     }
   }, [])
-  return null
+  // As mesmas chaves do NextRemote: o next/head junta as duas listas.
+  return useMemo(() => (name ? linksFor(name, pageProps?.vitral?.[name], false) : null), [name, pageProps])
 }
 
 export type NextRemoteProps = Omit<RemoteProps, 'name' | 'src'> & {
@@ -181,18 +196,34 @@ const replace: HostRouter['replace'] = (url, options) => void Router.replace(url
  * JS do host, e não depois da hidratação. O hash vai no `integrity`: o
  * navegador confere o preload, e o `import()` do remote confere de novo.
  */
-function hints(h: HtmlHints | undefined, shadow: boolean): ReactNode {
+function hints(h: HtmlHints | undefined, shadow: boolean, replaces?: HtmlHints): ReactNode {
   if (!h) return null
   const link = (as: string, [href, integrity, fetchPriority]: [string, string?, 'high'?]) =>
     createElement('link', { key: `vitral:${href}`, rel: 'preload', as, href, crossOrigin: 'anonymous', ...(integrity && { integrity }), ...(fetchPriority && { fetchPriority }) })
-  return createElement(
-    Head,
-    null,
+  const out: ReactElement[] = [
     ...(h.manifest ? [link('fetch', [h.manifest, h.signed])] : []),
     // Com Shadow DOM o CSS vem por fetch: o preload de estilo não serviria.
     ...(shadow ? [] : h.css.map((c) => link('style', c))),
     ...h.js.map((j) => link('script', j)),
-  )
+  ]
+  // O next/head fica com o último elemento de cada chave: as dicas do build que o
+  // `VitralNext` pôs e que esta lista não tem (outra versão, CSS no Shadow DOM)
+  // viram um dns-prefetch inofensivo, em vez de um download a mais.
+  const have = new Set(out.map((l) => l.key))
+  for (const href of replaces ? [replaces.manifest, ...replaces.css.map((c) => c[0]), ...replaces.js.map((j) => j[0])] : [])
+    if (href && !have.has(`vitral:${href}`)) out.push(createElement('link', { key: `vitral:${href}`, rel: 'dns-prefetch', href: new URL(href, 'http://h.invalid').origin.replace('http://h.invalid', '/') }))
+  return createElement(Head, null, ...out)
+}
+
+/**
+ * Dicas do remote `name`: do manifesto do servidor, se houver, ou as do build.
+ * `replaces`: no `NextRemote`, cobre as do build que o `VitralNext` pôs.
+ */
+function linksFor(name: string, manifest: RemoteManifest | null | undefined, shadow: boolean, replaces?: boolean): ReactNode {
+  const r = remotes[name]
+  const h = manifest && r ? hintsOf(manifest, r.url, offered(), r.integrity, r.keys) : r?.hints
+  // Com o manifesto do servidor, o navegador não pede o vitral.json: sem preload dele.
+  return hints(manifest && h ? { ...h, manifest: '' } : h, shadow, replaces ? r?.hints : undefined)
 }
 
 /**
@@ -207,10 +238,6 @@ export function NextRemote({ name, props, fallback = null, manifest, ...rest }: 
   const r = remotes[name]
   const host = useMemo<HostRouter>(() => ({ asPath: router.asPath, basePath: r?.basePath, routes: r?.routes, push, replace, events: Router.events }), [router.asPath, r])
   const all = useMemo(() => ({ ...props, __next: host }), [props, host])
-  const links = useMemo(() => {
-    const h = manifest && r ? hintsOf(manifest, r.url, offered(), r.integrity, r.keys) : r?.hints
-    // Com o manifesto do servidor, o navegador não pede o vitral.json: sem preload dele.
-    return hints(manifest && h ? { ...h, manifest: '' } : h, rest.isolate === 'shadow')
-  }, [manifest, r, rest.isolate])
+  const links = useMemo(() => linksFor(name, manifest, rest.isolate === 'shadow', true), [name, manifest, rest.isolate])
   return createElement(Fragment, null, links, router.isReady ? createElement(Remote, { ...rest, name, fallback, props: all }) : fallback)
 }

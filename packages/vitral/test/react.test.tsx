@@ -68,6 +68,20 @@ describe('React: host <Remote>', () => {
     await act(flush)
     expect(div.textContent).toBe('ok')
   })
+
+  it('sem a prop error, mostra a mensagem padrão com "Tentar de novo"; error={null} não mostra nada', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    failingRemote('c')
+    const { div } = await render(h(Remote, { name: 'c' }))
+    expect(div.querySelector('[role="alert"]')!.textContent).toBe('Não foi possível carregar. Tentar de novo')
+    mockRemote('c', (el) => (el.textContent = 'ok'))
+    await act(async () => div.querySelector('button')!.click())
+    await act(flush)
+    expect(div.textContent).toBe('ok')
+    failingRemote('d')
+    const quiet = await render(h(Remote, { name: 'd', error: null }))
+    expect(quiet.div.querySelector('[role="alert"]')).toBeNull()
+  })
 })
 
 describe('React: reactRemote', () => {

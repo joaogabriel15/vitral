@@ -293,7 +293,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "5.11 kB"
+      "limit": "5.2 kB"
     },
     {
       "name": "núcleo",
@@ -312,12 +312,12 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "6.10 kB"
+      "limit": "6.19 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "3.19 kB"
+      "limit": "3.37 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
@@ -354,7 +354,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "5.79 kB"
+      "limit": "5.88 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -373,7 +373,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "6.01 kB"
+      "limit": "6.1 kB"
     },
     {
       "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
@@ -419,7 +419,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "7.15 kB"
+      "limit": "7.3 kB"
     },
     {
       "name": "vue",
@@ -439,7 +439,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "6.51 kB"
+      "limit": "6.66 kB"
     },
     {
       "name": "element",
@@ -458,7 +458,7 @@
         "./channel-*",
         "./hydrate-*"
       ],
-      "limit": "6.93 kB"
+      "limit": "7.03 kB"
     },
     {
       "name": "devtools",
@@ -469,7 +469,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "7.10 kB",
+      "limit": "7.2 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -488,7 +488,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "10.17 kB",
+      "limit": "10.44 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -513,7 +513,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "4.16 kB",
+      "limit": "4.2 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -530,7 +530,7 @@
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
-      "limit": "6.12 kB",
+      "limit": "6.16 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -542,7 +542,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "13.26 kB"
+      "limit": "13.5 kB"
     },
     {
       "name": "snapshot (última tela na visita de volta)",

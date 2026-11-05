@@ -10,7 +10,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, posix } from 'node:path'
 import type { RemoteManifest } from '../core/types'
-import { usedNames, type Group } from './dedupe'
+import { BOOT, usedNames, type Group } from './dedupe'
 
 export const SPLIT = 'split/'
 /** Mesmo conteúdo dos testes com `data:`/`blob:` do runtime: o primeiro bate com o hash, o segundo não. */
@@ -109,6 +109,51 @@ export function outputs(rolldown: boolean, hints = false): Record<string, unknow
  */
 export const compileHint = (chunk: { isEntry?: boolean; isDynamicEntry?: boolean; name?: string }): string =>
   chunk.isEntry || !chunk.isDynamicEntry || chunk.name?.startsWith('_vitral') ? '//# allFunctionsCalledOnLoad' : ''
+
+/** Opções de saída que dividem o código: só valem no build dividido. */
+const CHUNKING = ['manualChunks', 'advancedChunks', 'codeSplitting', 'inlineDynamicImports', 'experimentalMinChunkSize']
+
+/**
+ * `build.rollupOptions.output` (ou `rolldownOptions.output`) do usuário vira
+ * uma saída a mais no merge do Vite. Aqui ela sai da lista: as opções que
+ * dividem o código (`manualChunks` etc.) vão para o build dividido, e o resto
+ * (nomes dos assets, `sourcemap`, `banner`…) para as duas saídas. As do vitral
+ * valem sobre as do usuário. Devolve a lista nova, ou `undefined` se nada muda.
+ */
+export function userOutputs(list: unknown): Record<string, unknown>[] | undefined {
+  if (!Array.isArray(list)) return
+  const ours = (o: Record<string, unknown>) => o.format === 'es' && ('codeSplitting' in o || 'inlineDynamicImports' in o || String(o.entryFileNames ?? '').startsWith(SPLIT))
+  const user = list.filter((o) => !ours(o))
+  if (!user.length) return
+  const [single, split] = list.filter(ours)
+  const given = Object.assign({}, ...user) as Record<string, unknown>
+  const common = Object.fromEntries(Object.entries(given).filter(([k]) => !CHUNKING.includes(k)))
+  const chunking = Object.fromEntries(Object.entries(given).filter(([k]) => CHUNKING.includes(k) && !(k === 'codeSplitting' && given[k] === false) && k !== 'inlineDynamicImports'))
+  return [{ ...common, ...single }, { ...common, ...chunking, ...split }]
+}
+
+export type ManualChunks = (id: string, meta: { getModuleInfo(id: string): { importedIds: readonly string[]; dynamicallyImportedIds: readonly string[]; isEntry?: boolean } | null }) => string | null | undefined | void
+
+/**
+ * `manualChunks` do usuário só para os módulos que o app alcança sem passar
+ * pela cópia própria do dedupe. O resto (o pacote oferecido pelo host e o que
+ * só ele usa) fica no chunk dele, que só baixa quando o host não oferece.
+ */
+export function ownApart(user: ManualChunks): ManualChunks {
+  let app: Set<string> | undefined
+  return (id, meta) => {
+    if (!app) {
+      app = new Set()
+      const boot = '\0' + BOOT
+      const stack = [boot]
+      while (stack.length) {
+        const m = meta.getModuleInfo(stack.pop()!)
+        for (const d of [...(m?.importedIds ?? []), ...(m?.dynamicallyImportedIds ?? [])]) if (!d.startsWith('\0vitral-own:') && !app.has(d)) app.add(d), stack.push(d)
+      }
+    }
+    return app.has(id) ? user(id, meta) : undefined
+  }
+}
 
 /** A saída é o build dividido? */
 export const isSplit = (bundle: Bundle): boolean =>
