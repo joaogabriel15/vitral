@@ -57,6 +57,11 @@ beforeAll(async () => {
   remote('contrato-3', { contract: { version: '3.0.0' } })
   remote('arquivo-faltando', { files: { 'split/chunk.js': sha('x') } })
   remote('grande', {}, `export default{mount(){}};/*${randomBytes(300 * 1024).toString('base64')}*/`)
+  // Build dividido: o arquivo único é grande (leva tudo), a montagem baixa pouco.
+  remote('dividido', { split: { entry: 'split/e.js', chunks: ['split/c.js'] }, dedupe: [{ name: 'react', range: '^19.0.0', version: '19.1.0', file: 'split/own.js' }] }, `export default{mount(){}};/*${randomBytes(300 * 1024).toString('base64')}*/`)
+  routes['/dividido/split/e.js'] = { body: 'export default{mount(){}}', headers: JS }
+  routes['/dividido/split/c.js'] = { body: 'export const c=1', headers: JS }
+  routes['/dividido/split/own.js'] = { body: `/*${randomBytes(100 * 1024).toString('base64')}*/`, headers: JS }
   remote('react-proprio', {}, `${BOM}var r={__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE:{}};`)
   const dd = (range: string, version: string) => ({ dedupe: [{ name: 'react', range, version, file: 'split/react.js' }], contract: { peers: { react: range } } })
   remote('react-18', dd('^18.3.1', '18.3.1'), `${BOM}var r={__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED:{}};`)
@@ -167,6 +172,10 @@ describe('npx vitral doctor', () => {
   it('tamanho: aviso acima de 250 kB com gzip; erro acima de --max-kb', async () => {
     expect(find(await run([`g=${url('/grande/vitral.json')}`]), 'g', 'tamanho')!.status).toBe('warn')
     expect(find(await run([`g=${url('/grande/vitral.json')}`], { maxKb: 1000 }), 'g', 'tamanho')!.status).toBe('ok')
+    // Com build dividido, o limite vale para o que a montagem baixa; o resto aparece à parte.
+    const d = find(await run([`d=${url('/dividido/vitral.json')}`]), 'd', 'JS da montagem')!
+    expect(d.status).toBe('ok')
+    expect(d.title).toMatch(/^JS da montagem: 0\.0 kB \(0\.1 kB com gzip\), com as ofertas do host; cópias próprias do dedupe, só sem oferta: 10\d\.\d kB com gzip; arquivo único, só em navegador antigo ou depois de falha: 30\d\.\d kB com gzip$/)
     expect(find(await run([`b=${url('/bom/vitral.json')}`], { maxKb: 0.01 }), 'b', 'tamanho')!.status).toBe('error')
   })
 

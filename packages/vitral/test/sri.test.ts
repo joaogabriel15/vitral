@@ -361,6 +361,23 @@ describe('loader com os três caminhos', () => {
     expect(remoteBlobs()).toHaveLength(2)
   })
 
+  it('CSP sem blob:: a nova tentativa baixa o arquivo único por uma URL nova, com o hash no import map', async () => {
+    // O blob: do caminho 3 é recusado, como a CSP faz.
+    browser({ map: 'ok', blob: 'blob:recusado' })
+    fetchManifest({ entry: 'remote.js', integrity: sha(code) })
+    const { register, loadRemote, configure } = await lib()
+    configure({ retries: 0 })
+    register('x', CDN + 'vitral.json')
+    const blocked = () => document.dispatchEvent(Object.assign(new Event('securitypolicyviolation'), { blockedURI: 'blob' }))
+    await expect(loadRemote('x')).rejects.toThrow()
+    blocked()
+    await expect(loadRemote('x')).rejects.toThrow()
+    const all = [...document.head.querySelectorAll('script[type="importmap"]')].map((s) => JSON.parse(s.textContent!).integrity)
+    expect(all.at(-1)).toEqual({ [CDN + 'remote.js?vitral-retry=1']: sha(code) })
+    // Sem blob: nenhuma segunda tentativa pelo caminho 3.
+    expect(remoteBlobs()).toHaveLength(1)
+  })
+
   it('manifesto embutido no registro: nenhuma requisição para o vitral.json', async () => {
     browser({ map: 'ok', blob: data(code) })
     const fetch = vi.fn(async () => new Response(code))

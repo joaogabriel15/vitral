@@ -79,6 +79,19 @@ describe('vitral doctor --stats --route', () => {
     expect(r.checks[3].fix).toContain('["chart-lib"]')
   })
 
+  it('avisa quando os stats não têm os módulos da maior parte da rota', () => {
+    write('stats-pobre.json', {
+      entrypoints: { 'pages/_app': { chunks: ['app'] }, 'pages/loja': { chunks: ['loja'], assets: [{ name: 'static/chunks/loja.js', size: 2000 * KB }] } },
+      chunks: [
+        { id: 'app', files: ['static/chunks/app.js'], modules: [{ name: './pages/_app.tsx', size: 40 * KB }] },
+        { id: 'loja', files: ['static/chunks/loja.js'], modules: [{ name: './pages/loja.tsx', size: 42 * KB }] },
+      ],
+      assets: [{ name: 'static/chunks/app.js', size: 500 * KB }],
+    })
+    const r = routeReport({ stats: 'stats-pobre.json', route: '/loja', cwd: dir })
+    expect(r.checks[0]).toMatchObject({ status: 'warn', title: 'os stats só mostram 82 kB dos 2500 kB que a rota carrega' })
+  })
+
   it('pela CLI, com --json, e erro claro para rota que não existe', async () => {
     const out: string[] = []
     expect(await doctorCli(['--stats', 'stats.json', '--route', '/loja', '--json'], { cwd: dir }, (m) => out.push(m))).toBe(0)

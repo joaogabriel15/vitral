@@ -351,9 +351,32 @@ async function checkRemote(name: string, e: RemoteJson, ctx: Ctx, seen: Seen): P
     }
     if (!e.integrity && !m.integrity) out.push(warn('sem integrity: o JS roda sem conferência', undefined, 'gere o manifesto com o plugin vitral/vite ou fixe integrity no host.'))
 
-    // Tamanho
-    const gz = gzipSync(bytes).length
-    const size = `tamanho do JS: ${kb(bytes.length)} (${kb(gz)} com gzip)`
+    // Tamanho. Com build dividido, conta o que a montagem baixa quando o host
+    // oferece os grupos de dedupe; o arquivo único e as cópias próprias à parte.
+    let gz = gzipSync(bytes).length
+    let size = `tamanho do JS: ${kb(bytes.length)} (${kb(gz)} com gzip)`
+    if (m.split) {
+      const sum = async (files: string[]) => {
+        let raw = 0
+        let zip = 0
+        for (const f of new Set(files)) {
+          const got = await get(ctx.f, abs(f), ctx.origin, ctx.timeout)
+          if (!got.res?.ok || !got.bytes) continue
+          raw += got.bytes.length
+          zip += gzipSync(got.bytes).length
+        }
+        return [raw, zip] as const
+      }
+      const soon = [m.split.entry, ...(m.split.chunks ?? [])]
+      const [raw, zip] = await sum(soon)
+      const own = (m.dedupe ?? []).flatMap((d) => [d.file, ...(d.chunks ?? [])]).filter((f) => !soon.includes(f))
+      const [, ownZip] = own.length ? await sum(own) : [0, 0]
+      size =
+        `JS da montagem: ${kb(raw)} (${kb(zip)} com gzip), com as ofertas do host` +
+        (own.length ? `; cópias próprias do dedupe, só sem oferta: ${kb(ownZip)} com gzip` : '') +
+        `; arquivo único, só em navegador antigo ou depois de falha: ${kb(gz)} com gzip`
+      gz = zip
+    }
     if (ctx.maxKb !== undefined && gz > ctx.maxKb * 1024)
       out.push(error(size, `passa do limite de ${ctx.maxKb} kB.`, 'veja o que entrou no bundle (vite build --mode production com rollup-plugin-visualizer) e use dedupe para o framework.'))
     else if (ctx.maxKb === undefined && gz > WARN_KB * 1024) out.push(warn(size, `acima de ${WARN_KB} kB com gzip, o remote atrasa a página.`, 'confira o que entrou no bundle; use dedupe para o framework; passe --max-kb para tornar isto um erro.'))

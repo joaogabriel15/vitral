@@ -153,7 +153,11 @@ export interface RemoteProps<P extends Props = Props> {
   isolate?: Isolation
   /** Mostrado enquanto o remote baixa. */
   fallback?: ReactNode
-  /** Mostrado se o remote falhar. Recebe o erro e uma função para tentar de novo. */
+  /**
+   * Mostrado se o remote falhar. Recebe o erro e uma função para tentar de
+   * novo. Sem ela, uma mensagem curta com o botão "Tentar de novo"; `null`
+   * não mostra nada.
+   */
   error?: ReactNode | ((error: Error, retry: () => void) => ReactNode)
   onError?: (error: Error) => void
   className?: string
@@ -208,6 +212,16 @@ export function preload(name: string, options?: PreloadOptions): void {
   offerReact()
   corePreload(name, options)
 }
+
+/** Erro padrão, igual ao do `<vitral-remote>`. */
+const defaultError = (retry: () => void) => (
+  <div role="alert" data-vitral-default="error">
+    Não foi possível carregar.{' '}
+    <button type="button" onClick={retry}>
+      Tentar de novo
+    </button>
+  </div>
+)
 
 /**
  * Renderiza um remote. No servidor (Next SSR) renderiza só o fallback; o
@@ -296,7 +310,7 @@ export function Remote<P extends Props = Props, N extends string = string>({
   return (
     <div className={className} data-vitral={name ?? src} data-vitral-status={status}>
       {status === 'loading' && !html && !snapped && fallback}
-      {status === 'error' && err && (typeof error === 'function' ? error(err, retry) : (error ?? null))}
+      {status === 'error' && err && (error === undefined ? defaultError(retry) : typeof error === 'function' ? error(err, retry) : error)}
       {/* O React nunca coloca filhos neste div: ele pertence ao remote. */}
       {html ? <div ref={target} dangerouslySetInnerHTML={{ __html: html }} suppressHydrationWarning /> : <div ref={target} />}
     </div>

@@ -58,3 +58,4 @@ Com `target: 'mcp-app'`, só `dist/mcp-app.html`.
 - Um `export default` que já tem `mount` é usado como está.
 - Em `vite dev`, serve um `vitral.json` de desenvolvimento, com CORS e sem SRI.
 - O build dividido lista em `split.lazy` os chunks que o remote só baixa depois (`import()` das rotas), para `preload(nome, { routes: true })`.
+- `build.rollupOptions.output` (ou `rolldownOptions.output`) do app vale nas duas saídas. As opções que dividem o código (`manualChunks`, `advancedChunks`, `codeSplitting`) valem só no build dividido: o arquivo único continua um arquivo só. Com `dedupe`, o `manualChunks` não junta a cópia própria com o código do app.

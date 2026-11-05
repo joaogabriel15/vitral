@@ -53,12 +53,28 @@ function setup(served: Record<string, unknown>) {
 }
 
 const R = `${H}/loja-remote/`
-const files1 = [`${R}remote-1.js`, `${R}style-1.css`, `${R}split/entry-1.js`, `${R}split/c-1.js`]
+const files1 = [`${R}style-1.css`, `${R}split/entry-1.js`, `${R}split/c-1.js`]
 afterEach(() => vi.unstubAllGlobals())
 
 describe('remoteWorker', () => {
   it('filesOf lista o manifesto e o que ele aponta', () => {
     expect(filesOf(manifest('1') as never, `${R}vitral.json`)).toEqual([`${R}vitral.json`, ...files1])
+  })
+
+  it('filesOf: sem a cópia própria dos grupos que o host oferece; o arquivo único só com `single`', () => {
+    const m = {
+      ...manifest('1'),
+      files: { 'remote-1.js': 'h', 'remote-vendor.js': 'h', 'split/entry-1.js': 'h', 'split/ui.js': 'h', 'split/react.js': 'h', 'split/comum.js': 'h' },
+      split: { entry: 'split/entry-1.js', chunks: ['split/c-1.js', 'split/comum.js'], lazy: ['split/rota.js'] },
+      dedupe: [
+        { name: 'react', range: '^19.0.0', version: '19.1.0', file: 'split/react.js' },
+        { name: '@acme/ui', range: '^1.2.0', version: '1.2.3', file: 'split/ui.js', chunks: ['split/comum.js'] },
+      ],
+    }
+    const list = (o?: object) => filesOf(m as never, `${R}vitral.json`, o).map((u) => u.slice(R.length))
+    expect(list({ offered: { '@acme/ui': '1.4.0', react: '18.3.1' } })).toEqual(['vitral.json', 'style-1.css', 'split/entry-1.js', 'split/react.js', 'split/comum.js', 'split/c-1.js', 'split/rota.js'])
+    expect(list({ single: true })).toContain('remote-vendor.js')
+    expect(list()).not.toContain('remote-1.js')
   })
 
   it('install: guarda manifesto e arquivos, e registra a rota estática do split', async () => {
@@ -77,7 +93,7 @@ describe('remoteWorker', () => {
     const { store, net, fire } = setup(served)
     await fire('install')
     net.mockClear()
-    const hit = await fire('fetch', { request: new Request(`${R}remote-1.js`) })
+    const hit = await fire('fetch', { request: new Request(`${R}split/entry-1.js`) })
     expect(await hit!.text()).toBe('v1')
     expect(net).not.toHaveBeenCalled()
     // Fora do remote: o worker não responde.
@@ -89,7 +105,7 @@ describe('remoteWorker', () => {
     const m = await fire('fetch', { request: new Request(`${R}vitral.json`) })
     expect((await m!.json()).entry).toBe('remote-2.js')
     const keys = [...store.keys()]
-    expect(keys).toContain(`${R}remote-2.js`)
+    expect(keys).toContain(`${R}split/entry-2.js`)
     expect(keys).toContain(`${R}split/c-2.js`)
     // A versão antiga saiu do cache.
     expect(keys.filter((k) => k.includes('-1.'))).toEqual([])
@@ -105,6 +121,6 @@ describe('remoteWorker', () => {
     const m = await fire('fetch', { request: new Request(`${R}vitral.json`) })
     expect((await m!.json()).entry).toBe('remote-1.js')
     await fire('activate')
-    expect(store.size).toBe(5)
+    expect(store.size).toBe(4)
   })
 })

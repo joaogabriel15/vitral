@@ -149,6 +149,8 @@ function App() {
 }
 ```
 
+Sem `error`, aparece "Não foi possível carregar." com o botão "Tentar de novo". `error={null}` não mostra nada.
+
 As props de `<Remote>` são as mesmas do [React](./react#host).
 
 ## Remote

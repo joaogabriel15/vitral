@@ -8,37 +8,61 @@
  *     remoteFiles('/conta/vitral.json').then((urls) => caches.open('remotes').then((c) => c.addAll(urls))),
  *   ))
  */
+import { satisfies } from './core/semver'
 import type { RemoteManifest } from './core/types'
 
+export interface FilesOptions {
+  /**
+   * Versão de cada grupo de `dedupe` que o host oferece (`{ react: '19.2.0' }`):
+   * a cópia própria do remote para esses grupos fica de fora.
+   */
+  offered?: Record<string, string>
+  /**
+   * Inclui o arquivo único quando o manifesto tem build dividido. Padrão:
+   * false. O arquivo único só é usado em navegadores sem import map nem
+   * modulepreload com integrity, e depois de uma falha.
+   */
+  single?: boolean
+}
+
 /**
- * URLs absolutas do manifesto e de tudo que ele lista: arquivo único, CSS,
- * build dividido (inclusive os `import()` das rotas), cópias de `dedupe` e os
- * módulos de teste do SRI.
+ * URLs absolutas do manifesto e do que a página usa: CSS, build dividido
+ * (inclusive os `import()` das rotas), cópias de `dedupe` que o host não
+ * oferece e os módulos de teste do SRI. Sem build dividido, o arquivo único.
  */
-export async function remoteFiles(manifestUrl: string, init?: RequestInit): Promise<string[]> {
+export async function remoteFiles(manifestUrl: string, init?: RequestInit & FilesOptions): Promise<string[]> {
   const base = new URL(manifestUrl, globalThis.location?.href)
-  const res = await fetch(base, { cache: 'no-cache', ...init })
+  const { offered, single, ...req } = init ?? {}
+  const res = await fetch(base, { cache: 'no-cache', ...req })
   if (!res.ok) throw new Error(`vitral: ${base.href} respondeu ${res.status}`)
-  return filesOf(await res.json(), base.href)
+  return filesOf(await res.json(), base.href, { offered, single })
 }
 
 /** O mesmo que `remoteFiles`, para um manifesto já lido. */
-export function filesOf(m: RemoteManifest, manifestUrl: string): string[] {
+export function filesOf(m: RemoteManifest, manifestUrl: string, o: FilesOptions = {}): string[] {
   const base = new URL(manifestUrl, globalThis.location?.href)
+  const s = m.split
+  const dir = s ? s.entry.slice(0, s.entry.lastIndexOf('/') + 1) : ''
+  const served = (d: { name: string; range: string }) => !!o.offered?.[d.name] && satisfies(o.offered[d.name], d.range)
+  const own = new Set((m.dedupe ?? []).filter(served).flatMap((d) => [d.file, ...(d.chunks ?? [])]))
+  // Chunk da cópia própria que o app também importa continua.
+  for (const f of s ? [s.entry, ...(s.chunks ?? []), ...(s.lazy ?? [])] : []) own.delete(f)
+  const all = !s || o.single
   const files = [
-    m.entry,
+    ...(all ? [m.entry] : []),
     ...(m.css ?? []),
     ...(m.shadow?.css ?? []),
     ...(m.shadow?.global ?? []),
-    ...Object.keys(m.files ?? {}),
-    ...(m.split ? [m.split.entry, ...(m.split.chunks ?? [])] : []),
+    // Sem o arquivo único, só o JS do build dividido (o resto é do arquivo único).
+    ...Object.keys(m.files ?? {}).filter((f) => all || !/\.m?js$/.test(f) || f.startsWith(dir)),
+    ...(s ? [s.entry, ...(s.chunks ?? []), ...(s.lazy ?? [])] : []),
     ...(m.dedupe ?? []).flatMap((d) => [d.file, ...(d.chunks ?? [])]),
     ...(m.probe ?? []),
   ]
-  return [base.href, ...new Set(files.filter(Boolean).map((f) => new URL(f, base).href))]
+  return [base.href, ...new Set(files.filter((f) => f && !own.has(f)).map((f) => new URL(f, base).href))]
 }
 
-export interface RemoteWorkerOptions {
+export interface RemoteWorkerOptions extends FilesOptions {
   /** URLs dos `vitral.json` dos remotes. */
   manifests: string[]
   /** Nome do cache. Padrão `vitral-remotes`. */
@@ -55,7 +79,7 @@ const hashed = (u: string, manifests: Set<string>) => !manifests.has(u) && /\.(j
 
 /**
  * Service worker do host para os remotes. No `install`, baixa o manifesto e
- * todos os arquivos de cada remote para o CacheStorage: o Chrome gera o cache
+ * os arquivos que a página usa de cada remote (`filesOf`) para o CacheStorage: o Chrome gera o cache
  * de código completo para scripts gravados durante o `install`, e a volta à
  * página compila menos. Onde há Static Routing API (Chrome 123+), os arquivos
  * com hash vão direto ao cache, sem acordar o service worker; nos outros
@@ -86,10 +110,10 @@ export function remoteWorker(self: Scope, o: RemoteWorkerOptions): void {
       const res = await fetch(m, { cache: 'no-cache' })
       if (!res.ok) return []
       await c.put(m, res.clone())
-      return filesOf(await res.json(), m)
+      return filesOf(await res.json(), m, o)
     }
     for (const m of manifests) {
-      const urls = known?.[0] === m ? filesOf(known[1], m) : await read(m).catch(() => [] as string[])
+      const urls = known?.[0] === m ? filesOf(known[1], m, o) : await read(m).catch(() => [] as string[])
       for (const u of urls) keep.add(u)
       const missing: string[] = []
       for (const u of urls) if (hashed(u, manifests) && !(await c.match(u))) missing.push(u)

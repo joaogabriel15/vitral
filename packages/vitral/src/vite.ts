@@ -19,7 +19,7 @@ import type { RemoteContract, RemoteManifest } from './index'
 import type { ShadowCss } from './core/types'
 import { scopeCss } from './css-scope'
 import { EXPOSES_ENTRY, EXPOSES_IDS, exposeKeys, loadExposes, resolveExposesId } from './vite-exposes'
-import { collect, isSplit, outputs, sri, withSplit, type Split } from './vite/manifest'
+import { collect, isSplit, outputs, ownApart, sri, userOutputs, withSplit, type ManualChunks, type Split } from './vite/manifest'
 import { bundledFiles, createSbom, SBOM_FILE } from './vite/sbom'
 import { BOOT, dedupeHooks, dedupeIds, groups, type Group } from './vite/dedupe'
 import { type CssBuildOptions, splitShadowCss, transformCss } from './css-build'
@@ -223,6 +223,17 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
     },
     configResolved(c) {
       root = c.root
+      // As opções de saída do usuário entram nas duas saídas, e não numa terceira.
+      for (const key of ['rollupOptions', 'rolldownOptions'] as const) {
+        const o = (c.build as any)[key]
+        const fixed = !mcp && o && userOutputs(o.output)
+        if (!fixed) continue
+        const user = fixed[1].manualChunks
+        // A cópia própria do dedupe fica de fora dos grupos do usuário: num
+        // grupo com código do app, ela viria em toda montagem.
+        if (dedupe && typeof user === 'function') fixed[1].manualChunks = ownApart(user as ManualChunks)
+        o.output = fixed
+      }
       framework = detectAdapter(c.plugins)
       adapter = options.adapter || framework
       serve = c.command === 'serve'

@@ -9,6 +9,7 @@ import { verifyIntegrity } from '../src/core/integrity'
 import { protocol, PROTOCOL } from '../src/core/state'
 
 afterEach(() => {
+  vi.restoreAllMocks()
   __reset()
   vi.unstubAllGlobals()
   vi.useRealTimers()
@@ -16,6 +17,11 @@ afterEach(() => {
 })
 
 const KEY = Symbol.for('vitral')
+/** Sem import map nem modulepreload: o remote com integrity vai direto ao fetch conferido. */
+const noVerifiedPaths = () => {
+  vi.spyOn(HTMLLinkElement.prototype, 'relList', 'get').mockReturnValue({ supports: () => false } as any)
+  vi.spyOn(HTMLScriptElement, 'supports').mockReturnValue(false)
+}
 const fail = (p: Promise<unknown>) => p.then(() => { throw new Error('deveria falhar') }, (e) => e as RemoteError)
 const remote = (ctxs: RemoteContext[] = []) => ({
   mount: vi.fn((_el: HTMLElement, _p: unknown, ctx: RemoteContext) => {
@@ -131,6 +137,7 @@ describe('carregamento', () => {
   })
 
   it('tenta de novo com espera crescente (200ms, 400ms)', async () => {
+    noVerifiedPaths()
     vi.useFakeTimers()
     const fetch = vi.fn(async () => { throw new TypeError('rede caiu') })
     vi.stubGlobal('fetch', fetch)
@@ -149,6 +156,7 @@ describe('carregamento', () => {
   })
 
   it('não repete erros que não são de rede', async () => {
+    noVerifiedPaths()
     const fetch = vi.fn(async () => new Response('codigo'))
     vi.stubGlobal('fetch', fetch)
     configure({ retries: 3 })
