@@ -120,6 +120,10 @@
       "types": "./dist/testing.d.ts",
       "import": "./dist/testing.js"
     },
+    "./i18n": {
+      "types": "./dist/i18n.d.ts",
+      "import": "./dist/i18n.js"
+    },
     "./sentry": {
       "types": "./dist/sentry.d.ts",
       "import": "./dist/sentry.js"
@@ -291,9 +295,10 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ],
-      "limit": "5.2 kB"
+      "limit": "5.35 kB"
     },
     {
       "name": "núcleo",
@@ -310,9 +315,10 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ],
-      "limit": "6.19 kB"
+      "limit": "6.33 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -352,9 +358,10 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ],
-      "limit": "5.88 kB"
+      "limit": "6.02 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -371,9 +378,10 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ],
-      "limit": "6.1 kB"
+      "limit": "6.24 kB"
     },
     {
       "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
@@ -417,9 +425,10 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ],
-      "limit": "7.3 kB"
+      "limit": "7.42 kB"
     },
     {
       "name": "vue",
@@ -437,9 +446,10 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ],
-      "limit": "6.66 kB"
+      "limit": "6.79 kB"
     },
     {
       "name": "element",
@@ -456,9 +466,10 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ],
-      "limit": "7.03 kB"
+      "limit": "7.16 kB"
     },
     {
       "name": "devtools",
@@ -469,7 +480,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "7.2 kB",
+      "limit": "7.33 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -481,20 +492,22 @@
         "./expose-*",
         "./capture-*",
         "./channel-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ]
     },
     {
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "10.44 kB",
+      "limit": "10.56 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
         "./channel-*",
         "./reframe-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ]
     },
     {
@@ -513,7 +526,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "4.2 kB",
+      "limit": "4.24 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -523,26 +536,28 @@
         "./contract-*",
         "./expose-*",
         "./capture-*",
-        "./channel-*"
+        "./channel-*",
+        "./i18n-*"
       ]
     },
     {
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
-      "limit": "6.16 kB",
+      "limit": "6.2 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
         "./channel-*",
         "./reframe-*",
-        "./hydrate-*"
+        "./hydrate-*",
+        "./i18n-*"
       ]
     },
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "13.5 kB"
+      "limit": "13.55 kB"
     },
     {
       "name": "snapshot (última tela na visita de volta)",

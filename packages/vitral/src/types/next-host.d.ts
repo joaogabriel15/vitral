@@ -3,6 +3,7 @@ declare module 'next/router' {
   interface Router {
     asPath: string
     isReady: boolean
+    locale?: string
     push(url: string, as?: string, options?: { scroll?: boolean; shallow?: boolean }): Promise<boolean>
     replace(url: string, as?: string, options?: { scroll?: boolean; shallow?: boolean }): Promise<boolean>
     events: { on(type: string, fn: (...args: any[]) => void): void; off(type: string, fn: (...args: any[]) => void): void; emit(type: string, ...args: any[]): void }

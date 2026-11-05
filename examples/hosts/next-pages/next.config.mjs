@@ -14,5 +14,8 @@ export default withVitral({ transpilePackages: ['remote-react-ns'] }, {
     'ns-erro': { url: '/ns-remote/vitral.json', basePath: '/ns-erro', preload: 'route' },
     // E com a página que só desenha o remote depois do login.
     'ns-login': { url: '/ns-remote/vitral.json', basePath: '/ns-login', preload: 'route' },
+    // E com as traduções do remote no i18next do host, só na língua aberta.
+    'ns-i18n': { url: '/ns-remote/vitral.json', basePath: '/ns-i18n', preload: 'route' },
   },
+  share: ['i18next', 'react-i18next'],
 })

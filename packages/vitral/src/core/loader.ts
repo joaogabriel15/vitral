@@ -7,6 +7,9 @@ import type { SplitBuild, Verifiable } from './sri'
 import { protocol, type LoadedRemote } from './state'
 import type { Isolation, Props, RemoteEntry, RemoteManifest, RemoteModule } from './types'
 import { absolute, fetchJson, metric, withRetry, withTimeout } from './util'
+import type { Translations } from './i18n'
+
+declare const __VITRAL_EMBED__: true | undefined
 
 /** Baixa (uma vez só) e devolve o módulo de um remote. */
 export function loadRemote<P extends Props = Props>(name: string): Promise<RemoteModule<P>> {
@@ -128,8 +131,13 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
       if (d?.some((x) => x.uses)) (p.uses ??= {})[resolved.split!.entry] = Object.fromEntries(d.map((x) => [x.name, x.uses]))
       // O CSS baixa junto com o JS; a montagem espera os dois.
       prefetchCss(resolved, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', priority)
+      // As traduções da língua aberta também: a montagem espera, para a primeira tela já vir traduzida.
+      const { i18n, timeout } = p.settings()
+      // O embed (widget em site de terceiros) não tem i18n do host: o módulo fica fora do arquivo único.
+      const words = typeof __VITRAL_EMBED__ === 'undefined' && resolved.i18n && i18n && import('./i18n').then((m) => m.loadTranslations(name, resolved!.i18n!, resolved!.sri ?? {}, i18n, timeout, priority)).catch((e) => console.warn(`[vitral] ${name}: traduções não carregaram`, e))
       t = performance.now()
       const ns = await withRetry(p.settings().retries, () => importModule(name, resolved!))
+      await words
       metric(name, 'js', t)
       return { ...resolved, module: ns?.default ?? ns, exports: ns }
     } catch (e: any) {
@@ -159,7 +167,7 @@ async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote
   return { module: ns?.default ?? ns, exports: ns, entry: typeof location !== 'undefined' ? location.href : 'http://localhost/', css: entry.css ?? [], isolate: entry.isolate }
 }
 
-type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild; priority?: RequestPriority }
+type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild; priority?: RequestPriority; i18n?: Translations }
 
 /** `early`: o manifesto já pedido por `loadFile` para esta URL. */
 export async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, priority?: RequestPriority, early?: Promise<RemoteManifest>): Promise<Resolved> {
@@ -197,6 +205,8 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
     version: m.version,
     sri,
     priority,
+    // As URLs viram absolutas no módulo das traduções, que só baixa quando há o que traduzir.
+    ...(m.i18n && { i18n: { files: m.i18n, base: entry.url } }),
     split:
       m.split && typeof entry.integrity !== 'string'
         ? {

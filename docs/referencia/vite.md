@@ -30,6 +30,7 @@ export default { plugins: [react(), vitral({ entry: 'src/remote.tsx', dedupe: ['
 | `renameRegisteredProperties` | `false` | Veja [Estilos](/aprender/estilos) |
 | `exposes` | nenhum | Mapa `'./nome' → arquivo`. Veja [Exposes](/aprender/exposes) |
 | `dedupe` | nenhum | Veja [Dedupe](/aprender/dedupe) |
+| `i18n` | nenhum | Onde estão as traduções, como `'src/locales/{lng}.json'`. A página baixa só a língua aberta. Veja [Traduções](/aprender/traducoes) |
 | `types` | `true` | Gera `vitral.d.ts` |
 | `contract` | nenhum | `{ version }`: versão do contrato no `vitral.json`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
 | `sbom` | `false` | Gera `sbom.cdx.json` (CycloneDX 1.6). Veja [SBOM](/aprender/seguranca#sbom) |
