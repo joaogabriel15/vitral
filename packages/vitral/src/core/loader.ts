@@ -247,7 +247,10 @@ function manifestOf(url: string, name: string, priority: RequestPriority | undef
   // `same-origin`, o modo do `<link rel="preload" crossorigin>` que o host põe
   // no HTML: sem ele o navegador baixa o manifesto de novo. Para outra origem
   // continua sem cookies. Com `keys`, o navegador confere a assinatura do manifesto.
-  const fresh = fetchJson<RemoteManifest>(url, timeout, name, { cache: 'no-cache', credentials: 'same-origin', priority, integrity: keys.slice(1) })
+  // Com o preload no HTML, sem `no-cache`: o Safari só reaproveita o preload
+  // quando o `cache` do fetch é o padrão, e o preload acabou de baixar.
+  const hinted = typeof document != 'undefined' && [...document.querySelectorAll<HTMLLinkElement>('link[as=fetch]')].some((l) => l.href == url)
+  const fresh = fetchJson<RemoteManifest>(url, timeout, name, { ...(!hinted && { cache: 'no-cache' }), credentials: 'same-origin', priority, integrity: keys.slice(1) })
   return maxStale ? import('./stale').then((m) => m.stale(url, fresh, maxStale), () => fresh) : fresh
 }
 
