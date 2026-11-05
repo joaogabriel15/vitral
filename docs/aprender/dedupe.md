@@ -31,6 +31,8 @@ export default { plugins: [react(), vitral({ dedupe: ['react'] })] }
 - `['react']` cobre o grupo inteiro: `react`, `react-dom`, `react-dom/client` e o JSX runtime.
 
 - `'pacote/*'` cobre o pacote e todos os caminhos que ele exporta. Serve para a biblioteca de componentes da empresa.
+- Um import que chega a um arquivo interno do pacote (por alias ou `paths` do tsconfig) também usa a cópia da página, nome por nome. Um nome que o pacote não exporta vem de uma cópia própria do arquivo que o define, e o build avisa qual é.
+- Depois do build, um aviso conta os arquivos do pacote que entram no código principal do remote, com um caminho até eles. Esses arquivos baixam e rodam mesmo quando a página oferece o pacote.
 
 | Opção | Exemplo | O que faz |
 | --- | --- | --- |
