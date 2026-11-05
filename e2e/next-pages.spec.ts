@@ -100,9 +100,24 @@ test.describe('host Next (Pages Router) em produção', () => {
     await page.goto(HOST + '/ns-i18n')
     const titulo = page.locator('.ns .titulo')
     await expect(titulo).toHaveText('Minha conta')
-    // O remote usa o i18next do host: a troca no host vale no remote.
+    // O remote usa o i18next do host: a troca no host vale no remote. A tela
+    // troca já com o texto novo, sem mostrar a chave enquanto o arquivo chega.
+    await page.route(/\/i18n\/en\//, async (r) => {
+      await new Promise((f) => setTimeout(f, 500))
+      await r.continue()
+    })
+    // Cada mudança na tela: o texto do host (o botão) e o do remote trocam juntos.
+    await page.locator('main').evaluate((main) => {
+      const w = window as any
+      w.__telas = []
+      new MutationObserver(() => w.__telas.push([main.querySelector('.lingua')!.textContent, main.querySelector('.titulo')?.textContent])).observe(main, { childList: true, characterData: true, subtree: true })
+    })
+    await expect(page.locator('.lingua')).toHaveText('Trocar língua')
     await page.locator('.lingua').click()
     await expect(titulo).toHaveText('My account')
+    const telas: string[][] = await page.evaluate(() => (window as any).__telas)
+    expect(telas.length).toBeGreaterThan(0)
+    for (const tela of telas) expect([['Trocar língua', 'Minha conta'], ['Switch language', 'My account']]).toContainEqual(tela)
     const tipos = await page.evaluate(() => performance.getEntriesByType('resource').filter((e) => /\/i18n\//.test(e.name)).map((e) => [e.name.split('/i18n/')[1].split('/')[0], (e as PerformanceResourceTiming).initiatorType]))
     // Chromium e Firefox usam o preload; o WebKit pede de novo (ver o teste do manifesto).
     expect(tipos).toEqual(browserName === 'webkit' ? [['pt-BR', 'link'], ['pt-BR', 'fetch'], ['en', 'fetch']] : [['pt-BR', 'link'], ['en', 'fetch']])

@@ -21,6 +21,7 @@ const asked = new Map<string, Promise<boolean>>()
 const remotes = new Map<string, { files: Files; sri: Record<string, string> }>()
 let watching: I18nHost | undefined
 let stop: (() => void) | undefined
+let wait = 0
 
 /**
  * Língua do remote para a língua aberta: a mesma, a base (`pt` para `pt-BR`),
@@ -84,12 +85,25 @@ function load(name: string, files: Files, sri: Record<string, string>, host: I18
   ).then((added) => added.includes(true))
 }
 
+/**
+ * Baixa as traduções de `lng` de cada remote já carregado. Com o adaptador
+ * `i18next()`, o `changeLanguage` espera por ela: a tela troca de língua já
+ * com os textos dos remotes, sem mostrar as chaves enquanto os arquivos chegam.
+ * Uma tradução que falha não segura a troca.
+ */
+export function languageReady(lng: string): Promise<void> {
+  const host = watching
+  if (!host) return Promise.resolve()
+  return Promise.all([...remotes].map(([name, r]) => load(name, r.files, r.sri, host, lng, wait).catch(() => false))).then(() => {})
+}
+
 /** Numa troca de língua, cada remote já carregado baixa a nova; depois a tela desenha de novo. */
 function watch(host: I18nHost, timeout: number): void {
-  if (watching === host || !host.onChange) return
+  wait = timeout
+  if (watching === host) return
   stop?.()
   watching = host
-  stop = host.onChange((lng) => {
+  stop = host.onChange?.((lng) => {
     Promise.all([...remotes].map(([name, r]) => load(name, r.files, r.sri, host, lng, timeout).catch(() => false))).then((added) => {
       if (added.includes(true)) host.refresh?.()
     })
@@ -102,4 +116,5 @@ export function resetTranslations(): void {
   asked.clear()
   remotes.clear()
   watching = stop = undefined
+  wait = 0
 }
