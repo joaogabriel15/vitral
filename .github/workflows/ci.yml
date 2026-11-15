@@ -12,7 +12,7 @@ concurrency:
 jobs:
   checks:
     name: checks (Node ${{ matrix.node }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -44,7 +44,7 @@ jobs:
   # Site: o build falha com link quebrado, e check-erros.mjs confere que
   # cada código de erro tem a página para onde RemoteError.docs aponta.
   docs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -60,7 +60,7 @@ jobs:
   # dividido em shards.
   e2e:
     name: e2e (${{ matrix.browser }} ${{ matrix.shard }}/2)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -89,7 +89,7 @@ jobs:
   # create-vitral: gera cada template, sobe host e remote em dev e edita o
   # remote (instala do npm, por isso fica fora do e2e principal).
   create:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -111,7 +111,7 @@ jobs:
   # mais de 10% pior em alguma métrica (bench/compare.mjs).
   bench:
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -149,7 +149,7 @@ jobs:
   # muda o visual de propósito leva o rótulo "muda-visual".
   visual:
     if: github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'muda-visual')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
