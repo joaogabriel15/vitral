@@ -4,12 +4,13 @@ name: Memória
 # heap, objetos por tipo, nós soltos e listeners medidos pelo CDP (e2e/memoria).
 on:
   schedule:
-    - cron: '0 4 * * *' # toda noite
+    - cron: '0 4 * * 1' # segunda-feira
   workflow_dispatch:
 
 jobs:
   memoria:
-    runs-on: ubuntu-latest
+    # ubuntu-latest virou 26.04 e o Playwright 1.56 não instala o Chromium nele.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
