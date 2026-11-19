@@ -205,6 +205,19 @@ The minimal host code is 5.1 kB with brotli. With no build on the host, one scri
 | Switching areas | No reload | No reload | No reload | Full page reload | No reload |
 | Checks the JS hash (SRI) | Not by default | Not by default | Not by default | Not by default | Yes, when the manifest has a hash |
 
+**Other tools:**
+
+| | qiankun | micro-app | wujie | Native import maps | vitral |
+|---|---|---|---|---|---|
+| The remote publishes | HTML page and UMD build | HTML page | HTML page | ES modules | `vitral.json` and an ES module |
+| Host setup | `registerMicroApps` and `start` | `microApp.start()` and `<micro-app>` | `startApp` or the wujie component | `<script type="importmap">` | `configure({ remotes })` |
+| JS isolation | `Proxy` sandbox | `Proxy` sandbox or iframe | iframe: the JS runs in an iframe and the UI in the host | None | None by default. `isolate="iframe"` isolates, without passing functions in props |
+| CSS isolation | Shadow DOM or prefix, if turned on | Prefix by default, Shadow DOM optional | Shadow DOM | None | Automatic scope or Shadow DOM |
+| Mount, update, errors | `bootstrap`, `mount`, `unmount` | `<micro-app>` element | Component or `startApp` | You write it | `<Remote>` with `fallback`, `error` and `retry` |
+| Repeated dependencies | Each app downloads its own | Each app downloads its own | Each app downloads its own | One URL per package in the import map | Each remote ships its own. A single copy with `dedupe` |
+
+qiankun, micro-app and wujie isolate the JS of existing apps without changing them: wujie with a real iframe, qiankun and micro-app with a `Proxy`. vitral runs the remote's JS on the page itself, with the page's DOM and props of any type, and only isolates with `isolate="iframe"`.
+
 Comparison with each tool's default setup. Plugins and extra configuration can change these values.
 
 Coming from one of these tools? See [Migration](/en/migracao/module-federation).

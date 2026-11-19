@@ -205,6 +205,19 @@ O código de host mínimo tem 5,1 kB com brotli. Sem build no host, uma tag de s
 | Trocar de área | Sem recarregar | Sem recarregar | Sem recarregar | Recarrega a página | Sem recarregar |
 | Confere o hash do JS (SRI) | Não, por padrão | Não, por padrão | Não, por padrão | Não, por padrão | Sim, quando o manifesto tem hash |
 
+**Outras ferramentas:**
+
+| | qiankun | micro-app | wujie | Import maps nativos | vitral |
+|---|---|---|---|---|---|
+| O remote publica | Página HTML e build UMD | Página HTML | Página HTML | Módulos ES | `vitral.json` e módulo ES |
+| Configuração no host | `registerMicroApps` e `start` | `microApp.start()` e `<micro-app>` | `startApp` ou o componente do wujie | `<script type="importmap">` | `configure({ remotes })` |
+| Isolamento de JS | Sandbox com `Proxy` | Sandbox com `Proxy` ou iframe | iframe: o JS roda num iframe e a tela no host | Nenhum | Nenhum por padrão. `isolate="iframe"` isola, sem passar funções nas props |
+| Isolamento de CSS | Shadow DOM ou prefixo, se ligar | Prefixo por padrão, Shadow DOM opcional | Shadow DOM | Nenhum | Escopo automático ou Shadow DOM |
+| Montar, atualizar, erro | `bootstrap`, `mount`, `unmount` | Elemento `<micro-app>` | Componente ou `startApp` | Você escreve | `<Remote>` com `fallback`, `error` e `retry` |
+| Dependências repetidas | Cada app baixa a sua | Cada app baixa a sua | Cada app baixa a sua | Uma URL por pacote no import map | Cada remote leva a sua. Uma cópia só com `dedupe` |
+
+qiankun, micro-app e wujie isolam o JS de apps existentes sem mexer neles: wujie com um iframe de verdade, qiankun e micro-app com `Proxy`. O vitral roda o JS do remote na própria página, com o DOM da página e props de qualquer tipo, e só isola com `isolate="iframe"`.
+
 Comparação com a configuração padrão de cada ferramenta. Plugins e configuração extra podem mudar estes valores.
 
 Vindo de uma dessas ferramentas? Veja [Migração](/migracao/module-federation).

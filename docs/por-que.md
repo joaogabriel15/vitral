@@ -11,6 +11,16 @@ import { withBase } from 'vitepress'
 
 Em uma frase: **o vitral junta micro-frontends de qualquer framework numa página só, e o host não precisa de configuração de build.**
 
+## De onde veio
+
+O vitral nasceu num projeto com várias equipes, cada uma com uma parte do mesmo site.
+
+Primeiro usamos Module Federation. Cada mudança de dependência precisava ser combinada entre os builds: versões em `shared`, singletons de React, configuração de webpack igual nos dois lados.
+
+Depois tentamos Next.js Multi-Zones. Com só dois micro-frontends, o ambiente local já ficou lento, e a configuração de rewrites, `assetPrefix` e variáveis crescia a cada área nova. Trocar de área recarregava a página.
+
+O vitral é o que faltava: cada equipe publica um `vitral.json`, e o host só precisa da URL.
+
 ## O problema
 
 Um micro-frontend é um pedaço da página (carrinho, busca, menu) que uma equipe constrói e publica sozinha. A página final, o host, junta esses pedaços.
