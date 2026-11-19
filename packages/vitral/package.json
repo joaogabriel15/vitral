@@ -195,7 +195,7 @@
     "typecheck": "tsc --noEmit && tsc -p test/types",
     "lint:pkg": "publint --strict && attw --pack --profile esm-only",
     "size": "size-limit",
-    "prepack": "cp ../../README.md ../../LICENSE .",
+    "prepack": "cp ../../README.en.md README.md && cp ../../LICENSE .",
     "postpack": "rm -f README.md LICENSE"
   },
   "dependencies": {
