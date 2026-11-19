@@ -57,7 +57,7 @@ The object in `devOverrides` turns swaps on, like `true`. Pass the object only i
 devOverrides: import.meta.env.VITE_ENV !== 'production' && { preview: 'https://{name}-{ref}.preview.example.com' },
 ```
 
-Without `preview`, the alias is ignored with a warning in the console.
+Without `preview`, the alias is ignored with a warning in the console. With `preview`, a full URL only counts if it is on `localhost` or from the template itself: `?vitral=checkout@https://other.com` is ignored. To accept any URL, use `devOverrides: true`.
 
 ## See and clear active swaps
 

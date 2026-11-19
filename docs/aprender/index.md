@@ -126,7 +126,7 @@ O carrinho não precisa ser React: com `vue()` no lugar de `react()` e um `Carri
 Numa página HTML qualquer:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.empresa.com"></script>
 
 <vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json"></vitral-remote>
 ```

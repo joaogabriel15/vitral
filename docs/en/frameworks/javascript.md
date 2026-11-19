@@ -58,7 +58,7 @@ export default {
 
 ```html
 <!-- shop/index.html -->
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.example.com"></script>
 
 <vitral-remote id="cart" src="https://cdn.example.com/cart/vitral.json" props='{"userId": 42}'></vitral-remote>
 
@@ -76,12 +76,14 @@ The cart mounts on the page, with the content's height. If you need full isolati
 ### No build
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.example.com"></script>
 
 <vitral-remote src="https://cdn.example.com/cart/vitral.json"></vitral-remote>
 ```
 
-In a project with a bundler, `import 'vitral/auto'` does the same.
+`data-origins` lists, separated by spaces, the origins the `src` values can come from. A `<vitral-remote src>` with another origin, injected into the HTML (a comment, a profile field), runs nothing. On `localhost` you don't need it.
+
+In a project with a bundler, `import 'vitral/auto'` defines `<vitral-remote>`, and the origins come from `configure({ allowedOrigins })` or `configure({ remotes })`.
 
 ### With `configure`
 

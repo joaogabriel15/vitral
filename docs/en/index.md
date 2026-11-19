@@ -184,7 +184,7 @@ The minimal host code is 5.1 kB with brotli. With no build on the host, one scri
 <div>
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.example.com"></script>
 
 <vitral-remote src="https://cdn.example.com/cart/vitral.json"></vitral-remote>
 ```

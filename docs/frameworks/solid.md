@@ -149,7 +149,7 @@ function App() {
 }
 ```
 
-Sem `error`, aparece "Não foi possível carregar." com o botão "Tentar de novo". `error={null}` não mostra nada.
+Sem `error`, aparece "Não foi possível carregar." com o botão "Tentar de novo" (em inglês quando a página não é `pt`; troque com `configure({ messages })`). `error={null}` não mostra nada.
 
 As props de `<Remote>` são as mesmas do [React](./react#host).
 

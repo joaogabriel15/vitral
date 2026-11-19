@@ -1,6 +1,6 @@
 # Erros do vitral
 
-Todo erro da lib é um `RemoteError` com `code`, `remote` (nome do remote) e `docs` (link para a página do código). A mensagem também traz o link.
+Todo erro da lib é um `RemoteError` com `code`, `remote` (nome do remote) e `docs` (link para a página do código). A mensagem também traz o link. Mensagem e link seguem a língua da página: português quando o `<html lang>` é `pt`, inglês nos outros casos (troque com `configure({ language })`).
 
 ```ts
 createSlot(el, {

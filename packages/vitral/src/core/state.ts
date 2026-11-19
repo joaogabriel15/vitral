@@ -9,7 +9,7 @@
  */
 import type { DedupePlan } from './dedupe-plan'
 import type { Policy } from './policy'
-import type { Messages } from './lang'
+import type { Messages } from './messages'
 import { createEventBus } from './bus'
 import type { EventBus, I18nHost, Isolation, RemoteEntry, RemoteMetric, RemoteModule, RollbackInfo, ShadowCss, SharedModules, StyleOptions } from './types'
 import type { SharedStore } from './store'
@@ -136,21 +136,9 @@ function createProtocol(): Protocol {
   const settings: Settings = { timeout: 15000, retries: 1, isolate: 'none', allowedOrigins: null }
   const entries = new Map<string, RemoteEntry>()
   const modules = new Map<string, Promise<LoadedRemote>>()
-  // Cargas em andamento ou que falharam (a que falhou roda na próxima espera); a que terminou sai.
-  const works: { run: () => Promise<unknown>; done: Promise<unknown>; failed?: boolean }[] = []
-  const start = (w: (typeof works)[number]) => {
-    w.failed = false
-    w.done = w.run()
-    w.done.then(
-      () => works.includes(w) && works.splice(works.indexOf(w), 1),
-      () => (w.failed = true),
-    )
-  }
-  const add = (run: () => Promise<unknown>) => {
-    const w = { run, done: Promise.resolve() as Promise<unknown> }
-    start(w)
-    works.push(w)
-  }
+  let ready: Promise<unknown> = Promise.resolve()
+  // Cargas que, depois de falhar, rodam de novo na próxima espera.
+  const again: (() => Promise<unknown>)[] = []
   return {
     protocol: PROTOCOL,
     events: createEventBus(),
@@ -165,11 +153,20 @@ function createProtocol(): Protocol {
     entry: (name) => entries.get(name),
     origins: () => [...entries.values()].filter((e) => e.url && !e.untrusted).map((e) => new URL(e.url!).origin),
     pending(p) {
-      for (const w of works) if (w.failed) start(w)
-      if (p) add(() => p)
-      return Promise.all(works.map((w) => w.done)).then(() => {})
+      if (p) ready = Promise.all([ready, p])
+      return Promise.all([ready, ...again.map((f) => f())]).then(() => {})
     },
-    pendingRetry: add,
+    pendingRetry(run) {
+      let failed = false
+      const go = () => {
+        const p = run()
+        p.catch(() => (failed = true))
+        return p
+      }
+      let last = go()
+      // Só quem espera depois da falha baixa de novo; quem já esperava recebe o erro.
+      again.push(() => (failed ? ((failed = false), (last = go())) : last))
+    },
     load(name, fetcher) {
       let p = modules.get(name)
       if (!p) {

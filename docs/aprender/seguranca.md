@@ -27,17 +27,17 @@ Sem `allowedOrigins`, valem a origem da página e as origens das URLs em `config
 
 ### Origens que entram sozinhas na lista
 
-Algumas URLs entram na lista mesmo com `allowedOrigins` definido, porque são escritas por quem desenvolve o host:
+Algumas URLs entram na lista, com ou sem `allowedOrigins`, porque são escritas por quem desenvolve o host. As que podem vir de dados nunca liberam a própria origem:
 
 | De onde vem a URL | Entra na lista? |
 | --- | --- |
 | `src` em `<Remote>`, `createSlot` e nos componentes de framework | Sim |
 | `registerSrc(url)` (o terceiro argumento, `trusted`, é `true` por padrão) | Sim |
 | `registerSrc(url, nome, false)` | Não |
-| `src` em `<vitral-remote>` (atributo do HTML) | Não |
-| Override de desenvolvimento (`?vitral=` ou o painel do devtools) | Sim, só em `localhost` ou com `devOverrides: true` |
+| `src` em `<vitral-remote>` (atributo do HTML) | Não. Libere com `data-origins` no script do `auto.js` ou com `allowedOrigins`. Em `localhost`, sim |
+| Override de desenvolvimento (`?vitral=` ou o painel do devtools) | Sim, só em `localhost` ou com `devOverrides`. Com `{ preview }`, só `localhost` e URLs do modelo |
 
-Nunca passe para `src` uma URL que vem de dados (API, query string, CMS). Para isso, use `registerSrc(url, nome, false)` ou o `<vitral-remote src>`, que respeitam `allowedOrigins`.
+Nunca passe para `src` uma URL que vem de dados (API, query string, CMS). Para isso, use `registerSrc(url, nome, false)` ou o `<vitral-remote src>`: a URL só carrega se a origem estiver em `allowedOrigins` ou já tiver sido registrada pelo host (`configure({ remotes })`). Assim, um `<vitral-remote src>` injetado no HTML não executa código de outra origem.
 
 ## Integridade (SRI)
 
@@ -130,7 +130,7 @@ Com `script-src 'self'` e o remote na mesma origem, o SRI também funciona sem `
 
 ## Overrides de desenvolvimento
 
-`?vitral=nome@http://localhost:5174` troca a URL de um remote e descarta a `integrity` do host. Só funciona com a página em `localhost` ou com `configure({ devOverrides })`. Não ligue `devOverrides` em produção, nem na forma `{ preview }`: qualquer link com `?vitral=` executaria código de outra origem.
+`?vitral=nome@http://localhost:5174` troca a URL de um remote e descarta a `integrity` do host. Só funciona com a página em `localhost` ou com `configure({ devOverrides })`. Não ligue `devOverrides` em produção: com `true`, qualquer link com `?vitral=` executaria código de outra origem. Na forma `{ preview }`, só valem apelidos, `localhost` e URLs do modelo, mas um link ainda troca o remote pelo preview de um PR.
 
 ## SBOM
 

@@ -27,6 +27,7 @@ carrinho.unmount()
 | `options.priority` | `'high'` para baixar com prioridade |
 | `options.styles` | Estilos do host no Shadow DOM |
 | `options.onError` | Chamado quando o remote quebra depois de montado |
+| `options.signal` | `AbortSignal` que cancela a montagem. Abortado antes do `mount()` do remote, ele nunca roda e a Promise rejeita com `signal.reason`. Abortado durante o `mount()`, o remote desmonta assim que ele termina |
 
 ## Retorno
 

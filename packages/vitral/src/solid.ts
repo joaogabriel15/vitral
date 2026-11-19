@@ -10,7 +10,7 @@ import { isServer, render } from 'solid-js/web'
 import { defineRemote, shared, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus, type Shared, type CheckedProps } from './index'
 import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 import { memoSelect, same } from './core/shared'
-import { messages } from './core/lang'
+import { messages } from './core/messages'
 
 /** Transforma um componente Solid em um remote. O contexto chega na prop `vitral`. */
 export function solidRemote<P extends Props>(Comp: Component<any>): RemoteModule<P> {

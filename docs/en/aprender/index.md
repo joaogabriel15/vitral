@@ -126,7 +126,7 @@ The cart doesn't have to be React: with `vue()` instead of `react()` and a `Cart
 On any HTML page:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.example.com"></script>
 
 <vitral-remote src="https://cdn.example.com/cart/vitral.json"></vitral-remote>
 ```

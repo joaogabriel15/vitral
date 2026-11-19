@@ -1,4 +1,4 @@
-import type { Messages } from './lang'
+import type { Messages } from './messages'
 import type { DedupePlan } from './dedupe-plan'
 import type { Policy } from './policy'
 import type { RemoteError } from './errors'

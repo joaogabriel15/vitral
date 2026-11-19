@@ -55,7 +55,8 @@ export function registerSrc(src: string, name?: string, trusted = true): string 
   const p = protocol()
   const url = absolute(src)
   const key = name || url
-  if (p.entry(key)?.url !== url) p.register(key, trusted ? { url } : { url, untrusted: true })
+  // Em localhost (desenvolvimento), a URL vinda de dados libera a própria origem quando não há `allowedOrigins`.
+  if (p.entry(key)?.url !== url) p.register(key, trusted || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) ? { url } : { url, untrusted: true })
   const origin = new URL(url).origin
   const list = p.settings().trusted ?? []
   if (trusted && !list.includes(origin)) p.configure({ trusted: [...list, origin] })

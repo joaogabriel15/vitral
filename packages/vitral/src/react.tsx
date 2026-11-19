@@ -18,7 +18,7 @@ import {
 } from 'react'
 import { hostSlot, when, type Loading, type Prefetch } from './core/host-slot'
 import { policy } from './core/policy'
-import { messages } from './core/lang'
+import { messages } from './core/messages'
 import { createRoot, hydrateRoot } from 'react-dom/client'
 import { RemoteTree, StateContext, VitralContext } from './react-tree'
 import * as ReactAll from 'react'

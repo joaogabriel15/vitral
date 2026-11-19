@@ -1,6 +1,6 @@
 # vitral errors
 
-Every library error is a `RemoteError` with `code`, `remote` (the remote's name) and `docs` (link to the code's page). The message also carries the link. Messages are in Portuguese; the code and this page tell you the cause and the fix.
+Every library error is a `RemoteError` with `code`, `remote` (the remote's name) and `docs` (link to the code's page). The message also carries the link. Messages and the link follow the page language: English, or Portuguese when the `<html lang>` is `pt` (change it with `configure({ language })`). The code and this page tell you the cause and the fix.
 
 ```ts
 createSlot(el, {

@@ -7,7 +7,7 @@ The host declared `contract` and the remote's `vitral.json` doesn't meet it. The
 - The remote's contract version is outside the host's range. E.g. the host accepts `^2` and the remote published `contract: { version: '3.0.0' }`.
 - The host offers a dependency with `dedupe` at a version outside the range the remote expects. E.g. the remote was built with `dedupe: ['react']` and React 19 (`^19.0.0`), and the host offers React 18.3.1.
 
-The message brings the remote's name, the expected range and the version found (library messages are in Portuguese):
+The message brings the remote's name, the expected range and the version found (in English, or in Portuguese when the page is `pt`):
 
 ```
 [vitral] carrinho: o host aceita contrato ^2, o remote publica 3.0.0

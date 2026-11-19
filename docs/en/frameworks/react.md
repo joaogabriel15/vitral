@@ -135,7 +135,7 @@ Changing `props` updates the remote. Changing `name`, `src` or `isolate` remount
 | `props` | `object` | Remote props. Functions work too |
 | `isolate` | `'none' \| 'shadow' \| 'iframe'` | Isolation. See [Styles](/en/aprender/estilos) and [Iframe](/en/aprender/iframe) |
 | `fallback` | `ReactNode` | Shown while loading |
-| `error` | `ReactNode` or `(error, retry) => ReactNode` | Shown if it fails. Without it, a default message with a "try again" button (in Portuguese). `null` shows nothing |
+| `error` | `ReactNode` or `(error, retry) => ReactNode` | Shown if it fails. Without it, "Could not load." with a "Try again" button (in Portuguese when the page is `pt`; change it with `configure({ messages })`). `null` shows nothing |
 | `onError` | `(error) => void` | Called on each error |
 | `className` | `string` | Class of the element that receives the remote |
 | `loading` | `'lazy' \| 'idle'` | When to mount. See [Loading](/en/aprender/carregamento) |

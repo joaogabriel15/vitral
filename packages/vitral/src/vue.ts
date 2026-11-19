@@ -41,7 +41,7 @@ import {
 } from './index'
 import { hostSlot, timings, type Loading, type Prefetch } from './core/host-slot'
 import { absolute } from './core/util'
-import { messages } from './core/lang'
+import { messages } from './core/messages'
 import { memoSelect, same } from './core/shared'
 
 // ---------------------------------------------------------------------------

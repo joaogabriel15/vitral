@@ -214,7 +214,7 @@ export function App() {
 Numa página HTML qualquer, sem build:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.empresa.com"></script>
 <vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json" props='{"userId": 42}'></vitral-remote>
 ```
 

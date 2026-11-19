@@ -27,6 +27,7 @@ cart.unmount()
 | `options.priority` | `'high'` to download with priority |
 | `options.styles` | Host styles in the Shadow DOM |
 | `options.onError` | Called when the remote breaks after mounting |
+| `options.signal` | `AbortSignal` that cancels the mount. Aborted before the remote's `mount()`, it never runs and the Promise rejects with `signal.reason`. Aborted during `mount()`, the remote unmounts as soon as it finishes |
 
 ## Returns
 

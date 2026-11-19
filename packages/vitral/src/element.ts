@@ -34,7 +34,7 @@ import { hostSlot, timings, when, type HostSlotOptions, type Loading, type Prefe
 import { policy } from './core/policy'
 import { memoSelect, same } from './core/shared'
 import { registerSrc } from './core/registry'
-import { messages } from './core/lang'
+import { messages } from './core/messages'
 import { warmSsr } from './core/loader'
 
 /** Definido só no build do `embed.js`, que não hidrata. */
