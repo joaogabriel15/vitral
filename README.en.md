@@ -13,9 +13,11 @@
 </p>
 
 <p align="center">
-  <a href="https://joaogabriel15.github.io/vitral/">Docs (Portuguese)</a> ·
-  <a href="https://joaogabriel15.github.io/vitral/aprender/benchmark">Benchmark</a> ·
-  <a href="./README.md">Português</a>
+  <a href="https://joaogabriel15.github.io/vitral/en/">Docs</a> ·
+  <a href="https://joaogabriel15.github.io/vitral/en/aprender/configurar">Get started</a> ·
+  <a href="https://joaogabriel15.github.io/vitral/en/por-que">Why vitral</a> ·
+  <a href="https://joaogabriel15.github.io/vitral/en/aprender/benchmark">Benchmark</a> ·
+  <a href="https://github.com/joaogabriel15/vitral/blob/main/README.md">Português</a>
 </p>
 
 Micro-frontends with any framework, with no build config on the host. React, Next.js, Vue, Nuxt, Angular, Svelte and more on one page.
@@ -32,6 +34,10 @@ Micro-frontends with any framework, with no build config on the host. React, Nex
 - **Isolated CSS and errors.** A remote's CSS does not change the rest of the page. A remote that is down shows its own error, and the rest keeps working.
 - **Secure.** The JS only runs if it comes from an allowed origin and its SHA-384 hash matches.
 - **Small and fast.** 5.1 kB of host code. Opens the page in half the time of Module Federation and switches areas 4.5 times faster than Next.js Multi-Zones.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/demo-en.gif" width="720" alt="A plain HTML shop with two remotes: the catalog in Vue and the cart in React. Clicking Add in the catalog updates the cart. A third remote, Reviews, is offline and shows only its own error message, while the rest of the page keeps working.">
+</p>
 
 **When to use it:** when several teams work on the same site and each wants to ship at its own pace. With one team and one app, a regular bundle is simpler.
 
@@ -58,6 +64,19 @@ npm install vitral
 | Remote is down | An unhandled error takes the page down | The error screen is up to you | The whole zone is down | Only that remote shows an error, with `retry` |
 | Host code (brotli) | 19.4 kB | 5.8 kB | Next runtime in each zone | 5.1 kB |
 
+**Other tools:**
+
+| | qiankun | micro-app | wujie | Native import maps | vitral |
+|---|---|---|---|---|---|
+| The remote publishes | HTML page and UMD build | HTML page | HTML page | ES modules | `vitral.json` and an ES module |
+| Host setup | `registerMicroApps` and `start` | `microApp.start()` and `<micro-app>` | `startApp` or the wujie component | `<script type="importmap">` | `configure({ remotes })` |
+| JS isolation | `Proxy` sandbox | `Proxy` sandbox or iframe | iframe: the JS runs in an iframe and the UI in the host | None | None by default. `isolate="iframe"` isolates, without passing functions in props |
+| CSS isolation | Shadow DOM or prefix, if turned on | Prefix by default, Shadow DOM optional | Shadow DOM | None | Automatic scope or Shadow DOM |
+| Mount, update, errors | `bootstrap`, `mount`, `unmount` | `<micro-app>` element | Component or `startApp` | You write it | `<Remote>` with `fallback`, `error` and `retry` |
+| Repeated dependencies | Each app downloads its own | Each app downloads its own | Each app downloads its own | One URL per package in the import map | Each remote ships its own. A single copy with `dedupe` |
+
+qiankun, micro-app and wujie isolate the JS of existing apps without changing them: wujie with a real iframe, qiankun and micro-app with a `Proxy`. vitral runs the remote's JS on the page itself, with the page's DOM and props of any type, and only isolates with `isolate="iframe"`.
+
 ## Speed
 
 Measured in Chromium on a slow mobile network (Slow 4G). Median of 7 visits. Lower is better.
@@ -78,7 +97,7 @@ Measured in Chromium on a slow mobile network (Slow 4G). Median of 7 visits. Low
 | Switch areas | **0.2 s** | 0.8 s |
 | Downloaded to open both areas | **83 kB** | 229 kB |
 
-The minimal host code is 5.1 kB with brotli. [How it was measured](https://joaogabriel15.github.io/vitral/aprender/benchmark): versions, machine and the script to run it again.
+The minimal host code is 5.1 kB with brotli. [How it was measured](https://joaogabriel15.github.io/vitral/en/aprender/benchmark): versions, machine and the script to run it again.
 
 ## Quick start
 
@@ -197,7 +216,7 @@ On any HTML page, no build:
 <vitral-remote src="https://cdn.example.com/cart/vitral.json" props='{"userId": 42}'></vitral-remote>
 ```
 
-Full guide: [Migrate from Module Federation](https://joaogabriel15.github.io/vitral/migracao/module-federation) (in Portuguese).
+Full guide: [Migrate from Module Federation](https://joaogabriel15.github.io/vitral/en/migracao/module-federation).
 
 ## Frameworks
 
@@ -349,7 +368,7 @@ With `next: { basePath }`, the account code can keep using `next/link` and `useR
 | React and Next | Downloaded again in each area | One copy for the whole page |
 | Shop layout | Each zone repeats its own | The account sits inside the shop layout |
 
-Full guide, with per-route SSR and prefetch: [Migrate from Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/migracao/multi-zones) (in Portuguese). With the App Router, the host uses `<Remote>` from `vitral/react` in a `'use client'` component: see [Next.js](https://joaogabriel15.github.io/vitral/frameworks/next#host-com-app-router) (in Portuguese).
+Full guide, with per-route SSR and prefetch: [Migrate from Next.js Multi-Zones](https://joaogabriel15.github.io/vitral/en/migracao/multi-zones). With the App Router, the host uses `<Remote>` from `vitral/react` in a `'use client'` component: see [Next.js](https://joaogabriel15.github.io/vitral/en/frameworks/next#host-with-app-router).
 
 ## Nuxt as host
 
@@ -526,7 +545,7 @@ Editing a remote updates the host without a page reload. With Docker, each remot
 
 ## Links
 
-- [Docs](https://joaogabriel15.github.io/vitral/): guides, reference and error pages, in Portuguese. Code samples read the same in any language.
+- [Docs](https://joaogabriel15.github.io/vitral/en/): guides, reference and error pages. Also available in Portuguese.
 - [Examples](https://github.com/joaogabriel15/vitral/tree/main/examples): the same remote in 8 frameworks and 9 hosts.
 - [Contributing](https://github.com/joaogabriel15/vitral/blob/main/CONTRIBUTING.md)
 - [MIT](https://github.com/joaogabriel15/vitral/blob/main/LICENSE) license. Made by [Pacheco Codes](https://pacheco.dev.br/).

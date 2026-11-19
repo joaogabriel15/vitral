@@ -17,7 +17,7 @@
   <a href="https://joaogabriel15.github.io/vitral/aprender/configurar">Começar</a> ·
   <a href="https://joaogabriel15.github.io/vitral/por-que">Por que o vitral</a> ·
   <a href="https://joaogabriel15.github.io/vitral/aprender/benchmark">Benchmark</a> ·
-  <a href="./README.en.md">English</a>
+  <a href="https://github.com/joaogabriel15/vitral/blob/main/README.en.md">English</a>
 </p>
 
 Micro-frontends com qualquer framework, sem configurar build no host. React, Next.js, Vue, Nuxt, Angular, Svelte e outros na mesma página.
@@ -34,6 +34,10 @@ Micro-frontends com qualquer framework, sem configurar build no host. React, Nex
 - **CSS e erros isolados.** O CSS de um remote não muda o resto da página. Um remote fora do ar mostra o próprio erro, e o resto continua funcionando.
 - **Seguro.** O JS só roda se vier de uma origem permitida e se o hash SHA-384 bater.
 - **Leve e rápido.** 5,1 kB de host. Abre a página na metade do tempo do Module Federation e troca de área 4,5 vezes mais rápido que o Next.js Multi-Zones.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/joaogabriel15/vitral/main/docs/public/marca/demo.gif" width="720" alt="Uma loja em HTML puro com dois remotes: o catálogo em Vue e o carrinho em React. Clicar em Adicionar no catálogo atualiza o carrinho. Um terceiro remote, Avaliações, está fora do ar e mostra só a própria mensagem de erro, enquanto o resto da página continua funcionando.">
+</p>
 
 **Quando usar:** quando várias equipes mexem no mesmo site e cada uma quer publicar no próprio ritmo. Com uma equipe e um app só, um bundle comum é mais simples.
 
@@ -59,6 +63,19 @@ npm install vitral
 | Isolamento de CSS | Nenhum | Nenhum | Por página | Escopo automático ou Shadow DOM |
 | Remote fora do ar | Erro sem tratamento derruba a página | A tela de erro é com você | A zona inteira fica fora | Só aquele remote mostra erro, com `retry` |
 | Código de host (brotli) | 19,4 kB | 5,8 kB | Runtime do Next em cada zona | 5,1 kB |
+
+**Outras ferramentas:**
+
+| | qiankun | micro-app | wujie | Import maps nativos | vitral |
+|---|---|---|---|---|---|
+| O remote publica | Página HTML e build UMD | Página HTML | Página HTML | Módulos ES | `vitral.json` e módulo ES |
+| Configuração no host | `registerMicroApps` e `start` | `microApp.start()` e `<micro-app>` | `startApp` ou o componente do wujie | `<script type="importmap">` | `configure({ remotes })` |
+| Isolamento de JS | Sandbox com `Proxy` | Sandbox com `Proxy` ou iframe | iframe: o JS roda num iframe e a tela no host | Nenhum | Nenhum por padrão. `isolate="iframe"` isola, sem passar funções nas props |
+| Isolamento de CSS | Shadow DOM ou prefixo, se ligar | Prefixo por padrão, Shadow DOM opcional | Shadow DOM | Nenhum | Escopo automático ou Shadow DOM |
+| Montar, atualizar, erro | `bootstrap`, `mount`, `unmount` | Elemento `<micro-app>` | Componente ou `startApp` | Você escreve | `<Remote>` com `fallback`, `error` e `retry` |
+| Dependências repetidas | Cada app baixa a sua | Cada app baixa a sua | Cada app baixa a sua | Uma URL por pacote no import map | Cada remote leva a sua. Uma cópia só com `dedupe` |
+
+qiankun, micro-app e wujie isolam o JS de apps existentes sem mexer neles: wujie com um iframe de verdade, qiankun e micro-app com `Proxy`. O vitral roda o JS do remote na própria página, com o DOM da página e props de qualquer tipo, e só isola com `isolate="iframe"`.
 
 ## Velocidade
 

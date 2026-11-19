@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { defineConfig, type DefaultTheme } from 'vitepress'
 import { BASE, REPO, SITE } from './site.mjs'
+import { DESCRIPTION_EN, en } from './en.mts'
 
 // Uma página por código de erro, na ordem alfabética. Código novo em
 // docs/erros/ entra no menu sem mexer aqui.
@@ -137,14 +138,16 @@ const referencia: DefaultTheme.SidebarItem[] = [
   { text: 'TypeDoc (todos os tipos)', link: '/api/' },
 ]
 
+const DESCRIPTION = 'Micro-frontends de qualquer framework numa página só, sem configuração de build no host.'
+
 export default defineConfig({
   lang: 'pt-BR',
   title: 'vitral',
-  description: 'Micro-frontends de qualquer framework numa página só, sem configuração de build no host.',
+  description: DESCRIPTION,
   base: BASE,
   cleanUrls: true,
   // docs/erros/README.md aparece no GitHub ao abrir a pasta; no site vira /erros/.
-  rewrites: { 'erros/README.md': 'erros/index.md' },
+  rewrites: { 'erros/README.md': 'erros/index.md', 'en/erros/README.md': 'en/erros/index.md' },
   srcExclude: ['**/node_modules/**'],
   sitemap: { hostname: SITE },
   head: [
@@ -152,29 +155,38 @@ export default defineConfig({
     ['meta', { name: 'theme-color', content: '#161b26' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:site_name', content: 'vitral' }],
-    ['meta', { property: 'og:locale', content: 'pt_BR' }],
-    ['meta', { property: 'og:image', content: `${SITE}marca/og.png` }],
     ['meta', { property: 'og:image:width', content: '1200' }],
     ['meta', { property: 'og:image:height', content: '630' }],
-    ['meta', { property: 'og:image:alt', content: 'vitral. Micro-frontends de qualquer framework numa página só.' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
-    ['meta', { name: 'twitter:image', content: `${SITE}marca/og.png` }],
   ],
 
-  // Título e descrição da página em cada link compartilhado.
+  // Título, descrição, idioma e imagem da página em cada link compartilhado.
+  // Páginas em docs/en/ usam a imagem e o texto em inglês.
   transformPageData(page) {
+    const ingles = page.relativePath.startsWith('en/')
     const title = page.frontmatter.title ?? page.title
     const description = page.frontmatter.description ?? page.description
+    const og = `${SITE}marca/${ingles ? 'og-en' : 'og'}.png`
     page.frontmatter.head ??= []
     page.frontmatter.head.push(
       ['meta', { property: 'og:title', content: title ? `${title} | vitral` : 'vitral' }],
-      ['meta', { property: 'og:description', content: description || 'Micro-frontends de qualquer framework numa página só, sem configuração de build no host.' }],
+      ['meta', { property: 'og:description', content: description || (ingles ? DESCRIPTION_EN : DESCRIPTION) }],
       ['meta', { property: 'og:url', content: SITE + page.relativePath.replace(/(^|\/)index\.md$/, '$1').replace(/\.md$/, '') }],
+      ['meta', { property: 'og:locale', content: ingles ? 'en_US' : 'pt_BR' }],
+      ['meta', { property: 'og:image', content: og }],
+      ['meta', { property: 'og:image:alt', content: ingles ? 'vitral. Micro-frontends from any framework on one page.' : 'vitral. Micro-frontends de qualquer framework numa página só.' }],
+      ['meta', { name: 'twitter:image', content: og }],
     )
   },
 
   markdown: {
     container: { tipLabel: 'Nota', warningLabel: 'Atenção', dangerLabel: 'Perigo', infoLabel: 'Info', detailsLabel: 'Detalhes' },
+  },
+
+  // Português na raiz, inglês em /en/ (docs/en/, mesmos nomes de arquivo).
+  locales: {
+    root: { label: 'Português', lang: 'pt-BR' },
+    en: en(erros),
   },
 
   themeConfig: {
@@ -206,13 +218,17 @@ export default defineConfig({
     search: {
       provider: 'local',
       options: {
-        translations: {
-          button: { buttonText: 'Buscar', buttonAriaLabel: 'Buscar' },
-          modal: {
-            noResultsText: 'Nada encontrado para',
-            resetButtonTitle: 'Limpar',
-            displayDetails: 'Mostrar detalhes',
-            footer: { selectText: 'abrir', navigateText: 'navegar', closeText: 'fechar' },
+        locales: {
+          root: {
+            translations: {
+              button: { buttonText: 'Buscar', buttonAriaLabel: 'Buscar' },
+              modal: {
+                noResultsText: 'Nada encontrado para',
+                resetButtonTitle: 'Limpar',
+                displayDetails: 'Mostrar detalhes',
+                footer: { selectText: 'abrir', navigateText: 'navegar', closeText: 'fechar' },
+              },
+            },
           },
         },
       },
