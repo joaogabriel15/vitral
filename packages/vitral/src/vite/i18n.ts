@@ -47,7 +47,7 @@ export function emitTranslations(root: string, outDir: string, pattern: string, 
     try {
       text = JSON.stringify(JSON.parse(readFileSync(file, 'utf8')))
     } catch (e) {
-      throw new Error(`[vitral] i18n: JSON inválido em ${relative(root, file)}: ${(e as Error).message}`, { cause: e })
+      throw new Error(`[vitral] i18n: JSON inválido em ${relative(root, file)}: ${(e as Error).message}`)
     }
     const hash = createHash('sha256').update(text).digest('base64url').slice(0, 8)
     const name = `i18n/${lng}/${ns}-${hash}.json`

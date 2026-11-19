@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { satisfies, validRange } from '../src/core/semver'
+import { satisfies } from '../src/core/semver'
+import { satisfiesRange, validRange } from '../src/core/range'
 import { protocol } from '../src/core/state'
 import { shared } from '../src/core/dedupe'
 import { configure } from '../src/index'
@@ -35,7 +36,13 @@ describe('satisfies', () => {
     ['2.9.0', '~2', true],
     ['2.0.0', '>=2', true],
     ['2', '^2.0.0', true],
-    // Sintaxe do npm além do básico.
+  ])('%s em %s: %s', (version, range, ok) => {
+    expect(satisfies(version, range)).toBe(ok)
+  })
+})
+
+describe('satisfiesRange: a sintaxe do npm', () => {
+  it.each([
     ['19.1.0', '^18.0.0 || ^19.0.0', true],
     ['17.0.2', '^18.0.0 || ^19.0.0', false],
     ['18.3.1', '18.x', true],
@@ -63,7 +70,12 @@ describe('satisfies', () => {
     ['19.1.0', 'latest', false],
     ['19.1.0', 'workspace:*', false],
   ])('%s em %s: %s', (version, range, ok) => {
-    expect(satisfies(version, range)).toBe(ok)
+    expect(satisfiesRange(version, range)).toBe(ok)
+  })
+
+  it('as faixas simples valem igual a satisfies', () => {
+    for (const [v, r] of [['19.3.0', '^19.2.0'], ['0.4.0', '^0.3.1'], ['1.2.9', '~1.2.3'], ['5.1.2', '5.1.2'], ['2.3.0', '^2'], ['0.1.0', '^0.0'], ['2', '^2.0.0'], ['19.0.0-rc.1', '^19.0.0']])
+      expect(satisfiesRange(v, r)).toBe(satisfies(v, r))
   })
 })
 

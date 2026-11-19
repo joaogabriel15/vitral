@@ -4,11 +4,11 @@
  * método no protocolo da página. Funciona mesmo num protocolo criado por uma
  * cópia antiga da lib.
  */
-import { satisfies, validRange } from './semver'
+import { satisfies } from './semver'
 import type { Offer, Protocol } from './state'
 import type { VitralConfig } from './types'
 
-export { satisfies, validRange }
+export { satisfies }
 
 const KEY = 'vitral:dedupe:'
 const remembered = (k: string) => {
