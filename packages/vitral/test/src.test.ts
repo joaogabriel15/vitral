@@ -2,9 +2,10 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { configure, createSlot, loadRemote, mountRemote, registerSrc, type RemoteError } from '../src/index'
 import { defineVitralElement } from '../src/element'
+import { checkOrigin } from '../src/core/registry'
 import { protocol } from '../src/core/state'
 import { failingRemote, mockRemote } from '../src/testing'
-import { cleanup, flush, serveManifest as serve } from './helpers'
+import { cleanup, flush, serveManifest as serve, serveManifest } from './helpers'
 
 beforeAll(() => defineVitralElement())
 afterEach(cleanup)
@@ -104,6 +105,26 @@ describe('<vitral-remote src>', () => {
     el.addEventListener('vitral-error', (e) => errors.push((e as CustomEvent).detail.error))
     await flush()
     expect(errors[0].code).toBe('ORIGIN_BLOCKED')
+  })
+
+  it('sem allowedOrigins, src em atributo não libera a própria origem', async () => {
+    serveManifest()
+    protocol().configure({ allowedOrigins: null })
+    document.body.innerHTML = `<vitral-remote src="https://injetado.com/c/vitral.json"></vitral-remote>`
+    const el = document.querySelector('vitral-remote')!
+    const errors: RemoteError[] = []
+    el.addEventListener('vitral-error', (e) => errors.push((e as CustomEvent).detail.error))
+    await flush()
+    expect(errors[0].code).toBe('ORIGIN_BLOCKED')
+    expect(protocol().origins()).not.toContain('https://injetado.com')
+  })
+
+  it('src vindo de dados vale numa origem que o host registrou', () => {
+    configure({ remotes: { outro: 'https://cdn.exemplo.com/outro/vitral.json' } })
+    const key = registerSrc('https://cdn.exemplo.com/c/vitral.json', undefined, false)
+    expect(() => checkOrigin(key, key)).not.toThrow()
+    const evil = registerSrc('https://injetado.com/c/vitral.json', undefined, false)
+    expect(() => checkOrigin(evil, evil)).toThrow(/allowedOrigins/)
   })
 
   it('trocar o src remonta', async () => {

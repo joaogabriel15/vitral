@@ -206,6 +206,25 @@ describe('carregamento', () => {
     expect(e.message).toContain('falha ao importar https://cdn.empresa.com/mf/a/remote-1.js')
   })
 
+  it('remotes.json que falhou baixa de novo na próxima montagem', async () => {
+    let calls = 0
+    vi.stubGlobal('fetch', vi.fn(async () => (++calls === 1 ? Promise.reject(new TypeError('rede caiu')) : new Response(JSON.stringify({ a: { module: 'x' } })))))
+    configure({ remotes: 'https://cdn.empresa.com/remotes.json', retries: 0 })
+    register('x', { module: remote() })
+    expect((await fail(loadRemote('x'))).code).toBe('LOAD_FAILED')
+    // A queda de rede não fica guardada: a próxima espera baixa de novo.
+    await loadRemote('x')
+    expect(calls).toBe(2)
+  })
+
+  it('remotes.json usa as tentativas de retries', async () => {
+    let calls = 0
+    vi.stubGlobal('fetch', vi.fn(async () => (++calls === 1 ? Promise.reject(new TypeError('rede caiu')) : new Response('{}'))))
+    configure({ remotes: 'https://cdn.empresa.com/remotes.json', retries: 1 })
+    await protocol().pending()
+    expect(calls).toBe(2)
+  })
+
   it('remotes.json com JSON inválido faz loadRemote falhar com INVALID_MODULE', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>')))
     configure({ remotes: 'https://cdn.empresa.com/remotes.json' })

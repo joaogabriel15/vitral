@@ -119,6 +119,11 @@ export interface RemoteEntry {
   /** URL do módulo JS do remote, ou do `vitral.json` gerado pelo plugin. */
   url?: string
   /**
+   * Interno: URL que veio de dados (`src` em atributo, `registerSrc(…, false)`).
+   * A origem dela não entra na allowlist padrão.
+   */
+  untrusted?: boolean
+  /**
    * Remote local, sem rede: o próprio módulo ou uma função que o importa
    * (ex.: `() => import('./carrinho')`). Útil em monorepos e testes.
    */
@@ -242,7 +247,9 @@ export interface VitralConfig {
   remotes?: Record<string, string | RemoteEntry> | string
   /**
    * Origens de onde é permitido carregar código. Padrão: a própria origem da
-   * página mais as origens das URLs registradas. Use `['*']` para liberar tudo.
+   * página mais as origens das URLs registradas pelo código do host
+   * (`configure`, `register`, `src` de componente). O `src` em atributo do
+   * `<vitral-remote>` não libera a própria origem. Use `['*']` para liberar tudo.
    */
   allowedOrigins?: string[]
   /** Tempo máximo para baixar um remote, em ms. Padrão 15000. */

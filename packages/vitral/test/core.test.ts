@@ -89,6 +89,15 @@ describe('carregamento', () => {
     expect(typeof (await protocol().dedupe!('lib', '^1.0.0')).mount).toBe('function')
   })
 
+  it('retries também vale para o vitral.json', async () => {
+    let calls = 0
+    vi.stubGlobal('fetch', vi.fn(async () => (++calls === 1 ? new Response('', { status: 503 }) : new Response(JSON.stringify({ name: 'x', entry: FIXTURE_REMOTE })))))
+    configure({ retries: 1, allowedOrigins: ['*'] })
+    register('x', 'https://cdn.empresa.com/x/vitral.json')
+    expect(typeof (await loadRemote('x')).mount).toBe('function')
+    expect(calls).toBe(2)
+  })
+
   it('HTTP 404 vira LOAD_FAILED e não fica em cache', async () => {
     const fetch = vi.fn(async () => new Response('', { status: 404 }))
     vi.stubGlobal('fetch', fetch)

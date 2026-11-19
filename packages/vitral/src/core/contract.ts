@@ -16,7 +16,8 @@ export async function checkContract(c: RemoteContract, range = protocol().settin
   // Sem imports estáticos de ./semver, ./dedupe ou ./errors: o bundler
   // separaria esses módulos em chunks próprios, e todo host baixaria um
   // arquivo a mais mesmo sem usar contrato.
-  const { satisfies } = await import('./dedupe')
+  const { satisfies, validRange } = await import('./dedupe')
+  if (!validRange(range)) return `a faixa de contrato ${range} do host não é uma faixa de versão válida (ex.: '^2', '^1 || ^2', '>=2 <4')`
   if (c.version && !satisfies(c.version, range)) return `o host aceita contrato ${range}, o remote publica ${c.version}`
   const offered = protocol().settings().offered ?? {}
   for (const dep in c.peers) {

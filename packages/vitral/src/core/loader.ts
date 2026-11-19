@@ -179,7 +179,12 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
   const m: RemoteManifest =
     entry.manifest ??
     (new URL(entry.url).pathname.endsWith('.json')
-      ? await (early ?? manifestOf(entry.url, name, priority, keys))
+      ? await withRetry(protocol().settings().retries, () => {
+          // A primeira tentativa usa o pedido antecipado; as outras baixam de novo.
+          const f = early ?? manifestOf(entry.url, name, priority, keys)
+          early = undefined
+          return f
+        })
       : { name, entry: entry.url })
   // Canal (`{ stable, canary }`): escolhe a versão e segue pelo manifesto dela.
   if ((m as any)?.stable) return resolveEntry(name, await (await import('./channel')).pick(name, entry, m as any), priority)

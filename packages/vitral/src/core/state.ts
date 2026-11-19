@@ -76,13 +76,19 @@ export interface Protocol {
   configure(patch: Partial<Settings>): void
   register(name: string, entry: RemoteEntry): void
   entry(name: string): RemoteEntry | undefined
-  /** Origens das URLs registradas (base da allowlist padrão). */
+  /** Origens das URLs registradas pelo código do host (base da allowlist padrão). */
   origins(): string[]
   /**
    * Registra uma carga de registros (ex.: `remotes.json`) ou só espera as que
-   * existem. Uma carga que falhou continua falhando: o host precisa corrigir a URL.
+   * existem. Uma promise que falhou continua falhando (veja `pendingRetry`).
    */
   pending(work?: Promise<unknown>): Promise<void>
+  /**
+   * Como `pending(run())`, mas, se a carga falhar, ela roda de novo na próxima
+   * espera: uma queda de rede não trava a página até recarregar. Cópias antigas
+   * não têm este método.
+   */
+  pendingRetry?(run: () => Promise<unknown>): void
   /**
    * Hashes por URL, presentes só quando a lib usa `modulepreload` com
    * `integrity` (caminho 2 do SRI). O helper de `import()` do plugin lê daqui.
@@ -125,7 +131,21 @@ function createProtocol(): Protocol {
   const settings: Settings = { timeout: 15000, retries: 1, isolate: 'none', allowedOrigins: null }
   const entries = new Map<string, RemoteEntry>()
   const modules = new Map<string, Promise<LoadedRemote>>()
-  let ready: Promise<unknown> = Promise.resolve()
+  // Cargas em andamento ou que falharam (a que falhou roda na próxima espera); a que terminou sai.
+  const works: { run: () => Promise<unknown>; done: Promise<unknown>; failed?: boolean }[] = []
+  const start = (w: (typeof works)[number]) => {
+    w.failed = false
+    w.done = w.run()
+    w.done.then(
+      () => works.includes(w) && works.splice(works.indexOf(w), 1),
+      () => (w.failed = true),
+    )
+  }
+  const add = (run: () => Promise<unknown>) => {
+    const w = { run, done: Promise.resolve() as Promise<unknown> }
+    start(w)
+    works.push(w)
+  }
   return {
     protocol: PROTOCOL,
     events: createEventBus(),
@@ -138,11 +158,13 @@ function createProtocol(): Protocol {
       modules.delete(name)
     },
     entry: (name) => entries.get(name),
-    origins: () => [...entries.values()].filter((e) => e.url).map((e) => new URL(e.url!).origin),
+    origins: () => [...entries.values()].filter((e) => e.url && !e.untrusted).map((e) => new URL(e.url!).origin),
     pending(p) {
-      if (p) ready = Promise.all([ready, p])
-      return ready.then(() => {})
+      for (const w of works) if (w.failed) start(w)
+      if (p) add(() => p)
+      return Promise.all(works.map((w) => w.done)).then(() => {})
     },
+    pendingRetry: add,
     load(name, fetcher) {
       let p = modules.get(name)
       if (!p) {

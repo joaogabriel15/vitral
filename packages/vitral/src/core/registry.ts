@@ -2,7 +2,7 @@ import { dedupeModule } from './bundled'
 import { RemoteError } from './errors'
 import { protocol } from './state'
 import type { RemoteEntry, VitralConfig } from './types'
-import { absolute, addLink, fetchJson, pageOrigin } from './util'
+import { absolute, addLink, fetchJson, pageOrigin, withRetry } from './util'
 
 
 /** Configura a lib. Pode ser chamada mais de uma vez; as opções são mescladas. */
@@ -16,9 +16,13 @@ export function configure(config: VitralConfig): void {
   if (dedupe) p.pending(dedupeModule().then((m) => m.offer(p, dedupe)).catch(() => {}))
   if (typeof remotes === 'string') {
     const url = absolute(remotes)
-    p.pending(
-      fetchJson<Record<string, string | RemoteEntry>>(url, p.settings().timeout, 'remotes', { cache: 'no-cache' }).then((map) => registerAll(map, url)),
-    ).catch(() => {})
+    // Com as tentativas de `retries`; se ainda falhar, a próxima montagem (ou o "tentar de novo") baixa de novo.
+    const run = () =>
+      withRetry(p.settings().retries, () => fetchJson<Record<string, string | RemoteEntry>>(url, p.settings().timeout, 'remotes', { cache: 'no-cache' })).then((map) =>
+        registerAll(map, url),
+      )
+    if (p.pendingRetry) p.pendingRetry(run)
+    else p.pending(run()).catch(() => {})
   } else if (remotes) {
     registerAll(remotes)
   }
@@ -42,13 +46,15 @@ export function register(name: string, entry: string | RemoteEntry): void {
  * Registra a URL de um `src` e devolve o nome para montar. Sem `name`, o nome
  * é a própria URL (e o nome do manifesto vira um apelido). Com `trusted`, a
  * origem entra na allowlist mesmo com `allowedOrigins`: vale para URL escrita
- * no código do host, nunca para URL vinda de dados.
+ * no código do host, nunca para URL vinda de dados. Sem `trusted`, a URL não
+ * libera a própria origem: ela precisa estar em `allowedOrigins` ou ser de uma
+ * origem já registrada pelo host.
  */
 export function registerSrc(src: string, name?: string, trusted = true): string {
   const p = protocol()
   const url = absolute(src)
   const key = name || url
-  if (p.entry(key)?.url !== url) p.register(key, { url })
+  if (p.entry(key)?.url !== url) p.register(key, trusted ? { url } : { url, untrusted: true })
   const origin = new URL(url).origin
   const list = p.settings().trusted ?? []
   if (trusted && !list.includes(origin)) p.configure({ trusted: [...list, origin] })

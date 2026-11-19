@@ -116,7 +116,7 @@ export class VitralRemoteElement extends Base {
 
   /**
    * Nome para montar. `src` em atributo é registrado sem entrar na allowlist:
-   * HTML injetado não pode liberar uma origem nova quando há `allowedOrigins`.
+   * HTML injetado não pode liberar uma origem nova, com ou sem `allowedOrigins`.
    */
   #name(): string | null {
     const src = this.getAttribute('src')
