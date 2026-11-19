@@ -1,5 +1,13 @@
 # vitral
 
+## 0.13.2
+
+### Patch Changes
+
+- [#144](https://github.com/joaogabriel15/vitral/pull/144) [`d990f60`](https://github.com/joaogabriel15/vitral/commit/d990f608fafd030565ad75cb87bcd2185b03747f) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - Descrição do pacote no npm em inglês.
+
+- [#146](https://github.com/joaogabriel15/vitral/pull/146) [`b1a375a`](https://github.com/joaogabriel15/vitral/commit/b1a375ab84d8200e91d8cd487366430d7c4a782f) Thanks [@joaogabriel15](https://github.com/joaogabriel15)! - README no npm em inglês.
+
 ## 0.13.1
 
 ### Patch Changes
