@@ -27,10 +27,8 @@ const pecas = [
 ]
 
 const navegador = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH })
-// Cada peça, menos a og, sai também em inglês: nome-en.png (README.en.md).
-const todas = pecas.flatMap((p) =>
-  p.id === 'og' ? [p] : [p, { ...p, lingua: 'en', arquivo: p.arquivo.replace('.png', '-en.png') }],
-)
+// Cada peça sai também em inglês: nome-en.png (README.en.md e site em /en/).
+const todas = pecas.flatMap((p) => [p, { ...p, lingua: 'en', arquivo: p.arquivo.replace('.png', '-en.png') }])
 for (const { id, tema, arquivo, escala, lingua = 'pt' } of todas) {
   const pagina = await navegador.newPage({ deviceScaleFactor: escala, viewport: { width: 1400, height: 900 } })
   await pagina.goto(`${fonte}?tema=${tema}&lingua=${lingua}`)
