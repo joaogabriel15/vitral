@@ -84,7 +84,8 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
   // de custom elements do remote; `portal` fica dentro do shadow root.
   const [release, portal = document.body, shadowRoot = null, registry = customElements, el = target.appendChild(make())] = await injectStyles(
     resolved,
-    isolate > 'q' && target,
+    // shadow e reframe põem o DOM do remote num shadow root.
+    (isolate === 'shadow' || isolate === 'reframe') && target,
     make,
     options.styles,
   )

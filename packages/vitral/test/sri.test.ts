@@ -64,7 +64,7 @@ function browser({ map, preload, blob }: { map: 'ok' | 'silent' | 'error' | 'csp
 }
 
 /** Navegador que confere o hash do modulepreload (Firefox, Chromium antigo). */
-const checks = (href: string, integrity: string) => !href.startsWith('data:') || href.endsWith('export{}')
+const checks = (href: string, _integrity: string) => !href.startsWith('data:') || href.endsWith('export{}')
 /** Navegador que ignora o integrity do modulepreload (WebKit). */
 const ignores = () => true
 

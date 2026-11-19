@@ -25,7 +25,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # build, typecheck, publint + attw, size-limit e testes de unidade
+      # oxlint, build, typecheck, publint + attw, size-limit e testes de unidade
       - run: pnpm run check
       - name: Relatório de cobertura
         if: matrix.node == 22
