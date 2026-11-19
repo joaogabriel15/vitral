@@ -19,6 +19,7 @@
  * Não é fronteira de segurança: o iframe é da mesma origem e alcança
  * `parent`. Para código de terceiros, use `isolate: 'iframe'`.
  */
+import { tr } from './lang'
 import { prefetchCss } from './css'
 import { isRemoteError, RemoteError, report } from './errors'
 import { splitName } from './expose'
@@ -66,8 +67,8 @@ export async function load(name: string, _isolate?: unknown, priority?: RequestP
   let realm: Realm | undefined
   try {
     const entry = p.entry(remote)
-    if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
-    if (!entry.url) throw new RemoteError('MOUNT_FAILED', name, "remote local (module) não roda com isolate: 'reframe': registre a URL dele")
+    if (!entry) throw new RemoteError('NOT_REGISTERED', name, tr('remote não registrado. Use configure({ remotes }).', 'remote not registered. Use configure({ remotes }).'))
+    if (!entry.url) throw new RemoteError('MOUNT_FAILED', name, tr("remote local (module) não roda com isolate: 'reframe': registre a URL dele", "a local remote (module) cannot run with isolate: 'reframe': register its URL"))
     let t = performance.now()
     const { integrity, ...r } = await resolveEntry(remote, entry as RemoteEntry & { url: string }, priority)
     delete r.split
@@ -93,17 +94,17 @@ export async function load(name: string, _isolate?: unknown, priority?: RequestP
     try {
       ns = await withTimeout(timeout, name, realm.load(url))
     } catch (e) {
-      throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, `falha ao importar ${r.entry}`, e)
+      throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, tr(`falha ao importar ${r.entry}`, `failed to import ${r.entry}`), e)
     } finally {
       if (bytes) URL.revokeObjectURL(url)
     }
     if (key) {
       const part = ns?.exposes?.[key]
-      if (!part) throw new RemoteError('NOT_EXPOSED', name, `${remote} não expõe ${key}`)
+      if (!part) throw new RemoteError('NOT_EXPOSED', name, tr(`${remote} não expõe ${key}`, `${remote} does not expose ${key}`))
       ns = typeof part === 'function' ? await part() : part
     }
     const mod: RemoteModule = ns?.default ?? ns
-    if (typeof mod?.mount != 'function') throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount()')
+    if (typeof mod?.mount != 'function') throw new RemoteError('INVALID_MODULE', name, tr('o módulo não exporta mount()', 'the module does not export mount()'))
     metric(name, 'js', t)
     const own = realm
     return { ...r, module: { mount: (el, props, ctx) => own.mount(mod, el, props, ctx) } }
@@ -115,7 +116,7 @@ export async function load(name: string, _isolate?: unknown, priority?: RequestP
 
 /** `isolate: 'iframe'` sem `enableIframe()`. Mora aqui para o texto do erro ficar fora do host mínimo. */
 export function noFrames(_target: HTMLElement, name: string): Promise<never> {
-  return Promise.reject(new RemoteError('MOUNT_FAILED', name, 'isolate="iframe" precisa de enableIframe(), de vitral/iframe'))
+  return Promise.reject(new RemoteError('MOUNT_FAILED', name, tr('isolate="iframe" precisa de enableIframe(), de vitral/iframe', 'isolate="iframe" needs enableIframe(), from vitral/iframe')))
 }
 
 interface Realm {
@@ -264,7 +265,7 @@ function createRealm(name: string, registry: CustomElementRegistry): Realm {
 
   return {
     load: (url) => {
-      if (!load) throw new RemoteError('LOAD_FAILED', name, "a CSP bloqueou o script do iframe do isolate: 'reframe' (libere o hash de REFRAME_SCRIPT ou use nonce)")
+      if (!load) throw new RemoteError('LOAD_FAILED', name, tr("a CSP bloqueou o script do iframe do isolate: 'reframe' (libere o hash de REFRAME_SCRIPT ou use nonce)", "the CSP blocked the iframe script of isolate: 'reframe' (allow the REFRAME_SCRIPT hash or use a nonce)"))
       return load(url)
     },
     async mount(mod, el, props, c) {

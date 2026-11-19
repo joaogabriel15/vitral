@@ -14,6 +14,7 @@
  * serializáveis), e a altura do iframe acompanha o conteúdo.
  */
 import { report } from './core/errors'
+import { tr } from './core/lang'
 import { splitName } from './core/expose'
 import { verifyIntegrity } from './core/integrity'
 import { resolveEntry } from './core/loader'
@@ -73,8 +74,8 @@ async function mountFrame<P extends Props>(
   const { timeout, retries } = p.settings()
   const [remote, key] = splitName(name)
   const entry = p.entry(remote)
-  if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
-  if (!entry.url) throw new RemoteError('MOUNT_FAILED', name, 'remote local (module) não roda em iframe: registre a URL dele')
+  if (!entry) throw new RemoteError('NOT_REGISTERED', name, tr('remote não registrado. Use configure({ remotes }).', 'remote not registered. Use configure({ remotes }).'))
+  if (!entry.url) throw new RemoteError('MOUNT_FAILED', name, tr('remote local (module) não roda em iframe: registre a URL dele', 'a local remote (module) cannot run in an iframe: register its URL'))
   const { integrity, ...resolved } = await resolveEntry(remote, entry as RemoteEntry & { url: string })
   // Com SRI, a página confere os bytes e o iframe executa exatamente esses bytes.
   const code = integrity

@@ -1,3 +1,4 @@
+import { tr } from './lang'
 import { dedupeModule } from './bundled'
 import { RemoteError } from './errors'
 import { protocol } from './state'
@@ -31,7 +32,7 @@ export function configure(config: VitralConfig): void {
 /** Registra (ou substitui) um remote. */
 export function register(name: string, entry: string | RemoteEntry): void {
   const e: RemoteEntry = typeof entry === 'string' ? { url: entry } : entry
-  if (!e.url && !e.module) throw new RemoteError('NOT_REGISTERED', name, 'informe url ou module')
+  if (!e.url && !e.module) throw new RemoteError('NOT_REGISTERED', name, tr('informe url ou module', 'provide url or module'))
   if (!e.url) return protocol().register(name, e)
   const url = absolute(e.url)
   protocol().register(name, { ...e, url })
@@ -74,5 +75,5 @@ export function checkOrigin(name: string, url: string): void {
   const { allowedOrigins, trusted = [] } = p.settings()
   const allowed = [...(allowedOrigins ?? ([pageOrigin(), ...p.origins()].filter(Boolean) as string[])), ...trusted]
   if (allowed.includes('*') || allowed.includes(origin) || url.startsWith('blob:')) return
-  throw new RemoteError('ORIGIN_BLOCKED', name, `origem ${origin} não está em allowedOrigins`)
+  throw new RemoteError('ORIGIN_BLOCKED', name, tr(`origem ${origin} não está em allowedOrigins`, `origin ${origin} is not in allowedOrigins`))
 }

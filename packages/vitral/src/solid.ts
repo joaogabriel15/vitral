@@ -10,6 +10,7 @@ import { isServer, render } from 'solid-js/web'
 import { defineRemote, shared, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type SlotStatus, type Shared, type CheckedProps } from './index'
 import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 import { memoSelect, same } from './core/shared'
+import { messages } from './core/lang'
 
 /** Transforma um componente Solid em um remote. O contexto chega na prop `vitral`. */
 export function solidRemote<P extends Props>(Comp: Component<any>): RemoteModule<P> {
@@ -93,9 +94,10 @@ function defaultError(retry: () => void): JSX.Element {
   box.setAttribute('data-vitral-default', 'error')
   const button = document.createElement('button')
   button.type = 'button'
-  button.textContent = 'Tentar de novo'
+  const m = messages()
+  button.textContent = m.retry
   button.onclick = retry
-  box.append('Não foi possível carregar. ', button)
+  box.append(m.error + ' ', button)
   return box as unknown as JSX.Element
 }
 

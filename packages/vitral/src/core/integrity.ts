@@ -1,3 +1,4 @@
+import { tr } from './lang'
 import { RemoteError } from './errors'
 
 const clean = (b64: string) => b64.replace(/-/g, '+').replace(/_/g, '/').replace(/=/g, '')
@@ -13,11 +14,11 @@ export async function verifyIntegrity(name: string, bytes: ArrayBuffer, integrit
     .split(/\s+/)
     .map((token) => /^sha(256|384|512)-([\w+/=-]+)/.exec(token))
     .filter((m): m is RegExpExecArray => !!m)
-  if (!hashes.length) throw new RemoteError('INTEGRITY', name, `formato de integrity inválido: ${integrity}`)
+  if (!hashes.length) throw new RemoteError('INTEGRITY', name, tr(`formato de integrity inválido: ${integrity}`, `invalid integrity format: ${integrity}`))
   const bits = Math.max(...hashes.map((m) => +m[1]))
   const actual = btoa(String.fromCharCode(...new Uint8Array(await crypto.subtle.digest('SHA-' + bits, bytes))))
   const expected = hashes.filter((m) => +m[1] === bits).map((m) => m[2])
   if (!expected.some((h) => clean(h) === clean(actual))) {
-    throw new RemoteError('INTEGRITY', name, `o hash não confere: esperado sha${bits}-${expected.join(' ou ')}, obtido sha${bits}-${actual}`)
+    throw new RemoteError('INTEGRITY', name, tr(`o hash não confere: esperado sha${bits}-${expected.join(' ou ')}, obtido sha${bits}-${actual}`, `hash mismatch: expected sha${bits}-${expected.join(' or ')}, got sha${bits}-${actual}`))
   }
 }

@@ -1,3 +1,4 @@
+import { tr } from './lang'
 import { dedupeModule, sriModule } from './bundled'
 import { prefetchCss } from './css'
 import { fail, isRemoteError, RemoteError, report } from './errors'
@@ -121,7 +122,7 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
       // Override troca a URL e descarta a integrity do host; o isolamento continua.
       const override = await devOverride(name)
       const entry = override ? { isolate: p.entry(name)?.isolate, ...override } : p.entry(name)
-      if (!entry) throw new RemoteError('NOT_REGISTERED', name, 'remote não registrado. Use configure({ remotes }).')
+      if (!entry) throw new RemoteError('NOT_REGISTERED', name, tr('remote não registrado. Use configure({ remotes }).', 'remote not registered. Use configure({ remotes }).'))
       if (entry.module) return await loadLocal(name, entry)
       let t = performance.now()
       resolved = await resolveEntry(name, entry as RemoteEntry & { url: string }, priority, entry.url === known?.url ? early : undefined)
@@ -188,7 +189,7 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
       : { name, entry: entry.url })
   // Canal (`{ stable, canary }`): escolhe a versão e segue pelo manifesto dela.
   if ((m as any)?.stable) return resolveEntry(name, await (await import('./channel')).pick(name, entry, m as any), priority)
-  if (typeof m?.entry !== 'string') throw new RemoteError('INVALID_MODULE', name, `manifesto inválido em ${entry.url}`)
+  if (typeof m?.entry !== 'string') throw new RemoteError('INVALID_MODULE', name, tr(`manifesto inválido em ${entry.url}`, `invalid manifest at ${entry.url}`))
   // Contrato: com os dois lados declarando, confere antes de executar o remote.
   if (m.contract && (entry.contract || protocol().settings().contract)) {
     const why = await (await import('./contract')).checkContract(m.contract, entry.contract)
@@ -277,7 +278,7 @@ async function importModule(name: string, r: Resolved): Promise<any> {
   const { timeout } = protocol().settings()
   const run = (url: string) =>
     withTimeout(timeout, name, import(/* @vite-ignore */ /* webpackIgnore: true */ url)).catch((e) => {
-      throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, `falha ao importar ${r.entry}`, e)
+      throw isRemoteError(e) ? e : new RemoteError('LOAD_FAILED', name, tr(`falha ao importar ${r.entry}`, `failed to import ${r.entry}`), e)
     })
   // Sem hash a conferir, o build dividido baixa só o que a primeira tela usa
   // e pega as dependências de dedupe da página, como no caminho com SRI.
@@ -299,13 +300,13 @@ async function importModule(name: string, r: Resolved): Promise<any> {
   }
   // Com integrity, a conferência mora no módulo de SRI. Sem ele, nada roda.
   const sri = await paths
-  if (!sri) throw new RemoteError('LOAD_FAILED', name, 'não foi possível carregar o verificador de integrity')
+  if (!sri) throw new RemoteError('LOAD_FAILED', name, tr('não foi possível carregar o verificador de integrity', 'could not load the integrity checker'))
   return sri.importVerified(name, r as Verifiable, run, timeout)
 }
 
 export function mountable(name: string, r: LoadedRemote): LoadedRemote {
   if (typeof r.module?.mount != 'function') {
-    throw new RemoteError('INVALID_MODULE', name, 'o módulo não exporta mount(). Use defineRemote(), ou loadModule() para módulo sem UI.')
+    throw new RemoteError('INVALID_MODULE', name, tr('o módulo não exporta mount(). Use defineRemote(), ou loadModule() para módulo sem UI.', 'the module does not export mount(). Use defineRemote(), or loadModule() for a module without UI.'))
   }
   return r
 }

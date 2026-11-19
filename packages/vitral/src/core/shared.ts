@@ -8,6 +8,7 @@
  *   shared('tema').subscribe((t) => console.log(t))
  *   usuario.set({ id: 7, nome: 'Bia' })
  */
+import { tr } from './lang'
 import { RemoteError } from './errors'
 import { ctxHooks } from './hooks'
 import { pageStore as store, type SharedStore } from './store'
@@ -91,7 +92,7 @@ function handle(store: SharedStore, key: string, by?: string, track: Track = (of
   const get = () => store.get(key)
   const set = (value: unknown) => {
     if (store.set(key, value, token, by)) return
-    const e = new RemoteError('SHARED_READONLY', by || 'shared', `só o dono altera "${key}"`)
+    const e = new RemoteError('SHARED_READONLY', by || 'shared', tr(`só o dono altera "${key}"`, `only the owner can change "${key}"`))
     if (isDev()) throw e
     console.warn(e.message)
   }

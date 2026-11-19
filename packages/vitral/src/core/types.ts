@@ -1,3 +1,4 @@
+import type { Messages } from './lang'
 import type { DedupePlan } from './dedupe-plan'
 import type { Policy } from './policy'
 import type { RemoteError } from './errors'
@@ -264,6 +265,14 @@ export interface VitralConfig {
    * desligado (sempre revalida).
    */
   maxStale?: number
+  /**
+   * Língua dos textos da lib (carregando, erro, mensagens de `RemoteError` e
+   * link da documentação do erro). Só `'pt'` e `'en'`. Padrão: o `lang` do
+   * `<html>`, depois a língua do navegador; fora `pt`, inglês.
+   */
+  language?: string
+  /** Troca os textos do carregando e do erro padrão (ex.: `{ retry: 'Recarregar' }`). */
+  messages?: Partial<Messages>
   /** Isolamento padrão para todos os remotes. Padrão `'none'`. */
   isolate?: Isolation
   /**

@@ -1,4 +1,5 @@
 import { ctxHooks } from './hooks'
+import { isPt } from './lang'
 import { protocol, type LoadedRemote } from './state'
 
 export type RemoteErrorCode =
@@ -14,7 +15,7 @@ export type RemoteErrorCode =
   | 'SHARED_READONLY'
   | 'CONTRACT_MISMATCH'
 
-/** Endereço das páginas de erro no site. A página de cada código é `ERROR_DOCS + code`. */
+/** Endereço das páginas de erro no site, em português. A página de cada código é `ERROR_DOCS + code`; em inglês, em `/en/erros/`. */
 export const ERROR_DOCS = 'https://joaogabriel15.github.io/vitral/erros/'
 
 export class RemoteError extends Error {
@@ -33,9 +34,11 @@ export class RemoteError extends Error {
     message: string,
     public cause?: unknown,
   ) {
-    super(`[vitral] ${remote}: ${message} (${ERROR_DOCS}${code})`)
+    // A página do erro na língua da lib (`/en/erros/` em inglês).
+    const docs = (isPt() ? ERROR_DOCS : ERROR_DOCS.replace('/erros/', '/en/erros/')) + code
+    super(`[vitral] ${remote}: ${message} (${docs})`)
     this.name = 'RemoteError'
-    this.docs = `${ERROR_DOCS}${code}`
+    this.docs = docs
     if (typeof location != 'undefined') this.route = location.pathname
   }
 }

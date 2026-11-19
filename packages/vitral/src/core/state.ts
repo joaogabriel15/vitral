@@ -9,6 +9,7 @@
  */
 import type { DedupePlan } from './dedupe-plan'
 import type { Policy } from './policy'
+import type { Messages } from './lang'
 import { createEventBus } from './bus'
 import type { EventBus, I18nHost, Isolation, RemoteEntry, RemoteMetric, RemoteModule, RollbackInfo, ShadowCss, SharedModules, StyleOptions } from './types'
 import type { SharedStore } from './store'
@@ -45,6 +46,10 @@ export interface Settings {
   onRollback?: (info: RollbackInfo) => void
   /** Idade máxima, em segundos, do manifesto salvo usado sem esperar a rede. */
   maxStale?: number
+  /** Língua dos textos da lib (`core/lang.ts`). */
+  language?: string
+  /** Textos do carregando e do erro padrão. */
+  messages?: Partial<Messages>
   /** Onde entram as traduções dos remotes (`configure({ i18n })`). */
   i18n?: I18nHost
 }

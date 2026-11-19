@@ -77,6 +77,7 @@ exports[`exports públicos > index 1`] = `
   "html",
   "loadModule",
   "loadRemote",
+  "messages",
   "mountRemote",
   "navigate",
   "persist",

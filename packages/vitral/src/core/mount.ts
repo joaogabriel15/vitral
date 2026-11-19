@@ -1,3 +1,4 @@
+import { tr } from './lang'
 import { injectStyles } from './css'
 import { fail, isRemoteError, RemoteError, report } from './errors'
 import { scopedEvents } from './events'
@@ -126,7 +127,7 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
     scoped.dispose()
     release()
     el.remove()
-    throw report(new RemoteError('MOUNT_FAILED', label, 'erro ao montar', e), resolved)
+    throw report(new RemoteError('MOUNT_FAILED', label, tr('erro ao montar', 'mount failed'), e), resolved)
   }
   let alive = true
   const handle: MountedRemote<P> = {
