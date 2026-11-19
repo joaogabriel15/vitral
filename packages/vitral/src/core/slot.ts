@@ -46,6 +46,7 @@ export function createSlot<P extends Props = Props>(target: HTMLElement, options
   let handle: MountedRemote<P> | null = null
   let holder: HTMLElement | null = null
   let token = 0
+  let abort: AbortController | null = null
   let status: SlotStatus = 'loading'
 
   const setStatus = (s: SlotStatus, e: RemoteError | null = null) => {
@@ -55,6 +56,9 @@ export function createSlot<P extends Props = Props>(target: HTMLElement, options
   }
 
   const teardown = () => {
+    // A montagem em andamento para antes de rodar o remote.
+    abort?.abort()
+    abort = null
     handle?.unmount()
     handle = null
     holder?.remove()
@@ -74,7 +78,8 @@ export function createSlot<P extends Props = Props>(target: HTMLElement, options
       setStatus('error', isRemoteError(e) ? e : new RemoteError('MOUNT_FAILED', name, String(e), e))
     }
     const initial = props
-    mountRemote<P>(holder, name, props, { isolate, priority: options.priority, styles: options.styles, onError: fail }).then((h) => {
+    abort = new AbortController()
+    mountRemote<P>(holder, name, props, { isolate, priority: options.priority, styles: options.styles, onError: fail, signal: abort.signal }).then((h) => {
       if (my !== token) return h.unmount()
       handle = h
       // Props que mudaram enquanto o remote baixava.
