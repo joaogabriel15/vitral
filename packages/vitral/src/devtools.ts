@@ -5,10 +5,15 @@
  *   import { devtools } from 'vitral/devtools'
  *   if (import.meta.env.DEV) devtools()
  *
+ * `watchLeaks()` avisa quando um remote sai da página e deixa ouvintes em
+ * `window`/`document` ou `setInterval` abertos.
+ *
  * O painel lista os overrides ativos: os de `?vitral=` desta aba e os
  * salvos em `localStorage['vitral:overrides']`. Só valem com
  * `configure({ devOverrides })` ou com a página em localhost.
  */
+import { mounted } from './core/errors'
+import { ctxHooks } from './core/hooks'
 import { activeOverrides, clearOverrides, dropOverride, overridesEnabled, storedOverrides, storeOverride } from './core/overrides'
 
 export type { ActiveOverride } from './core/overrides'
@@ -115,4 +120,147 @@ export function devtools(options: DevtoolsOptions = {}): () => void {
   draw()
   document.body.append(host)
   return () => host.remove()
+}
+
+// ---------------------------------------------------------------------------
+// Vazamentos depois do unmount
+// ---------------------------------------------------------------------------
+
+/** O que um remote deixou para trás depois de sair da página. */
+export interface LeakReport {
+  /** Nome do remote. */
+  name: string
+  /** Ouvintes que ele pôs em `window` ou `document` e não tirou. */
+  listeners: { target: 'window' | 'document'; type: string; stack?: string }[]
+  /** `setInterval` que ele abriu e não fechou. */
+  intervals: { stack?: string }[]
+}
+
+export interface LeakOptions {
+  /** Espera depois do unmount antes de conferir, em ms (limpezas assíncronas). Padrão: 200. */
+  delay?: number
+  /** Recebe cada relatório. Padrão: um aviso no console. */
+  onLeak?: (report: LeakReport) => void
+}
+
+interface Rec {
+  name: string
+  target: EventTarget
+  type: string
+  fn: unknown
+  capture: boolean
+  stack?: string
+}
+
+/** Remote montado dono do código no `stack`: o primeiro arquivo que mora na pasta de um remote. */
+function ownerOf(stack: string | undefined): string | undefined {
+  // URLs da pilha; no Node (testes), caminhos absolutos viram `file://`.
+  const urls = stack?.match(/(?:https?|file):\/\/[^\s)'"]+|(?<=[\s(@])\/[^\s)'"]+/g)?.map((u) => (u[0] == '/' ? 'file://' + u : u))
+  if (!urls) return
+  // Pasta que também tem scripts do host (host e remote na mesma pasta) não serve para atribuir.
+  const host = [...document.querySelectorAll<HTMLScriptElement | HTMLLinkElement>('script[src],link[rel=modulepreload]')].map((el) => (el as HTMLScriptElement).src || (el as HTMLLinkElement).href)
+  for (const url of urls) {
+    let best: string | undefined
+    let size = 0
+    for (const [name, { entry }] of mounted) {
+      const dir = new URL('.', entry).href
+      if (dir.length > size && url.startsWith(dir) && !host.some((u) => u.startsWith(dir))) (best = name), (size = dir.length)
+    }
+    if (best) return best
+  }
+}
+
+/**
+ * Só em desenvolvimento: avisa quando um remote sai da página e deixa
+ * ouvintes em `window`/`document` ou `setInterval` abertos (memória que cresce
+ * a cada troca de tela). O dono é achado pela pilha da chamada, então o
+ * remote precisa vir de uma URL (`vite dev` ou build sem SRI por `blob:`).
+ * Devolve a função que desliga.
+ *
+ *   if (import.meta.env.DEV) watchLeaks()
+ */
+export function watchLeaks(options: LeakOptions = {}): () => void {
+  // Quem guarda o `addEventListener` de `window` e de `document`: no navegador
+  // é o EventTarget.prototype; em outros ambientes (happy-dom) pode ser outro.
+  const owner = (t: object): EventTarget => {
+    let o = t
+    while (o && !Object.prototype.hasOwnProperty.call(o, 'addEventListener')) o = Object.getPrototypeOf(o)
+    return (o ?? EventTarget.prototype) as EventTarget
+  }
+  const holders = [...new Set([owner(window), owner(document)])]
+  const saved = holders.map((h) => [h.addEventListener, h.removeEventListener] as const)
+  const set = globalThis.setInterval
+  const clear = globalThis.clearInterval
+  const recs = new Set<Rec>()
+  const intervals = new Map<unknown, { name: string; stack?: string }>()
+  const isGlobal = (t: EventTarget) => t === window || t === document
+  const capture = (o: unknown) => (typeof o == 'object' ? !!(o as AddEventListenerOptions)?.capture : !!o)
+  const find = (t: EventTarget, type: string, fn: unknown, c: boolean) => [...recs].find((r) => r.target === t && r.type === type && r.fn === fn && r.capture === c)
+
+  const wrap = (add: EventTarget['addEventListener'], remove: EventTarget['removeEventListener']) => ({
+    addEventListener(this: EventTarget, type: string, fn: any, o?: boolean | AddEventListenerOptions) {
+      if (fn && isGlobal(this) && !find(this, type, fn, capture(o))) {
+        const stack = new Error().stack
+        const name = ownerOf(stack)
+        const signal = typeof o == 'object' ? o.signal : undefined
+        // `once` sai sozinho no primeiro disparo: fica de fora.
+        if (name && !signal?.aborted && !(typeof o == 'object' && o.once)) {
+          const r: Rec = { name, target: this, type, fn, capture: capture(o), stack }
+          recs.add(r)
+          signal?.addEventListener('abort', () => recs.delete(r))
+        }
+      }
+      return add.call(this, type, fn, o)
+    },
+    removeEventListener(this: EventTarget, type: string, fn: any, o?: boolean | EventListenerOptions) {
+      if (isGlobal(this)) {
+        const r = find(this, type, fn, capture(o))
+        if (r) recs.delete(r)
+      }
+      return remove.call(this, type, fn, o)
+    },
+  })
+  holders.forEach((h, i) => Object.assign(h, wrap(...saved[i])))
+  globalThis.setInterval = function (...a: Parameters<typeof setInterval>) {
+    const id = set(...a)
+    const stack = new Error().stack
+    const name = ownerOf(stack)
+    if (name) intervals.set(id, { name, stack })
+    return id
+  } as typeof setInterval
+  globalThis.clearInterval = function (id?: Parameters<typeof clearInterval>[0]) {
+    intervals.delete(id)
+    return clear(id)
+  } as typeof clearInterval
+
+  const report =
+    options.onLeak ??
+    ((r: LeakReport) => {
+      const what = [...r.listeners.map((l) => `${l.target}.${l.type}`), ...r.intervals.map(() => 'setInterval')]
+      console.warn(`[vitral] ${r.name} saiu da página e deixou ${what.length} ${what.length > 1 ? 'itens' : 'item'}: ${what.join(', ')}. Use ctx.signal ou limpe no unmount.`, r)
+    })
+  const before = ctxHooks.gone
+  ctxHooks.gone = (name) => {
+    before?.(name)
+    setTimeout(() => {
+      // Montado de novo nesse meio tempo: os ouvintes podem ser da montagem nova.
+      if (mounted.has(name)) return
+      const listeners = [...recs].filter((r) => r.name === name)
+      const open = [...intervals].filter(([, i]) => i.name === name)
+      for (const r of listeners) recs.delete(r)
+      for (const [id] of open) intervals.delete(id)
+      if (listeners.length || open.length)
+        report({
+          name,
+          listeners: listeners.map((r) => ({ target: r.target === window ? 'window' : 'document', type: r.type, stack: r.stack })),
+          intervals: open.map(([, i]) => ({ stack: i.stack })),
+        })
+    }, options.delay ?? 200)
+  }
+  return () => {
+    holders.forEach((h, i) => Object.assign(h, { addEventListener: saved[i][0], removeEventListener: saved[i][1] }))
+    globalThis.setInterval = set
+    globalThis.clearInterval = clear
+    ctxHooks.gone = before
+  }
 }

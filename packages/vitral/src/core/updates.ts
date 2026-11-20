@@ -9,6 +9,7 @@
  * nova falhar, a antiga continua na tela e `refresh` rejeita.
  */
 import { mounted } from './errors'
+import { ctxHooks } from './hooks'
 import { events } from './events'
 import { loadFile, resolveEntry } from './loader'
 import { protocol, type LoadedRemote } from './state'
@@ -27,7 +28,7 @@ export function track(name: string, loaded: Pick<LoadedRemote, 'entry' | 'versio
   return () => {
     const n = live.get(name)! - 1
     if (n) live.set(name, n)
-    else live.delete(name), versions.delete(name), mounted.delete(name)
+    else live.delete(name), versions.delete(name), mounted.delete(name), ctxHooks.gone?.(name)
   }
 }
 
