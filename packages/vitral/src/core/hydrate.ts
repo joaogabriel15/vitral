@@ -26,7 +26,7 @@
 import { tr } from './lang'
 import { navigate, RemoteError } from '../index'
 import { injectStyles } from './css'
-import { isRemoteError, report } from './errors'
+import { isAbort, isRemoteError, report } from './errors'
 import { scopedEvents } from './events'
 import { hostSlot, type HostSlotOptions } from './host-slot'
 import { ctxHooks } from './hooks'
@@ -141,6 +141,8 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
   t = performance.now()
   const scoped = scopedEvents()
   const on = (type: string) => (fn: () => void) => (el.addEventListener(type, fn), () => el.removeEventListener(type, fn))
+  // Abortado no unmount: o remote passa para fetch, ouvintes e timers.
+  const life = new AbortController()
   const ctx: RemoteContext = {
     name: label,
     baseUrl: new URL('.', resolved.entry).href,
@@ -148,7 +150,9 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
     shadowRoot,
     portalContainer: portal,
     customElements: registry,
+    signal: life.signal,
     reportError(e) {
+      if (isAbort(e)) return
       const err = report(isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e), resolved)
       if (options.onError) options.onError(err)
       else console.error(err)
@@ -169,6 +173,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
     mounted = await mod.hydrate(el, props as never, ctx) as MountedRemote<P>
     metric(name, 'mount', t)
   } catch (e) {
+    life.abort()
     untrack()
     scoped.dispose()
     release()
@@ -186,6 +191,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
       try {
         mounted.unmount()
       } finally {
+        life.abort()
         untrack()
         scoped.dispose()
         release()

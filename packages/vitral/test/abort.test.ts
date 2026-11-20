@@ -72,3 +72,49 @@ describe('AbortSignal', () => {
     expect(unmount).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('ctx.signal', () => {
+  it('é abortado no unmount, depois do unmount do remote', async () => {
+    let signal: AbortSignal | undefined
+    const order: string[] = []
+    register('sinal', {
+      module: {
+        mount(_el, _p, ctx) {
+          signal = ctx.signal
+          ctx.signal!.addEventListener('abort', () => order.push('abort'))
+          return { unmount: () => order.push('unmount') }
+        },
+      },
+    })
+    const h = await mountRemote(document.body, 'sinal', {})
+    expect(signal?.aborted).toBe(false)
+    h.unmount()
+    expect(signal?.aborted).toBe(true)
+    expect(order).toEqual(['unmount', 'abort'])
+  })
+
+  it('é abortado quando o mount() falha', async () => {
+    let signal: AbortSignal | undefined
+    register('quebra', {
+      module: {
+        mount(_el, _p, ctx) {
+          signal = ctx.signal
+          throw new Error('x')
+        },
+      },
+    })
+    await expect(mountRemote(document.body, 'quebra', {})).rejects.toThrow()
+    expect(signal?.aborted).toBe(true)
+  })
+
+  it('AbortError entregue ao reportError não chega no onError', async () => {
+    const onError = vi.fn()
+    let report!: (e: unknown) => void
+    register('cancela', { module: { mount: (_el, _p, ctx) => ((report = ctx.reportError), { unmount() {} }) } })
+    await mountRemote(document.body, 'cancela', {}, { onError })
+    report(new DOMException('cancelado', 'AbortError'))
+    expect(onError).not.toHaveBeenCalled()
+    report(new Error('defeito'))
+    expect(onError).toHaveBeenCalledTimes(1)
+  })
+})

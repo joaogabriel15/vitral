@@ -43,6 +43,9 @@ export class RemoteError extends Error {
   }
 }
 
+/** Cancelamento (`AbortController.abort()`): nunca é um defeito a relatar. */
+export const isAbort = (e: unknown): boolean => (e as Error)?.name === 'AbortError'
+
 /** `RemoteError` de qualquer cópia da lib (o `instanceof` falha entre cópias). */
 export const isRemoteError = (e: unknown): e is RemoteError => (e as Error)?.name === 'RemoteError'
 

@@ -57,6 +57,13 @@ export interface RemoteContext {
    * antigos não mandam este campo: use `ctx.customElements ?? customElements`.
    */
   customElements?: CustomElementRegistry
+  /**
+   * Abortado no unmount. Passe para `fetch`, `addEventListener` e timers do
+   * remote: tudo para sozinho quando ele sai da tela, e o `AbortError` que o
+   * cancelamento gera não vira erro no `onError` nem no Sentry. Hosts antigos
+   * não mandam este campo.
+   */
+  signal?: AbortSignal
   /** Avisa o host de um erro em tempo de execução (os adaptadores já chamam). */
   reportError(error: unknown): void
   /** Navega a página inteira (host e todos os roteadores) para `url`. */

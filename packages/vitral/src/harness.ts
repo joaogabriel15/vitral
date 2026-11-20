@@ -186,6 +186,7 @@ export async function harness<P extends Props = Props>(
   const activate = new Set<() => void>()
   const deactivate = new Set<() => void>()
   const hook = (set: Set<() => void>) => (fn: () => void) => (set.add(fn), () => set.delete(fn))
+  const life = new AbortController()
   const ctx: RemoteContext = {
     name,
     baseUrl: typeof location !== 'undefined' ? new URL('.', location.href).href : 'http://localhost/',
@@ -193,7 +194,8 @@ export async function harness<P extends Props = Props>(
     shadowRoot,
     portalContainer: portal,
     customElements,
-    reportError: (e) => errors.push(e),
+    signal: life.signal,
+    reportError: (e) => (e as Error)?.name !== 'AbortError' && errors.push(e),
     navigate: (url, opts) => navigations.push({ url, options: opts }),
     protocol: 1,
     onActivate: hook(activate),
@@ -222,6 +224,7 @@ export async function harness<P extends Props = Props>(
       try {
         mounted.unmount()
       } finally {
+        life.abort()
         el.remove()
         if (!options.target) target.remove()
       }
