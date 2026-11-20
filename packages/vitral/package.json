@@ -271,7 +271,7 @@
     "rxjs": "^7.8.2",
     "size-limit": "^11.2.0",
     "solid-js": "^1.9.17",
-    "svelte": "^5.57.2",
+    "svelte": "^5.57.3",
     "tailwindcss": "^4.3.3",
     "tsup": "^8.5.0",
     "typescript": "~5.9.0",
