@@ -35,7 +35,7 @@ import { mountOnce, registered, type MountOptions } from './mount'
 import type { RemoteSlot, SlotStatus } from './slot'
 import { protocol } from './state'
 import type { MountedRemote, Props, RemoteContext, RemoteManifest } from './types'
-import { refreshable, track } from './updates'
+import { heal, refreshable, track } from './updates'
 import { absolute, metric } from './util'
 
 /**
@@ -95,7 +95,7 @@ export function hydrateSlot<P extends Props = Props>(target: HTMLElement, holder
     set(next) {
       if (inner) return inner.set(next)
       const changed = (next.name !== undefined && next.name !== name) || ('isolate' in next && next.isolate !== options.isolate)
-      if (changed) (holder.remove(), fallback(next))
+      if (changed) holder.remove(), fallback(next)
     },
     retry() {
       if (inner) return inner.retry()
@@ -159,6 +159,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
     signal: life.signal,
     reportError(e) {
       if (isAbort(e)) return
+      heal(name, e)
       const err = report(isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e), resolved)
       if (options.onError) options.onError(err)
       else console.error(err)
@@ -176,7 +177,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
     } catch {}
   let mounted: MountedRemote<P>
   try {
-    mounted = (await mod.hydrate(el, props as never, ctx)) as MountedRemote<P>
+    mounted = await mod.hydrate(el, props as never, ctx) as MountedRemote<P>
     metric(name, 'mount', t)
   } catch (e) {
     life.abort()

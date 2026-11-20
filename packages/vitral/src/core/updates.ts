@@ -15,7 +15,7 @@ import { protocol, type LoadedRemote } from './state'
 import type { MountedRemote, Props, RemoteEntry } from './types'
 
 /** URL do JS montado (ou já anunciado), por nome montado (`carrinho` ou `carrinho/Mini`). */
-const versions = new Map<string, string>()
+export const versions = new Map<string, string>()
 /** Montagens vivas por nome: só esses remotes são revalidados. */
 const live = new Map<string, number>()
 
@@ -92,6 +92,18 @@ export function refreshable<P extends Props>(
 }
 
 const noop = () => {}
+
+/** Mensagem de `import()` cujo arquivo sumiu, em cada navegador e no webpack. */
+const GONE = /dynamically imported module|Importing a module script failed|ChunkLoadError|Loading (CSS )?chunk \S+ failed/i
+
+/**
+ * Chunk que sumiu num remote montado (aba aberta antes de um deploy que
+ * apagou os arquivos antigos): `./heal`, baixado só nesse caso, confere o
+ * manifesto e troca pela versão nova.
+ */
+export function heal(name: string, error: unknown): void {
+  if (live.has(name) && GONE.test(String((error as Error)?.message ?? error))) import('./heal').then((m) => m.heal(name, versions)).catch(noop)
+}
 
 /**
  * Revalida os manifestos dos remotes montados agora (os desmontados ficam de

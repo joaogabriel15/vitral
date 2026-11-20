@@ -16,8 +16,8 @@
  */
 import { warmSsr } from './core/loader'
 import { matchRoute as match, type RouteMatch, type Routes } from './core/match'
-import { hostSlot } from './core/host-slot'
-import { navigate, type Isolation, type Props, type RemoteError, type RemoteSlot, type SlotStatus } from './index'
+import { whenShared } from './core/wait'
+import { createSlot, navigate, type Isolation, type Props, type RemoteError, type RemoteSlot, type SlotStatus } from './index'
 
 export type { RouteMatch, Routes }
 
@@ -73,6 +73,8 @@ const Base: typeof HTMLElement = typeof HTMLElement === 'undefined' ? (class {} 
 export class VitralOutletElement extends Base {
   static observedAttributes = ['props', 'isolate']
   #slot: RemoteSlot | null = null
+  /** Cancela a espera do `wait-for`. */
+  #wait = () => {}
   #props: Props = {}
   // `undefined` até a primeira checagem, para o estado `empty` aparecer já de início.
   #route: string | null | undefined
@@ -135,6 +137,7 @@ export class VitralOutletElement extends Base {
     this.#route = name
     if (name) this.setAttribute('data-vitral-route', name)
     else this.removeAttribute('data-vitral-route')
+    this.#wait()
     if (!name) {
       this.#slot?.destroy()
       this.#slot = null
@@ -142,11 +145,16 @@ export class VitralOutletElement extends Base {
     } else if (this.#slot) {
       this.#slot.set({ name })
     } else {
+      // `wait-for="sessao"`: monta quando as chaves de `provide` tiverem valor.
+      const waitFor =
+        this.getAttribute('wait-for')
+          ?.split(/[\s,]+/)
+          .filter(Boolean) ?? []
       const options = {
         name,
         props: this.#props,
         isolate: (this.getAttribute('isolate') as Isolation) || undefined,
-        waitFor: this.getAttribute('wait-for')?.split(/[\s,]+/).filter(Boolean),
+        waitFor,
         onStatus: (s: SlotStatus, e: RemoteError | null) => this.#status(s, e),
       }
       // HTML da rota renderizado pelo gateway (`vitral/edge` com `routes`): hidrata, sob demanda.
@@ -161,7 +169,10 @@ export class VitralOutletElement extends Base {
         return
       }
       ssr?.remove()
-      this.#slot = hostSlot(this, options)
+      if (waitFor.length) this.#status('loading', null)
+      this.#wait = whenShared(waitFor, () => {
+        if (this.#route === name && !this.#slot) this.#slot = createSlot(this, { ...options, name, props: this.#props })
+      })
     }
   }
 

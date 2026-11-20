@@ -70,3 +70,18 @@ describe('waitFor', () => {
     await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1))
   })
 })
+
+describe('<vitral-outlet wait-for>', () => {
+  it('a rota espera a sessão', async () => {
+    const mount = remote()
+    const { routes } = await import('../src/routes')
+    history.replaceState(null, '', '/conta')
+    routes({ '/conta': 'conta' })
+    document.body.innerHTML = '<vitral-outlet wait-for="sessao"></vitral-outlet>'
+    await flush()
+    expect(mount).not.toHaveBeenCalled()
+    expect(document.querySelector('vitral-outlet')!.getAttribute('data-vitral-status')).toBe('loading')
+    shared('sessao').set({ id: 1 })
+    await vi.waitFor(() => expect(mount).toHaveBeenCalledTimes(1))
+  })
+})

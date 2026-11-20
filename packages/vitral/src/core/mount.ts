@@ -6,7 +6,7 @@ import { ctxHooks } from './hooks'
 import { load } from './loader'
 import { navigate } from './navigate'
 import { protocol } from './state'
-import { refreshable, track } from './updates'
+import { heal, refreshable, track } from './updates'
 import type { Isolation, MountedRemote, Props, RemoteContext, StyleOptions } from './types'
 import { metric } from './util'
 
@@ -113,6 +113,7 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
     signal: life.signal,
     reportError(e) {
       if (isAbort(e)) return
+      heal(name, e)
       const err = report(isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e), resolved)
       if (options.onError) options.onError(err)
       else console.error(err)

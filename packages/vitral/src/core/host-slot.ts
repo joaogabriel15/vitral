@@ -7,6 +7,7 @@ import { ctxHooks } from './hooks'
 import { preload } from './loader'
 import { policy } from './policy'
 import { registerSrc } from './registry'
+import { whenShared } from './wait'
 import { createSlot, type RemoteSlot, type SlotOptions, type SlotStatus } from './slot'
 import type { Props } from './types'
 import type { RemoteError } from './errors'
@@ -15,6 +16,7 @@ import type { RemoteError } from './errors'
 export type Loading = 'eager' | 'lazy' | 'idle'
 /** Quando baixar antes de montar: no hover ou foco (`hover`), perto de aparecer (`visible`) ou com o navegador ocioso (`idle`). */
 export type Prefetch = 'hover' | 'visible' | 'idle'
+export { whenShared }
 
 export interface HostSlotOptions<P extends Props = Props> extends SlotOptions<P> {
   loading?: Loading | null
@@ -45,30 +47,6 @@ export interface HostSlotOptions<P extends Props = Props> extends SlotOptions<P>
 const noop = () => {}
 
 /**
- * Chama `fn` quando todas as chaves de `keys` do contexto compartilhado
- * tiverem valor. Devolve a função que cancela. O store só baixa para quem usa.
- */
-export function whenShared(keys: string[], fn: () => void): () => void {
-  if (!keys.length) return (fn(), noop)
-  let offs: (() => void)[] = []
-  let done = false
-  const stop = () => {
-    done = true
-    for (const off of offs) off()
-    offs = []
-  }
-  import('./shared').then(({ shared }) => {
-    if (done) return
-    const check = () => {
-      if (!done && keys.every((k) => shared(k).get() != null)) (stop(), fn())
-    }
-    // `subscribe` chama na hora: a lista de cancelamentos vem antes de conferir.
-    offs = keys.map((k) => shared(k).subscribe(() => queueMicrotask(check)))
-  })
-  return stop
-}
-
-/**
  * Último tempo de cada etapa do remote `name`, em ms, lido das medidas
  * `vitral:<nome>:<etapa>`. Vai no `detail` do evento `vitral-ready`.
  */
@@ -85,11 +63,11 @@ export function timings(name: string): Partial<Record<'manifest' | 'js' | 'css' 
 /** Chama `fn` uma vez, na hora pedida por `mode`. Devolve a função que cancela. */
 export function when(el: Element, mode: string | null | undefined, fn: () => void): () => void {
   if (mode === 'lazy' || mode === 'visible') {
-    if (typeof IntersectionObserver === 'undefined') return (fn(), noop)
+    if (typeof IntersectionObserver === 'undefined') return fn(), noop
     // 200px de margem: começa um pouco antes de o remote aparecer.
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) (io.disconnect(), fn())
+        if (entries.some((e) => e.isIntersecting)) io.disconnect(), fn()
       },
       { rootMargin: '200px' },
     )
@@ -172,7 +150,7 @@ function park(key: string, item: Kept, max: number) {
 
 /** Esvazia o keep-alive, desmontando tudo (útil em testes e no logout). */
 export function clearKeepAlive(): void {
-  for (const { slot, box } of kept.values()) (slot.destroy(), box.remove())
+  for (const { slot, box } of kept.values()) slot.destroy(), box.remove()
   kept.clear()
 }
 
@@ -188,15 +166,7 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
   let status: SlotStatus = 'loading'
   let item: Kept | null = null
   // Snapshot (`vitral/snapshot`, só no bundle de quem liga).
-  const snap = options.snapshot
-    ? ctxHooks.snapshot?.(
-        target,
-        name,
-        () => props,
-        () => item?.box,
-        options.onSnapshot,
-      )
-    : undefined
+  const snap = options.snapshot ? ctxHooks.snapshot?.(target, name, () => props, () => item?.box, options.onSnapshot) : undefined
   const onStatus = (s: SlotStatus, e: RemoteError | null) => {
     status = s
     snap?.(s)

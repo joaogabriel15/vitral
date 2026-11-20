@@ -137,7 +137,25 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
       // O embed (widget em site de terceiros) não tem i18n do host: o módulo fica fora do arquivo único.
       const words = typeof __VITRAL_EMBED__ === 'undefined' && resolved.i18n && i18n && import('./i18n').then((m) => m.loadTranslations(name, resolved!.i18n!, resolved!.sri ?? {}, i18n, timeout, priority)).catch((e) => console.warn(`[vitral] ${name}: traduções não carregaram`, e))
       t = performance.now()
-      const ns = await withRetry(p.settings().retries, () => importModule(name, resolved!))
+      let ns
+      try {
+        ns = await withRetry(p.settings().retries, () => importModule(name, resolved!))
+      } catch (e) {
+        // Aba antiga, `maxStale` ou preload do HTML: o manifesto que a página
+        // tinha aponta para arquivos que um deploy novo apagou. Relê sem cache
+        // e tenta a versão nova uma vez.
+        const again =
+          (e as RemoteError).code == 'LOAD_FAILED' &&
+          !entry.manifest &&
+          (await import('./heal').then(
+            (m) => m.reread(name, entry as RemoteEntry & { url: string }, priority),
+            () => undefined,
+          ))
+        if (!again || again.entry == resolved.entry) throw e
+        resolved = again
+        prefetchCss(resolved, (isolate ?? resolved.isolate ?? p.settings().isolate) === 'shadow', priority)
+        ns = await importModule(name, resolved)
+      }
       await words
       metric(name, 'js', t)
       return { ...resolved, module: ns?.default ?? ns, exports: ns }
@@ -168,7 +186,7 @@ async function loadLocal(name: string, entry: RemoteEntry): Promise<LoadedRemote
   return { module: ns?.default ?? ns, exports: ns, entry: typeof location !== 'undefined' ? location.href : 'http://localhost/', css: entry.css ?? [], isolate: entry.isolate }
 }
 
-type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild; priority?: RequestPriority; i18n?: Translations }
+export type Resolved = Omit<LoadedRemote, 'module'> & { integrity?: string; split?: SplitBuild; priority?: RequestPriority; i18n?: Translations }
 
 /** `early`: o manifesto já pedido por `loadFile` para esta URL. */
 export async function resolveEntry(name: string, entry: RemoteEntry & { url: string }, priority?: RequestPriority, early?: Promise<RemoteManifest>): Promise<Resolved> {
@@ -239,7 +257,7 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
 }
 
 /** ` ed25519-…` de cada chave pública do remote, para somar aos hashes. */
-const signed = (e: RemoteEntry): string => (e.keys ?? []).map((k) => ' ed25519-' + k).join('')
+export const signed = (e: RemoteEntry): string => (e.keys ?? []).map((k) => ' ed25519-' + k).join('')
 
 /** Pede o manifesto antes das ofertas de dedupe; nada se a origem não é permitida. */
 function prefetchManifest(url: string, name: string, priority: RequestPriority | undefined, keys: string): Promise<RemoteManifest> | undefined {
