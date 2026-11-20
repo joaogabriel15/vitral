@@ -27,7 +27,23 @@ export interface DoctorOptions {
   maxKb?: number
   /** Tempo máximo de cada download, em ms. Padrão 15000. */
   timeout?: number
+  /** Aviso para remote sem deploy há mais de N dias (pela data do JS publicado). */
+  staleDays?: number
   fetch?: typeof fetch
+}
+
+/** Retrato de um remote para o relatório (`--report`). */
+export interface RemoteInfo {
+  /** `version` do `vitral.json`. */
+  version?: string
+  /** Versão do contrato que o remote publica. */
+  contract?: string
+  /** Data do último deploy (ISO), do `Last-Modified` do JS (ou do manifesto). */
+  deployed?: string
+  /** JS que a montagem baixa, em bytes com gzip. */
+  gzip?: number
+  /** Versão de cada framework no bundle, do SBOM e do `dedupe` (ex.: `{ react: '19.1.0' }`). */
+  frameworks: Record<string, string>
 }
 
 export type Status = 'ok' | 'warn' | 'error'
@@ -47,7 +63,7 @@ export interface DoctorReport {
   errors: number
   warnings: number
   host: Check[]
-  remotes: { name: string; url: string; checks: Check[] }[]
+  remotes: { name: string; url: string; checks: Check[]; info?: RemoteInfo }[]
 }
 
 /** Acima disto (gzip), o tamanho vira aviso quando não há `maxKb`. */
@@ -251,12 +267,36 @@ interface Ctx {
   contract?: string
   maxKb?: number
   timeout: number
+  staleDays?: number
   policies: Policy[]
   deps: Record<string, string | undefined>
 }
 
 /** O que o doctor guarda de cada remote para as conferências entre remotes. */
-type Seen = { name: string; manifest?: RemoteManifest }
+type Seen = { name: string; manifest?: RemoteManifest; info: RemoteInfo }
+
+/** Pacotes que contam como framework no relatório (o `react-dom` segue o `react`). */
+const REPORTED = ['react', 'vue', '@angular/core', 'svelte', 'solid-js', 'preact', 'lit']
+
+/** Data do `Last-Modified`, em ISO, ou `undefined`. */
+function modified(res?: Response): string | undefined {
+  const t = Date.parse(res?.headers.get('last-modified') ?? '')
+  return Number.isNaN(t) ? undefined : new Date(t).toISOString()
+}
+
+/** Versões dos frameworks no SBOM (CycloneDX) publicado ao lado do manifesto. */
+async function sbomFrameworks(ctx: Ctx, url: string): Promise<Record<string, string>> {
+  const { res, bytes } = await get(ctx.f, url, ctx.origin, ctx.timeout)
+  const out: Record<string, string> = {}
+  if (!res?.ok || !bytes) return out
+  try {
+    for (const c of JSON.parse(new TextDecoder().decode(bytes)).components ?? []) {
+      const name = c.group ? `${c.group}/${c.name}` : c.name
+      if (REPORTED.includes(name) && c.version) out[name] = c.version
+    }
+  } catch {}
+  return out
+}
 
 async function checkRemote(name: string, e: RemoteJson, ctx: Ctx, seen: Seen): Promise<Check[]> {
   const out: Check[] = []
@@ -287,12 +327,17 @@ async function checkRemote(name: string, e: RemoteJson, ctx: Ctx, seen: Seen): P
       return out
     }
     out.push(ok(`manifesto válido: ${m.name ?? name}${m.version ? ` ${m.version}` : ''}`))
+    seen.info.deployed = modified(res)
   } else {
     m = { name, entry: e.url }
     out.push(ok('sem manifesto: a URL é o próprio JS'))
   }
   seen.manifest = m
+  seen.info.version = m.version
+  seen.info.contract = m.contract?.version
   const abs = (u: string) => new URL(u, e.url).href
+  for (const d of m.dedupe ?? []) if (REPORTED.includes(d.name) && d.version) seen.info.frameworks[d.name] = d.version
+  if (m.sbom?.file) Object.assign(seen.info.frameworks, await sbomFrameworks(ctx, abs(m.sbom.file)))
   const js = abs(m.entry)
   if (new URL(js).origin !== new URL(e.url).origin)
     out.push(
@@ -308,6 +353,7 @@ async function checkRemote(name: string, e: RemoteJson, ctx: Ctx, seen: Seen): P
   if (!res) out.push(error(`JS: não foi possível baixar (${failure})`, `${js} não respondeu.`, 'confira o entry do manifesto e se o servidor está no ar.'))
   else if (!res.ok) out.push(error(`JS: HTTP ${res.status} em ${js}`, 'o manifesto aponta para um arquivo que não foi publicado (LOAD_FAILED).', 'publique a pasta dist inteira, não só o vitral.json.'))
   if (res?.ok && bytes) {
+    seen.info.deployed = modified(res) ?? seen.info.deployed
     const c = cors('JS', js, res, ctx.origin, ctx.known)
     if (c) out.push(c)
     const type = res.headers.get('content-type') ?? ''
@@ -377,6 +423,7 @@ async function checkRemote(name: string, e: RemoteJson, ctx: Ctx, seen: Seen): P
         `; arquivo único, só em navegador antigo ou depois de falha: ${kb(gz)} com gzip`
       gz = zip
     }
+    seen.info.gzip = gz
     if (ctx.maxKb !== undefined && gz > ctx.maxKb * 1024)
       out.push(error(size, `passa do limite de ${ctx.maxKb} kB.`, 'veja o que entrou no bundle (vite build --mode production com rollup-plugin-visualizer) e use dedupe para o framework.'))
     else if (ctx.maxKb === undefined && gz > WARN_KB * 1024) out.push(warn(size, `acima de ${WARN_KB} kB com gzip, o remote atrasa a página.`, 'confira o que entrou no bundle; use dedupe para o framework; passe --max-kb para tornar isto um erro.'))
@@ -443,6 +490,32 @@ async function checkRemote(name: string, e: RemoteJson, ctx: Ctx, seen: Seen): P
   }
 
   if (ctx.policies.length) out.push(...cspChecks(ctx.policies, ctx.self, m, e.url, js, [...(m.css ?? [])].map(abs)))
+  const days = seen.info.deployed && Math.floor((Date.now() - Date.parse(seen.info.deployed)) / 864e5)
+  if (ctx.staleDays !== undefined && days && days > ctx.staleDays)
+    out.push(
+      warn(
+        `último deploy há ${days} dias (${seen.info.deployed!.slice(0, 10)})`,
+        `passa de ${ctx.staleDays} dias: o remote pode estar sem dono, com dependências velhas ou sem as correções dos outros.`,
+        'confira se o remote ainda é usado; se não for, tire do remotes.json.',
+      ),
+    )
+  return out
+}
+
+/** Frameworks com mais de um major entre os remotes (ex.: React 18 num, 19 noutro). */
+function majors(seen: Seen[]): Check[] {
+  const out: Check[] = []
+  for (const fw of REPORTED) {
+    const list = seen.filter((s) => s.info.frameworks[fw]).map((s) => ({ who: s.name, version: s.info.frameworks[fw] }))
+    if (new Set(list.map((l) => l.version.split('.')[0])).size < 2) continue
+    out.push(
+      warn(
+        `${fw} em majors diferentes: ${list.map((l) => `${l.who} ${l.version}`).join(', ')}`,
+        'cada major é uma cópia a mais na página, e bibliotecas compartilhadas precisam servir a todas.',
+        `planeje a atualização de ${fw} nos remotes mais antigos.`,
+      ),
+    )
+  }
   return out
 }
 
@@ -493,17 +566,17 @@ export async function doctor(options: DoctorOptions = {}): Promise<DoctorReport>
   const host: Check[] = []
   const policies = await hostPolicies(f, cwd, options.host, timeout, host)
   const deps = Object.fromEntries(Object.keys(FRAMEWORKS).map((d) => [d, installed(cwd, d)]))
-  const ctx: Ctx = { f, cwd, origin, known, self: known ? origin : undefined, contract: options.contract, maxKb: options.maxKb, timeout, policies, deps }
+  const ctx: Ctx = { f, cwd, origin, known, self: known ? origin : undefined, contract: options.contract, maxKb: options.maxKb, timeout, staleDays: options.staleDays, policies, deps }
   if (!known) host.push(warn('origem do host desconhecida: o CORS é conferido com uma origem qualquer', undefined, 'passe --host url (ou --origin) para conferir com a origem certa.'))
   const seen: Seen[] = []
   const list = await Promise.all(
     Object.entries(remotes).map(async ([name, e]) => {
-      const s: Seen = { name }
+      const s: Seen = { name, info: { frameworks: {} } }
       seen.push(s)
-      return { name, url: e.url, checks: await checkRemote(name, e, ctx, s) }
+      return { name, url: e.url, checks: await checkRemote(name, e, ctx, s), info: s.info }
     }),
   )
-  host.push(...divergent(seen, deps))
+  host.push(...divergent(seen, deps), ...majors(seen))
   const all = [...host, ...list.flatMap((r) => r.checks)]
   const errors = all.filter((c) => c.status === 'error').length
   return { ok: !errors, errors, warnings: all.filter((c) => c.status === 'warn').length, host, remotes: list }
@@ -529,6 +602,19 @@ export function format(r: DoctorReport): string {
   return lines.join('\n')
 }
 
+/** Tabela de um retrato por remote (`--report`): versão, deploy, tamanho, contrato e frameworks. */
+export function formatTable(r: DoctorReport): string {
+  const rows = [['Remote', 'Versão', 'Último deploy', 'JS (gzip)', 'Contrato', 'Frameworks']]
+  for (const { name, info } of r.remotes) {
+    const fw = Object.entries(info?.frameworks ?? {})
+      .map(([n, v]) => `${n} ${v}`)
+      .join(', ')
+    rows.push([name, info?.version ?? '-', info?.deployed?.slice(0, 10) ?? '-', info?.gzip === undefined ? '-' : kb(info.gzip), info?.contract ?? '-', fw || '-'])
+  }
+  const width = rows[0].map((_, i) => Math.max(...rows.map((row) => row[i].length)))
+  return rows.map((row) => row.map((c, i) => c.padEnd(width[i])).join('  ').trimEnd()).join('\n')
+}
+
 /**
  * Linha de comando: `vitral doctor [remotes] [--host url] [--origin url]
  * [--base url] [--contract faixa] [--max-kb n] [--json]`. Devolve o código
@@ -550,6 +636,8 @@ export async function doctorCli(argv: string[], options: Pick<DoctorOptions, 'cw
     return r.checks.some((c) => c.status === 'error') ? 1 : 0
   }
   const maxKb = flag(args, '--max-kb')
+  const report = args.includes('--report')
+  const staleDays = flag(args, '--stale-days')
   const r = await doctor({
     ...options,
     base: flag(args, '--base'),
@@ -557,8 +645,10 @@ export async function doctorCli(argv: string[], options: Pick<DoctorOptions, 'cw
     origin: flag(args, '--origin'),
     contract: flag(args, '--contract'),
     maxKb: maxKb === undefined ? undefined : Number(maxKb),
-    args: args.filter((a) => a !== '--json'),
+    // Com `--report`, remote sem deploy há 90 dias vira aviso.
+    staleDays: staleDays !== undefined ? Number(staleDays) : report ? 90 : undefined,
+    args: args.filter((a) => a !== '--json' && a !== '--report'),
   })
-  log(json ? JSON.stringify(r, null, 2) : format(r))
+  log(json ? JSON.stringify(r, null, 2) : format(r) + (report ? '\n\n' + formatTable(r) : ''))
   return r.ok ? 0 : 1
 }

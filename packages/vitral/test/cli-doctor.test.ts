@@ -41,6 +41,11 @@ beforeAll(async () => {
   await new Promise<void>((ok) => server.listen(0, '127.0.0.1', ok))
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
 
+  // Relatório: um remote antigo (React 18, sem deploy há 200 dias) e um novo (React 19, SBOM).
+  const old = new Date(Date.now() - 200 * 864e5).toUTCString()
+  remote('velho', { version: '0.9.0', dedupe: [{ name: 'react', range: '^18.0.0', version: '18.3.1', file: 'react.js' }] }, BOM, { ...JS, 'last-modified': old })
+  remote('novo', { version: '2.0.0', contract: { version: '1.0.0' }, sbom: { file: 'sbom.cdx.json', integrity: 'x' } }, BOM, { ...JS, 'last-modified': new Date().toUTCString() })
+  routes['/novo/sbom.cdx.json'] = { body: JSON.stringify({ components: [{ name: 'react', version: '19.1.0' }, { group: '@angular', name: 'core', version: '21.0.0' }, { name: 'zod', version: '4.0.0' }] }), headers: JSON_H }
   remote('bom', { version: '1.2.0', css: ['style.css'], files: { 'style.css': sha(CSS) }, contract: { version: '2.1.0' } })
   routes['/bom/style.css'] = { body: CSS, headers: { 'content-type': 'text/css' } }
   remote('sem-cors-manifesto', {})
@@ -240,6 +245,22 @@ describe('npx vitral doctor', () => {
     expect(r.remotes[0].checks.find((c) => c.status === 'error')!.title).toContain('mount')
     expect(format(r)).toContain('  ✗ o JS não exporta mount (nem default com mount)\n      Causa: o host recusa o módulo (INVALID_MODULE).\n      O que fazer: ')
     expect(format(r)).toMatch(/1 erro\(s\), \d+ aviso\(s\)\.$/)
+  })
+
+  it('--report: tabela por remote, deploy antigo e majors diferentes', async () => {
+    const logs: string[] = []
+    await doctorCli([`velho=${url('/velho/vitral.json')}`, `novo=${url('/novo/vitral.json')}`, '--origin', ORIGIN, '--report'], { cwd: dir }, (m) => logs.push(m))
+    const out = logs[0]
+    expect(out).toMatch(/Remote\s+Versão\s+Último deploy\s+JS \(gzip\)\s+Contrato\s+Frameworks/)
+    expect(out).toMatch(/velho\s+0\.9\.0\s+\d{4}-\d\d-\d\d\s+[\d.]+ kB\s+-\s+react 18\.3\.1/)
+    expect(out).toMatch(/novo\s+2\.0\.0\s+\d{4}-\d\d-\d\d\s+[\d.]+ kB\s+1\.0\.0\s+react 19\.1\.0, @angular\/core 21\.0\.0/)
+    expect(out).toContain('! último deploy há 200 dias')
+    expect(out).toContain('! react em majors diferentes: velho 18.3.1, novo 19.1.0')
+    // Sem --report nem --stale-days, deploy antigo não é aviso.
+    const r = await run([`velho=${url('/velho/vitral.json')}`])
+    expect(r.remotes[0].info?.frameworks).toEqual({ react: '18.3.1' })
+    expect(r.remotes[0].checks.some((c) => c.title.includes('último deploy'))).toBe(false)
+    expect((await run([`velho=${url('/velho/vitral.json')}`], { staleDays: 300 })).remotes[0].checks.some((c) => c.title.includes('último deploy'))).toBe(false)
   })
 
   describe('funções puras', () => {
