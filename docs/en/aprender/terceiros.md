@@ -184,7 +184,7 @@ The hash of the widget's JS comes in `vitral.json` (see [SRI and origins](./segu
 On a site that already loads modules, `vitral/auto` registers `<vitral-remote>` directly:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral@0.4.0/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral@0.4.0/dist/auto.js" data-origins="https://cdn.example.com"></script>
 <vitral-remote src="https://cdn.example.com/chat/canal.json" isolate="shadow"></vitral-remote>
 ```
 

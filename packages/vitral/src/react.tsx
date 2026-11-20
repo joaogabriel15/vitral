@@ -18,6 +18,7 @@ import {
 } from 'react'
 import { hostSlot, when, type Loading, type Prefetch } from './core/host-slot'
 import { policy } from './core/policy'
+import { messages } from './core/messages'
 import { createRoot, hydrateRoot } from 'react-dom/client'
 import { RemoteTree, StateContext, VitralContext } from './react-tree'
 import * as ReactAll from 'react'
@@ -214,14 +215,17 @@ export function preload(name: string, options?: PreloadOptions): void {
 }
 
 /** Erro padrão, igual ao do `<vitral-remote>`. */
-const defaultError = (retry: () => void) => (
-  <div role="alert" data-vitral-default="error">
-    Não foi possível carregar.{' '}
-    <button type="button" onClick={retry}>
-      Tentar de novo
-    </button>
-  </div>
-)
+const defaultError = (retry: () => void) => {
+  const m = messages()
+  return (
+    <div role="alert" data-vitral-default="error">
+      {m.error}{' '}
+      <button type="button" onClick={retry}>
+        {m.retry}
+      </button>
+    </div>
+  )
+}
 
 /**
  * Renderiza um remote. No servidor (Next SSR) renderiza só o fallback; o

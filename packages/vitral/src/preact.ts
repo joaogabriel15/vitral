@@ -8,6 +8,7 @@ import { h, render, type ComponentType, type VNode } from 'preact'
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { defineRemote, shared, type Isolation, type Props, type RemoteContext, type RemoteError, type RemoteModule, type RemoteSlot, type Shared, type SlotStatus, type CheckedProps } from './index'
 import { memoSelect, same } from './core/shared'
+import { messages } from './core/messages'
 import { hostSlot, type Loading, type Prefetch } from './core/host-slot'
 
 /** Transforma um componente Preact em um remote. O contexto chega na prop `vitral`. */
@@ -58,7 +59,7 @@ export function Remote<P extends Props = Props, N extends string = string>({ nam
     state.status === 'loading' ? fallback : null,
     state.status === 'error' && state.error
       ? error === undefined
-        ? h('div', { role: 'alert', 'data-vitral-default': 'error' }, ['Não foi possível carregar. ', h('button', { type: 'button', onClick: retry }, 'Tentar de novo')])
+        ? h('div', { role: 'alert', 'data-vitral-default': 'error' }, [messages().error + ' ', h('button', { type: 'button', onClick: retry }, messages().retry)])
         : typeof error === 'function'
           ? error(state.error, retry)
           : error

@@ -32,6 +32,7 @@ export type {
   VitralConfig,
 } from './core/types'
 export { RemoteError, type RemoteErrorCode } from './core/errors'
+export { messages, type Messages } from './core/messages'
 export { configure, register, registerSrc } from './core/registry'
 export { loadModule, loadRemote, preload, type PreloadOptions } from './core/loader'
 export { mountRemote, type MountOptions } from './core/mount'

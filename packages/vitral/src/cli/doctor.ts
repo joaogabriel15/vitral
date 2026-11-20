@@ -55,9 +55,9 @@ const WARN_KB = 250
 /** Origem usada no CORS quando o host não foi informado. */
 const ANY_ORIGIN = 'https://host.invalid'
 
-// Import estático do semver separaria esse código num chunk novo, que os
-// hosts também baixariam junto com o de `dedupe`. Vem do mesmo chunk, sob demanda.
-let satisfies: (version: string, range: string) => boolean
+// Import estático das faixas separaria esse código num chunk novo, que os
+// hosts também baixariam junto com o de contrato. Vem do mesmo chunk, sob demanda.
+let satisfiesRange: (version: string, range: string) => boolean
 
 const ok = (title: string): Check => ({ status: 'ok', title })
 const warn = (title: string, cause?: string, fix?: string): Check => ({ status: 'warn', title, cause, fix })
@@ -415,7 +415,7 @@ async function checkRemote(name: string, e: RemoteJson, ctx: Ctx, seen: Seen): P
   // Contrato
   const range = e.contract ?? ctx.contract
   if (m.contract?.version && range) {
-    if (satisfies(m.contract.version, range)) out.push(ok(`contrato ${m.contract.version} na faixa ${range} do host`))
+    if (satisfiesRange(m.contract.version, range)) out.push(ok(`contrato ${m.contract.version} na faixa ${range} do host`))
     else
       out.push(
         error(
@@ -429,7 +429,7 @@ async function checkRemote(name: string, e: RemoteJson, ctx: Ctx, seen: Seen): P
   for (const [dep, want] of Object.entries(m.contract?.peers ?? {})) {
     const have = ctx.deps[dep]
     if (!have) continue
-    if (satisfies(have, want)) out.push(ok(`${dep} ${have} do host serve para o remote (${want})`))
+    if (satisfiesRange(have, want)) out.push(ok(`${dep} ${have} do host serve para o remote (${want})`))
     else
       out.push(
         (range ? error : warn)(
@@ -453,7 +453,7 @@ function divergent(seen: Seen[], deps: Record<string, string | undefined>): Chec
   const out: Check[] = []
   for (const [dep, list] of groups) {
     const candidates = [deps[dep], ...list.map((l) => l.version)].filter((v): v is string => !!v)
-    if (list.length < 2 || candidates.some((v) => list.every((l) => satisfies(v, l.range)))) continue
+    if (list.length < 2 || candidates.some((v) => list.every((l) => satisfiesRange(v, l.range)))) continue
     out.push(
       warn(
         `${dep} em versões divergentes: ${list.map((l) => `${l.who} ${l.range}`).join(', ')}`,
@@ -483,7 +483,7 @@ async function remotesOf(o: DoctorOptions, f: typeof fetch, cwd: string, timeout
 
 /** Roda todas as conferências. */
 export async function doctor(options: DoctorOptions = {}): Promise<DoctorReport> {
-  ;({ satisfies } = await import('../core/dedupe'))
+  ;({ satisfiesRange } = await import('../core/contract'))
   const cwd = options.cwd ?? process.cwd()
   const f = options.fetch ?? fetch
   const timeout = options.timeout ?? 15000

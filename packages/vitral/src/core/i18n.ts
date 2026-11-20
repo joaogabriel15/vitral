@@ -6,6 +6,7 @@
  * no i18next (ou no que o host usar) antes da montagem. Numa troca de língua,
  * os remotes já carregados baixam a língua nova.
  */
+import { tr } from './lang'
 import type { I18nHost } from './types'
 import { RemoteError } from './errors'
 import { verifyIntegrity } from './integrity'
@@ -70,7 +71,7 @@ function load(name: string, files: Files, sri: Record<string, string>, host: I18
           try {
             data = JSON.parse(new TextDecoder().decode(bytes))
           } catch (e) {
-            throw new RemoteError('INVALID_MODULE', name, `JSON inválido em ${url}`, e)
+            throw new RemoteError('INVALID_MODULE', name, tr(`JSON inválido em ${url}`, `invalid JSON at ${url}`), e)
           }
           host.add(pick, ns, data)
           return true

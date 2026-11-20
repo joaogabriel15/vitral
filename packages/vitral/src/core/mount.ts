@@ -1,3 +1,4 @@
+import { tr } from './lang'
 import { injectStyles } from './css'
 import { fail, isRemoteError, RemoteError, report } from './errors'
 import { scopedEvents } from './events'
@@ -21,6 +22,12 @@ export interface MountOptions {
   styles?: StyleOptions
   /** Chamado quando o remote quebra depois de montado (erro de render, handler etc.). */
   onError?: (error: RemoteError) => void
+  /**
+   * Cancela a montagem: se abortar antes do `mount()` do remote, ele nunca
+   * roda e a promise rejeita com `signal.reason`. Se abortar durante o
+   * `mount()`, o remote é desmontado logo que ele termina.
+   */
+  signal?: AbortSignal
 }
 
 /**
@@ -47,13 +54,18 @@ export function setFrameMounter(mounter: Mounter): void {
 
 export async function mountOnce<P extends Props>(target: HTMLElement, name: string, props: P, options: MountOptions): Promise<MountedRemote<P>> {
   const p = protocol()
+  const { signal } = options
+  const stop = () => signal?.throwIfAborted()
+  stop()
   await p.pending()
+  stop()
   // Decide antes de baixar: nos modos iframe e reframe o JS do remote nunca roda na página.
   const isolate = options.isolate ?? registered(name)?.isolate ?? p.settings().isolate
   // Sem enableIframe(), o erro vem de `./reframe`: o texto dele fica fora do host mínimo.
   if (isolate === 'iframe') return (frames ?? (await import('./reframe')).noFrames)(target, name, props, options).catch(fail)
   // reframe: o JS roda num iframe oculto (`./reframe`, baixado só por quem usa) e o DOM fica no Shadow DOM.
   const { module: mod, ...resolved } = await (isolate == 'reframe' ? (await import('./reframe')).load : load)(name, isolate, options.priority)
+  stop()
   const untrack = track(name, resolved)
   ctxHooks.watch?.(name)
   const label = resolved.name ?? name
@@ -72,10 +84,17 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
   // de custom elements do remote; `portal` fica dentro do shadow root.
   const [release, portal = document.body, shadowRoot = null, registry = customElements, el = target.appendChild(make())] = await injectStyles(
     resolved,
-    isolate > 'q' && target,
+    // shadow e reframe põem o DOM do remote num shadow root.
+    (isolate === 'shadow' || isolate === 'reframe') && target,
     make,
     options.styles,
   )
+  if (signal?.aborted) {
+    untrack()
+    release()
+    el.remove()
+    stop()
+  }
   metric(name, 'css', t)
   t = performance.now()
 
@@ -109,10 +128,10 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
     scoped.dispose()
     release()
     el.remove()
-    throw report(new RemoteError('MOUNT_FAILED', label, 'erro ao montar', e), resolved)
+    throw report(new RemoteError('MOUNT_FAILED', label, tr('erro ao montar', 'mount failed'), e), resolved)
   }
   let alive = true
-  return {
+  const handle: MountedRemote<P> = {
     update(next: P) {
       if (alive) mounted.update?.(next)
     },
@@ -129,6 +148,12 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
       }
     },
   }
+  // Abortou durante o mount(): desmonta e avisa quem pediu.
+  if (signal?.aborted) {
+    handle.unmount()
+    stop()
+  }
+  return handle
 }
 
 /** Registro de `name` ou do remote de que ele é parte (`carrinho/Mini` → `carrinho`). */

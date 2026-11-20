@@ -36,6 +36,19 @@ describe('contrato: versão', () => {
     expect(montagens).toHaveBeenCalledTimes(1)
   })
 
+  it('faixa com alternativas (^2 || ^3): monta', async () => {
+    carrinho({ version: '3.1.0' }, '^2 || ^3')
+    await mountRemote(box(), 'carrinho', {})
+    expect(montagens).toHaveBeenCalledTimes(1)
+  })
+
+  it('faixa do host que não é versão: o erro diz isso', async () => {
+    carrinho({ version: '2.0.0' }, 'latest')
+    const e = await fail(mountRemote(box(), 'carrinho', {}))
+    expect(e.code).toBe('CONTRACT_MISMATCH')
+    expect(e.message).toContain('não é uma faixa de versão válida')
+  })
+
   it('versão fora da faixa: CONTRACT_MISMATCH com remote, faixa e versão, sem chamar mount', async () => {
     carrinho({ version: '3.0.0' }, '^2')
     const el = box()

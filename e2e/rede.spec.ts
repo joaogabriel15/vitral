@@ -44,7 +44,8 @@ test.describe('3G lento', () => {
 
 test.describe('HTTP 500', () => {
   test('manifesto com 500 vira LOAD_FAILED com o status, e "tentar de novo" carrega quando o CDN volta', async ({ host }) => {
-    await host.configure({ remotes: { ok: cdn('cartao'), falho: cdn('cartao', { status: { manifesto: 500 }, vezes: 1 }) } })
+    // Sem retries: o erro aparece, e o "tentar de novo" é que carrega.
+    await host.configure({ remotes: { ok: cdn('cartao'), falho: cdn('cartao', { status: { manifesto: 500 }, vezes: 1 }) }, retries: 0 })
     await host.montar('ok')
     await host.montar('falho')
     await host.erro('falho', 'LOAD_FAILED')
@@ -53,6 +54,12 @@ test.describe('HTTP 500', () => {
     await host.continuaFuncionando()
     await host.page.evaluate(() => (window as any).slots.get('falho').retry())
     await host.pronto('falho')
+  })
+
+  test('manifesto com 500 é tentado de novo sozinho (retries) e carrega', async ({ host }) => {
+    await host.configure({ remotes: { x: cdn('cartao', { status: { manifesto: 500 }, vezes: 1 }) }, retries: 1 })
+    await host.montar('x')
+    await host.pronto('x')
   })
 
   test('JS com 500 é tentado de novo sozinho (retries) e carrega', async ({ host }) => {

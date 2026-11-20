@@ -298,7 +298,7 @@
         "./hydrate-*",
         "./i18n-*"
       ],
-      "limit": "5.35 kB"
+      "limit": "5.78 kB"
     },
     {
       "name": "núcleo",
@@ -318,12 +318,12 @@
         "./hydrate-*",
         "./i18n-*"
       ],
-      "limit": "6.33 kB"
+      "limit": "6.77 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
       "path": "dist/sri-*.js",
-      "limit": "3.37 kB"
+      "limit": "3.52 kB"
     },
     {
       "name": "dedupe (sob demanda, para hosts que oferecem dependências)",
@@ -333,7 +333,7 @@
     {
       "name": "overrides (sob demanda)",
       "path": "dist/overrides-*.js",
-      "limit": "1.29 kB"
+      "limit": "1.55 kB"
     },
     {
       "name": "canal: canary e rollback (sob demanda)",
@@ -341,7 +341,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.05 kB"
+      "limit": "1.08 kB"
     },
     {
       "name": "host mínimo + store",
@@ -361,7 +361,7 @@
         "./hydrate-*",
         "./i18n-*"
       ],
-      "limit": "6.02 kB"
+      "limit": "6.48 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -381,7 +381,7 @@
         "./hydrate-*",
         "./i18n-*"
       ],
-      "limit": "6.24 kB"
+      "limit": "6.71 kB"
     },
     {
       "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
@@ -390,7 +390,7 @@
         "./chunk-*",
         "./shadow-*"
       ],
-      "limit": "2.83 kB"
+      "limit": "2.97 kB"
     },
     {
       "name": "estilos do Shadow DOM (além do núcleo)",
@@ -398,7 +398,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.74 kB"
+      "limit": "1.77 kB"
     },
     {
       "name": "hidratação do SSR do gateway (sob demanda)",
@@ -406,7 +406,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.52 kB"
+      "limit": "1.54 kB"
     },
     {
       "name": "react",
@@ -428,7 +428,7 @@
         "./hydrate-*",
         "./i18n-*"
       ],
-      "limit": "7.42 kB"
+      "limit": "7.88 kB"
     },
     {
       "name": "vue",
@@ -449,7 +449,7 @@
         "./hydrate-*",
         "./i18n-*"
       ],
-      "limit": "6.79 kB"
+      "limit": "7.24 kB"
     },
     {
       "name": "element",
@@ -469,18 +469,18 @@
         "./hydrate-*",
         "./i18n-*"
       ],
-      "limit": "7.16 kB"
+      "limit": "7.66 kB"
     },
     {
       "name": "devtools",
       "path": "dist/devtools.js",
       "import": "{ devtools }",
-      "limit": "2.05 kB"
+      "limit": "2.27 kB"
     },
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "7.33 kB",
+      "limit": "7.92 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -500,7 +500,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "10.56 kB",
+      "limit": "11.73 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -526,7 +526,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "4.24 kB",
+      "limit": "4.52 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -544,7 +544,7 @@
       "name": "iframe",
       "path": "dist/iframe.js",
       "import": "{ enableIframe }",
-      "limit": "6.2 kB",
+      "limit": "7.18 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -557,13 +557,13 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "13.55 kB"
+      "limit": "15.13 kB"
     },
     {
       "name": "snapshot (última tela na visita de volta)",
       "path": "dist/snapshot.js",
       "import": "{ snapshots }",
-      "limit": "1.26 kB"
+      "limit": "1.34 kB"
     },
     {
       "name": "vitals (Web Vitals por remote)",

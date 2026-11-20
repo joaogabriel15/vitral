@@ -1,7 +1,8 @@
 /**
  * `version` está na faixa `range`? Aceita `^1.2.3`, `~1.2.3`, `>=1.2.3`,
  * `1.2.3` (exata) e `*`. Faixa parcial (`^2`, `~2.1`) vale como no npm.
- * Versão com sufixo (`19.0.0-rc.1`) só vale na faixa exata.
+ * Versão com sufixo (`19.0.0-rc.1`) só vale na faixa exata. Basta para as faixas
+ * que o plugin gera; as escritas por pessoas usam `satisfiesRange` (`./range`).
  */
 export function satisfies(version: string, range: string): boolean {
   if (range === '*') return true

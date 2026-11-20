@@ -126,6 +126,31 @@ describe('overrides', () => {
     expect(fetched(fetch).sort()).toEqual(['https://checkout-pr-123.preview.loja.com/vitral.json', 'https://staging.loja.com/conta/vitral.json'])
   })
 
+  it('com { preview }, URL de outra origem é ignorada; localhost e o modelo valem', async () => {
+    setURL('https://staging.loja.com/?vitral=pagamento@https://atacante.com,cadastro@http://localhost:5175,suporte@https://suporte-pr-4.preview.loja.com')
+    const fetch = serveManifest('x')
+    configure({ devOverrides: { preview: 'https://{name}-{ref}.preview.loja.com' } })
+    register('pagamento', 'https://cdn.loja.com/pagamento/vitral.json')
+    register('cadastro', 'https://cdn.loja.com/cadastro/vitral.json')
+    register('suporte', 'https://cdn.loja.com/suporte/vitral.json')
+    await Promise.all(['pagamento', 'cadastro', 'suporte'].map((n) => loadRemote(n)))
+    expect(fetched(fetch).sort()).toEqual([
+      'http://localhost:5175/vitral.json',
+      'https://cdn.loja.com/pagamento/vitral.json',
+      'https://suporte-pr-4.preview.loja.com/vitral.json',
+    ])
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('override pagamento@https://atacante.com ignorado'))
+  })
+
+  it('com devOverrides: true, qualquer URL vale', async () => {
+    setURL('https://staging.loja.com/?vitral=pagamento@https://outra.com')
+    const fetch = serveManifest('pagamento')
+    configure({ devOverrides: true })
+    register('pagamento', 'https://cdn.loja.com/pagamento/vitral.json')
+    await loadRemote('pagamento')
+    expect(fetched(fetch)).toEqual(['https://outra.com/vitral.json'])
+  })
+
   it('apelido sem modelo é ignorado com aviso', async () => {
     setURL('http://localhost:3000/?vitral=ajuda@pr-9')
     const fetch = serveManifest('ajuda')

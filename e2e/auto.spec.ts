@@ -1,6 +1,7 @@
 // Uso sem build: uma página HTML com `vitral/auto` e `<vitral-remote src>`,
-// sem configure(). O teste serve a página (:4299), o dist da lib e o remote
-// React dos exemplos (:4298, outra origem) direto do disco.
+// sem configure(). O teste serve a página (https://loja.test), o dist da lib e o remote
+// React dos exemplos (https://cdn.test, outra origem) direto do disco. Fora de
+// localhost, o src em atributo só carrega das origens de `data-origins`.
 import { readFile } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -9,15 +10,15 @@ import { expect, test, type Page } from '@playwright/test'
 const root = fileURLToPath(new URL('..', import.meta.url))
 const types: Record<string, string> = { '.js': 'text/javascript', '.json': 'application/json', '.css': 'text/css' }
 
-async function open(page: Page, body: string) {
-  await page.route(/^http:\/\/localhost:(4298|4299)\//, async (route) => {
+async function open(page: Page, body: string, origins = 'https://cdn.test') {
+  await page.route(/^https:\/\/(loja|cdn)\.test\//, async (route) => {
     const url = new URL(route.request().url())
-    if (url.port === '4299' && url.pathname === '/') {
-      const html = `<!doctype html><meta charset="utf-8"><script type="module" src="/vitral/auto.js"></script>${body}`
+    if (url.hostname === 'loja.test' && url.pathname === '/') {
+      const html = `<!doctype html><html lang="pt-BR"><meta charset="utf-8"><script type="module" src="/vitral/auto.js"${origins ? ` data-origins="${origins}"` : ''}></script>${body}`
       return route.fulfill({ body: html, contentType: 'text/html' })
     }
     const file =
-      url.port === '4299'
+      url.hostname === 'loja.test'
         ? join(root, 'packages/vitral/dist', url.pathname.replace('/vitral/', ''))
         : join(root, 'examples/remotes', url.pathname.split('/')[1], 'dist', ...url.pathname.split('/').slice(2))
     try {
@@ -29,20 +30,26 @@ async function open(page: Page, body: string) {
   })
   const erros: string[] = []
   page.on('pageerror', (e) => erros.push(e.message))
-  await page.goto('http://localhost:4299/')
+  await page.goto('https://loja.test/')
   return erros
 }
 
 test('duas linhas no host: script do auto e src com o manifesto', async ({ page }) => {
-  const erros = await open(page, `<vitral-remote src="http://localhost:4298/react/vitral.json" props='{"mensagem":"olá"}'></vitral-remote>`)
+  const erros = await open(page, `<vitral-remote src="https://cdn.test/react/vitral.json" props='{"mensagem":"olá"}'></vitral-remote>`)
   await expect(page.locator('vitral-remote .fw')).toHaveText('React')
   await expect(page.locator('vitral-remote .msg')).toHaveText('olá')
   await expect(page.locator('vitral-remote')).toHaveAttribute('data-vitral-status', 'ready')
   expect(erros).toEqual([])
 })
 
+test('sem data-origins, um src de outra origem não executa nada', async ({ page }) => {
+  await open(page, `<vitral-remote src="https://cdn.test/react/vitral.json"></vitral-remote>`, '')
+  await expect(page.locator('vitral-remote')).toHaveAttribute('data-vitral-status', 'error')
+  await expect(page.locator('vitral-remote .fw')).toHaveCount(0)
+})
+
 test('sem slots, mostra o erro padrão com "Tentar de novo"', async ({ page }) => {
-  await open(page, `<vitral-remote src="http://localhost:4298/nao-existe/vitral.json"></vitral-remote>`)
+  await open(page, `<vitral-remote src="https://cdn.test/nao-existe/vitral.json"></vitral-remote>`)
   const alerta = page.getByRole('alert')
   await expect(alerta).toContainText('Não foi possível carregar.')
   await alerta.getByRole('button', { name: 'Tentar de novo' }).click()

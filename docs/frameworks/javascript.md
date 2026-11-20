@@ -58,7 +58,7 @@ export default {
 
 ```html
 <!-- loja/index.html -->
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.empresa.com"></script>
 
 <vitral-remote id="carrinho" src="https://cdn.empresa.com/carrinho/vitral.json" props='{"userId": 42}'></vitral-remote>
 
@@ -76,12 +76,14 @@ O carrinho monta na página, com a altura do conteúdo. Se precisar de isolament
 ### Sem build
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.empresa.com"></script>
 
 <vitral-remote src="https://cdn.empresa.com/carrinho/vitral.json"></vitral-remote>
 ```
 
-Num projeto com bundler, `import 'vitral/auto'` faz o mesmo.
+`data-origins` lista, separadas por espaço, as origens de onde os `src` podem vir. Um `<vitral-remote src>` com outra origem, injetado no HTML (um comentário, um campo de perfil), não executa nada. Em `localhost` não precisa.
+
+Num projeto com bundler, `import 'vitral/auto'` define o `<vitral-remote>`, e as origens vêm de `configure({ allowedOrigins })` ou de `configure({ remotes })`.
 
 ### Com `configure`
 

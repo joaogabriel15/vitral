@@ -27,17 +27,17 @@ Without `allowedOrigins`, the page's origin and the origins of the URLs in `conf
 
 ### Origins added to the list automatically
 
-Some URLs join the list even with `allowedOrigins` set, because they are written by whoever develops the host:
+Some URLs join the list, with or without `allowedOrigins`, because they are written by whoever develops the host. The ones that can come from data never allow their own origin:
 
 | Where the URL comes from | Joins the list? |
 | --- | --- |
 | `src` in `<Remote>`, `createSlot` and the framework components | Yes |
 | `registerSrc(url)` (the third argument, `trusted`, is `true` by default) | Yes |
 | `registerSrc(url, name, false)` | No |
-| `src` in `<vitral-remote>` (HTML attribute) | No |
-| Development override (`?vitral=` or the devtools panel) | Yes, only on `localhost` or with `devOverrides: true` |
+| `src` in `<vitral-remote>` (HTML attribute) | No. Allow it with `data-origins` on the `auto.js` script or with `allowedOrigins`. On `localhost`, yes |
+| Development override (`?vitral=` or the devtools panel) | Yes, only on `localhost` or with `devOverrides`. With `{ preview }`, only `localhost` and URLs from the template |
 
-Never pass to `src` a URL that comes from data (API, query string, CMS). For that, use `registerSrc(url, name, false)` or `<vitral-remote src>`, which respect `allowedOrigins`.
+Never pass to `src` a URL that comes from data (API, query string, CMS). For that, use `registerSrc(url, name, false)` or `<vitral-remote src>`: the URL only loads if its origin is in `allowedOrigins` or was already registered by the host (`configure({ remotes })`). This way, a `<vitral-remote src>` injected into the HTML does not run code from another origin.
 
 ## Integrity (SRI)
 
@@ -130,7 +130,7 @@ With `script-src 'self'` and the remote on the same origin, SRI also works witho
 
 ## Development overrides
 
-`?vitral=name@http://localhost:5174` swaps a remote's URL and drops the host's `integrity`. It only works with the page on `localhost` or with `configure({ devOverrides })`. Don't turn `devOverrides` on in production, not even in the `{ preview }` form: any link with `?vitral=` would run code from another origin.
+`?vitral=name@http://localhost:5174` swaps a remote's URL and drops the host's `integrity`. It only works with the page on `localhost` or with `configure({ devOverrides })`. Don't turn `devOverrides` on in production: with `true`, any link with `?vitral=` would run code from another origin. In the `{ preview }` form, only aliases, `localhost` and URLs from the template are accepted, but a link still swaps the remote for a PR preview.
 
 ## SBOM
 

@@ -23,17 +23,19 @@ Chame antes de renderizar o primeiro remote.
 | Opção | Padrão | O que faz |
 | --- | --- | --- |
 | `remotes` | nenhum | Mapa `nome → URL` ou `nome → entrada`, ou a URL de um JSON com esse mapa |
-| `allowedOrigins` | página e URLs registradas | Origens permitidas. `['*']` libera tudo. Veja [SRI e origens](/aprender/seguranca) |
+| `allowedOrigins` | página e URLs registradas pelo host | Origens permitidas. `['*']` libera tudo. O `src` em atributo do `<vitral-remote>` não entra sozinho. Veja [SRI e origens](/aprender/seguranca) |
 | `timeout` | `15000` | Tempo máximo de cada download, em ms |
-| `retries` | `1` | Novas tentativas do JS em erro de rede ou `TIMEOUT` |
+| `retries` | `1` | Novas tentativas em erro de rede ou `TIMEOUT`: do JS, do `vitral.json` e do `remotes.json`. Se o `remotes.json` ainda falhar, a próxima montagem baixa de novo |
+| `language` | `lang` do `<html>`, depois o navegador | `'pt'` ou `'en'`: língua do carregando, do erro padrão, das mensagens de `RemoteError` e do link da documentação do erro |
+| `messages` | nenhum | Troca os textos do carregando e do erro padrão: `{ loading, error, retry }` |
 | `isolate` | `'none'` | `'shadow'`, `'iframe'` ou `'reframe'` para todos os remotes |
 | `styles` | nenhum | `{ inherit, mirrorTheme }`. Veja [Estilos](/aprender/estilos) |
 | `onMetric` | nenhum | Recebe `{ name, stage, start, duration }` de cada etapa. Veja [Carregamento](/aprender/carregamento#metricas) |
 | `onError` | nenhum | Recebe cada `RemoteError` de qualquer remote, uma vez. Veja [Erros](/aprender/erros#atribuicao-e-onerror-global) |
 | `captureGlobalErrors` | `false` | Atribui a um remote os erros sem tratamento que saem do código dele |
-| `devOverrides` | `false` | `true` aceita `?vitral=` fora de `localhost`. `{ preview: 'https://{name}-{ref}.preview.empresa.com' }` faz o mesmo e resolve `?vitral=nome@pr-123`. Veja [Desenvolvimento](/aprender/desenvolvimento#link-para-o-preview-de-um-pr) |
+| `devOverrides` | `false` | `true` aceita `?vitral=` fora de `localhost`. `{ preview: 'https://{name}-{ref}.preview.empresa.com' }` resolve `?vitral=nome@pr-123` e só aceita apelidos, `localhost` e URLs do modelo. Veja [Desenvolvimento](/aprender/desenvolvimento#link-para-o-preview-de-um-pr) |
 | `dedupe` | nenhum | Dependências que o host oferece aos remotes. Veja [Dedupe](/aprender/dedupe) |
-| `contract` | nenhum | Faixa do contrato aceita dos remotes, ex.: `'^2'`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
+| `contract` | nenhum | Faixa do contrato aceita dos remotes, na sintaxe do npm, ex.: `'^2'`, `'^2 \|\| ^3'`, `'>=2 <4'`. Veja [Contrato](/aprender/deploy#contrato-entre-host-e-remote) |
 | `canaryKey` | id aleatório no `localStorage` | Chave do usuário para sortear quem recebe a canary de um canal. Veja [Canary e rollback](/aprender/canary) |
 | `onRollback` | nenhum | Recebe `{ name, from, to, errors, mounts }` quando a canary de um canal volta para a estável |
 

@@ -212,7 +212,7 @@ export function App() {
 On any HTML page, no build:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.example.com"></script>
 <vitral-remote src="https://cdn.example.com/cart/vitral.json" props='{"userId": 42}'></vitral-remote>
 ```
 

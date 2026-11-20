@@ -23,6 +23,7 @@
 // `RemoteError` e `navigate` vêm de '../index' para este módulo alcançar
 // tudo o que o host já carregou: sem isso, o build separaria em outro chunk a
 // parte do núcleo que este módulo não usa, uma requisição a mais para todo host.
+import { tr } from './lang'
 import { navigate, RemoteError } from '../index'
 import { injectStyles } from './css'
 import { isRemoteError, report } from './errors'
@@ -172,7 +173,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
     scoped.dispose()
     release()
     el.remove()
-    throw report(new RemoteError('MOUNT_FAILED', label, 'erro ao hidratar', e), resolved)
+    throw report(new RemoteError('MOUNT_FAILED', label, tr('erro ao hidratar', 'hydration failed'), e), resolved)
   }
   let alive = true
   const current: MountedRemote<P> = {

@@ -1,3 +1,4 @@
+import type { Messages } from './messages'
 import type { DedupePlan } from './dedupe-plan'
 import type { Policy } from './policy'
 import type { RemoteError } from './errors'
@@ -118,6 +119,11 @@ export interface RemoteModule<P extends Props = Props> {
 export interface RemoteEntry {
   /** URL do módulo JS do remote, ou do `vitral.json` gerado pelo plugin. */
   url?: string
+  /**
+   * Interno: URL que veio de dados (`src` em atributo, `registerSrc(…, false)`).
+   * A origem dela não entra na allowlist padrão.
+   */
+  untrusted?: boolean
   /**
    * Remote local, sem rede: o próprio módulo ou uma função que o importa
    * (ex.: `() => import('./carrinho')`). Útil em monorepos e testes.
@@ -242,7 +248,9 @@ export interface VitralConfig {
   remotes?: Record<string, string | RemoteEntry> | string
   /**
    * Origens de onde é permitido carregar código. Padrão: a própria origem da
-   * página mais as origens das URLs registradas. Use `['*']` para liberar tudo.
+   * página mais as origens das URLs registradas pelo código do host
+   * (`configure`, `register`, `src` de componente). O `src` em atributo do
+   * `<vitral-remote>` não libera a própria origem. Use `['*']` para liberar tudo.
    */
   allowedOrigins?: string[]
   /** Tempo máximo para baixar um remote, em ms. Padrão 15000. */
@@ -257,6 +265,14 @@ export interface VitralConfig {
    * desligado (sempre revalida).
    */
   maxStale?: number
+  /**
+   * Língua dos textos da lib (carregando, erro, mensagens de `RemoteError` e
+   * link da documentação do erro). Só `'pt'` e `'en'`. Padrão: o `lang` do
+   * `<html>`, depois a língua do navegador; fora `pt`, inglês.
+   */
+  language?: string
+  /** Troca os textos do carregando e do erro padrão (ex.: `{ retry: 'Recarregar' }`). */
+  messages?: Partial<Messages>
   /** Isolamento padrão para todos os remotes. Padrão `'none'`. */
   isolate?: Isolation
   /**

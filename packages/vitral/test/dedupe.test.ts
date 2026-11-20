@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { satisfies } from '../src/core/semver'
+import { satisfiesRange, validRange } from '../src/core/range'
 import { protocol } from '../src/core/state'
 import { shared } from '../src/core/dedupe'
 import { configure } from '../src/index'
@@ -38,6 +39,49 @@ describe('satisfies', () => {
   ])('%s em %s: %s', (version, range, ok) => {
     expect(satisfies(version, range)).toBe(ok)
   })
+})
+
+describe('satisfiesRange: a sintaxe do npm', () => {
+  it.each([
+    ['19.1.0', '^18.0.0 || ^19.0.0', true],
+    ['17.0.2', '^18.0.0 || ^19.0.0', false],
+    ['18.3.1', '18.x', true],
+    ['19.0.0', '18.x', false],
+    ['1.2.9', '1.2.*', true],
+    ['18.3.1', '>=18 <20', true],
+    ['20.0.0', '>=18 <20', false],
+    ['18.3.1', '>= 18 < 20', true],
+    ['2.1.0', '>2', false],
+    ['3.0.0', '>2', true],
+    ['2.0.1', '>2.0.0', true],
+    ['1.4.9', '<=1.4', true],
+    ['1.5.0', '<=1.4', false],
+    ['1.9.0', '<2', true],
+    ['2.3.4', '1.2 - 2.3.4', true],
+    ['2.3.5', '1.2 - 2.3.4', false],
+    ['2.9.0', '1.2 - 2', true],
+    ['1.1.0', '1.2 - 2', false],
+    ['1.2.0', '1.2', true],
+    ['1.3.0', '1.2', false],
+    ['1.2.3', 'v1.2.3', true],
+    ['1.2.5', '~>1.2.3', true],
+    ['0.0.4', '^0.0.3', false],
+    ['19.1.0', '^19.0.0-rc.1', true],
+    ['19.1.0', 'latest', false],
+    ['19.1.0', 'workspace:*', false],
+  ])('%s em %s: %s', (version, range, ok) => {
+    expect(satisfiesRange(version, range)).toBe(ok)
+  })
+
+  it('as faixas simples valem igual a satisfies', () => {
+    for (const [v, r] of [['19.3.0', '^19.2.0'], ['0.4.0', '^0.3.1'], ['1.2.9', '~1.2.3'], ['5.1.2', '5.1.2'], ['2.3.0', '^2'], ['0.1.0', '^0.0'], ['2', '^2.0.0'], ['19.0.0-rc.1', '^19.0.0']])
+      expect(satisfiesRange(v, r)).toBe(satisfies(v, r))
+  })
+})
+
+it('validRange separa faixa válida de texto qualquer', () => {
+  expect(['^1 || ^2', '>=18 <20', '1.2 - 2', '*', '', '18.x'].every(validRange)).toBe(true)
+  expect(['latest', 'workspace:*', '^a', '>=1 || nope'].some(validRange)).toBe(false)
 })
 
 describe('protocolo: dedupe', () => {

@@ -184,7 +184,7 @@ O `embed.js` tem cerca de 11 kB com brotli: o `<vitral-remote>`, o Shadow DOM, a
 Num site que já carrega módulos, `vitral/auto` registra o `<vitral-remote>` direto:
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral@0.4.0/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral@0.4.0/dist/auto.js" data-origins="https://cdn.empresa.com"></script>
 <vitral-remote src="https://cdn.empresa.com/chat/canal.json" isolate="shadow"></vitral-remote>
 ```
 

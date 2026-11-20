@@ -15,6 +15,7 @@
  *
  * O loader importa este módulo só quando o JSON baixado é um canal.
  */
+import { tr } from './lang'
 import { RemoteError } from './errors'
 import { ctxHooks } from './hooks'
 import { protocol } from './state'
@@ -41,7 +42,7 @@ let id: string | undefined
 
 /** Entrada que aponta para o `vitral.json` da versão escolhida no canal. */
 export async function pick(name: string, entry: RemoteEntry & { url: string }, channel: Channel): Promise<RemoteEntry & { url: string }> {
-  if (typeof channel.stable != 'string') throw new RemoteError('INVALID_MODULE', name, `canal inválido em ${entry.url}: falta "stable"`)
+  if (typeof channel.stable != 'string') throw new RemoteError('INVALID_MODULE', name, tr(`canal inválido em ${entry.url}: falta "stable"`, `invalid channel at ${entry.url}: missing "stable"`))
   ctxHooks.watch = watch
   const ctx: ChannelContext = { name, bucket: bucket(name) }
   const { canary, stable } = channel

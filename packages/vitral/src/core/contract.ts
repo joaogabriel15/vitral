@@ -2,6 +2,12 @@
  * Contrato entre host e remote, fora do host mínimo: o loader só baixa este
  * módulo quando o host declara `contract` e o manifesto também.
  */
+import { tr } from './lang'
+// Só este módulo usa: fica no chunk dele, sem arquivo a mais.
+import { satisfiesRange, validRange } from './range'
+
+// `vitral doctor` lê daqui, para as faixas ficarem neste chunk.
+export { satisfiesRange }
 import { protocol } from './state'
 import type { RemoteContract } from './types'
 
@@ -17,10 +23,12 @@ export async function checkContract(c: RemoteContract, range = protocol().settin
   // separaria esses módulos em chunks próprios, e todo host baixaria um
   // arquivo a mais mesmo sem usar contrato.
   const { satisfies } = await import('./dedupe')
-  if (c.version && !satisfies(c.version, range)) return `o host aceita contrato ${range}, o remote publica ${c.version}`
+  if (!validRange(range))
+    return tr(`a faixa de contrato ${range} do host não é uma faixa de versão válida (ex.: '^2', '^1 || ^2', '>=2 <4')`, `the host contract range ${range} is not a valid version range (e.g. '^2', '^1 || ^2', '>=2 <4')`)
+  if (c.version && !satisfiesRange(c.version, range)) return tr(`o host aceita contrato ${range}, o remote publica ${c.version}`, `the host accepts contract ${range}, the remote publishes ${c.version}`)
   const offered = protocol().settings().offered ?? {}
   for (const dep in c.peers) {
     const have = offered[dep]
-    if (have && !satisfies(have, c.peers[dep])) return `o remote espera ${dep} ${c.peers[dep]}, o host oferece ${have}`
+    if (have && !satisfies(have, c.peers[dep])) return tr(`o remote espera ${dep} ${c.peers[dep]}, o host oferece ${have}`, `the remote expects ${dep} ${c.peers[dep]}, the host offers ${have}`)
   }
 }

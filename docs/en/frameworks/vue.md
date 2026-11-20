@@ -163,7 +163,7 @@ const failed = (error) => console.error(error.code)
 | Slot or event | What it is |
 | --- | --- |
 | `#fallback` | Shown while loading |
-| `#error="{ error, retry }"` | Shown if it fails. Without it, a default message with a "try again" button (in Portuguese) |
+| `#error="{ error, retry }"` | Shown if it fails. Without it, "Could not load." with a "Try again" button (in Portuguese when the page is `pt`; change it with `configure({ messages })`) |
 | `@ready` | Remote mounted. Receives the load timings |
 | `@error` | Remote error |
 

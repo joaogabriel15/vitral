@@ -34,6 +34,7 @@ import { hostSlot, timings, when, type HostSlotOptions, type Loading, type Prefe
 import { policy } from './core/policy'
 import { memoSelect, same } from './core/shared'
 import { registerSrc } from './core/registry'
+import { messages } from './core/messages'
 import { warmSsr } from './core/loader'
 
 /** Definido só no build do `embed.js`, que não hidrata. */
@@ -116,7 +117,7 @@ export class VitralRemoteElement extends Base {
 
   /**
    * Nome para montar. `src` em atributo é registrado sem entrar na allowlist:
-   * HTML injetado não pode liberar uma origem nova quando há `allowedOrigins`.
+   * HTML injetado não pode liberar uma origem nova, com ou sem `allowedOrigins`.
    */
   #name(): string | null {
     const src = this.getAttribute('src')
@@ -136,14 +137,15 @@ export class VitralRemoteElement extends Base {
     box.setAttribute('data-vitral-default', status)
     if (status === 'loading') {
       box.setAttribute('role', 'status')
-      box.textContent = 'Carregando…'
+      box.textContent = messages().loading
     } else {
       box.setAttribute('role', 'alert')
       const button = document.createElement('button')
       button.type = 'button'
-      button.textContent = 'Tentar de novo'
+      const m = messages()
+      button.textContent = m.retry
       button.onclick = () => this.retry()
-      box.append('Não foi possível carregar. ', button)
+      box.append(m.error + ' ', button)
     }
     this.prepend((this.#default = box))
   }

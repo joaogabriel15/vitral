@@ -12,15 +12,27 @@ export default defineConfig({
     // Força o build de navegador do Solid/Svelte (o padrão do Node é o de SSR).
     server: { deps: { inline: [/solid-js/, /svelte/] } },
     include: ['test/**/*.test.{ts,tsx}'],
+    setupFiles: ['test/setup-lang.ts'],
+    globalSetup: ['test/global-setup.ts'],
     // Testes de tipos da API pública (expectTypeOf), checados pelo tsc.
     typecheck: { enabled: true, include: ['test/**/*.test-d.ts'], tsconfig: './tsconfig.tipos.json' },
     // Testes não acessam a rede: o CSS dos remotes é simulado.
     environmentOptions: { happyDOM: { settings: { disableCSSFileLoading: true } } },
     coverage: {
       provider: 'v8',
-      include: ['src/core/**'],
+      // Todo o código da lib conta. O núcleo (o que vai para o navegador de todo host) tem o próprio limite.
+      include: ['src/**'],
+      // `cli.ts` só despacha para `src/cli/*`, que os testes chamam direto.
+      exclude: ['src/cli.ts'],
       reporter: ['text-summary', 'text', 'json-summary'],
-      thresholds: { lines: 90, functions: 90, branches: 90, statements: 90 },
+      // O total fica no nível de hoje, para não cair; suba quando a cobertura subir.
+      thresholds: {
+        lines: 95,
+        functions: 92,
+        branches: 85,
+        statements: 93,
+        'src/core/**': { lines: 90, functions: 90, branches: 90, statements: 90 },
+      },
     },
   },
 })

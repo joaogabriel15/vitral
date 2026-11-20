@@ -57,7 +57,7 @@ O objeto em `devOverrides` liga as trocas, como `true`. Passe o objeto só nos a
 devOverrides: import.meta.env.VITE_AMBIENTE !== 'producao' && { preview: 'https://{name}-{ref}.preview.empresa.com' },
 ```
 
-Sem `preview`, o apelido é ignorado com um aviso no console.
+Sem `preview`, o apelido é ignorado com um aviso no console. Com `preview`, uma URL completa só vale se for de `localhost` ou do próprio modelo: `?vitral=checkout@https://outro.com` é ignorado. Para aceitar qualquer URL, use `devOverrides: true`.
 
 ## Ver e limpar as trocas ativas
 

@@ -20,8 +20,17 @@ import type { RemoteEntry } from './types'
 
 export const OVERRIDES_KEY = 'vitral:overrides'
 
+const LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/
+
 export function overridesEnabled(): boolean {
-  return !!protocol().settings().devOverrides || (typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname))
+  return !!protocol().settings().devOverrides || (typeof location !== 'undefined' && LOCAL.test(location.hostname))
+}
+
+/** A origem da URL sai do modelo `preview` (`https://{name}-{ref}.preview.empresa.com`)? */
+function fromPreview(preview: string, url: string): boolean {
+  const origin = new URL(preview.replace(/\{name\}/g, 'vitralname').replace(/\{ref\}/g, 'vitralref'), location.href).origin
+  const pattern = origin.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/vitral(name|ref)/g, '[\\w-]+')
+  return new RegExp(`^${pattern}$`).test(new URL(url).origin)
 }
 
 /** URL base (`http://localhost:5174`) vira a do manifesto (`…/vitral.json`). */
@@ -105,9 +114,14 @@ export interface ActiveOverride {
 
 /** Resolve uma URL ou um apelido para a URL do manifesto. */
 export function resolveOverride(name: string, value: string): string | undefined {
-  if (!isRef(value)) return new URL(manifestUrl(value), location.href).href
   const d = protocol().settings().devOverrides
   const preview = typeof d === 'object' ? d.preview : undefined
+  if (!isRef(value)) {
+    const url = new URL(manifestUrl(value), location.href)
+    // Com `{ preview }` (homologação), um link não pode trazer código de outra
+    // origem: só localhost e as URLs do próprio modelo. `true` aceita qualquer uma.
+    return typeof d !== 'object' || LOCAL.test(url.hostname) || (preview && fromPreview(preview, url.href)) ? url.href : undefined
+  }
   if (!preview) return
   const url = preview.replace(/\{name\}/g, encodeURIComponent(name)).replace(/\{ref\}/g, encodeURIComponent(value))
   return new URL(manifestUrl(url), location.href).href
@@ -132,7 +146,12 @@ export function overrideFor(name: string): RemoteEntry | undefined {
   if (!o) return
   const first = !warned.has(name) && warned.add(name)
   if (!o.url) {
-    if (first) console.warn(`[vitral] override ${name}@${o.value} ignorado: falta configure({ devOverrides: { preview } })`)
+    if (first)
+      console.warn(
+        isRef(o.value)
+          ? `[vitral] override ${name}@${o.value} ignorado: falta configure({ devOverrides: { preview } })`
+          : `[vitral] override ${name}@${o.value} ignorado: com devOverrides: { preview }, só valem apelidos, localhost e URLs do modelo. Use devOverrides: true para aceitar qualquer URL.`,
+      )
     return
   }
   // Override é escolha explícita de quem desenvolve: a origem dele vale mesmo com allowedOrigins.

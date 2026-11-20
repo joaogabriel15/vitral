@@ -149,7 +149,7 @@ export function App() {
 }
 ```
 
-Without `error`, a default message with a "try again" button shows up (in Portuguese). `error={null}` shows nothing.
+Without `error`, "Could not load." with a "Try again" button shows up (in Portuguese when the page is `pt`; change it with `configure({ messages })`). `error={null}` shows nothing.
 
 `<Remote>` props are the same as in [React](./react#host).
 

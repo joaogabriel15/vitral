@@ -17,7 +17,6 @@ import { join, resolve } from 'node:path'
 import type { Plugin } from 'vite'
 import type { RemoteContract, RemoteManifest } from './index'
 import type { ShadowCss } from './core/types'
-import { scopeCss } from './css-scope'
 import { EXPOSES_ENTRY, EXPOSES_IDS, exposeKeys, loadExposes, resolveExposesId } from './vite-exposes'
 import { collect, isSplit, outputs, ownApart, sri, userOutputs, withSplit, type ManualChunks, type Split } from './vite/manifest'
 import { bundledFiles, createSbom, SBOM_FILE } from './vite/sbom'
@@ -319,6 +318,7 @@ export default function vitral(options: VitralViteOptions = {}): Plugin {
       // Antes do vite:asset, que faria do .svg uma URL.
       order: 'pre',
       // Todos os módulos virtuais do vitral: \0vitral... e \0virtual:vitral...
+      // oxlint-disable-next-line no-control-regex -- \0 é o prefixo dos módulos virtuais
       filter: { id: [/^\x00(virtual:)?vitral/, ...(next?.svgr !== false && next ? [/\.svg$/] : [])] },
       async handler(id) {
         if (next && next.svgr !== false && id.endsWith('.svg') && !id.startsWith('\0')) {

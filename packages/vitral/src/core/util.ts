@@ -1,3 +1,4 @@
+import { tr } from './lang'
 import { isRemoteError, RemoteError } from './errors'
 import { protocol } from './state'
 import type { RemoteMetric } from './types'
@@ -36,7 +37,7 @@ export async function withRetry<T>(retries: number, fn: () => Promise<T>): Promi
 
 export function withTimeout<T>(ms: number, name: string, p: Promise<T>): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const t = setTimeout(() => reject(new RemoteError('TIMEOUT', name, `não respondeu em ${ms}ms`)), ms)
+    const t = setTimeout(() => reject(new RemoteError('TIMEOUT', name, tr(`não respondeu em ${ms}ms`, `no response in ${ms}ms`))), ms)
     p.then(resolve, reject).finally(() => clearTimeout(t))
   })
 }
@@ -46,11 +47,11 @@ export function fetchBytes(url: string, timeout: number, name: string, init?: Re
   const ctrl = new AbortController()
   const got = fetch(url, { signal: ctrl.signal, credentials: 'omit', ...init }).then(
     (res) => {
-      if (!res.ok) throw new RemoteError('LOAD_FAILED', name, `HTTP ${res.status} em ${url}`)
+      if (!res.ok) throw new RemoteError('LOAD_FAILED', name, tr(`HTTP ${res.status} em ${url}`, `HTTP ${res.status} at ${url}`))
       return res.arrayBuffer()
     },
     (e) => {
-      throw new RemoteError('LOAD_FAILED', name, `falha ao baixar ${url}`, e)
+      throw new RemoteError('LOAD_FAILED', name, tr(`falha ao baixar ${url}`, `failed to fetch ${url}`), e)
     },
   )
   return withTimeout(timeout, name, got).catch((e) => {
@@ -64,7 +65,7 @@ export async function fetchJson<T>(url: string, timeout: number, name: string, i
   try {
     return JSON.parse(text) as T
   } catch (e) {
-    throw new RemoteError('INVALID_MODULE', name, `JSON inválido em ${url}`, e)
+    throw new RemoteError('INVALID_MODULE', name, tr(`JSON inválido em ${url}`, `invalid JSON at ${url}`), e)
   }
 }
 

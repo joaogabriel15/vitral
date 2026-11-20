@@ -9,6 +9,7 @@
  */
 import type { DedupePlan } from './dedupe-plan'
 import type { Policy } from './policy'
+import type { Messages } from './messages'
 import { createEventBus } from './bus'
 import type { EventBus, I18nHost, Isolation, RemoteEntry, RemoteMetric, RemoteModule, RollbackInfo, ShadowCss, SharedModules, StyleOptions } from './types'
 import type { SharedStore } from './store'
@@ -45,6 +46,10 @@ export interface Settings {
   onRollback?: (info: RollbackInfo) => void
   /** Idade máxima, em segundos, do manifesto salvo usado sem esperar a rede. */
   maxStale?: number
+  /** Língua dos textos da lib (`core/lang.ts`). */
+  language?: string
+  /** Textos do carregando e do erro padrão. */
+  messages?: Partial<Messages>
   /** Onde entram as traduções dos remotes (`configure({ i18n })`). */
   i18n?: I18nHost
 }
@@ -76,13 +81,19 @@ export interface Protocol {
   configure(patch: Partial<Settings>): void
   register(name: string, entry: RemoteEntry): void
   entry(name: string): RemoteEntry | undefined
-  /** Origens das URLs registradas (base da allowlist padrão). */
+  /** Origens das URLs registradas pelo código do host (base da allowlist padrão). */
   origins(): string[]
   /**
    * Registra uma carga de registros (ex.: `remotes.json`) ou só espera as que
-   * existem. Uma carga que falhou continua falhando: o host precisa corrigir a URL.
+   * existem. Uma promise que falhou continua falhando (veja `pendingRetry`).
    */
   pending(work?: Promise<unknown>): Promise<void>
+  /**
+   * Como `pending(run())`, mas, se a carga falhar, ela roda de novo na próxima
+   * espera: uma queda de rede não trava a página até recarregar. Cópias antigas
+   * não têm este método.
+   */
+  pendingRetry?(run: () => Promise<unknown>): void
   /**
    * Hashes por URL, presentes só quando a lib usa `modulepreload` com
    * `integrity` (caminho 2 do SRI). O helper de `import()` do plugin lê daqui.
@@ -126,6 +137,8 @@ function createProtocol(): Protocol {
   const entries = new Map<string, RemoteEntry>()
   const modules = new Map<string, Promise<LoadedRemote>>()
   let ready: Promise<unknown> = Promise.resolve()
+  // Cargas que, depois de falhar, rodam de novo na próxima espera.
+  const again: (() => Promise<unknown>)[] = []
   return {
     protocol: PROTOCOL,
     events: createEventBus(),
@@ -138,10 +151,21 @@ function createProtocol(): Protocol {
       modules.delete(name)
     },
     entry: (name) => entries.get(name),
-    origins: () => [...entries.values()].filter((e) => e.url).map((e) => new URL(e.url!).origin),
+    origins: () => [...entries.values()].filter((e) => e.url && !e.untrusted).map((e) => new URL(e.url!).origin),
     pending(p) {
       if (p) ready = Promise.all([ready, p])
-      return ready.then(() => {})
+      return Promise.all([ready, ...again.map((f) => f())]).then(() => {})
+    },
+    pendingRetry(run) {
+      let failed = false
+      const go = () => {
+        const p = run()
+        p.catch(() => (failed = true))
+        return p
+      }
+      let last = go()
+      // Só quem espera depois da falha baixa de novo; quem já esperava recebe o erro.
+      again.push(() => (failed ? ((failed = false), (last = go())) : last))
     },
     load(name, fetcher) {
       let p = modules.get(name)

@@ -41,6 +41,7 @@ import {
 } from './index'
 import { hostSlot, timings, type Loading, type Prefetch } from './core/host-slot'
 import { absolute } from './core/util'
+import { messages } from './core/messages'
 import { memoSelect, same } from './core/shared'
 
 // ---------------------------------------------------------------------------
@@ -203,7 +204,7 @@ export const VitralRemote = /* @__PURE__ */ defineComponent({
         status.value === 'error'
           ? slots.error
             ? slots.error({ error: error.value, retry })
-            : h('div', { role: 'alert', 'data-vitral-default': 'error' }, ['Não foi possível carregar. ', h('button', { type: 'button', onClick: retry }, 'Tentar de novo')])
+            : h('div', { role: 'alert', 'data-vitral-default': 'error' }, [messages().error + ' ', h('button', { type: 'button', onClick: retry }, messages().retry)])
           : null,
         // O Vue nunca coloca filhos neste div: ele pertence ao remote.
         h('div', { ref: target }),

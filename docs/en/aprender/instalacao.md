@@ -49,8 +49,10 @@ The full list is in the [Reference](/en/referencia/).
 ## Without a bundler
 
 ```html
-<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/npm/vitral/dist/auto.js" data-origins="https://cdn.example.com"></script>
 ```
+
+`data-origins` says where `<vitral-remote src>` can load from. See [SRI and origins](/en/aprender/seguranca).
 
 ## Requirements
 

@@ -13,6 +13,7 @@
  * (qualquer módulo). Tudo vem do mesmo arquivo, com o mesmo SRI e a mesma
  * allowlist, e as partes dividem as mesmas instâncias de módulo.
  */
+import { tr } from './lang'
 import { RemoteError } from './errors'
 import { mountable } from './loader'
 import { protocol, type LoadedRemote } from './state'
@@ -45,7 +46,7 @@ function resolveAny(name: string, loadFile: LoadFile): Promise<LoadedRemote> {
     const r = await loadFile(remote)
     // Chaves começam com `./`, então nunca batem com nomes do Object.prototype.
     const table = r.exports?.exposes as Record<string, unknown> | undefined
-    if (!table?.[key]) throw new RemoteError('NOT_EXPOSED', name, `${remote} não expõe ${key}. Expostos: ${Object.keys(table ?? {}).join(', ')}`)
+    if (!table?.[key]) throw new RemoteError('NOT_EXPOSED', name, tr(`${remote} não expõe ${key}. Expostos: ${Object.keys(table ?? {}).join(', ')}`, `${remote} does not expose ${key}. Exposed: ${Object.keys(table ?? {}).join(', ')}`))
     try {
       const value = table[key]
       // `() => import()` devolve sempre o mesmo namespace: o cache é do próprio navegador.
@@ -61,7 +62,7 @@ function resolveAny(name: string, loadFile: LoadFile): Promise<LoadedRemote> {
 export async function resolveModule<T>(name: string, loadFile: LoadFile): Promise<T> {
   const r = await resolveAny(name, loadFile)
   if (!r.exports) {
-    throw new RemoteError('INVALID_MODULE', name, 'o remote foi carregado por uma cópia antiga da lib, que não guarda os exports')
+    throw new RemoteError('INVALID_MODULE', name, tr('o remote foi carregado por uma cópia antiga da lib, que não guarda os exports', 'the remote was loaded by an old copy of the lib, which does not keep exports'))
   }
   return r.exports as T
 }
