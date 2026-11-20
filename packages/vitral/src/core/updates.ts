@@ -22,7 +22,6 @@ const live = new Map<string, number>()
 
 /** Marca uma montagem de `name`. Devolve a função que desmarca; o unmount chama uma vez só. */
 export function track(name: string, loaded: Pick<LoadedRemote, 'entry' | 'version'>): () => void {
-  ctxHooks.heal = heal
   versions.set(name, loaded.entry)
   mounted.set(name, loaded)
   live.set(name, (live.get(name) ?? 0) + 1)
@@ -96,7 +95,7 @@ export function refreshable<P extends Props>(
 const noop = () => {}
 
 /** Mensagem de `import()` cujo arquivo sumiu, em cada navegador e no webpack. */
-const GONE = /dynamically imported module|Importing a module script failed|ChunkLoadError|Loading (CSS )?chunk \S+ failed/i
+const GONE = /dynamically imported|module script failed|Loading (CSS )?chunk/i
 
 /**
  * Chunk que sumiu num remote montado (aba aberta antes de um deploy que

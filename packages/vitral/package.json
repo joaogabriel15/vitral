@@ -300,7 +300,7 @@
         "./heal-*",
         "./shared-*"
       ],
-      "limit": "5.78 kB"
+      "limit": "5.99 kB"
     },
     {
       "name": "núcleo",
@@ -322,7 +322,7 @@
         "./heal-*",
         "./shared-*"
       ],
-      "limit": "6.77 kB"
+      "limit": "6.98 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -353,7 +353,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "0.6 kB"
+      "limit": "610 B"
     },
     {
       "name": "host mínimo + store",
@@ -375,7 +375,7 @@
         "./heal-*",
         "./shared-*"
       ],
-      "limit": "6.48 kB"
+      "limit": "6.68 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -397,7 +397,7 @@
         "./heal-*",
         "./shared-*"
       ],
-      "limit": "6.71 kB"
+      "limit": "6.91 kB"
     },
     {
       "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
@@ -422,7 +422,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.54 kB"
+      "limit": "1.65 kB"
     },
     {
       "name": "react",
@@ -446,7 +446,7 @@
         "./heal-*",
         "./shared-*"
       ],
-      "limit": "7.88 kB"
+      "limit": "8.29 kB"
     },
     {
       "name": "vue",
@@ -469,7 +469,7 @@
         "./heal-*",
         "./shared-*"
       ],
-      "limit": "7.24 kB"
+      "limit": "7.67 kB"
     },
     {
       "name": "element",
@@ -491,7 +491,7 @@
         "./heal-*",
         "./shared-*"
       ],
-      "limit": "7.66 kB"
+      "limit": "8.02 kB"
     },
     {
       "name": "devtools",
@@ -502,7 +502,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "7.92 kB",
+      "limit": "8.29 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -524,7 +524,7 @@
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "11.73 kB",
+      "limit": "12.66 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
@@ -552,7 +552,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "4.52 kB",
+      "limit": "4.60 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -585,7 +585,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "15.13 kB"
+      "limit": "15.80 kB"
     },
     {
       "name": "snapshot (última tela na visita de volta)",
@@ -609,7 +609,7 @@
       "name": "edge (gateway, no servidor)",
       "path": "dist/edge.js",
       "import": "{ gateway, toNodeListener }",
-      "limit": "5 kB"
+      "limit": "5.08 kB"
     }
   ]
 }

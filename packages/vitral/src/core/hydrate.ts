@@ -135,6 +135,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
   const el = [...((shadow ? holder.shadowRoot : holder)?.children ?? [])].find((c) => c.hasAttribute('data-vitral-root')) as HTMLElement | undefined
   if (typeof mod.hydrate !== 'function' || !el) return null
   const untrack = track(name, resolved)
+  ctxHooks.heal = heal
   ctxHooks.watch?.(name)
   const label = resolved.name ?? name
   let t = performance.now()

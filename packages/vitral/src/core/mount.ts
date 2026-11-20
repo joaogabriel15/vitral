@@ -67,6 +67,8 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
   const { module: mod, ...resolved } = await (isolate == 'reframe' ? (await import('./reframe')).load : load)(name, isolate, options.priority)
   stop()
   const untrack = track(name, resolved)
+  // Para o `captureGlobalErrors`: chunk sumido num erro sem tratamento.
+  ctxHooks.heal = heal
   ctxHooks.watch?.(name)
   const label = resolved.name ?? name
 
