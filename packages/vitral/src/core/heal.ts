@@ -3,6 +3,7 @@
  * Fora do host mínimo; o loader e o `ctx.reportError` baixam só quando um
  * `import()` falha.
  */
+import { abandon } from './channel'
 import { resolveEntry, signed, type Resolved } from './loader'
 import { protocol } from './state'
 import type { RemoteEntry, RemoteManifest } from './types'
@@ -31,9 +32,11 @@ export async function heal(name: string, versions: Map<string, string>): Promise
   await refresh(root)
 }
 
-/** O manifesto de agora, sem cache nem cópia salva; `undefined` se a URL não é de manifesto ou não responde. */
+/** O manifesto de agora (ou a estável, se `name` estava numa canary que falhou), sem cache nem cópia salva; `undefined` se a URL não é de manifesto ou não responde. */
 export async function reread(name: string, entry: RemoteEntry & { url: string }, priority?: RequestPriority): Promise<Resolved | undefined> {
   if (!new URL(entry.url).pathname.endsWith('.json')) return
+  // Numa versão canary, o JS que não carrega tira o usuário da canary: o canal relido aponta para a estável.
+  abandon(name)
   try {
     const manifest = await fetchJson<RemoteManifest>(entry.url, protocol().settings().timeout, name, { cache: 'reload', credentials: 'same-origin', priority, integrity: signed(entry).slice(1) })
     return await resolveEntry(name, { ...entry, manifest }, priority)

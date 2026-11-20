@@ -46,7 +46,7 @@ export async function pick(name: string, entry: RemoteEntry & { url: string }, c
   ctxHooks.watch = watch
   const ctx: ChannelContext = { name, bucket: bucket(name) }
   const { canary, stable } = channel
-  let version = (await entry.resolve?.(channel, ctx)) ?? (canary && ctx.bucket < canary.percent ? canary.version : stable)
+  let version = (entry.resolve && (await chosen(name, entry, channel, ctx))) ?? (canary && ctx.bucket < canary.percent ? canary.version : stable)
   if (version !== stable && rolledBack()[name] === version) version = stable
   if (version === stable || entry.rollback === false) watching.delete(name)
   else if (watching.get(name)?.from !== version) {
@@ -54,6 +54,42 @@ export async function pick(name: string, entry: RemoteEntry & { url: string }, c
   }
   // O hash do host e o manifesto embutido descreviam o canal, não a versão.
   return { ...entry, url: versionUrl(version, entry.url), integrity: undefined, manifest: undefined }
+}
+
+/**
+ * Versão escolhida pelo `resolve` do host (serviço de flags). Se ele lançar
+ * erro ou demorar mais que `resolveTimeout`, vale a estável: rota atrás de
+ * flag não some quando o serviço cai.
+ */
+async function chosen(name: string, entry: RemoteEntry, channel: Channel, ctx: ChannelContext): Promise<string | undefined> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const late = new Promise<never>((_, no) => (timer = setTimeout(() => no(new Error(`sem resposta em ${entry.resolveTimeout ?? 1500} ms`)), entry.resolveTimeout ?? 1500)))
+  try {
+    return await Promise.race([entry.resolve!(channel, ctx), late])
+  } catch (e) {
+    console.warn(`[vitral] ${name}: resolve do canal falhou (${(e as Error)?.message ?? e}); usando a estável ${channel.stable}`)
+    return channel.stable
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * Segue pela versão do canal; se o `vitral.json` dela não carregar (pasta
+ * não publicada, JSON inválido, contrato), volta para a estável nesta sessão.
+ */
+export async function follow<T>(name: string, entry: RemoteEntry & { url: string }, channel: Channel, resolve: (entry: RemoteEntry & { url: string }) => Promise<T>): Promise<T> {
+  const picked = await pick(name, entry, channel)
+  try {
+    return await resolve(picked)
+  } catch (e) {
+    const stable = versionUrl(channel.stable, entry.url)
+    if (picked.url === stable) throw e
+    const w = watching.get(name)
+    console.warn(`[vitral] ${name}: a versão ${w?.from ?? picked.url} não carregou; usando a estável ${channel.stable}`, e)
+    if (w) rollback(name, w, false)
+    return resolve({ ...picked, url: stable })
+  }
 }
 
 /** `'1.5.0'` → `1.5.0/vitral.json` ao lado do canal; caminhos e URLs ficam como estão. */
@@ -102,16 +138,24 @@ function watch(name: string, error?: RemoteError): void {
   }
 }
 
-function rollback(name: string, w: Watch): void {
+/** O JS da versão canary de `name` não carregou: volta para a estável nesta sessão (sem trocar montagens). */
+export function abandon(name: string): void {
+  const w = watching.get(name)
+  if (w) rollback(name, w, false)
+}
+
+/** `swap`: troca as montagens na tela (com a canary já montada); sem montagem, só marca. */
+function rollback(name: string, w: Watch, swap = true): void {
   watching.delete(name)
   abandoned = { ...rolledBack(), [name]: w.from }
   try {
     sessionStorage.setItem(ROLLBACK_KEY, JSON.stringify(abandoned))
   } catch {}
-  console.warn(`[vitral] ${name}: ${w.errors} erros em ${w.mounts} montagens da versão ${w.from}; voltando para ${w.to}`)
+  if (swap) console.warn(`[vitral] ${name}: ${w.errors} erros em ${w.mounts} montagens da versão ${w.from}; voltando para ${w.to}`)
   try {
     protocol().settings().onRollback?.({ name, from: w.from, to: w.to, errors: w.errors, mounts: w.mounts })
   } catch {}
+  if (!swap) return
   // Registrar de novo descarta o módulo em cache; o `vitral:refresh` troca
   // as montagens na tela pela estável (o mesmo que `refresh`, sem importar
   // `updates`, que viraria um chunk a mais no host). Se a estável falhar, a
