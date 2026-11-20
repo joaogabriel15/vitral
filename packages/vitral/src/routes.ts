@@ -16,7 +16,8 @@
  */
 import { warmSsr } from './core/loader'
 import { matchRoute as match, type RouteMatch, type Routes } from './core/match'
-import { createSlot, navigate, type Isolation, type Props, type RemoteError, type RemoteSlot, type SlotStatus } from './index'
+import { hostSlot } from './core/host-slot'
+import { navigate, type Isolation, type Props, type RemoteError, type RemoteSlot, type SlotStatus } from './index'
 
 export type { RouteMatch, Routes }
 
@@ -145,6 +146,7 @@ export class VitralOutletElement extends Base {
         name,
         props: this.#props,
         isolate: (this.getAttribute('isolate') as Isolation) || undefined,
+        waitFor: this.getAttribute('wait-for')?.split(/[\s,]+/).filter(Boolean),
         onStatus: (s: SlotStatus, e: RemoteError | null) => this.#status(s, e),
       }
       // HTML da rota renderizado pelo gateway (`vitral/edge` com `routes`): hidrata, sob demanda.
@@ -159,7 +161,7 @@ export class VitralOutletElement extends Base {
         return
       }
       ssr?.remove()
-      this.#slot = createSlot(this, options)
+      this.#slot = hostSlot(this, options)
     }
   }
 

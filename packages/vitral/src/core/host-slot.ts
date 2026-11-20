@@ -34,9 +34,39 @@ export interface HostSlotOptions<P extends Props = Props> extends SlotOptions<P>
   snapshot?: boolean
   /** Chamado quando o snapshot aparece (`true`) e quando sai (`false`): o componente esconde o fallback. */
   onSnapshot?: (shown: boolean) => void
+  /**
+   * Chaves do contexto compartilhado (`provide`) que precisam ter valor
+   * (nem `undefined` nem `null`) antes de montar, como `'sessao'`. Enquanto
+   * isso aparece o fallback; o download do remote já começa.
+   */
+  waitFor?: string | string[]
 }
 
 const noop = () => {}
+
+/**
+ * Chama `fn` quando todas as chaves de `keys` do contexto compartilhado
+ * tiverem valor. Devolve a função que cancela. O store só baixa para quem usa.
+ */
+export function whenShared(keys: string[], fn: () => void): () => void {
+  if (!keys.length) return (fn(), noop)
+  let offs: (() => void)[] = []
+  let done = false
+  const stop = () => {
+    done = true
+    for (const off of offs) off()
+    offs = []
+  }
+  import('./shared').then(({ shared }) => {
+    if (done) return
+    const check = () => {
+      if (!done && keys.every((k) => shared(k).get() != null)) (stop(), fn())
+    }
+    // `subscribe` chama na hora: a lista de cancelamentos vem antes de conferir.
+    offs = keys.map((k) => shared(k).subscribe(() => queueMicrotask(check)))
+  })
+  return stop
+}
 
 /**
  * Último tempo de cada etapa do remote `name`, em ms, lido das medidas
@@ -55,11 +85,11 @@ export function timings(name: string): Partial<Record<'manifest' | 'js' | 'css' 
 /** Chama `fn` uma vez, na hora pedida por `mode`. Devolve a função que cancela. */
 export function when(el: Element, mode: string | null | undefined, fn: () => void): () => void {
   if (mode === 'lazy' || mode === 'visible') {
-    if (typeof IntersectionObserver === 'undefined') return fn(), noop
+    if (typeof IntersectionObserver === 'undefined') return (fn(), noop)
     // 200px de margem: começa um pouco antes de o remote aparecer.
     const io = new IntersectionObserver(
       (entries) => {
-        if (entries.some((e) => e.isIntersecting)) io.disconnect(), fn()
+        if (entries.some((e) => e.isIntersecting)) (io.disconnect(), fn())
       },
       { rootMargin: '200px' },
     )
@@ -142,7 +172,7 @@ function park(key: string, item: Kept, max: number) {
 
 /** Esvazia o keep-alive, desmontando tudo (útil em testes e no logout). */
 export function clearKeepAlive(): void {
-  for (const { slot, box } of kept.values()) slot.destroy(), box.remove()
+  for (const { slot, box } of kept.values()) (slot.destroy(), box.remove())
   kept.clear()
 }
 
@@ -158,7 +188,15 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
   let status: SlotStatus = 'loading'
   let item: Kept | null = null
   // Snapshot (`vitral/snapshot`, só no bundle de quem liga).
-  const snap = options.snapshot ? ctxHooks.snapshot?.(target, name, () => props, () => item?.box, options.onSnapshot) : undefined
+  const snap = options.snapshot
+    ? ctxHooks.snapshot?.(
+        target,
+        name,
+        () => props,
+        () => item?.box,
+        options.onSnapshot,
+      )
+    : undefined
   const onStatus = (s: SlotStatus, e: RemoteError | null) => {
     status = s
     snap?.(s)
@@ -166,7 +204,10 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
   }
   // `prefetch="idle"`: com economia de dados ou 2G, fica para a montagem.
   const cancelPrefetch = options.prefetch && (options.prefetch !== 'idle' || policy() !== 'lazy') ? when(target, options.prefetch, () => preload(name)) : noop
-  const cancel = when(target, options.loading, () => {
+  const waitFor = options.waitFor == null ? [] : ([] as string[]).concat(options.waitFor)
+  let cancel = noop
+  const cancelWait = whenShared(waitFor, () => (cancel = when(target, options.loading, start)))
+  function start() {
     cancelPrefetch()
     const found = keepAlive ? kept.get(name) : undefined
     if (found) {
@@ -187,7 +228,7 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
     const it: Kept = { box, on: onStatus, slot: null as unknown as RemoteSlot<P> }
     it.slot = createSlot<P>(box, { ...options, name, src: undefined, props, onStatus: (s, e) => it.on(s, e) })
     item = it
-  })
+  }
 
   return {
     update(next) {
@@ -200,6 +241,7 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
     },
     retry: () => item?.slot.retry(),
     destroy() {
+      cancelWait()
       cancel()
       cancelPrefetch()
       snap?.()

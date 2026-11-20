@@ -178,6 +178,8 @@ export interface RemoteProps<P extends Props = Props> {
   ssr?: string | null
   /** Mostra a última tela do remote na visita de volta (`snapshots()` de `vitral/snapshot`). */
   snapshot?: boolean
+  /** Chaves de `provide` que precisam ter valor antes de montar (ex.: `'sessao'`). Até lá, o fallback. */
+  waitFor?: string | string[]
 }
 
 let offeredTo: object | undefined
@@ -247,6 +249,7 @@ export function Remote<P extends Props = Props, N extends string = string>({
   keepAlive,
   ssr,
   snapshot,
+  waitFor,
 }: RemoteProps<P> & CheckedProps<N>) {
   const target = useRef<HTMLDivElement>(null)
   const slot = useRef<RemoteSlot<P> | null>(null)
@@ -271,6 +274,7 @@ export function Remote<P extends Props = Props, N extends string = string>({
       priority,
       keepAlive,
       snapshot,
+      waitFor,
       onSnapshot: setSnapped,
       onStatus(status: SlotStatus, e: RemoteError | null) {
         setState({ status, error: e })

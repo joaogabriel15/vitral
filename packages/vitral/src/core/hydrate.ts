@@ -28,7 +28,7 @@ import { navigate, RemoteError } from '../index'
 import { injectStyles } from './css'
 import { isAbort, isRemoteError, report } from './errors'
 import { scopedEvents } from './events'
-import { hostSlot, type HostSlotOptions } from './host-slot'
+import { hostSlot, whenShared, type HostSlotOptions } from './host-slot'
 import { ctxHooks } from './hooks'
 import { load } from './loader'
 import { mountOnce, registered, type MountOptions } from './mount'
@@ -55,6 +55,7 @@ export function hydrateSlot<P extends Props = Props>(target: HTMLElement, holder
   }
   /** Caminho de sempre. O HTML do servidor fica na tela até a montagem nova sair. */
   const fallback = (next: Partial<HostSlotOptions<P>> = {}) => {
+    cancelWait()
     handle?.unmount()
     handle = null
     inner = hostSlot<P>(target, {
@@ -67,21 +68,25 @@ export function hydrateSlot<P extends Props = Props>(target: HTMLElement, holder
       },
     })
   }
-  const initial = props
-  hydrateRemote(holder, name, props, options).then(
-    (h) => {
-      if (dead) return h?.unmount()
-      if (!h) return fallback()
-      handle = h
-      if (props !== initial) h.update?.(props)
-      setStatus('ready')
-    },
-    (e) => {
-      if (dead) return
-      holder.remove()
-      setStatus('error', isRemoteError(e) ? e : new RemoteError('MOUNT_FAILED', name, String(e), e))
-    },
-  )
+  // `waitFor`: o HTML do servidor fica na tela; a hidratação espera as chaves.
+  const keys = options.waitFor == null ? [] : ([] as string[]).concat(options.waitFor)
+  const cancelWait = whenShared(keys, () => {
+    const initial = props
+    hydrateRemote(holder, name, props, options).then(
+      (h) => {
+        if (dead) return h?.unmount()
+        if (!h) return fallback()
+        handle = h
+        if (props !== initial) h.update?.(props)
+        setStatus('ready')
+      },
+      (e) => {
+        if (dead) return
+        holder.remove()
+        setStatus('error', isRemoteError(e) ? e : new RemoteError('MOUNT_FAILED', name, String(e), e))
+      },
+    )
+  })
   return {
     update(next) {
       props = next
@@ -90,7 +95,7 @@ export function hydrateSlot<P extends Props = Props>(target: HTMLElement, holder
     set(next) {
       if (inner) return inner.set(next)
       const changed = (next.name !== undefined && next.name !== name) || ('isolate' in next && next.isolate !== options.isolate)
-      if (changed) holder.remove(), fallback(next)
+      if (changed) (holder.remove(), fallback(next))
     },
     retry() {
       if (inner) return inner.retry()
@@ -99,6 +104,7 @@ export function hydrateSlot<P extends Props = Props>(target: HTMLElement, holder
     },
     destroy() {
       dead = true
+      cancelWait()
       inner?.destroy()
       handle?.unmount()
       holder.remove()
@@ -170,7 +176,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
     } catch {}
   let mounted: MountedRemote<P>
   try {
-    mounted = await mod.hydrate(el, props as never, ctx) as MountedRemote<P>
+    mounted = (await mod.hydrate(el, props as never, ctx)) as MountedRemote<P>
     metric(name, 'mount', t)
   } catch (e) {
     life.abort()

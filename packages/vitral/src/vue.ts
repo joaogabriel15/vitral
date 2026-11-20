@@ -156,6 +156,8 @@ export const VitralRemote = /* @__PURE__ */ defineComponent({
     priority: { type: String as PropType<RequestPriority>, default: undefined },
     /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
     keepAlive: { type: [Boolean, Number], default: false },
+    /** Chaves de `provide` que precisam ter valor antes de montar (ex.: `'sessao'`). Até lá, o fallback. */
+    waitFor: { type: [String, Array] as PropType<string | string[]>, default: undefined },
   },
   emits: ['error', 'ready'],
   setup(p, { slots, emit }) {
@@ -174,6 +176,7 @@ export const VitralRemote = /* @__PURE__ */ defineComponent({
         prefetch: p.prefetch,
         priority: p.priority,
         keepAlive: p.keepAlive,
+        waitFor: p.waitFor,
         onStatus(s, e) {
           status.value = s
           error.value = e
