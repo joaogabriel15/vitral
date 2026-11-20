@@ -12,8 +12,8 @@
  * - `AbortError`: cancelamento (o `ctx.signal` no unmount), não defeito.
  */
 import { isAbort, isRemoteError, mounted, RemoteError, report, reported } from './errors'
+import { ctxHooks } from './hooks'
 import { protocol } from './state'
-import { heal } from './updates'
 
 let on = false
 
@@ -44,6 +44,7 @@ export function owner(error: unknown, file?: string): string | undefined {
 function attribute(error: unknown, file?: string) {
   if (!protocol().settings().captureGlobalErrors || isRemoteError(error) || isAbort(error) || (error instanceof Object && reported.has(error))) return
   const name = owner(error, file)
-  if (name) heal(name, error)
+  // Chunk sumido (deploy novo): troca pela versão nova (`heal` de `updates`, ligado na primeira montagem).
+  if (name) ctxHooks.heal?.(name, error)
   if (name) report(new RemoteError('RENDER_FAILED', name, String((error as Error)?.message ?? error), error), mounted.get(name))
 }

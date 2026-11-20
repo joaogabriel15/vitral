@@ -148,7 +148,7 @@ export function loadFile(name: string, isolate?: Isolation, priority?: RequestPr
           (e as RemoteError).code == 'LOAD_FAILED' &&
           !entry.manifest &&
           (await import('./heal').then(
-            (m) => m.reread(name, entry as RemoteEntry & { url: string }, priority),
+            (m) => m.reread(name, entry as RemoteEntry & { url: string }, priority, resolveEntry, signed(entry)),
             () => undefined,
           ))
         if (!again || again.entry == resolved.entry) throw e
@@ -257,7 +257,7 @@ export async function resolveEntry(name: string, entry: RemoteEntry & { url: str
 }
 
 /** ` ed25519-…` de cada chave pública do remote, para somar aos hashes. */
-export const signed = (e: RemoteEntry): string => (e.keys ?? []).map((k) => ' ed25519-' + k).join('')
+const signed = (e: RemoteEntry): string => (e.keys ?? []).map((k) => ' ed25519-' + k).join('')
 
 /** Pede o manifesto antes das ofertas de dedupe; nada se a origem não é permitida. */
 function prefetchManifest(url: string, name: string, priority: RequestPriority | undefined, keys: string): Promise<RemoteManifest> | undefined {

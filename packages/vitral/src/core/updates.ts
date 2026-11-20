@@ -16,12 +16,13 @@ import { protocol, type LoadedRemote } from './state'
 import type { MountedRemote, Props, RemoteEntry } from './types'
 
 /** URL do JS montado (ou já anunciado), por nome montado (`carrinho` ou `carrinho/Mini`). */
-export const versions = new Map<string, string>()
+const versions = new Map<string, string>()
 /** Montagens vivas por nome: só esses remotes são revalidados. */
 const live = new Map<string, number>()
 
 /** Marca uma montagem de `name`. Devolve a função que desmarca; o unmount chama uma vez só. */
 export function track(name: string, loaded: Pick<LoadedRemote, 'entry' | 'version'>): () => void {
+  ctxHooks.heal = heal
   versions.set(name, loaded.entry)
   mounted.set(name, loaded)
   live.set(name, (live.get(name) ?? 0) + 1)
@@ -103,7 +104,7 @@ const GONE = /dynamically imported module|Importing a module script failed|Chunk
  * manifesto e troca pela versão nova.
  */
 export function heal(name: string, error: unknown): void {
-  if (live.has(name) && GONE.test(String((error as Error)?.message ?? error))) import('./heal').then((m) => m.heal(name, versions)).catch(noop)
+  if (live.has(name) && GONE.test(String((error as Error)?.message ?? error))) import('./heal').then((m) => m.heal(name, versions, resolveEntry, refresh)).catch(noop)
 }
 
 /**
