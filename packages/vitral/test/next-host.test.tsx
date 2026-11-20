@@ -27,6 +27,8 @@ vi.mock('vitral-next-host-config', () => ({
   remotes: {
     delivery: { url: '/delivery-remote/vitral.json', basePath: '/delivery', routes: [{ public: '/store', zone: '/delivery/store' }], integrity: false },
     outro: { url: 'https://cdn.x/vitral.json', basePath: '/outro', preload: 'route' },
+    // Dentro do basePath do delivery: o prefixo mais longo vence.
+    promo: { url: '/promo/vitral.json', basePath: '/delivery/promo', preload: false },
     hinted: {
       url: '/h/vitral.json',
       basePath: '/h',
@@ -46,7 +48,7 @@ vi.mock('../src/react', () => ({
 import { interceptNavigation, NextRemote, remoteFor } from '../src/next-host'
 import { protocol } from '../src/core/state'
 import { preload } from '../src/react'
-import { devRemotes, hostModule, htmlHints, offeredNames, remoteHeaders, remoteRewrites, sharedGroups, throughAlias, withVitral } from '../src/next-config'
+import { devRemotes, hostModule, htmlHints, offeredNames, remoteHeaders, remoteRewrites, sharedGroups, sharedPaths, throughAlias, withVitral } from '../src/next-config'
 
 /** Navigation API mínima: o teste dispara os eventos `navigate`. */
 function navigation() {
@@ -77,6 +79,12 @@ describe('vitral/next-host', () => {
     expect(remoteFor('/delivery')).toBe('delivery')
     expect(remoteFor('/storex')).toBeUndefined()
     expect(remoteFor('/reporting')).toBeUndefined()
+    expect(remoteFor('/delivery/promo/natal')).toBe('promo')
+    expect(remoteFor('/delivery/promocao')).toBe('delivery')
+  })
+
+  it('sharedPaths: o mesmo caminho em dois remotes', () => {
+    expect(sharedPaths({ a: { url: '/a.json', basePath: '/loja' }, b: { url: '/b.json', basePath: '/b', routes: [{ public: '/loja/', zone: '/b' }] }, c: { url: '/c.json', basePath: '/c' } })).toEqual(['/loja (a, b)'])
   })
 
   it('navegação de página inteira para rota de remote vira Router.push', () => {

@@ -312,8 +312,17 @@ function writeChanged(file: string, text: string): void {
   writeFileSync(file, text)
 }
 
+/** Caminhos públicos declarados por mais de um remote (`basePath` ou `routes`). */
+export function sharedPaths(remotes: Record<string, NextRemoteConfig>): string[] {
+  const owners = new Map<string, string[]>()
+  for (const [name, r] of Object.entries(remotes))
+    for (const path of new Set([r.basePath, ...(r.routes ?? []).map((x) => x.public)])) owners.set(path.replace(/(.)\/$/, '$1'), [...(owners.get(path.replace(/(.)\/$/, '$1')) ?? []), name])
+  return [...owners].filter(([, names]) => names.length > 1).map(([path, names]) => `${path} (${names.join(', ')})`)
+}
+
 export function withVitral(nextConfig: NextConfig, options: WithVitralOptions): NextConfig {
   const dir = resolve(options.dir ?? process.cwd())
+  for (const same of sharedPaths(options.remotes)) console.warn(`[vitral] o mesmo caminho em mais de um remote: ${same}. Vale o primeiro.`)
   // Fora do distDir, que o Turbopack não lê. A pasta se ignora sozinha no git.
   const file = join(dir, '.vitral', 'host-config.mjs')
   const groups = sharedGroups(dir, options.share ?? [])

@@ -34,9 +34,13 @@ import { preload, Remote, type RemoteProps } from './react'
 
 const under = (path: string, prefix: string) => path === prefix || path.startsWith(prefix + '/')
 
-/** O remote dono do caminho público `path`, se houver. */
+/** O remote dono do caminho público `path`, se houver. Com dois prefixos que servem, vence o mais longo. */
 export function remoteFor(path: string): string | undefined {
-  for (const [name, r] of Object.entries(remotes)) if (under(path, r.basePath) || r.routes?.some((x) => under(path, x.public))) return name
+  let best: string | undefined
+  let size = -1
+  for (const [name, r] of Object.entries(remotes))
+    for (const prefix of [r.basePath, ...(r.routes ?? []).map((x) => x.public)]) if (under(path, prefix) && prefix.length > size) (best = name), (size = prefix.length)
+  return best
 }
 
 /** Versão de cada grupo que o host oferece: o React do bundle e os de `share`. */

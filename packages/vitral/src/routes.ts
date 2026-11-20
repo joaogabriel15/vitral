@@ -15,7 +15,7 @@
  * remote não remonta: o roteador do próprio remote cuida disso.
  */
 import { warmSsr } from './core/loader'
-import { matchRoute as match, type RouteMatch, type Routes } from './core/match'
+import { duplicates, matchRoute as match, type RouteMatch, type Routes } from './core/match'
 import { whenShared } from './core/wait'
 import { createSlot, navigate, type Isolation, type Props, type RemoteError, type RemoteSlot, type SlotStatus } from './index'
 
@@ -43,6 +43,7 @@ const outlets = new Set<VitralOutletElement>()
 /**
  * Remote da rota que bate com `path`, ou `null`. Padrões: `/conta` (exato),
  * `/checkout/*` (o prefixo e tudo abaixo dele), `/produto/:id` e `*` (qualquer).
+ * Vence a rota mais específica, em qualquer ordem.
  */
 export function matchRoute(path: string, routes: Routes = table): RouteMatch | null {
   return match(path, routes)
@@ -55,6 +56,7 @@ export function matchRoute(path: string, routes: Routes = table): RouteMatch | n
 export function routes(map: Routes, options: RoutesOptions = {}): () => void {
   table = map
   announce = options.announce !== false
+  for (const same of duplicates(map)) console.warn(`[vitral] rotas que pegam os mesmos caminhos: ${same.join(', ')}. Só a primeira vale.`)
   defineVitralOutlet()
   for (const o of outlets) o.sync()
   const intercept = options.links !== false && typeof document !== 'undefined'
