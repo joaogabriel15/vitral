@@ -21,6 +21,7 @@ exports[`exports públicos > devtools 1`] = `
   "devtools",
   "getOverrides",
   "setOverride",
+  "watchLeaks",
 ]
 `;
 
@@ -133,6 +134,7 @@ exports[`exports públicos > next-config 1`] = `
   "remoteHeaders",
   "remoteRewrites",
   "sharedGroups",
+  "sharedPaths",
   "throughAlias",
   "withVitral",
 ]
@@ -187,6 +189,7 @@ exports[`exports públicos > react-server 1`] = `
 exports[`exports públicos > routes 1`] = `
 [
   "VitralOutletElement",
+  "announceRoute",
   "defineVitralOutlet",
   "matchRoute",
   "routes",

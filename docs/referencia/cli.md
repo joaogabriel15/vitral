@@ -147,7 +147,9 @@ A conferência do `mount` lê o texto do JS. Ela acha `export function mount`, `
 | `--base url` | Base das URLs relativas do `remotes.json` |
 | `--contract faixa` | Faixa de contrato que o host aceita, como em `configure({ contract })` |
 | `--max-kb n` | Tamanho máximo do JS de cada remote, em kB com gzip |
-| `--json` | Saída em JSON: `{ ok, errors, warnings, host, remotes: [{ name, url, checks }] }` |
+| `--report` | Soma uma tabela com versão, último deploy, tamanho, contrato e frameworks de cada remote |
+| `--stale-days n` | Avisa remote sem deploy há mais de `n` dias. Com `--report`, padrão 90 |
+| `--json` | Saída em JSON: `{ ok, errors, warnings, host, remotes: [{ name, url, checks, info }] }` |
 
 Sem `--host` nem `--origin`, o CORS é conferido com uma origem qualquer: um header com uma origem específica vira aviso.
 
@@ -157,6 +159,41 @@ Termina com código `1` se houver algum `✗`. Avisos não mudam o código.
 
 ```yaml
 - run: npx vitral doctor https://staging.empresa.com/remotes.json --host https://staging.empresa.com --max-kb 200
+```
+
+### Relatório dos remotes
+
+Com muitos times, ninguém sabe qual remote está parado ou em outra versão do React.
+
+Hoje, alguém abre o `package.json` de cada repositório e monta uma planilha.
+
+Com vitral:
+
+```bash
+npx vitral doctor https://app.empresa.com/remotes.json --host https://app.empresa.com --report
+```
+
+```
+Remote    Versão  Último deploy  JS (gzip)  Contrato  Frameworks
+carrinho  1.4.0   2026-11-18     42.1 kB    2.1.0     react 19.2.0
+conta     0.9.2   2026-06-02     38.7 kB    2.0.0     react 18.3.1
+```
+
+- O último deploy vem do `Last-Modified` do JS (ou do manifesto).
+- Os frameworks vêm do `dedupe` e do SBOM publicado pelo plugin.
+- Avisa remote sem deploy há mais de 90 dias (`--stale-days` muda) e o mesmo framework em majors diferentes entre host e remotes.
+
+Para receber toda semana:
+
+```yaml
+# .github/workflows/remotes.yml
+on:
+  schedule: [{ cron: '0 12 * * 1' }]
+jobs:
+  relatorio:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: npx vitral doctor https://app.empresa.com/remotes.json --host https://app.empresa.com --report
 ```
 
 ### Bytes do host numa rota

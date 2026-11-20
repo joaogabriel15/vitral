@@ -57,6 +57,13 @@ export interface RemoteContext {
    * antigos não mandam este campo: use `ctx.customElements ?? customElements`.
    */
   customElements?: CustomElementRegistry
+  /**
+   * Abortado no unmount. Passe para `fetch`, `addEventListener` e timers do
+   * remote: tudo para sozinho quando ele sai da tela, e o `AbortError` que o
+   * cancelamento gera não vira erro no `onError` nem no Sentry. Hosts antigos
+   * não mandam este campo.
+   */
+  signal?: AbortSignal
   /** Avisa o host de um erro em tempo de execução (os adaptadores já chamam). */
   reportError(error: unknown): void
   /** Navega a página inteira (host e todos os roteadores) para `url`. */
@@ -161,9 +168,12 @@ export interface RemoteEntry {
   /**
    * Com `url` apontando para um canal (`canal.json`): escolhe a versão deste
    * usuário. Devolve a versão (`'1.5.0'`) ou a URL de um `vitral.json`;
-   * `undefined` usa a regra padrão (`canary.percent`). Veja `Channel`.
+   * `undefined` usa a regra padrão (`canary.percent`). Se lançar erro ou
+   * passar de `resolveTimeout`, vale a estável. Veja `Channel`.
    */
   resolve?: (channel: Channel, ctx: ChannelContext) => string | undefined | Promise<string | undefined>
+  /** Tempo máximo do `resolve` (serviço de flags fora do ar), em ms. Padrão: 1500. */
+  resolveTimeout?: number
   /**
    * Volta para a estável, até o fim da sessão, quando a versão que não é a
    * estável gera `errors` erros numa janela de `mounts` montagens. Padrão

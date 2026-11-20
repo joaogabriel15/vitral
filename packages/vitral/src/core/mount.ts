@@ -1,12 +1,12 @@
 import { tr } from './lang'
 import { injectStyles } from './css'
-import { fail, isRemoteError, RemoteError, report } from './errors'
+import { fail, isAbort, isRemoteError, RemoteError, report } from './errors'
 import { scopedEvents } from './events'
 import { ctxHooks } from './hooks'
 import { load } from './loader'
 import { navigate } from './navigate'
 import { protocol } from './state'
-import { refreshable, track } from './updates'
+import { heal, refreshable, track } from './updates'
 import type { Isolation, MountedRemote, Props, RemoteContext, StyleOptions } from './types'
 import { metric } from './util'
 
@@ -67,6 +67,8 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
   const { module: mod, ...resolved } = await (isolate == 'reframe' ? (await import('./reframe')).load : load)(name, isolate, options.priority)
   stop()
   const untrack = track(name, resolved)
+  // Para o `captureGlobalErrors`: chunk sumido num erro sem tratamento.
+  ctxHooks.heal = heal
   ctxHooks.watch?.(name)
   const label = resolved.name ?? name
 
@@ -101,6 +103,8 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
   const scoped = scopedEvents()
   // Keep-alive avisa o remote com eventos no elemento raiz, que somem com ele.
   const on = (type: string) => (fn: () => void) => (el.addEventListener(type, fn), () => el.removeEventListener(type, fn))
+  // Abortado no unmount: o remote passa para fetch, ouvintes e timers.
+  const life = new AbortController()
   const ctx: RemoteContext = {
     name: label,
     baseUrl: new URL('.', resolved.entry).href,
@@ -108,7 +112,10 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
     shadowRoot,
     portalContainer: portal,
     customElements: registry,
+    signal: life.signal,
     reportError(e) {
+      if (isAbort(e)) return
+      heal(name, e)
       const err = report(isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e), resolved)
       if (options.onError) options.onError(err)
       else console.error(err)
@@ -124,6 +131,7 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
     mounted = await mod.mount(el, props, ctx)
     metric(name, 'mount', t)
   } catch (e) {
+    life.abort()
     untrack()
     scoped.dispose()
     release()
@@ -141,6 +149,7 @@ export async function mountOnce<P extends Props>(target: HTMLElement, name: stri
       try {
         mounted.unmount()
       } finally {
+        life.abort()
         untrack()
         scoped.dispose()
         release()

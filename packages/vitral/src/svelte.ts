@@ -40,6 +40,8 @@ export interface RemoteActionParams<P extends Props = Props> {
   priority?: RequestPriority
   /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
   keepAlive?: boolean | number
+  /** Chaves de `provide` que precisam ter valor antes de montar (ex.: `'sessao'`). Até lá, o fallback. */
+  waitFor?: string | string[]
 }
 
 /** Action Svelte: `<div use:remote={{ name, props }}>`. Funciona também em SvelteKit (só roda no cliente). */

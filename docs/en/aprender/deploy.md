@@ -88,6 +88,25 @@ events.on('vitral:update-available', ({ name }) => refresh(name))
 
 See [Updates without reload](./atualizacoes).
 
+## Tab open during a deploy
+
+A tab opened before the deploy still points to the previous version's files. If the CDN already deleted them, the next route that downloads a chunk fails.
+
+Today (Module Federation, Multi-Zones), the host reloads the page when the error shows up:
+
+```js
+// shell/src/main.js
+window.addEventListener('vite:preloadError', () => location.reload())
+```
+
+With vitral, no code is needed:
+
+- If the remote's JS doesn't load, the host reads `vitral.json` again, without cache, and tries the new version.
+- If a chunk of a mounted remote is gone, the host swaps the mount for the new version, with the current props, once per remote.
+- If the missing version was a canary, the host goes back to stable.
+
+Even so, keep the files of the last versions on the CDN for a few days. Names have hashes, so they don't mix.
+
 ## Contract between host and remote
 
 Remote and host have separate deploys. A remote deploy can break the host, for example when it changes the props or events it uses. The contract makes the host refuse an incompatible remote instead of mounting it.

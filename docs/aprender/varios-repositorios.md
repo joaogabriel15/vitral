@@ -128,6 +128,15 @@ export function Lista() {
 
 Para chamadas à API, passe uma função como `getToken` em vez do token. Assim o remote sempre pega o valor atual.
 
+Para o remote só montar depois do login, use `waitFor`:
+
+```jsx
+// portal/src/App.jsx
+<Remote name="produtos" waitFor="sessao" />
+```
+
+Veja [Esperar a sessão](./contexto#esperar-a-sessao).
+
 Declare o formato uma vez, num arquivo copiado nos três repositórios (ou num pacote interno):
 
 ```ts

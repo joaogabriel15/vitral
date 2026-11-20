@@ -54,11 +54,12 @@ O mesmo objeto recebido.
 | `portalContainer` | Destino de [portais](/aprender/estilos#portais-radix-headless-ui-mui). No Shadow DOM, um elemento dentro do shadow root; senão, `document.body` |
 | `customElements` | Registro de custom elements do remote. No Shadow DOM, com suporte do navegador, um registro só dele. Veja [Custom elements de cada remote](/aprender/estilos#custom-elements-de-cada-remote) |
 | `navigate(url, { replace? })` | Igual a [`navigate`](./navigate) |
-| `reportError(erro)` | Mostra o erro no host |
+| `signal` | `AbortSignal` abortado no unmount. Passe para `fetch`, `addEventListener` e timers: tudo para quando o remote sai da tela |
+| `reportError(erro)` | Mostra o erro no host. `AbortError` (cancelamento) é ignorado |
 | `onActivate(fn)`, `onDeactivate(fn)` | Com keep-alive: volta e saída da página |
 | `mcp` | Só no [MCP App](/aprender/mcp-app): `request`, `notify` e `hostContext()` do host MCP |
 
 ## Observações
 
 - Sem `update`, o host remonta a cada mudança de props.
-- `onActivate`, `onDeactivate`, `shared` e `customElements` podem faltar em hosts antigos. Use `ctx.onActivate?.(fn)` e `ctx.customElements ?? customElements`.
+- `onActivate`, `onDeactivate`, `shared`, `customElements` e `signal` podem faltar em hosts antigos. Use `ctx.onActivate?.(fn)`, `ctx.customElements ?? customElements` e `fetch(url, { signal: ctx.signal })` (sem `signal`, o fetch segue normal).

@@ -8,9 +8,11 @@
  * - diretório que também tem scripts do host (`<script src>` e
  *   `modulepreload` da página), como quando host e remote saem da mesma pasta;
  * - pilha sem URL, ou com `blob:` (o caminho de SRI que executa por blob);
- * - erro que o remote já entregou com `ctx.reportError`.
+ * - erro que o remote já entregou com `ctx.reportError`;
+ * - `AbortError`: cancelamento (o `ctx.signal` no unmount), não defeito.
  */
-import { isRemoteError, mounted, RemoteError, report, reported } from './errors'
+import { isAbort, isRemoteError, mounted, RemoteError, report, reported } from './errors'
+import { ctxHooks } from './hooks'
 import { protocol } from './state'
 
 let on = false
@@ -40,7 +42,9 @@ export function owner(error: unknown, file?: string): string | undefined {
 }
 
 function attribute(error: unknown, file?: string) {
-  if (!protocol().settings().captureGlobalErrors || isRemoteError(error) || (error instanceof Object && reported.has(error))) return
+  if (!protocol().settings().captureGlobalErrors || isRemoteError(error) || isAbort(error) || (error instanceof Object && reported.has(error))) return
   const name = owner(error, file)
+  // Chunk sumido (deploy novo): troca pela versão nova (`heal` de `updates`, ligado na primeira montagem).
+  if (name) ctxHooks.heal?.(name, error)
   if (name) report(new RemoteError('RENDER_FAILED', name, String((error as Error)?.message ?? error), error), mounted.get(name))
 }

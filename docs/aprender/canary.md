@@ -98,6 +98,12 @@ O canal aceita campos próprios, que o `resolve` lê:
 resolve: (canal) => (usuario.funcionario ? (canal.interno as string) : undefined)
 ```
 
+Se o `resolve` lançar erro ou demorar mais que `resolveTimeout` (padrão 1500 ms), o host usa a estável. A rota não some quando o serviço de flags cai:
+
+```ts
+checkout: { url: 'https://cdn.empresa.com/checkout/canal.json', resolve: lerFlag, resolveTimeout: 800 }
+```
+
 ## Rollback automático
 
 Quando a versão escolhida não é a estável, o host conta os erros dela: falha de download, `CONTRACT_MISMATCH`, erro no `mount`, `ctx.reportError` e, com `captureGlobalErrors`, os erros sem tratamento atribuídos ao remote. São os mesmos erros que chegam ao `onError` do `configure`.
@@ -125,6 +131,8 @@ configure({
 | `mounts` | `20` | Tamanho da janela, em montagens. A contagem de erros recomeça a cada janela |
 
 `rollback: false` desliga. O rollback vale só para aquele navegador. Para tirar a canary de todo mundo, edite o canal.
+
+Se o `vitral.json` ou o JS da canary não carregar (pasta não publicada, arquivo apagado), o host usa a estável na hora, sem contar erros, e chama `onRollback`.
 
 Se o canal publicar outra canary (ex.: `1.5.1`), ela é tentada de novo, mesmo na sessão que abandonou a `1.5.0`.
 

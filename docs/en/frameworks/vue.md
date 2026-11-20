@@ -159,6 +159,7 @@ const failed = (error) => console.error(error.code)
 | `prefetch` | `'hover' \| 'visible' \| 'idle'` | Download before mounting |
 | `priority` | `'high'` | High priority for the downloads |
 | `keepAlive` | `boolean \| number` | Keeps the remote mounted when leaving the page |
+| `waitFor` | `string \| string[]` | `provide` keys that must have a value before mounting. See [Waiting for the session](/en/aprender/contexto#waiting-for-the-session) |
 
 | Slot or event | What it is |
 | --- | --- |

@@ -296,9 +296,11 @@
         "./capture-*",
         "./channel-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ],
-      "limit": "5.78 kB"
+      "limit": "5.99 kB"
     },
     {
       "name": "núcleo",
@@ -316,9 +318,11 @@
         "./capture-*",
         "./channel-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ],
-      "limit": "6.77 kB"
+      "limit": "6.98 kB"
     },
     {
       "name": "SRI e dedupe (sob demanda, com as dependências)",
@@ -344,6 +348,14 @@
       "limit": "1.08 kB"
     },
     {
+      "name": "aba antiga depois de deploy (sob demanda)",
+      "path": "dist/heal-*.js",
+      "ignore": [
+        "./chunk-*"
+      ],
+      "limit": "680 B"
+    },
+    {
       "name": "host mínimo + store",
       "path": "dist/index.js",
       "import": "{ configure, createSlot, provide, shared, batch }",
@@ -359,9 +371,11 @@
         "./capture-*",
         "./channel-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ],
-      "limit": "6.48 kB"
+      "limit": "6.68 kB"
     },
     {
       "name": "host mínimo + store + persist + syncTabs",
@@ -379,9 +393,11 @@
         "./capture-*",
         "./channel-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ],
-      "limit": "6.71 kB"
+      "limit": "6.91 kB"
     },
     {
       "name": "reframe: JS em iframe oculto, DOM no Shadow DOM (sob demanda, além do núcleo e do Shadow DOM)",
@@ -406,7 +422,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "1.54 kB"
+      "limit": "1.65 kB"
     },
     {
       "name": "react",
@@ -426,9 +442,11 @@
         "./capture-*",
         "./channel-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ],
-      "limit": "7.88 kB"
+      "limit": "8.29 kB"
     },
     {
       "name": "vue",
@@ -447,9 +465,11 @@
         "./capture-*",
         "./channel-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ],
-      "limit": "7.24 kB"
+      "limit": "7.67 kB"
     },
     {
       "name": "element",
@@ -467,9 +487,11 @@
         "./capture-*",
         "./channel-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ],
-      "limit": "7.66 kB"
+      "limit": "8.02 kB"
     },
     {
       "name": "devtools",
@@ -480,7 +502,7 @@
     {
       "name": "auto",
       "path": "dist/auto.js",
-      "limit": "7.92 kB",
+      "limit": "8.29 kB",
       "ignore": [
         "./shadow-*",
         "./reframe-*",
@@ -493,21 +515,25 @@
         "./capture-*",
         "./channel-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ]
     },
     {
       "name": "routes",
       "path": "dist/routes.js",
       "import": "{ routes }",
-      "limit": "11.73 kB",
+      "limit": "12.66 kB",
       "ignore": [
         "./overrides-*",
         "./stale-*",
         "./channel-*",
         "./reframe-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ]
     },
     {
@@ -526,7 +552,7 @@
       "name": "prefetch",
       "path": "dist/prefetch.js",
       "import": "{ prefetch }",
-      "limit": "4.52 kB",
+      "limit": "4.60 kB",
       "ignore": [
         "./shadow-*",
         "./overrides-*",
@@ -551,13 +577,15 @@
         "./channel-*",
         "./reframe-*",
         "./hydrate-*",
-        "./i18n-*"
+        "./i18n-*",
+        "./heal-*",
+        "./shared-*"
       ]
     },
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "15.13 kB"
+      "limit": "15.92 kB"
     },
     {
       "name": "snapshot (última tela na visita de volta)",
@@ -581,7 +609,7 @@
       "name": "edge (gateway, no servidor)",
       "path": "dist/edge.js",
       "import": "{ gateway, toNodeListener }",
-      "limit": "5 kB"
+      "limit": "5.08 kB"
     }
   ]
 }

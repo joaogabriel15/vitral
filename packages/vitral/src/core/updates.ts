@@ -9,6 +9,7 @@
  * nova falhar, a antiga continua na tela e `refresh` rejeita.
  */
 import { mounted } from './errors'
+import { ctxHooks } from './hooks'
 import { events } from './events'
 import { loadFile, resolveEntry } from './loader'
 import { protocol, type LoadedRemote } from './state'
@@ -27,7 +28,7 @@ export function track(name: string, loaded: Pick<LoadedRemote, 'entry' | 'versio
   return () => {
     const n = live.get(name)! - 1
     if (n) live.set(name, n)
-    else live.delete(name), versions.delete(name), mounted.delete(name)
+    else live.delete(name), versions.delete(name), mounted.delete(name), ctxHooks.gone?.(name)
   }
 }
 
@@ -92,6 +93,18 @@ export function refreshable<P extends Props>(
 }
 
 const noop = () => {}
+
+/** Mensagem de `import()` cujo arquivo sumiu, em cada navegador e no webpack. */
+const GONE = /dynamically imported|module script failed|Loading (CSS )?chunk/i
+
+/**
+ * Chunk que sumiu num remote montado (aba aberta antes de um deploy que
+ * apagou os arquivos antigos): `./heal`, baixado só nesse caso, confere o
+ * manifesto e troca pela versão nova.
+ */
+export function heal(name: string, error: unknown): void {
+  if (live.has(name) && GONE.test(String((error as Error)?.message ?? error))) import('./heal').then((m) => m.heal(name, versions, resolveEntry, refresh)).catch(noop)
+}
 
 /**
  * Revalida os manifestos dos remotes montados agora (os desmontados ficam de

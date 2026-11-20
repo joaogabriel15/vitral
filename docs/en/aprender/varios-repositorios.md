@@ -128,6 +128,15 @@ export function List() {
 
 For API calls, pass a function as `getToken` instead of the token. That way the remote always gets the current value.
 
+To mount the remote only after login, use `waitFor`:
+
+```jsx
+// portal/src/App.jsx
+<Remote name="products" waitFor="session" />
+```
+
+See [Waiting for the session](./contexto#waiting-for-the-session).
+
 Declare the shape once, in a file copied to the three repositories (or in an internal package):
 
 ```ts

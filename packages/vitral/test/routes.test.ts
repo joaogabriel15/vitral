@@ -28,9 +28,27 @@ describe('matchRoute', () => {
     expect(matchRoute('/sobre', TABLE)).toBeNull()
   })
 
-  it('* pega tudo, e a primeira rota que bate vence', () => {
+  it('* pega tudo, e a rota mais específica vence em qualquer ordem', () => {
     expect(matchRoute('/qualquer/coisa', { '/a': 'a', '*': 'resto' })?.name).toBe('resto')
-    expect(matchRoute('/a', { '*': 'resto', '/a': 'a' })?.name).toBe('resto')
+    expect(matchRoute('/a', { '*': 'resto', '/a': 'a' })?.name).toBe('a')
+    const t = { '/loja/*': 'loja', '/loja/carrinho/*': 'carrinho', '/produto/:id': 'produto', '/produto/novo': 'cadastro', '/': 'inicio', '/*': 'pagina' }
+    expect(matchRoute('/loja/carrinho/itens', t)?.name).toBe('carrinho')
+    expect(matchRoute('/loja/ofertas', t)?.name).toBe('loja')
+    expect(matchRoute('/produto/novo', t)?.name).toBe('cadastro')
+    expect(matchRoute('/produto/42', t)?.name).toBe('produto')
+    expect(matchRoute('/', t)?.name).toBe('inicio')
+    expect(matchRoute('/sobre', t)?.name).toBe('pagina')
+    // Exato vence o prefixo do mesmo caminho; empate fica com a primeira.
+    expect(matchRoute('/conta', { '/conta/*': 'area', '/conta': 'resumo' })?.name).toBe('resumo')
+    expect(matchRoute('/a/c', { '/a/:x': 'um', '/:y/c': 'dois' })?.name).toBe('um')
+  })
+
+  it('avisa de rotas que pegam os mesmos caminhos', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    stop = routes({ '/produto/:id': 'produto', '/produto/:slug/': 'catalogo', '/conta': 'conta' })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('/produto/:id (produto), /produto/:slug/ (catalogo)'))
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
   })
 
   it('caracteres especiais do padrão não viram regex', () => {

@@ -45,6 +45,8 @@ export interface RemoteProps<P extends Props = Props> {
   priority?: RequestPriority
   /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
   keepAlive?: boolean | number
+  /** Chaves de `provide` que precisam ter valor antes de montar (ex.: `'sessao'`). Até lá, o fallback. */
+  waitFor?: string | string[]
 }
 
 export function Remote<P extends Props = Props, N extends string = string>(p: RemoteProps<P> & CheckedProps<N>): JSX.Element {
@@ -68,6 +70,7 @@ export function Remote<P extends Props = Props, N extends string = string>(p: Re
       prefetch: p.prefetch,
       priority: p.priority,
       keepAlive: p.keepAlive,
+      waitFor: p.waitFor,
       onStatus: (s, e) => {
         host.setAttribute('data-vitral-status', s)
         setError(() => e)

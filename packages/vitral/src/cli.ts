@@ -17,7 +17,7 @@ const AJUDA = `Uso:
   vitral add <remote ...> [--registry url|arquivo] [--to remotes.json] [--base url] [--out arquivo] [--force] [--no-types]
   vitral mcp [--registry url|arquivo]
   vitral doctor [remotes.json | url | nome=url ...] [--host url] [--origin url] [--base url]
-                [--contract faixa] [--max-kb n] [--json]
+                [--contract faixa] [--max-kb n] [--report] [--stale-days n] [--json]
   vitral doctor --stats stats.json [--route /pagina] [--remote dist ...] [--top n] [--json]
   vitral migrate [pasta] [--from single-spa|module-federation] [--dry-run]
   vitral canal <canal.json> [--stable x.y.z] [--canary x.y.z | off] [--percent n]
@@ -39,6 +39,9 @@ const AJUDA = `Uso:
   doctor    Confere cada remote como o host faria (manifesto, CORS, CSP, mount,
             integrity, contrato, dedupe, tamanho) e explica o que fazer.
             Sai com erro se alguma conferência falhar (útil no CI).
+            --report soma uma tabela por remote (versão, último deploy,
+            tamanho, contrato, versões de React/Vue/Angular...) e avisa de
+            remote sem deploy há mais de --stale-days dias (padrão 90).
             Com --stats (stats do webpack do host): soma o que a rota carrega
             por pacote e aponta traduções inteiras no bundle, módulos sem
             export usado, ofertas de share com o pacote inteiro e, com

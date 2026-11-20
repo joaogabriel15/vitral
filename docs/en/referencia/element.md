@@ -35,6 +35,7 @@ import { defineVitralElement, elementRemote, SharedController } from 'vitral/ele
 | `prefetch` | `hover`, `visible` or `idle` |
 | `priority` | `high` |
 | `keep-alive` | Keeps the remote mounted. Accepts the maximum kept |
+| `wait-for` | `provide` keys that must have a value before mounting, separated by spaces |
 | `inherit-styles` | Host CSS inside the Shadow DOM, separated by spaces |
 
 | Property, method or event | What it does |

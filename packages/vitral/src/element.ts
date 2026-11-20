@@ -25,6 +25,7 @@
  * com o navegador ocioso; reserve o espaço com `min-height`),
  * `prefetch="hover|visible|idle"` (baixa antes de montar), `priority="high"`
  * e `keep-alive` (ou `keep-alive="3"`: máximo de remotes guardados).
+ * `wait-for="sessao"` só monta quando a chave de `provide` tiver valor.
  *
  * Também exporta `elementRemote()` para publicar um Web Component (Lit,
  * Stencil, vanilla) como remote.
@@ -81,6 +82,7 @@ export class VitralRemoteElement extends Base {
       prefetch: this.getAttribute('prefetch') as Prefetch | null,
       priority: (this.getAttribute('priority') as RequestPriority) || undefined,
       keepAlive: keep === null ? false : Number(keep) || true,
+      waitFor: this.getAttribute('wait-for')?.split(/[\s,]+/).filter(Boolean),
       snapshot: this.hasAttribute('snapshot'),
       // A última tela no lugar do "carregando".
       onSnapshot: (shown) => (this.#snapped = shown),

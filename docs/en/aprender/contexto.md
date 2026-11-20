@@ -56,6 +56,30 @@ With a selector, the component only re-renders when the result changes.
 
 Inside the remote, `ctx.shared` is the same `shared`, but subscriptions made through it are cancelled on unmount.
 
+## Waiting for the session
+
+A remote that reads the session right in `mount` breaks if the host hasn't logged in yet.
+
+Today (Module Federation, single-spa, Multi-Zones), the host holds the mount back with its own code:
+
+```jsx
+// shell/src/App.jsx
+const session = useSession()
+return session ? <Account /> : <p>Loading…</p>
+```
+
+With vitral, the component waits for the `provide` key to have a value (neither `undefined` nor `null`):
+
+```jsx
+// shell/src/App.jsx
+<Remote name="account" waitFor="session" fallback={<p>Loading…</p>} />
+```
+
+- While it waits, it shows the `fallback`. The remote's download already starts.
+- Accepts a list: `waitFor={['session', 'theme']}`.
+- On `<vitral-remote>` and `<vitral-outlet>`: `wait-for="session theme"`.
+- Works in React, Vue, Svelte, Solid, Preact and Web Components.
+
 ## Types
 
 Declare once, in the host and in each remote:

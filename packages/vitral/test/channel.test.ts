@@ -143,6 +143,48 @@ describe('canal', () => {
 })
 
 describe('rollback automático', () => {
+  it('resolve que lança ou demora: vale a estável', async () => {
+    serve({ stable: '1.4.0', canary: { version: '1.5.0', percent: 100 } })
+    quiet()
+    setup({ resolve: () => Promise.reject(new Error('flags fora do ar')) })
+    const el = box()
+    await mountRemote(el, 'checkout', {})
+    expect(el.textContent).toBe('1.4.0')
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('flags fora do ar'))
+
+    cleanup()
+    serve({ stable: '1.4.0', canary: { version: '1.5.0', percent: 100 } })
+    setup({ resolve: () => new Promise(() => {}), resolveTimeout: 20 })
+    const outro = box()
+    await mountRemote(outro, 'checkout', {})
+    expect(outro.textContent).toBe('1.4.0')
+  })
+
+  it('canary sem vitral.json publicado: usa a estável e não tenta de novo na sessão', async () => {
+    const base = serve({ stable: '1.4.0', canary: { version: '9.9.9', percent: 100 } })
+    const fetch = vi.fn(async (url: string) => (url.includes('9.9.9') ? new Response('não existe', { status: 404 }) : base(url)))
+    vi.stubGlobal('fetch', fetch)
+    quiet()
+    const onRollback = setup()
+    const el = box()
+    await mountRemote(el, 'checkout', {})
+    expect(el.textContent).toBe('1.4.0')
+    expect(fetched(fetch)).toEqual(['canal.json', '9.9.9/vitral.json', '1.4.0/vitral.json'])
+    expect(onRollback).toHaveBeenCalledWith(expect.objectContaining({ name: 'checkout', from: '9.9.9', to: '1.4.0' }))
+    expect(JSON.parse(sessionStorage.getItem('vitral:rollback')!)).toEqual({ checkout: '9.9.9' })
+  })
+
+  it('canary com o JS faltando: monta a estável na mesma carga', async () => {
+    const fetch = serve({ stable: '1.4.0', canary: { version: '9.9.9', percent: 100 } })
+    quiet()
+    const onRollback = setup()
+    const el = box()
+    await mountRemote(el, 'checkout', {})
+    expect(el.textContent).toBe('1.4.0')
+    expect(fetched(fetch)).toEqual(['canal.json', '9.9.9/vitral.json', 'canal.json', '1.4.0/vitral.json'])
+    expect(onRollback).toHaveBeenCalledWith(expect.objectContaining({ from: '9.9.9', to: '1.4.0' }))
+  })
+
   it('N erros de montagem na canary voltam para a estável na sessão e chamam onRollback', async () => {
     quiet()
     const errors: RemoteError[] = []

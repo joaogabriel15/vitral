@@ -40,15 +40,17 @@ export interface RemoteProps<P extends Props = Props> {
   priority?: RequestPriority
   /** Ao sair da página, guarda o remote montado (LRU, padrão 5) e na volta só atualiza as props. */
   keepAlive?: boolean | number
+  /** Chaves de `provide` que precisam ter valor antes de montar (ex.: `'sessao'`). Até lá, o fallback. */
+  waitFor?: string | string[]
 }
 
-export function Remote<P extends Props = Props, N extends string = string>({ name, src, props, isolate, fallback = null, error = null, loading, prefetch, priority, keepAlive, ...rest }: RemoteProps<P> & CheckedProps<N>) {
+export function Remote<P extends Props = Props, N extends string = string>({ name, src, props, isolate, fallback = null, error = null, loading, prefetch, priority, keepAlive, waitFor, ...rest }: RemoteProps<P> & CheckedProps<N>) {
   const ref = useRef<HTMLDivElement>(null)
   const slot = useRef<RemoteSlot<P> | null>(null)
   const [state, setState] = useState<{ status: SlotStatus; error: RemoteError | null }>({ status: 'loading', error: null })
 
   useEffect(() => {
-    slot.current = hostSlot<P>(ref.current!, { name, src, props: (props ?? {}) as P, isolate, loading, prefetch, priority, keepAlive, onStatus: (status, error) => setState({ status, error }) })
+    slot.current = hostSlot<P>(ref.current!, { name, src, props: (props ?? {}) as P, isolate, loading, prefetch, priority, keepAlive, waitFor, onStatus: (status, error) => setState({ status, error }) })
     return () => slot.current?.destroy()
   }, [])
   useEffect(() => slot.current?.set({ name, src, isolate }), [name, src, isolate])

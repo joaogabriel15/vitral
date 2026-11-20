@@ -26,16 +26,16 @@
 import { tr } from './lang'
 import { navigate, RemoteError } from '../index'
 import { injectStyles } from './css'
-import { isRemoteError, report } from './errors'
+import { isAbort, isRemoteError, report } from './errors'
 import { scopedEvents } from './events'
-import { hostSlot, type HostSlotOptions } from './host-slot'
+import { hostSlot, whenShared, type HostSlotOptions } from './host-slot'
 import { ctxHooks } from './hooks'
 import { load } from './loader'
 import { mountOnce, registered, type MountOptions } from './mount'
 import type { RemoteSlot, SlotStatus } from './slot'
 import { protocol } from './state'
 import type { MountedRemote, Props, RemoteContext, RemoteManifest } from './types'
-import { refreshable, track } from './updates'
+import { heal, refreshable, track } from './updates'
 import { absolute, metric } from './util'
 
 /**
@@ -55,6 +55,7 @@ export function hydrateSlot<P extends Props = Props>(target: HTMLElement, holder
   }
   /** Caminho de sempre. O HTML do servidor fica na tela até a montagem nova sair. */
   const fallback = (next: Partial<HostSlotOptions<P>> = {}) => {
+    cancelWait()
     handle?.unmount()
     handle = null
     inner = hostSlot<P>(target, {
@@ -67,21 +68,25 @@ export function hydrateSlot<P extends Props = Props>(target: HTMLElement, holder
       },
     })
   }
-  const initial = props
-  hydrateRemote(holder, name, props, options).then(
-    (h) => {
-      if (dead) return h?.unmount()
-      if (!h) return fallback()
-      handle = h
-      if (props !== initial) h.update?.(props)
-      setStatus('ready')
-    },
-    (e) => {
-      if (dead) return
-      holder.remove()
-      setStatus('error', isRemoteError(e) ? e : new RemoteError('MOUNT_FAILED', name, String(e), e))
-    },
-  )
+  // `waitFor`: o HTML do servidor fica na tela; a hidratação espera as chaves.
+  const keys = options.waitFor == null ? [] : ([] as string[]).concat(options.waitFor)
+  const cancelWait = whenShared(keys, () => {
+    const initial = props
+    hydrateRemote(holder, name, props, options).then(
+      (h) => {
+        if (dead) return h?.unmount()
+        if (!h) return fallback()
+        handle = h
+        if (props !== initial) h.update?.(props)
+        setStatus('ready')
+      },
+      (e) => {
+        if (dead) return
+        holder.remove()
+        setStatus('error', isRemoteError(e) ? e : new RemoteError('MOUNT_FAILED', name, String(e), e))
+      },
+    )
+  })
   return {
     update(next) {
       props = next
@@ -99,6 +104,7 @@ export function hydrateSlot<P extends Props = Props>(target: HTMLElement, holder
     },
     destroy() {
       dead = true
+      cancelWait()
       inner?.destroy()
       handle?.unmount()
       holder.remove()
@@ -129,6 +135,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
   const el = [...((shadow ? holder.shadowRoot : holder)?.children ?? [])].find((c) => c.hasAttribute('data-vitral-root')) as HTMLElement | undefined
   if (typeof mod.hydrate !== 'function' || !el) return null
   const untrack = track(name, resolved)
+  ctxHooks.heal = heal
   ctxHooks.watch?.(name)
   const label = resolved.name ?? name
   let t = performance.now()
@@ -141,6 +148,8 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
   t = performance.now()
   const scoped = scopedEvents()
   const on = (type: string) => (fn: () => void) => (el.addEventListener(type, fn), () => el.removeEventListener(type, fn))
+  // Abortado no unmount: o remote passa para fetch, ouvintes e timers.
+  const life = new AbortController()
   const ctx: RemoteContext = {
     name: label,
     baseUrl: new URL('.', resolved.entry).href,
@@ -148,7 +157,10 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
     shadowRoot,
     portalContainer: portal,
     customElements: registry,
+    signal: life.signal,
     reportError(e) {
+      if (isAbort(e)) return
+      heal(name, e)
       const err = report(isRemoteError(e) ? e : new RemoteError('RENDER_FAILED', label, String((e as Error)?.message ?? e), e), resolved)
       if (options.onError) options.onError(err)
       else console.error(err)
@@ -169,6 +181,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
     mounted = await mod.hydrate(el, props as never, ctx) as MountedRemote<P>
     metric(name, 'mount', t)
   } catch (e) {
+    life.abort()
     untrack()
     scoped.dispose()
     release()
@@ -186,6 +199,7 @@ export async function hydrateRemote<P extends Props>(holder: HTMLElement, name: 
       try {
         mounted.unmount()
       } finally {
+        life.abort()
         untrack()
         scoped.dispose()
         release()

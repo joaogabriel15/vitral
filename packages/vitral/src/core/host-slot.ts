@@ -7,6 +7,7 @@ import { ctxHooks } from './hooks'
 import { preload } from './loader'
 import { policy } from './policy'
 import { registerSrc } from './registry'
+import { whenShared } from './wait'
 import { createSlot, type RemoteSlot, type SlotOptions, type SlotStatus } from './slot'
 import type { Props } from './types'
 import type { RemoteError } from './errors'
@@ -15,6 +16,7 @@ import type { RemoteError } from './errors'
 export type Loading = 'eager' | 'lazy' | 'idle'
 /** Quando baixar antes de montar: no hover ou foco (`hover`), perto de aparecer (`visible`) ou com o navegador ocioso (`idle`). */
 export type Prefetch = 'hover' | 'visible' | 'idle'
+export { whenShared }
 
 export interface HostSlotOptions<P extends Props = Props> extends SlotOptions<P> {
   loading?: Loading | null
@@ -34,6 +36,12 @@ export interface HostSlotOptions<P extends Props = Props> extends SlotOptions<P>
   snapshot?: boolean
   /** Chamado quando o snapshot aparece (`true`) e quando sai (`false`): o componente esconde o fallback. */
   onSnapshot?: (shown: boolean) => void
+  /**
+   * Chaves do contexto compartilhado (`provide`) que precisam ter valor
+   * (nem `undefined` nem `null`) antes de montar, como `'sessao'`. Enquanto
+   * isso aparece o fallback; o download do remote já começa.
+   */
+  waitFor?: string | string[]
 }
 
 const noop = () => {}
@@ -166,7 +174,10 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
   }
   // `prefetch="idle"`: com economia de dados ou 2G, fica para a montagem.
   const cancelPrefetch = options.prefetch && (options.prefetch !== 'idle' || policy() !== 'lazy') ? when(target, options.prefetch, () => preload(name)) : noop
-  const cancel = when(target, options.loading, () => {
+  const waitFor = options.waitFor == null ? [] : ([] as string[]).concat(options.waitFor)
+  let cancel = noop
+  const cancelWait = whenShared(waitFor, () => (cancel = when(target, options.loading, start)))
+  function start() {
     cancelPrefetch()
     const found = keepAlive ? kept.get(name) : undefined
     if (found) {
@@ -187,7 +198,7 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
     const it: Kept = { box, on: onStatus, slot: null as unknown as RemoteSlot<P> }
     it.slot = createSlot<P>(box, { ...options, name, src: undefined, props, onStatus: (s, e) => it.on(s, e) })
     item = it
-  })
+  }
 
   return {
     update(next) {
@@ -200,6 +211,7 @@ export function hostSlot<P extends Props = Props>(target: HTMLElement, options: 
     },
     retry: () => item?.slot.retry(),
     destroy() {
+      cancelWait()
       cancel()
       cancelPrefetch()
       snap?.()
