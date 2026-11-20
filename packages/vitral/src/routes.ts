@@ -27,9 +27,17 @@ export interface RoutesOptions {
    * recarregar a página (via `navigate()`). Padrão: true.
    */
   links?: boolean
+  /**
+   * Depois de trocar de remote numa navegação: anuncia a página nova ao
+   * leitor de tela (o `h1` do remote ou o `document.title`) e move o foco
+   * para o `h1`. Sem isso, o foco fica no link clicado e quem usa leitor de
+   * tela não sabe que a página mudou. Padrão: true.
+   */
+  announce?: boolean
 }
 
 let table: Routes = {}
+let announce = true
 const outlets = new Set<VitralOutletElement>()
 
 /**
@@ -46,6 +54,7 @@ export function matchRoute(path: string, routes: Routes = table): RouteMatch | n
  */
 export function routes(map: Routes, options: RoutesOptions = {}): () => void {
   table = map
+  announce = options.announce !== false
   defineVitralOutlet()
   for (const o of outlets) o.sync()
   const intercept = options.links !== false && typeof document !== 'undefined'
@@ -68,6 +77,43 @@ function onClick(e: MouseEvent) {
   navigate(url.href)
 }
 
+/** Primeiro `h1` dentro de `root`, procurando também nos shadow roots. */
+function heading(root: ParentNode): HTMLElement | null {
+  const h = root.querySelector<HTMLElement>('h1')
+  if (h) return h
+  for (const el of root.querySelectorAll('*')) {
+    const inner = el.shadowRoot && heading(el.shadowRoot)
+    if (inner) return inner
+  }
+  return null
+}
+
+let announcer: HTMLElement | undefined
+
+/**
+ * Anuncia a página que está em `container` ao leitor de tela e põe o foco no
+ * `h1` dela (ou no próprio `container`). O `<vitral-outlet>` chama depois de
+ * cada troca de remote; hosts com outro roteador chamam no `vitral-ready`.
+ */
+export function announceRoute(container: HTMLElement): void {
+  const h = heading(container)
+  const text = h?.textContent?.trim() || document.title
+  if (!announcer?.isConnected) {
+    announcer = document.createElement('div')
+    announcer.setAttribute('data-vitral-announcer', '')
+    announcer.setAttribute('aria-live', 'assertive')
+    announcer.setAttribute('aria-atomic', 'true')
+    announcer.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0'
+    document.body.appendChild(announcer)
+  }
+  // Texto vazio e depois o novo: o leitor anuncia mesmo se o título repetir.
+  announcer.textContent = ''
+  setTimeout(() => (announcer!.textContent = text), 50)
+  const target = h ?? container
+  if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1')
+  target.focus({ preventScroll: true })
+}
+
 const Base: typeof HTMLElement = typeof HTMLElement === 'undefined' ? (class {} as typeof HTMLElement) : HTMLElement
 
 export class VitralOutletElement extends Base {
@@ -78,6 +124,8 @@ export class VitralOutletElement extends Base {
   #props: Props = {}
   // `undefined` até a primeira checagem, para o estado `empty` aparecer já de início.
   #route: string | null | undefined
+  /** A troca atual veio de uma navegação (não da primeira carga): anuncia quando montar. */
+  #navigated = false
 
   get props(): Props {
     return this.#props
@@ -100,7 +148,12 @@ export class VitralOutletElement extends Base {
     this.#slot?.retry()
   }
 
-  #onNavigate = () => this.sync()
+  #onNavigate = () => {
+    const before = this.#route
+    this.sync()
+    // Navegação dentro do mesmo remote: o roteador dele cuida do foco.
+    if (this.#route !== before && this.#route) this.#navigated = true
+  }
 
   connectedCallback() {
     outlets.add(this)
@@ -181,6 +234,11 @@ export class VitralOutletElement extends Base {
     for (const [slot, on] of [['fallback', 'loading'], ['error', 'error'], ['empty', 'empty']]) {
       for (const el of this.querySelectorAll<HTMLElement>(`:scope > [slot="${slot}"]`)) el.hidden = status !== on
     }
+    if (status === 'ready' && this.#navigated && announce) {
+      // Um quadro depois: o remote já desenhou o título.
+      requestAnimationFrame(() => this.isConnected && announceRoute(this))
+    }
+    if (status !== 'loading') this.#navigated = false
     if (status === 'ready') this.dispatchEvent(new CustomEvent('vitral-ready', { bubbles: true, detail: { route: this.#route } }))
     if (status === 'error') this.dispatchEvent(new CustomEvent('vitral-error', { bubbles: true, detail: { error } }))
   }
