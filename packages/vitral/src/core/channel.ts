@@ -67,7 +67,7 @@ async function chosen(name: string, entry: RemoteEntry, channel: Channel, ctx: C
   try {
     return await Promise.race([entry.resolve!(channel, ctx), late])
   } catch (e) {
-    console.warn(`[vitral] ${name}: resolve do canal falhou (${(e as Error)?.message ?? e}); usando a estável ${channel.stable}`)
+    console.warn(`[vitral] ${name}: ` + tr(`resolve do canal falhou (${(e as Error)?.message ?? e}); usando a estável ${channel.stable}`, `channel resolve failed (${(e as Error)?.message ?? e}); using stable ${channel.stable}`))
     return channel.stable
   } finally {
     clearTimeout(timer)
@@ -86,7 +86,7 @@ export async function follow<T>(name: string, entry: RemoteEntry & { url: string
     const stable = versionUrl(channel.stable, entry.url)
     if (picked.url === stable) throw e
     const w = watching.get(name)
-    console.warn(`[vitral] ${name}: a versão ${w?.from ?? picked.url} não carregou; usando a estável ${channel.stable}`, e)
+    console.warn(`[vitral] ${name}: ` + tr(`a versão ${w?.from ?? picked.url} não carregou; usando a estável ${channel.stable}`, `version ${w?.from ?? picked.url} did not load; using stable ${channel.stable}`), e)
     if (w) rollback(name, w, false)
     return resolve({ ...picked, url: stable })
   }

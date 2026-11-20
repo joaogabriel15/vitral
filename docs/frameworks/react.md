@@ -142,6 +142,7 @@ Mudar `props` atualiza o remote. Mudar `name`, `src` ou `isolate` remonta.
 | `prefetch` | `'hover' \| 'visible' \| 'idle'` | Baixar antes de montar |
 | `priority` | `'high'` | Prioridade alta nos downloads |
 | `keepAlive` | `boolean \| number` | Guarda o remote montado ao sair da página |
+| `waitFor` | `string \| string[]` | Chaves de `provide` que precisam ter valor antes de montar. Veja [Esperar a sessão](/aprender/contexto#esperar-a-sessao) |
 
 ## Remote
 

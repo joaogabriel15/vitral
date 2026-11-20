@@ -123,6 +123,7 @@ The `props` attribute only accepts JSON. To pass functions, use the `el.props` p
 | `prefetch` | `hover`, `visible` or `idle` |
 | `priority` | `high` |
 | `keep-alive` | Keeps the remote mounted when leaving the page. Accepts the maximum kept |
+| `wait-for` | `provide` keys that must have a value before mounting. See [Waiting for the session](/en/aprender/contexto#waiting-for-the-session) |
 | `inherit-styles` | Host CSS inside the Shadow DOM, separated by spaces |
 
 | Slot | When it shows |
@@ -228,4 +229,37 @@ Every remote receives the same `ctx`:
 | `customElements` | The remote's custom elements registry. See [Custom elements per remote](/en/aprender/estilos#custom-elements-per-remote) |
 | `navigate(url, { replace? })` | Navigates the page and notifies every router |
 | `reportError(error)` | Shows the error in the host |
+| `signal` | `AbortSignal` aborted on unmount. Pass it to `fetch`, `addEventListener` and timers |
 | `onActivate(fn)`, `onDeactivate(fn)` | With keep-alive. See [Loading](/en/aprender/carregamento#keep-alive) |
+
+Today, every `fetch`, listener and timer of the remote has to be undone by hand on unmount:
+
+```js
+// cart/src/remote.js
+export function mount(el) {
+  const ctrl = new AbortController()
+  const close = () => {}
+  fetch('/api/cart', { signal: ctrl.signal })
+  window.addEventListener('resize', close)
+  return {
+    unmount() {
+      ctrl.abort()
+      window.removeEventListener('resize', close)
+    },
+  }
+}
+```
+
+With vitral, use `ctx.signal`, aborted on unmount:
+
+```js
+// cart/src/remote.js
+export function mount(el, props, ctx) {
+  const close = () => {}
+  fetch('/api/cart', { signal: ctx.signal })
+  window.addEventListener('resize', close, { signal: ctx.signal })
+  return { unmount() {} }
+}
+```
+
+The `AbortError` of the cancelled `fetch` doesn't reach `onError`.

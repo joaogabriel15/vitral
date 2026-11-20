@@ -36,6 +36,7 @@ remote(node: HTMLElement, params: RemoteActionParams): { update, destroy }
 | `prefetch` | `'hover' \| 'visible' \| 'idle'` | Baixar antes de montar |
 | `priority` | `'high'` | Prioridade alta |
 | `keepAlive` | `boolean \| number` | Guarda o remote montado |
+| `waitFor` | `string \| string[]` | Chaves de `provide` que precisam ter valor antes de montar |
 
 No SvelteKit a action só roda no cliente.
 

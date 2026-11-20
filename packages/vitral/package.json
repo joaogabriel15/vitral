@@ -353,7 +353,7 @@
       "ignore": [
         "./chunk-*"
       ],
-      "limit": "610 B"
+      "limit": "680 B"
     },
     {
       "name": "host mínimo + store",
@@ -585,7 +585,7 @@
     {
       "name": "embed (loader de sites de terceiros, arquivo único com Shadow DOM, SRI e canal)",
       "path": "dist/embed.js",
-      "limit": "15.80 kB"
+      "limit": "15.92 kB"
     },
     {
       "name": "snapshot (última tela na visita de volta)",

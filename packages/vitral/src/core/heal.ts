@@ -5,6 +5,7 @@
  */
 // O loader e o `updates` entram por parâmetro: um import estático deles fecharia
 // um ciclo com o `import('./heal')` e o bundler do remote levaria o loader.
+import { tr } from './lang'
 import { abandon } from './channel'
 import type { Resolved } from './loader'
 import { protocol } from './state'
@@ -31,7 +32,7 @@ export async function heal(name: string, versions: Map<string, string>, resolveE
   done.add(root)
   const r = await resolveEntry(root, entry as RemoteEntry & { url: string })
   if (r.entry === versions.get(root) || r.entry === versions.get(name)) return
-  console.warn(`[vitral] ${root}: arquivo da versão aberta sumiu (deploy novo); trocando pela versão nova`)
+  console.warn(`[vitral] ${root}: ` + tr('arquivo da versão aberta sumiu (deploy novo); trocando pela versão nova', 'a file of the open version is gone (new deploy); switching to the new version'))
   await refresh(root)
 }
 

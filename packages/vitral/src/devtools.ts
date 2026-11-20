@@ -12,6 +12,7 @@
  * salvos em `localStorage['vitral:overrides']`. Só valem com
  * `configure({ devOverrides })` ou com a página em localhost.
  */
+import { tr } from './core/lang'
 import { mounted } from './core/errors'
 import { ctxHooks } from './core/hooks'
 import { activeOverrides, clearOverrides, dropOverride, overridesEnabled, storedOverrides, storeOverride } from './core/overrides'
@@ -237,7 +238,7 @@ export function watchLeaks(options: LeakOptions = {}): () => void {
     options.onLeak ??
     ((r: LeakReport) => {
       const what = [...r.listeners.map((l) => `${l.target}.${l.type}`), ...r.intervals.map(() => 'setInterval')]
-      console.warn(`[vitral] ${r.name} saiu da página e deixou ${what.length} ${what.length > 1 ? 'itens' : 'item'}: ${what.join(', ')}. Use ctx.signal ou limpe no unmount.`, r)
+      console.warn(`[vitral] ${r.name} ` + tr(`saiu da página e deixou ${what.length} ${what.length > 1 ? 'itens' : 'item'}: ${what.join(', ')}. Use ctx.signal ou limpe no unmount.`, `left the page and left ${what.length} ${what.length > 1 ? 'items' : 'item'} behind: ${what.join(', ')}. Use ctx.signal or clean up in unmount.`), r)
     })
   const before = ctxHooks.gone
   ctxHooks.gone = (name) => {

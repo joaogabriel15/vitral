@@ -98,6 +98,12 @@ The channel accepts fields of your own, which `resolve` reads:
 resolve: (channel) => (user.employee ? (channel.internal as string) : undefined)
 ```
 
+If `resolve` throws or takes longer than `resolveTimeout` (default 1500 ms), the host uses stable. The route doesn't disappear when the flag service is down:
+
+```ts
+checkout: { url: 'https://cdn.company.com/checkout/channel.json', resolve: readFlag, resolveTimeout: 800 }
+```
+
 ## Automatic rollback
 
 When the chosen version isn't the stable one, the host counts its errors: download failure, `CONTRACT_MISMATCH`, `mount` error, `ctx.reportError` and, with `captureGlobalErrors`, unhandled errors attributed to the remote. They are the same errors that reach the `configure` `onError`.
@@ -125,6 +131,8 @@ configure({
 | `mounts` | `20` | Window size, in mounts. The error count restarts on each window |
 
 `rollback: false` turns it off. The rollback only applies to that browser. To take the canary away from everyone, edit the channel.
+
+If the canary's `vitral.json` or JS doesn't load (folder not published, file deleted), the host uses stable right away, without counting errors, and calls `onRollback`.
 
 If the channel publishes another canary (e.g. `1.5.1`), it is tried again, even in the session that dropped `1.5.0`.
 
